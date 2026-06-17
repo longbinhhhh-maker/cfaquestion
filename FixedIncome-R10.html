@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "An investor who buys bonds that have a Macaulay duration less than his investment horizon:", "opts": ["has a negative duration gap.", "is minimizing reinvestment risk.", "will benefit from decreasing interest rates."], "ans": "A", "expl": "A duration gap is a difference between a bond's Macaulay duration and the bondholder's\ninvestment horizon. If Macaulay duration is less than the investment horizon, the\nbondholder is said to have a negative duration gap and is more exposed to downside risk\nfrom decreasing interest rates (reinvestment risk) than from increasing interest rates\n(market price risk).\n(Module 56.1, LOS 56.b)"}, {"n": 2, "q": "Assuming the issuer does not default, can capital gains or losses be a component of the\nholding period return on a zero-coupon bond that is sold prior to maturity?", "opts": ["No, because amortization of the discount is interest income.", "Yes, because the bond’s yield to maturity may have changed.", "Yes, because the purchase price is less than the bond’s value at maturity."], "ans": "B", "expl": "Prior to maturity, a zero-coupon bond's price may be different than its constant-yield price\ntrajectory and the bondholder may realize a capital gain or loss by selling the bond. For a\nzero-coupon bond that is held to maturity, the increase from the purchase price to face\nvalue at maturity is interest income.\n(Module 56.1, LOS 56.a)"}, {"n": 3, "q": "Annual Macaulay duration is least accurately interpreted as the:", "opts": ["investment horizon at which a bond’s market price risk and reinvestment risk exactly offset.", "approximate percentage change in a bond’s value for a 1% change in its yield to maturity.", "weighted average number of years until a bond’s cash flows are scheduled to be paid."], "ans": "B", "expl": "Modified duration is the approximate percentage change in a bond's value for a 1%\nchange in its YTM. Macaulay duration is the weighted average number of periods until a\nbond's cash flows are scheduled to be paid and represents the investment horizon at\nwhich a bond's market price risk and reinvestment risk exactly offset.\n(Module 56.1, LOS 56.c)"}, {"n": 4, "q": "An analyst has calculated a Macaulay duration of 2.12 for a three-year corporate bond. For\nthis bond, 2.12 represents:", "opts": ["when the investor recovers his principal.", "the average time until the receipt of the bond’s cash flows.", "the sensitivity of the bond’s price to changes in interest rates."], "ans": "B", "expl": "The Macaulay duration is the average time until the receipt of the cash flows of the bond.\nThe investor will recover his principal (in a typical scenario) at the end of the bond's life,\nwhen it matures (here, that is three years). Duration is a measure of bond price sensitivity\nto interest rate changes, but that is not the interpretation of the Macaulay duration\nspecifically.\n(Module 56.1, LOS 56.c)"}, {"n": 5, "q": "Price risk will dominate reinvestment risk when the investor's:", "opts": ["duration gap is negative.", "duration gap is positive.", "investment horizon is less than the bond’s tenor."], "ans": "B", "expl": "Price risk will dominate reinvestment risk when the investor's investment horizon is less\nthan the bond's Macaulay duration (i.e., when the duration gap is positive).\n(Module 56.1, LOS 56.b)"}, {"n": 6, "q": "The Macaulay duration in years of a 4-year annual pay, 6% coupon bond with a par value of\n$100 and yielding 7% is closest to:", "opts": ["3.99 years.", "3.35 years.", "3.67 years."], "ans": "C", "expl": "The calculation to derive the Macaulay duration is shown here:\nCash FlowPresent ValueWeighting\n66 / 1.07 = 5.60755.6075 / 96.6128 = 0.0580\n2\n65.2406 / 96.6128 = 0.0542\n6 / 1.07 = 5.2406\n634.8978 / 96.6128 = 0.0507\n6 / 1.07 = 4.8978\n106480.8669 / 96.6128 = 0.8370\n106 / 1.07 = 80.8669\nTotal present value = 96.6128\nMacaulay duration = 0.0580 (1) + 0.0542 (2) + 0.0507 (3) + 0.8370 (4) = 3.67 years.\n(Module 56.1, LOS 56.c)"}, {"n": 7, "q": "Jane Walker has set a 7% yield as the goal for the bond portion of her portfolio. To achieve\nthis goal, she has purchased a 7%, 15-year corporate bond at a discount price of 93.50. What\namount of reinvestment income will she need to earn over this 15-year period to achieve a\ncompound return of 7% on a semiannual basis?", "opts": ["$574.", "$459.", "$624."], "ans": "A", "expl": "30\n935(1.035) = $2,624\nBond coupons: 30 × 35 = $1,050\nPrincipal repayment: $1,000\n2,624 − 1,000 − 1050 = $574 required reinvestment income\n(Module 56.1, LOS 56.a)"}, {"n": 8, "q": "All else being equal, which of the following bond characteristics most likely results in less\nreinvestment risk?", "opts": ["A lower Macaulay duration.", "A shorter maturity.", "A higher coupon."], "ans": "B", "expl": "Other things being equal, the amount of reinvestment risk embedded in a bond will\ndecrease with lower coupons as there are fewer coupons to reinvest and with shorter\nmaturities because the reinvestment period is shorter.\nA lower Macaulay duration may reflect more or less reinvestment risk, depending on what\ncauses Macaulay duration to be lower. A lower Macaulay duration could result from a\nshorter maturity (which reduces reinvestment risk) or a higher coupon (which increases\nreinvestment risk).\n(Module 56.1, LOS 56.a)"}, {"n": 9, "q": "An investor purchases a fixed coupon bond with a Macaulay duration of 5.3. The bond's yield\nto maturity decreases before the first coupon payment. If the YTM then remains constant\nand the investor sells the bond after three years, the realized yield will be:", "opts": ["equal to the YTM at the date of purchase.", "higher than the YTM at the date of purchase.", "lower than the YTM at the date of purchase."], "ans": "B", "expl": "If the investment horizon is shorter than the Macaulay duration, the price impact of a\ndecrease in YTM dominates the loss of reinvestment income and the realized yield will be\nhigher than the YTM at purchase.\n(Module 56.1, LOS 56.b)"}, {"n": 10, "q": "In a Macaulay duration calculation, the weights calculated for each future cash flow are:", "opts": ["valued equally.", "assigned greater value for earlier cash flows.", "assigned greater value for later cash flows."], "ans": "C", "expl": "In the Macaulay duration calculation, once the proportion of total PV for each individual PV\nare determined, they are each multiplied by the length of time until they are received. So,\nfor example, in an annual pay bond calculation, the weighting for the Year 1 cash flow is\nmultiplied by 1, the weighting for the Year 2 cash flow is multiplied by 2, and so on. The\nhighest value is assigned to the last cash flow received—which, in a coupon-paying bond,\nis typically the final interest payment and the principal payment.\n(Module 56.1, LOS 56.c)"}, {"n": 11, "q": "If the coupon payments are reinvested at the coupon rate during the life of a bond, then the\nyield to maturity:", "opts": ["is greater than the realized yield.", "is less than the realized yield.", "may be greater or less than the realized yield."], "ans": "C", "expl": "For the realized yield to equal the YTM, coupon reinvestments must occur at that YTM.\nWhether reinvesting the coupons at the coupon rate will result in a realized yield higher or\nlower than the YTM depends on whether the bond is at a discount (coupon < YTM) or a\npremium (coupon > YTM).\n(Module 56.1, LOS 56.a)"}, {"n": 12, "q": "An investor buys a bond that has a Macaulay duration of 3.0 and a yield to maturity of 4.5%.\nThe investor plans to sell the bond after three years. If the yield curve has a parallel\ndownward shift of 100 basis points immediately after the investor buys the bond, her\nannualized horizon return is most likely to be:", "opts": ["approximately 4.5%.", "greater than 4.5%.", "less than 4.5%."], "ans": "A", "expl": "With Macaulay duration equal to the investment horizon, market price risk and\nreinvestment risk approximately offset and the annualized horizon return should be close\nto the yield to maturity at purchase.\n(Module 56.1, LOS 56.b)"}, {"n": 13, "q": "An investor has an investment horizon of 4 years, and a Macaulay duration for one of her\nmillion-dollar bond investments of 3.5 years. The investor's exposure to interest rates is best\nreflected as:", "opts": ["reinvestment risk due to decreasing interest rates.", "price risk due to increasing interest rates.", "minimal, due to the relatively close duration and horizon."], "ans": "A", "expl": "When the investment horizon exceeds the Macaulay duration (as it does here), there is a\nnegative duration gap that exposes the investors to reinvestment risk; this risk occurs\nwhen the cash flows received from an investment must be subsequently invested in a\nlower interest rate environment. Price risk due to increasing interest rates is a risk when\nthere is a positive duration gap (Macaulay duration exceeds investment horizon). Even\nthough the horizon and duration are within 0.5 years, the risk is not minimal, especially\ngiven that 0.5 years is an eighth of the total investment horizon. In another scenario, you\nmight conclude that a duration gap of 0.5 years is relatively close if the investment horizon\nwas much longer.\n(Module 56.1, LOS 56.c)"}, {"n": 14, "q": "Sarah Metz buys a 10-year bond at a price below par. Three years later, she sells the bond.\nHer capital gain or loss is measured by comparing the price she received for the bond to its:", "opts": ["carrying value.", "original price less amortized discount.", "original purchase price."], "ans": "A", "expl": "Capital gains and losses on bonds purchased at a discount or premium are measured\nrelative to carrying value (original price plus amortized discount or minus amortized\npremium) from the constant-yield price trajectory, not from the purchase price.\n(Module 56.1, LOS 56.a)"}, {"n": 15, "q": "If the yield to maturity on a bond decreases after purchase but before the first coupon date\nand the bond is held to maturity, reinvestment risk is:", "opts": ["less than price risk and the realized yield will be lower than the YTM at purchase.", "less than price risk and the realized yield will be higher than the YTM at purchase.", "greater than price risk and the realized yield will be lower than the YTM at purchase."], "ans": "C", "expl": "If the bond is held to maturity, the investor will receive all coupons and principal and\nreinvest them at a lower return than the YTM at purchase, resulting in a lower realized\nyield.\n(Module 56.1, LOS 56.a)"}, {"n": 16, "q": "Tony Horn, CFA, is evaluating two bonds. The first bond, issued by Kano Corp., pays a 7.5%\nannual coupon and is priced to yield 7.0%. The second bond, issued by Samuel Corp., pays a\n7.0% annual coupon and is priced to yield 8.0%. Both bonds mature in ten years. If Horn can\nreinvest the annual coupon payments from either bond at 7.5%, and holds both bonds to\nmaturity, his return will be:", "opts": ["greater than 7.0% on the Kano bonds and greater than 8.0% on the Samuel bonds.", "greater than 7.0% on the Kano bonds and less than 8.0% on the Samuel bonds.", "less than 7.0% on the Kano bonds and less than 8.0% on the Samuel bonds."], "ans": "B", "expl": "The yield to maturity calculation assumes that all interim cash flows are reinvested at the\nyield to maturity (YTM). Since Horn's reinvestment rate is 7.5%, he would realize a return\nhigher than the 7.0% YTM of the Kano bonds, or a return less than the 8.0% YTM of the\nSamuel bonds.\n(Module 56.1, LOS 56.a)"}, {"n": 17, "q": "Which measure of duration should be matched to the bondholder's investment horizon so\nthat reinvestment risk and market price risk offset each other?", "opts": ["Effective duration.", "Macaulay duration.", "Modified duration."], "ans": "B", "expl": "Macaulay duration is the investment horizon at which reinvestment risk and market price\nrisk approximately offset each other.\n(Module 56.1, LOS 56.b)"}, {"n": 18, "q": "An investment advisor states, \"An investor's annualized holding period return from investing\nin a bond consists of three parts: the coupon interest payments, the return of principal, and\nany capital gain or loss that the investor realizes on the bond.\" The advisor is:", "opts": ["correct.", "incorrect, because these are not the only sources of return from investing in a bond.", "incorrect, because an investor who holds a bond to maturity will not realize a capital gain or loss."], "ans": "B", "expl": "The advisor's description of the sources of return from investing in a bond is incomplete\nbecause it does not include the income from reinvesting the bond's coupon payments.\nAlthough it is true that an investor who holds a bond to maturity will not realize a capital\ngain or loss, this is not why the advisor's statement is incorrect.\n(Module 56.1, LOS 56.a)"}, {"n": 19, "q": "An investor purchases a 4-year, 6%, semiannual-pay Treasury note for $9,485. The security\nhas a par value of $10,000. To realize a total return equal to 7.515% (its yield to maturity), all\npayments must be reinvested at a return of:", "opts": ["less than 7.515%.", "7.515%.", "more than 7.515%."], "ans": "B", "expl": "The reinvestment assumption that is embedded in any present value-based yield measure\nimplies that all coupons and principal payments must be reinvested at the specific rate of\nreturn, in this case, the yield to maturity. Thus, to obtain a 7.515% total dollar return, the\ninvestor must reinvest all the coupons at a 7.515% rate of return. Total dollar return is\nmade up of three sources, coupons, principal, and reinvestment income.\n(Module 56.1, LOS 56.a)"}, {"n": 20, "q": "An investor is concerned about rising interest rates and associated price risks. If her\ninvestment horizon is 5.25 years, the Macaulay duration on her bond investment is likely\nclosest to:", "opts": ["5.25 years.", "5.75 years.", "4.75 years."], "ans": "B", "expl": "Concern about rising rates and price risks occurs when there is a positive duration gap\nwhere the Macaulay duration exceeds the investor's investment horizon. If the investment\nhorizon is 5.25 years, the Macaulay duration must be higher. The only Macaulay duration\nthat is greater is 5.75 years.\n(Module 56.1, LOS 56.c)"}];
+const CFG = {"title": "Interest Rate Risk and Return", "subtitle": "CFA · Fixed Income · Reading 56 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; stem.textContent = q.q;
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

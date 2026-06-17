@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Compared to centralized cryptocurrency exchanges, decentralized exchanges are:", "opts": ["Less likely to be regulated and less susceptible to attacks from hackers.", "Less likely to be regulated and more susceptible to attacks from hackers.", "More likely to be regulated and less susceptible to attacks from hackers."], "ans": "A", "expl": "A. Correct because decentralized exchanges lack a centralized control mechanism and\noperate on a distributed platform without central coordination or control. This comes with\nthe benefit that should one of the computers on the network be attacked, the exchange\nremains operational since there are numerous other computers that continue to operate on\nthe network. That is why attacking decentralized exchanges is substantially more difficult.\nrendering such attacks almost certain to fail. However, for a centralized exchange, trading is\nhosted on private servers, exposing the centralized exchanges and their clients to security\nvulnerabilities Should the exchange's servers become compromised, the entire system may\nbecome paralyzed, halting trade, and leaking vital user information. Hence, decentralized\nexchanges are less susceptible to attacks from hackers.\nMoreover, decentralized exchanges are difficult to regulate because no single individual,\norganization, or group controls the system. This means that those trading on decentralized\nexchanges are generally free to transact without any regulatory scrutiny. However, some\n[centralized exchanges are regulated, and depending on jurisdiction, these exchanges may\nbe regulated as financial exchanges or other types of financial intermediaries. Hence,\ndecentralized exchanges are less likely to be regulated.\nB. Incorrect because decentralized exchanges lack a centralized control mechanism and\noperate on a distributed platform without central coordination or control. This comes with\nthe benefit that should one of the computers on the network be attacked, the exchange\nremains operational since there are numerous other computers that continue to operate on\nthe network. That is why attacking decentralized exchanges is substantially more difficult.\nrendering such attacks almost certain to fail. However, for a centralized exchange, trading is\nhosted on private servers, exposing the centralized exchanges and their clients to security\nvulnerabilities. Should the exchange's servers become compromised, the entire system may\nbecome paralyzed, halting trade, and leaking vital user information. Hence, decentralized\nexchanges are less (not more) susceptible to attacks from hackers.\nC. Incorrect because decentralized exchanges are difficult to regulate because no single\nindividual, organization, or group controls the system. This means that those trading on\ndecentralized exchanges are generally free to transact without any regulatory scrutiny.\nHowever, some [centralized] exchanges are regulated, and depending on jurisdiction, these\nexchanges may be regulated as financial exchanges or other types of financial intermediaries.\nHence, decentralized exchanges are less (not more) likely to be regulated.\nAlternative Investments: describe investment forms and vehicles used in digital asset\ninvestments.", "qhtml": null}, {"n": 2, "q": "Which of the following forms of digital asset investment most likely involves the use of a\ncryptocurrency wallet?", "opts": ["Direct investment", "Indirect investment via ETFs", "Indirect investment via coin trusts"], "ans": "A", "expl": "A. Correct because digital asset investment can take the form of direct investment on the\nblockchain or indirect investments. Direct ownership of bitcoin and other cryptocurrencies\ninvolves the use of a cryptocurrency wallet, which stores the (public dad private) digital codes\nrequired to access the asser on a computer website or mobile device application.\nB. Incorrect because an increasing number of exchange-traded products, such as ETFs, seek to\nreplicate digital assetievestinent returns. These ETFS typically do not directly invest in\ncryptocurrencies and gain exposure to the value of cryptocurrencies using cash anacyptocurency\nderivatives, Since as direct investment is mate a cryptocurrency wallet Is.nol tsqused\nC. incorrect because cryptocurrency coin trusts allow investors to trade shares in trusts holding\nlarge pools of a cryptocurrency and that trade over the counter (OTC) and behave like closed-end\nfunds. For an investor in a coin Inust, there is no need to create a digital wallet and use\nencryption keys to invest in cryptocurrencies.\nAlternative Investments: describe investment forms and vehicles used in digital asset\ninvestments.", "qhtml": null}, {"n": 3, "q": "The correlation of cryptocurrencies with traditional assets has been:", "opts": ["Decreasing.", "Steady.", "Increasing."], "ans": "C", "expl": "A. Incorrect because the corelation of cryptocurrencies with traditional assets is on the rise.\nB. Incorrect because the corelation of cryptocurrencies with traditional assets is on the rise.\nC. Correct because the correlation of cryptocurrencies with traditional assets is on the rise.\nAlternative Investments: analyze sources of risk, return, and diversification among digital asset\ninvestments", "qhtml": null}, {"n": 4, "q": "Which of the following is most likely a major driver of bitcoin returns?", "opts": ["Increased market adoption", "The prospect of underlying cashflow generation", "Consistently high correlation with traditional asset classes"], "ans": "A", "expl": "A. Correct because in practice, prices (or returns) of cryptocurrencies are driven more by\nmarket adoption, network effects, technological advancement, regulatory development, and\ngeneral market risk appetite.\nB. Incorrect because bitcoin and other cryptocurrency values are based solely on asset\nappreciation, with no underlying cash flows.\nC. Incorrect because since its launch in 2009, bitcoin's performance has been characterized by\nhigh return, high volatility, and low correlations with traditional asset classes. The fact that the\ncorrelation of cryptocurrencies with traditional assets is on the rise does not imply that the\ncorrelation of bitcoin and other cryptocurrencies has reached a high level yet, nor would a high\nlevel necessarily be a desirable feature.\nAlternative Investments: analyze sources of risk, return, and diversification among digital asset\ninvestments", "qhtml": null}, {"n": 5, "q": "Cryptocurrencies can be issued by:", "opts": ["individuals only.", "Corporations and organisations only.", "individuals, corporations and organisations."], "ans": "C", "expl": "A. Incorrect because cryptocurrencies are not only issued by individuals but also by\ncorporations and organizations. While there were around 70 cryptocurrencies recorded in 2013,\nby early 2022, there were close to 10,000 different cryptocurrencies issued by corporations,\norganizations, and in many cases, individuals.\nB. Incorrect because cryptocurrencies are not only issued by corporations and organizations but\nalso by individuals. While there were around 70 cryptocurrencies recorded in 2013, by early\n2022, there were close to 10,000 different cryptocurrencies issued by corporations,\norganizations, and in many cases, individuals.\nC. Correct because while there were around 70 cryptocurrencies recorded in 2013, by early\n2022, there were close to 10,000 different cryptocurrencies issued by corporations,\norganizations, and in many cases, individuals.\nAlternative Investments: explain investment features of digital assets and contrast them with\nother asset classes", "qhtml": null}, {"n": 6, "q": "Compared to traditional financial assets, digital assets:", "opts": ["can be invested in through indirect investment vehicles such as ETFs.", "are generally recorded in private ledgers maintained by central intermediaries.", "do not have an inherent value based on underlying assets or on potential cash flows."], "ans": "C", "expl": "A. Incorrect because the main similarity [not difference] between these asset types is the\nemergence of indirect investment vehicles such as exchange-traded funds [ETFS] and hedge\nfunds that invest both in traditional financial assets and in digital assets.\nB. Incorrect because one key dífference between digital assets and traditional financial\ninstruments is that traditional [not digital] assets are generally recorded in private ledgers\nmaintained by central intermediaries.\nC. Correct because, unlike financial assets, most digital assets do not have an inherent value\nbased on underlying assets or on the potential cash flow.\nAlternative Investments: explain investment features of digital assets and contrast them with\nother asset classes", "qhtml": null}, {"n": 7, "q": "A measure that restricts new investors in a hedge fund from redeeming their capital for a\nset amount of time in order to implement the fund's investment strategy is known as a:", "opts": ["gate.", "notice period.", "lockup period."], "ans": "C", "expl": "A. Incorrect because in addition, funds sometimes impose a gate, which limits or restricts\nredemptions for a period of time. A gate is imposed by the hedge fund manager independent of\nany lockup period that may apply. A gate therefore applies to all investors for a finite period of\ntime while a lockup period applies to new investors only.\nB. Incorrect because notice periods provide an opportunity for the hedge fund manager to\nliquidate a position in an orderly fashion without magnifying the losses. A notice period applies\nto all investors wanting to withdraw some or all of their capital from a hedge fund with the goal\nof providing the manager with advance warning of the withdrawal.\nC. Correct because lockup periods-time periods when investors cannot withdraw their capital-\nprovide the hedge fund manager the required time to implement and potentially realize a\nstrategy's expected results. LOckup periods apply to new investors in a hedge fund with the goal\nof allowing the hedge fund manager time to implement the fund's investment strategy.\nAlternative Investments: describe the performance appraisal of alternative investments", "qhtml": null}, {"n": 8, "q": "Venture capital is best classified as a sub-category of.", "opts": ["real estate.", "hedge funds.", "private equity."], "ans": "C", "expl": "A. Incorrect because real estate investments are made in buildings or land, either directly or\nindirectly. Although some venture capital investments may have a real estate component,\nventure capital is broadly considered a type of private equity investing, and is best classified as\nsuch.\nB. Incorrect because hedge funds are private investment vehicles that manage portfolios of\nsecurities and/or derivative positions using a variety of strategies. Although venture capital\ninvestments may be included in some hedge funds, venture capital is broadly considered a type\nof private equity investing, and is best classified as such.\nC. Correct because venture capital funds, a specialized form of private equity that typically\ninvolves investing in or providing financing to startup or early-stage companies with high growth\npotential, represent a small portion of the private equity market.\nAlternative Investments: describe features and categories of alternative investments", "qhtml": null}, {"n": 9, "q": "A leveraged loan is best defined as a loan:", "opts": ["that is itself levered.", "to mature companies in financial difficulty.", "that comes with warrants or conversion rights."], "ans": "A", "expl": "A. Correct because a leveraged loan is a loan that is itself levered. Private debt firms that invest\nin leveraged loans first borrOW money to finance the debt and then extend it to another\nborrower. By using leverage, a private debt firm can enhance the return on its loan portfolio.\nB. Incorrect because involvement in distressed debt typically entails buying the debt of mature\ncompanies in financial difficulty. These companies may be in bankruptcy, have defaulted on\ndebt, or seem likely to default on debt Some investors identify companies with a temporary\ncash-flow problem but a good business plan to help the company survive and ultimately\nflourish. These investors buy the company's debt, expecting both the company and its debt to\nincrease in value. Turnaround investors buy debt aiming to be more active in distressed\ncompany management and direction, seeking to restructure and revive them.\nC. Incorrect because mezzanine debt often comes with additional features, SUch as warrants or\nconversion rights. These provide equity participation to lenders/investors, conveying the option\nto convert their debt into equity or purchasing the equity of the underlying borrOwer under\ncertain circumstances.\nAlternative Investments: explain features of private debt and its investment characteristics", "qhtml": null}, {"n": 10, "q": "From the perspective of a private equity firm, an advantage of exiting a portfolio company\nthrough a special purpose acquisition company (SPAC) most likely include:", "opts": ["floating valuation.", "flexibility of the transaction structure.", "lower deal risk due to restrictions on redemptions."], "ans": "B", "expl": "A. Incorrect because advantages of a SPAC exit include fixed valuation with lower volatility of\nshare pricing.\nB. Correct because advantages of a SPAC exit include:\na. extended time for public disclosure on company prospects to build investor interest.\nb. fixed valuation with lower volatility of share pricing.\nc. flexibility of transaction structure to best suit the company's context, and\nd. association with potentially high-profile and seasoned sponsors and their extensive investor\nnetwork.\nC. Incorrect because redemptions are allowed and increase the deal risk. Also, disadvantages\ninclude\na. potential higher costs of capital from sponsor dilution, warrants, and other fees,\nb. spread between the announced and true equity value because of the dilution,\nc. deal and capital risk due to potential redemptions, and\nd. significant stockholder overhang and churn over the number of months after the merger.\nAlternative Investments: explain features of private equity and its investment characteristics", "qhtml": null}, {"n": 11, "q": "With respect to private equity, the growth capital strategy is also known as:", "opts": ["venture capital.", "recapitalization.", "minority equity investing."], "ans": "C", "expl": "A. Incorrect because venture capital is a different private equity strategy from growth capital.\nVenture capital (VC) entails investing in or providing financing to private companies with high\ngrowth potential. Typically these are start-ups or young companies, but venture capital can be\nprovided at a variety of stages, ranging from the inception of an idea for a company to the point\nwhen the company is about to launch an IPO (initial public offering) or be acquired. Growth\ncapital generally refers to minority equity investments, whereby the firm takes a less-than-\ncontrolling interest in more mature companies that are looking for capital to expand or\nrestructure operations, enter new markets, or finance major acquisitions.\nB. Incorrect because it is an exit strategy. Recapitalization in the context of private equity\ndescribes the steps a firm takes to increase or introduce leverage to its portfolio company and\npay itself a dividend out of the new capital structure.\nC. Correct because among several other specialties, some private equity firms specialize in\ngrowth capital, also known as growth equity or minority equity investing. Growth capital\ngenerally refers to minority equity investments, whereby the firm takes a less-than-controlling\ninterest in more mature companies that are looking for capital to expand or restructure\noperations, enter new markets, or finance major acquisitions.\nAlternative Investments: explain features of private equity and its investment characteristics", "qhtml": null}, {"n": 12, "q": "Which of the following hedge fund investments require the highest level of scrutiny and\ndue diligence?", "opts": ["Level 1 assets", "Level 2 assets", "Level 3 assets"], "ans": "C", "expl": "A. Incorrect because Level 1 assets have an exchange-traded, publicly traded price available that\nis mandated to be used for valuation purposes. The following is a methodology that involves the\ncategorization of investments into three buckets Level 1, 2, and 3 asset pricing... u Level 1 assets\nhave an exchange-traded, publicly traded price available that is mandated to be used for\nvaluation purposes.\nB. Incorrect because Level 2 asset values use outside quotes from brokers when publicly traded\n(Level 1) prices are not available The following is a methodology that involves the categorization\nof investments into three buckets: Level 1, 2, and 3 asset pricing. Level 2 asset values use\noutside quotes from brokers when publicly traded (Level 1) prices are not available.\nC. Correct because any investment vehicle that is heavily involved with Level 3-priced assets\ndeserves increased scrutiny and due diligence. The following is a methodology that involves the\ncategorization of investments into three buckets: Level 1, 2, and 3 asset pricing... Level 3 asset\nvalues are computed using only internal models when outsider broker (Level 2) quotes are not\navailable or not reliable.\nAlternative Investments: describe the performance appraisal of alternative investments", "qhtml": null}, {"n": 13, "q": "Hedge funds are most likely to place restrictions on:", "opts": ["redemptions.", "the use of leverage.", "the use of derivatives."], "ans": "A", "expl": "A. Correct because alternative investments often have many of the following characteristics.\nRestrictions on redemptions (.e., 'lockups' and 'gates'). As such, restrictions on redemptions are\ntypically imposed [by hedge funds]. Investors may be required to keep their money in the hedge\nfund for a minimum period (referred to as a lockup period) before they are allowed to make\nwithdrawals or redeem shares. Investors may be required to give notice of their intent to\nredeem, the notice period is typically 30-90 days. To redeem shares, investors may be charged a\nfee, typically payable to the fund itself (rather than the manager) so as not to disadvantage\nremaining investors in the fund, particularly in circumstances where the redemption takes place\nduring the lockup period.\nB. Incorrect because hedge funds are private investment vehicles that manage portfolios of\nsecurities and/or derivative positions using a variety of strategies. Although hedge funds may be\ninvested entirely in traditional assets, these vehicles are considered alternative because of their\nprivate nature. Hedge funds typically have more leeway to pursue investments and strategies\noffering the potential for higher returns, whether absolute or compared with a specific market\nbenchmark, but these strategies may increase the risk of investment loss. They may involve long\nand short positions and may be highly leveraged Some aim to deliver investment performance\nthat is independent of broader market performance.\nC. Incorrect because hedge funds are private investment vehicles that manage portfolios of\nsecurities and/or derivative positions using a variety of strategies. They may involve long and\nshort positions and may be highly leveraged. Some aim to deliver investment performance that\nis independent of broader market performance. A contemporary hedge fund generally has the\nfollowing characteristics: It is a creatively managed portfolio of investments involved in one or\nmore asset classes (equities, credit, fixed income, commodities, futures, foreign exchange, and\nsometimes even hard assets, such as real estate), sometimes trading in different geographic\nregions, that is often leveraged, generally takes both long and short positions (when possible),\nand quite often uses derivatives to express a view or establish a hedge.\nAlternative Investments: explain investment features of hedge funds and contrast them with\nother asset classes", "qhtml": null}, {"n": 14, "q": "Crude oil is categorized as:", "opts": ["a soft commodity.", "a hard commodity.", "neither a soft commodity nor a hard commodity."], "ans": "B", "expl": "A. Incorrect because oil is categorized as a hard, not a soft, commodity. Commodities are\nconsidered either 'hard' (those mined, such as copper, or extracted, such as oil) or 'soft (those\ngrown over a period of time, such as livestock, grains, and cash crops, such as coffee).\nB. Correct because commodities are considered either 'hard' (those mined, such as copper, or\nextracted, such as oil) or 'soft (those grown over a period of time, such as livestock, grains, and\ncash crops, such as coffee).\nC. Incorrect because oil is categorized as a hard, not a soft, commodity. Commodities are\nconsidered either 'hard (those mined, such as copper, or extracted, such as oil) or 'soft (those\ngrown over a period of time, such as livestock, grains, and cash crops, such as coffee).\nAlternative Investments: describe features of commodities and their investment characteristics", "qhtml": null}, {"n": 15, "q": "Compared with direct investing, co-investing in alternative investments most likely offers:", "opts": ["reduced control over the investment selection prOcess.", "the same level of control over the investment selection process.", "higher control over the investment selection process."], "ans": "A", "expl": "A. Correct because co-investing offers reduced control over the investment selection process\ncompared with direct investing.\nB. Incorrect because co-investing offers reduced control over the investment selection process\ncompared with direct investing.\nC. Incorrect because co-investing offers reduced control over the investment selection process\ncompared with direct investing.\nAlternative Investments: Compare direct investment, co-investment, and fund investment\nmethods for alternative investments", "qhtml": null}, {"n": 16, "q": "Which of the following methods of investing in alternative investments provides the most\nflexibility to the investor?", "opts": ["Co-investing", "Fund investing", "Direct investing"], "ans": "C", "expl": "A. Incorrect because direct investing provides the greatest amount of flexibility for the investor\nand grants the highest level of control over how the asset is managed.\nB. Incorrect because direct investing provides the greatest amount of flexibility for the investor\nand grants the highest level of control over how the asset is managed.\nC. Correct because direct investing allows the investor to build a portfolio of investments to her\nexact requirements. Direct investing provides the greatest amount of flexibility for the investor\nand grants the highest level of control over how the asset is managed.\nAlternative Investments: compare direct investment, co-investment, and fund investment\nmethods for alternative investments", "qhtml": null}, {"n": 17, "q": "Which of the following is best classified as a commodity?", "opts": ["Livestock", "Timberland", "Agricultural land"], "ans": "A", "expl": "A. Correct because commodity investments may involve investing in actual physical\ncommodities or in producers of commodities. Commodities are considered either 'hard' (those\nmined, such as copper, or extracted, such as oil) , such as livestock, grains, and cash crops, such\nas coffee). or 'soft' (those grown over a period of time\nB. Incorrect because timberland is a separate component of natural resources, not a\ncommodity. Natural resources include commodities (hard and soft), agricultural land (farmland),\nand timberland.\nC. Incorrect because resources include agricultural land is a separate component of natural\nresources, not a commodity. Natural commodities (hard and soft), agricultural land (farmland),\nand timberland.\nAlternative Investments: describe features of commodities and their investment characteristics", "qhtml": null}, {"n": 18, "q": "Investors in greenfield infrastructure projects typically:", "opts": ["rely on the assets' financial and operating history.", "invest alongside strategic investors or developers.", "have lower development risk than investors in brownfield projects."], "ans": "B", "expl": "A. Incorrect because it is for brownfield, not greenfield, typically invest alongside strategic\ninvestors or developers who specialize infrastructure assets that are to be constructed is\ngenerally referred to as higher development and construction risks compared to investors that,\ntypically, some of the assets' financial and greenfield investment. Thus, greenfield investors face\nbrownfield investors, and may expect capital appreciation to reflect the construction and\ncommissioning risk. operating history is available.\nB. Correct because greenfield investors in developing the underlying assets.\nC. Incorrect because investing in infrastructure assets that are to be constructed is generally\nreferred to as greenfield investment Thus, greenfield investors face higher development and\nconstruction risks compared to brownfield investors, and may expect capital appreciation to\nreflect the construction and commissioning risk\nAlternative Investments: explain features and characteristics of infrastructure", "qhtml": null}, {"n": 19, "q": "An analyst gathers the following information about a hedge fund:\nBeginning-of-year assets under management (AUM): $500 million\nAnnual return before fees: 22%\nManagement fee, based on end-of-year AUM before fees: 2%\nIncentive fee: 15%\nHard hurdle rate: 10%\nQ. The incentive fee (in $ millions) based on returns net of management fees is closest to:", "opts": ["7.2.", "13.0.", "14.7."], "ans": "A", "expl": "A. Correct because End-of-year AUM = $500 million x 22% = $610 million.\nManagement fee = $610 million x 2% = $12.2 million.\nThe hurdle rate is a minimum rate of return. typically 8%, that the GP must exceed in order to\nearn the performance fee. GPs typically receive 20% of the total profit of the private equity fund\nnet of any hard hurdle rate, in which case the GP earns fees on annual returns in excess of the\nhurdle rate, or net of the soft hurdle rate, in which case the fee is calculated on the entire\nannual gross return as long as the set hurdle is exceeded.\nHard hurdle = $500 million x 10% $50 million.\nIncentive fee (based on returns net of management fees) = ($610 million - $500 million - $50\nmillion - $12.2 million) x 15% = $47.8 million x 15% = $7.17 million $7.2 million\nB. Incorrect because it calculates the hurdle rate on the annual return before fees (instead of\nthe Beginning-of-year AUM).\nEnd-of-year AUM = $500 million x 22% = $610 million.\nManagement fee = $610 million x 2% = $12.2 million.\nHard hurdle = ($610 million - $500 million) x 10% = $110 million x 10% = $11.0 million.\nIncentive fee (calculated net of management fees) = ($610 million - $500 million - $11.0 million -\n$12.2 million) x\n15% $86.8 million x 15% = $13.02 million $13.0 million.\nC. Incorrect because it assumes a soft hurdle rate (instead of a hard hurdle rate) of 10%.\nEnd-of-year AUM = $500 million x 22% = $610 million.\nManagement fee = $610 million x 2% = $12.2 million.\nGross annual return> soft hurdle rate, hence the hurdle rate is not deducted from the\ncalculation of the incentive fee.\nIncentive fee (calculated net of management fees) = ($610 million - $500 million - $12.2 million)\nx 15% = $97.8 million * 15% = $14.67 million $14.7 million.\nAlternative Investments: calculate and interpret alternative investment returns both before and\nafter fees", "qhtml": null}, {"n": 20, "q": "A hedge fund strategy that seeks to influence a company's policies through the purchase\nof equity is best described as a(n):", "opts": ["activist strategy.", "market-neutral strategy.", "merger arbitrage strategy."], "ans": "A", "expl": "A. Correct because event-driven strategies seek to profit from defined catalyst events, typically\nthose that involve changes in corporate structure, such as an acquisition or restructuring.\nFurther subdivisions of this category by HFR include the following: Activist. The term \"activist\" is\nshort for \"activist shareholder.\" Here, managers secure sufficient equity holdings to allow them\nto influence a company's policies or direction. The hedge fund manager thus tries to create his\nor her own catalyst, influencing the investment's ultimate destiny by creating a desired\ncorporate outcome.\nB. Incorrect because equity hedge strategies are focused on public equity markets and take long\nand short positions in equity and equity derivative securities. Examples of equity hedge\nstrategies include the in equity and equity derivative securities. Examples of equity hedge\nstrategies include the following: Market neutral. These strategies use quantitative (technical)\nand fundamental analysis to identify under- and overvalued equity securities. The hedge fund\ntakes long positions in securities it has identified as undervalued and short positions in\nsecurities it has identified as overvalued. The hedge fund tries to maintain a net position that is\nneutral with respect to market risk and other risk factors (size, industry, momentum, value, etc.)\nideally, the portfolio has an overall beta of approximately zero.\nC. Incorrect because event-driven strategies seek to profit from defined catalyst events, typically\nthose that involve changes in corporate structure, such as an acquisition or restructuring\nFurther subdivisions of this category by HFR include the following. Merger arbitrage. Generally,\nthese strategies involve going long (buying) the stock of the company being acquired at a\ndiscount to its announced takeover price and going short (selling) the stock of the acquiring\ncompany when the merger or acquisition is announced. The manager may expect to profit once\nthe initial deal spread narrows to the closing value of the transaction after it is fully\nconsummated. The spread exists because there is always some uncertainty over whether the\ndeal will actually close in the face of legal and regulatory hurdles\nAlternative Investments: explain investment features of hedge funds and contrast them with\nother asset classes", "qhtml": null}, {"n": 21, "q": "Event-driven hedge fund strategies are most likely.", "opts": ["long biased.", "based on 'top-down' analysis.", "exploiting short-term pricing discrepancies between two related securities."], "ans": "A", "expl": "A. Correct because event-driven strategies tend to be long biased, with merger arbitrage having\nthe least bias.\nB. Incorrect because event-driven strategies seek to profit from defined catalyst events, typically\ninvolving changes in corporate structure, such as an acquisition or restructuring. They are\nconsidered to be based on bottom-up security-specific analysis, as opposed to top-down\nanalysis.\nC. Incorrect because event-driven strategies seek to profit from defined catalyst events, typically\ninvolving changes in corporate structure, such as an acquisition or restructuring. It is relative\nvalue funds that seek to profit from a pricing discrepancy between related securities based on\nan unusual short-term relationship.\nAlternative Investments: explain investment features of hedge funds and contrast them with\nother asset classes", "qhtml": null}, {"n": 22, "q": "Which of the following are best categorized as social infrastructure assets?", "opts": ["Airports", "Correctional facilities", "Telecommunication towers"], "ans": "B", "expl": "A. Incorrect because infrastructure investments are frequently categorized on the basis of the\nunderlying assets. The broadest categorization organizes investments into economic and social\ninfrastructure assets. Economic infrastructure assets support economic activity and include\nthree broad types of assets: transportation assets, information and communication technology\n(ICT) assets, and utility and energy assets. Transportation assets include roads, bridges, tunnels,\nairports, seaports, and heavy and light/urban railway systems.\nB. Correct because infrastructure investments are frequently categorized on the basis of the\nunderlying assets The broadest categorization organizes investments into economic and social\ninfrastructure assets.... Social Infrastructure assets are directed toward human activities and\ninclude such assets as educational, health care, social housing, and Correct ional facilities, with\nthe focus on providing, operating, and maintaining the asset infrastructure.\nC. Incorrect because infrastructure investments are frequently categorized on the basis of the\nunderlying assets. The broadest categorization organizes investments into economic and social\ninfrastructure assets. Economic infrastructure assets support economic activity and include\nthree broad types of assets: transportation assets, information and communication technology\n(ICT) assets, and utility and energy assets.... ICT assets include infrastructure that stores,\nbroadcasts, and transmits information or data, such as telecommunication towers and data\ncenters.\nAlternative Investments: explain features and characteristics of infrastructure", "qhtml": null}, {"n": 23, "q": "Which of the following statements is most accurate? Alternative investments:", "opts": ["tend to be more efficiently priced than traditional investments.", "fall outside of the definition of long-only positions in stocks, bonds, and cash.", "have relatively high correlation of returns with those of traditional investments."], "ans": "B", "expl": "A. Incorrect because alternative assets, by their very nature, tend to be less efficiently priced\nthan traditional marketable securities, providing an opportunity to exploit market inefficiencies\nthrough active management.\nB. Correct because investing in alternative assets can require handling illiquidity, transacting on\nprivate markets, operating sophisticated investment strategies, or risk-return profiles that are\nvery different from those of traditional long-only investments.\nC. Incorrect because alternative investments often have Relatively low correlation of returns\nwith those of traditional investments.\nAlternative Investments: describe features and categories of alternative investments", "qhtml": null}, {"n": 24, "q": "An analyst gathers the following information about a hedge fund:\n• $200 million in assets under management at the beginning of year\n• a 2% management fee based on year-end assets under management\n• a 20% incentive fee calculated net of the management fee\nQ. If the fund's gross return is 25% during the year, the total fees earned by the fund manager\nare:", "opts": ["$11 million.", "$14 million.", "$15 million."], "ans": "B", "expl": "A. Incorrect because it is the amount if the sum of the incentive and management fees based on\nthe dollar returns for the year ($250 million less $200 million). That is, the sum of the\nmanagement fee of $1 million ($50 million times 0.02) and the incentive fee of $10 million ($50\nmillion times 0.20), which is $11 million.\nB. Correct because it calculates the incentive fee net of the management fee. That is, the total\nfee is the sum of the management fee of $5 million ($250 million AUM times 0.02) and the\nincentive fee of $9 million ($250 million less $200 million less the $5 million incentive times\n0.20), which is $14 million.\nC. Incorrect because it is the amount if the incentive and management fees are calculated\nindependently (rather than if the incentive fee is calculated net of the management fee). That is,\nthe sum of the management fee of $5 million ($250 million AUM times 0.02) and the incentive\nfee of $10 million ($250 million less $200 million for at profit of $50 million times 0.20), which is\n$15 million.\nAlternative Investments: calculate and interpret alternative investment returns both before and\nafter fees", "qhtml": null}, {"n": 25, "q": "Management fees are most likely based on assets under management for:", "opts": ["hedge funds only.", "private equity funds only.", "both hedge funds and private equity funds."], "ans": "A", "expl": "A. Correct because funds are generally structured with a management fee typically ranging from\n1% to 2% of assets under management (e.g. for hedge funds) or committed capital (e.g. private\nequity funds), which is how much money in total that LP's have committed to the fund's future\ninvestments.\nB. Incorrect because funds are generally structured with a management fee typically ranging\nfrom 1% to 2% of assets under management (e.g. for hedge funds) or committed capital (e.g.\nprivate equity funds), which is how much money in total that LP's have committed to the fund's\nfuture investments.\nC. Incorrect because funds are generally structured with a management fee typically ranging\nfrom 1% to 2% of assets under management (e.g. for hedge funds) or committed capital (e.g.\nprivate equity funds), which is how much money in total that LP's have committed to the fund's\nfuture investments.\nAlternative Investments: describe investment ownership and compensation structures\ncommonly used in alternative investments", "qhtml": null}, {"n": 26, "q": "A leveraged private investment vehicle that employs both long and short positions is most\nlikely a:", "opts": ["hedge fund.", "private equity fund.", "venture capital fund."], "ans": "A", "expl": "A. Correct because hedge funds are private investment vehicles that manage portfolios of\nsecurities and/or derivative positions using a variety of strategies. Although hedge funds may be\ninvested entirely in traditional assets, these vehicles are considered alternative because of their\nprivate nature. Hedge funds typically have more leeway to pursue investments and strategies\noffering the potential for higher returns, whether absolute or compared with a specific market\nbenchmark, but these strategies may increase the risk of investment loss. They may involve long\nand short positions and may be highly leveraged. because private equity funds generally invest\nin companies, whether startups or established firms, that listed on a public exchange, or they\ninvest in public companies with the intent to take them private.\nB. Incorrect\nC. are not Incorrect because venture capital typically involves investing in or providing financing\nto startup or early-stage companies with high growth potential, represent a small portion of the\nprivate equity market.\nAlternative Investments: describe features and categories of alternative investments", "qhtml": null}, {"n": 27, "q": "A feature that protects hedge fund clients from paying twice for the same performance is\nmost likely a:", "opts": ["discount.", "hurdle rate.", "high-water mark"], "ans": "C", "expl": "A. Incorrect because hedge fund managers may discount their fees for larger investors or for\nplacement agents who introduced these investors. However, a rebate does not, in isolation,\nprotect clients from paying twice for the same performance.\nB. Incorrect because the partnership agreement usually specifies that the performance fee is\nearned only after the fund achieves a return known as a hurdle rate. The hurdle rate is a\nminimum rate of return, typically 8%, that the GP must exceed in order to earn the performance\nfee GPs typically receive 20% of the total profit of the private equity fund net of any hard hurdle\nrate, in which case the GP earns fees on annual returns in excess of the hurdle rate, or net of the\nsoft hurdle rate, in which case the fee is calculated on the entire annual gross return as long as\nthe set hurdle is exceeded.\nC. Correct because in hedge funds, fee calculations also take into account a high-water mark,\nwhich reflects the highest value used to calculate an incentive fee. A high-water mark is the\nhighest value of the fund investment ever achieved at a performance fee crystallization date,\nnet of fees, by the individual LP. A high-water mark clause states that a hedge fund manager\nmust recuperate declines in value from the high-water mark before performance fees can be\ncharged on newly generated profits. The use of high-water marks protects clients from paying\ntwice for the same performance.\nAlternative Investments: describe investment ownership and compensation structures\ncommonly used in alternative investments", "qhtml": null}, {"n": 28, "q": "A joint venture is an alternative investment structure that is most likely used for:", "opts": ["infrastructure investment.", "private equity investment.", "real estate direct investment"], "ans": "C", "expl": "A. Incorrect because for example, infrastructure investors frequently enter into public-private\npartnerships (PPP). which are agreements between the public sector and the private sector to\nfinance, build, and operate public Infrastructure, such as hospitals and toll roads.\nB. Incorrect because many alternative investments, such as hedge and private equity funds, use\na partnership structure with a general partner that manages the business and limited partners\n(investors) who own fractional Interests in the partnership. Correct because in real estate fund\ninvesting, investors may be classified as unitholders, and joint ventures are a partnership\nstructure common in real estate direct investing. Alternative Investments describe investment\nownership and compensation structures commonly used in alternative investments\nC. Correct because in real estate fund investing, investors may be classified as unitholders, and\njoint ventures are a partnership structure common in real estate\nAlternative Investments: describe investment ownership and direct investing. compensation\nstructures commonly used in alternative investments", "qhtml": null}, {"n": 29, "q": "Regarding distribution methods in alternative investments, which of the following is most\nadvantageous to the limited partners? A(n):", "opts": ["American waterfall.", "deal-by-deal waterfall.", "whole-of-fund waterfall."], "ans": "C", "expl": "A. Incorrect because there are two types of waterfalls: deal-by-deal (American) waterfalls and\nwhole-of-fund (European) waterfalls. Deal-by-deal waterfalls are more advantageous to the GP\nbecause performance fees are collected on a per-deat basis, allowing the GP to get paid before\nLPs receive both their initial investment and their preferred rate of return ( e, the hurdle rate)\non the entire fund\nB. Incorrect because there are two types of waterfalls deal-by-deal (American) waterfalls and\nwhere-of-fond (European) waterfalls. Deal-by-deal waterfalls are more advantageous to the GP\nbecause performance fees are collected on a per-deal basis, allowing the GP to get paid before\nLPs receive both their initial investment and their preferred rate ef return (ie, the hurdle rate)\non the entire fund\nC. Correct because in whole-of-fuhu (European) waterfalls, all distributions go to the LPs as\ndeals are exited and the GP does not participate in any profits until the LPs receive their initial\ninvestment and the hurdle rate has been met. In contrast to deal-by-deal (American) waterfalls,\nwhole-of-fund waterfalls occur at the aggregate fund level and are more advantageous to the\nLPS.\nAlternative Investments: describe investment ownership and compensation structures\ncommonly used in alternative investments", "qhtml": null}, {"n": 30, "q": "Which of the following hedge fund mechanisms is most likely used to impose a temporary\nrestriction on redemptions if needed?", "opts": ["Gate", "Notice period", "Lockup period"], "ans": "A", "expl": "A. Correct because in addition to lockup periods, funds sometimes impose a gate, which limits\nor restricts redemptions for a period of time.\nB. Incorrect because notice periods provide an opportunity for the hedge fund manager to\nliquidate a position in an orderly fashion without magnifying the losses.\nC. Incorrect because lockup periods-time periods when investors cannot withdraw their capital-\nprovide the hedge fund manager the required time to implement and potentially realize a\nstrategy's expected results. If the hedge fund receives a drawdown request shortly after a new\ninvestment, the lockup period forces the investors who made the request to stay in the fund for\na period of time rather than be allowed to immediately withdraw. Thus, a lockup period\nimposes restrictions on redemptions from the start of a new investment in the fund, and not\nlater on, e.g. some time after the new investment.\nAlternative Investments: describe the performance appraisal of alternative investments", "qhtml": null}, {"n": 31, "q": "Which of the following infrastructure investments most likely have the highest risk?", "opts": ["Brownfield investments with the majority of their return from current yield.", "Brownfield investments with the majority of their return from capital appreciation.", "Greenfield investments with the majority of their return from capital appreciation."], "ans": "C", "expl": "A. Incorrect because infrastructure funds with a lower-risk profile invest in Brownfield assets\nwith mitigated risks and with high weighting to current yield. Investing in existing infrastructure\nassets may be referred to as Incorrect because infrastructure funds with a medium-risk profile\ninvest in mostly brownfield assets (with some\nB. Incorrect because infrastructure funds with a medium-risk profile invest in mostly brownfield\nassets (with some capital expenditure requirements) and with a mix of yield and capital\nappreciation. Investing in existing infrastructure assets may be referred to as brownfield\ninvestment. Even if a brownfield investment had the majority of its return derived from capital\nappreciation, it would still be less risky than a greenfield investment. Brownfield investments\nare mid-stage or late-stage investments, still delivering prospects for return through capital gain\n& yield (albeit generally at relatively lower level than early stage investments).\nC. Correct because infrastructure funds with a higher-risk profile invest in Greenfield projects\nwithout guarantees of demand upon completion and with high weighting to capital\nappreciation. Investing in infrastructure assets that are to be constructed is generally referred to\nas greenfield investment. Greenfield investments are early-stage Investments with a higher-risk\nprofile.\nAlternative Investments: explain the investment characteristics of infrastructure investments", "qhtml": null}, {"n": 32, "q": "Which of the following methods of investing in alternative investments requires the least\namount of investment expertise?", "opts": ["Co-investing", "Fund investing", "Direct investing"], "ans": "B", "expl": "A. Incorrect because one of the advantages of fund investing is that it provides access to\nalternative investments without possessing a high degree of investment expertise. On the other\nhand, co-investing requires more active involvement compared with fund investing, which can\nbe challenging if resources and due diligence experience are limited. Co-investing requires more\nactive involvement from the investor, who must evaluate both investment opportunities and the\nfund manager, which demands more resources, concentration, and expertise.\nB. Correct because one of the advantages of fund investing is that it provides access to\nalternative investments without possessing a high degree of investment expertise.\nC. Incorrect because one of the advantages of fund investing is that it provides access to\nalternative investments without possessing a high degree of investment expertise, whereas\ndirect investing requires more investment expertise and a higher level of financial sophistication\ncompared with fund investing and co-investing.\nAlternative Investments: compare direct investment, co-investment, and fund investment\nmethods for alternative investments", "qhtml": null}, {"n": 33, "q": "The benefits of adding investments in infrastructure assets to a portfolio most likely\ninclude:", "opts": ["inflation protection only.", "low correlation with existing portfolio assets only.", "both inflation protection and low correlation with existing portfolio assets."], "ans": "C", "expl": "A. Incorrect because investing in infrastructure may add an income stream, increase portfolio\ndiversification by adding an asset class with typically low correlation with existing investments,\nand offer some protection against inflation. Low exposure to short-term GDP growth issues may\nalso be a factor.\nB. Incorrect because investing in infrastructure may add an income stream, increase portfolio\ndiversification by adding an asset class with typically low correlation with existing investments,\nand offer some protection against inflation. Low exposure to short-term GDP growth issues may\nalso be a factor.\nC. Correct because investing in infrastructure may add an income stream, increase portfolio\ndiversification by adding an asset class with typically low correlation with existing investments,\nand offer some protection against inflation. Low exposure to short-term GDP growth issues may\nalso be a factor.\nAlternative Investments: explain the investment characteristics of infrastructure investments", "qhtml": null}, {"n": 34, "q": "In co-investing, the investor invests in alternative assets indirectly through a fund but also\nhas the:", "opts": ["right to invest directly in the same assets alongside the fund.", "obligation to invest directly in the same assets alongside the fund.", "right to invest in the general partner's fund management company."], "ans": "A", "expl": "A. Correct because in co-investing, the investor invests in assets indirectly through the fund but\nalso possesses rights (known as co-investment rights) to invest directly in the same assets.\nThrough co-investing, an investor is able to make an investment alongside a fund when the fund\nidentifies deals; the investor is not limited to participating in the deal solely by investing in the\nfund.\nB. Incorrect because in co-investing, the investor invests in assets indirectly through the fund\nbut also possesses rights (known as co-investment rights) to invest directly in the same assets.\nHowever, there is no obligation to invest\nC. Incorrect because in co-investing, the investor invests in assets indirectly through the fund\nbut also possesses rights (known as co-investment rights) to invest directly in the same assets,\nnot in the general partner's fund management company.\nAlternative Investments: compare direct investment, co-investment, and fund investment\nmethods for alternative investments", "qhtml": null}, {"n": 35, "q": "A disadvantage of direct real estate investing is:", "opts": ["a lack of control.", "unfavorable tax rules.", "the time required to manage the property."], "ans": "C", "expl": "A. Incorrect because this is a benefit of direct investing. There are distinct benefits to owning\nreal estate directly. Control: Only the owner decides when to buy or sell, when and how much\nto spend on capital projects (subject to lease terms and regulatory requirements), whom to\nselect as tenants based on credit quality preference and tenant mix, and what types of lease\nterms to offer.\nB. Incorrect because this is a benefit of direct investing. Tax benefits: Property investors in many\ndeveloped markets can use non-cash property depreciation expenses and interest expense, with\nsome limitations, to reduce taxable income and lower their income tax bills.\nC. Correct because major disadvantages to investing directly [in real estate] include extensive\ntime required to manage the property. The owner may choose to handle all aspects of investing\nin and operating the property. including property selection, asset management, property\nmanagement, leasing, and administration.\nAlternative Investments: explain features and characteristics of real estate", "qhtml": null}, {"n": 36, "q": "Which of the following statements about private debt is most accurate? Mezzanine debt:\nstructure.", "opts": ["is subordinated to equity in a borrower's capital", "is less risky than senior secured debt issued by the same company.", "may include additional features such as warrants to provide equity participation to lenders."], "ans": "C", "expl": "A. Incorrect because in private debt, mezzanine debt refers to private credit that is subordinated\nto senior secured debt but is senior to equity in the borrower's capital structure.\nB. Incorrect because mezzanine debt is more risky, not less, than senior secured debt. Because\nof its typically Junior ranking and the fact that it is usually unsecured, mezzanine debt is riskier\nthan senior secured debt; to compensate investors for this heightened risk profile, investors\ncommonly demand higher interest rates and may require options for equity participation.\nC. Correct because mezzanine debt often comes with additional features, such as warrants or\nconversion rights, which provide equity participation to lenders/investors, meaning they have\nthe option of converting their debt into equity or purchasing the equity of the underlying\nborrower under certain circumstances.\nAlternative Investments: explain features of private debt and its investment characteristics", "qhtml": null}, {"n": 37, "q": "Which of the following statements about private equity performance evaluation is most\naccurate?", "opts": ["Private equity fund management fees are based on capital called.", "Cash flows are frequently described in terms of the J-curve effect.", "Managers have no discretion on the timing of the distribution of proceeds."], "ans": "B", "expl": "A. Incorrect because private equity includes a substantive initial capital commitment promise,\nfollowed by high initial fee drag (calculated on total committed capital, not the capital actually\ncalled), followed by the identification longer-term growth or turnaround opportunities, and an\neventual positive expected return when the staggered returns of the fund are realized. generally\ninvolve an initial capital commitment, but actual capital periods of time. Private of\nB. Correct because private equity investments flows often lag that commitment because capital\n'calls' are staggered over substantive equity returns are frequently described in terms of the J-\ncurve effect.\nC. Incorrect because in an independent, fixed-life private equity fund, the decisions to raise\nmoney, take money in the form of capital calls, and distribute proceeds are all at the discretion\nof the private equity manager. Timing of cash flows is an important part of the investment\ndecision process. The private equity manager should thus be rewarded or penalized for the\nresults of those timing decisions, and the calculation of an IRR is key for doing so.\nAlternative Investments: describe the performance appraisal of alternative investments", "qhtml": null}, {"n": 38, "q": "Which of the following is most likely a primary exit strategy for a company held by a\nprivate equity fund's portfolio?", "opts": ["IPO", "Management buy-in", "Management buyout"], "ans": "A", "expl": "A. Correct because key private equity investment strategies include leveraged buyouts (e.g.,\nMBOS and MBIS) and venture capital. Primary exit strategies include trade sale, IPO, and\nrecapitalization.\nB. Incorrect because key private equity investment strategies include leveraged buyouts (e.g.,\nMBOS and MBIS) and venture capital. Primary exit strategies include trade sale, IPO, and\nrecapitalization.\nC. Incorrect because key private equity investment strategies include leveraged buyouts (e.g.,\nMBOS and MBIS) and venture capital. Primary exit strategies include trade sale, IPO, and\nrecapitalization.\nAlternative Investments: explain features of private equity and its investment characteristics", "qhtml": null}, {"n": 39, "q": "A hedge fund that seeks to profit from a view on overall market direction as influenced by\neconomic trends best describes a:", "opts": ["macro hedge fund.", "multi-strategy hedge fund.", "market-neutral hedge fund."], "ans": "A", "expl": "A. Correct because macro hedge funds use long and short positions to profit from a view on the\noverall direction of the market as it is influenced by major economic trends and events.\nB. Incorrect because a multi-strategy hedge fund is an example of a relative value strategy,\nwhich seeks to profit from a pricing discrepancy, an unusual short-term relationship, between\nrelated securities. The expectation is that the pricing discrepancy will be resolved over time.\nStrategies of a multi-strategy hedge fund trade relative value within and across asset classes or\ninstruments. Rather than focusing on one type of trade (e.g.. convertible arbitrage), a single\nbasis for trade (e.g., volatility), or a particular asset class (e.g., fixed income), this strategy\ninstead looks for investment opportunities wherever they might exist, often with different pods\nof managers approaches.\nC. Incorrect because market-neutral hedge funds use quantitative (technical) and fundamental\nanalysis to identify under- and over-valued equity securities. The hedge fund takes long\npositions in securities it has identified as undervalued and short positions in securities it has\nidentified as overvalued. The hedge fund tries to maintain a net position that is neutral with\nrespect to market risk and other risk factors (size, industry, momentum, value, etc.). Ideally, the\nportfolio has an overall beta of approximately zero. The intent is to profit from the movements\nof individual securities while remaining largely indifferent to market risk.\nAlternative Investments: explain investment features of hedge funds and contrast them with\nother asset classes", "qhtml": null}, {"n": 40, "q": "Which of the following is best categorized as core real estate?", "opts": ["A high-quality office building in a rural area", "A low-quality office building in a major urban center", "A high-quality office building in a major urban center"], "ans": "C", "expl": "A. Incorrect because core real estate is characterized by well-leased, high-quality institutional\nreal estate in the best markets.\nB. Incorrect because core real estate is characterized by well-leased, high-quality institutional\nreal estate in the best markets.\nC. Correct because open-end funds generally offer exposure to core real estate, characterized by\nwell-leased, high- quality institutional real estate in the best markets. Investors expect core real\nestate to deliver stable returns, primarily from income.\nAlternative Investments: explain features and characteristics of real estate", "qhtml": null}, {"n": 41, "q": "Compared with fund investing in alternative investments, the co-investing method most\nlikely has:", "opts": ["lower management fees.", "the same level of management fees.", "higher management fees."], "ans": "A", "expl": "A. Correct because one of the advantages of co-investing is that it has reduced management\nfees. In co-investing. investors co-invest an additional amount into that same investment often\nwithout paying management fees on the capital they used for the direct investment (a co-\ninvestment, in this case).\nB. Incorrect because one of the advantages of co-investing is that it has reduced management\nfees compared with the fund investing method.\nC. Incorrect because one of the advantages of co-investing is that it has reduced management\nfees compared with the fund investing method.\nAlternative Investments: compare direct investment, co-investment, and fund investment\nmethods for alternative investments", "qhtml": null}, {"n": 42, "q": "Which of the following is best described as a relative value hedge fund strategy?", "opts": ["Short biased", "Special situations", "Convertible bond arbitrage"], "ans": "C", "expl": "A. Incorrect because equity hedge strategies can be considered the original hedge fund\ncategory. They focus on public equity markets and take long and short positions in equity and\nequity derivative securities. Examples of equity hedge strategies include the following Short\nbiased. These strategies use quantitative (technical) and fundamental analysis to focus the bulk\nof their portfolio on shorting overvalued equity securities. (against limited or no long-side\nexposures). Managers are often more forensic in their fundamental analysis and sometimes are\nactivist in trying to expose previously unrecognized accounting or business flaws and improve\ntheir portfolio's chance for profits.\nB. Incorrect because event-driven strategies seek to profit from defined catalyst events, typically\ninvolving changes in corporate structure, such as an acquisition or restructuring Further\nsubdivisions of this category by HFR include the following. Special situations. These strategies\nfocus on opportunities to buy equity of companies engaged in restructuring activities other than\nmergers, acquisitions or bankruptcy. These activities include security issuance or repurchase,\nspecial capital distributions, rescue finance, and asset sales/spin-offs.\nC. Correct because relative value funds seek to profit from a pricing discrepancy between\nrelated securities based on an unusual short-term relationship. The expectation is that the\ndiscrepancy will be resolved over time. Examples of relative value strategies include the\nfollowing: Convertible bond arbitrage. This conceptually market- neutral investment strategy\nseeks to exploit a perceived mispricing between a convertible bond and its component parts-\nnamely, the underlying bond and the embedded stock option-relative to the pricing of a\nreference equity into which the bond may someday convert. The strategy typically involves\nbuying convertible debt securities and simultaneously selling a certain amount of the same\nissuer's common stock. As this type of strategy seeks to profit from a pricing discrepancy (an\nunusual short-term relationship) between related securities, it is best described as a relative\nvalue strategy.\nAlternative Investments: explain investment features of hedge funds and contrast them with\nother asset classes", "qhtml": null}, {"n": 43, "q": "Which of the following statements about real estate assets is most accurate?", "opts": ["Real estate assets are heterogeneous", "Commercial property represents the majority of real estate assets by value", "Private real estate has historically had high correlations with other asset classes"], "ans": "A", "expl": "A. Correct because real estate property has some unique features, including heterogeneity (no\ntwo properties are identical) and fixed location.\nB. Incorrect because real estate includes two major sectors: residential and commercial.\nResidential [not commercial] real estate is the largest sector, totaling 75% of the global market.\nC. Incorrect because the key reasons for investing in real estate include the following potential\nbenefits:... Historically low [not high] correlations with other asset classes.\nAlternative Investments: explain features and characteristics of real estate", "qhtml": null}, {"n": 44, "q": "Which of the following hedge funds most likely have a beta close to zero?", "opts": ["Short-biased funds", "Market-neutral funds", "Fundamental long/short growth funds"], "ans": "B", "expl": "A. Incorrect because the beta in these types of funds is most often negative given the short bias.\nThese strategies use quantitative (technical) and fundamental analysis to focus the bulk of their\nportfolio on shorting overvalued equity securities (against limited or no long-side exposures).\nB. Correct because the hedge fund takes long positions in securities identified as undervalued\nand short positions in overvalued securities. The hedge fund tries to maintain a net position\nthat is neutral with respect to market risk and other risk factors (size, industry, momentum,\nvalue, etc.). Ideally, the portfolio has an overall beta of approximately zero.\nC. Incorrect because, although these funds do hedge long positions with short positions, market\nneutrality is not necessarily a goal. The hedge fund takes long positions in these companies\nwhile shorting companies with business models being disintermediated or under downward\npressure-where continued revenue growth is deemed unlikely. Portfolios tend to end up long\nbiased.\nAlternative Investments: explain investment features of hedge funds and contrast them with\nother asset classes", "qhtml": null}, {"n": 45, "q": "A hedge fund has the following characteristics:\n• Assets under management, beginning of year: $100 million\n• Assets under management, end of year: $120 million\n• Management fee: 1% of year-end assets under management\n• Performance fee: 15% of the annual return above a 3% hurdle rate\nIf the performance fee is calculated net of the management fee and there were no capital\ncontributions or withdrawals, the net annual return to the investor is closest to:", "opts": ["16.3%.", "16.4%.", "16.5%. 46. • Assets under management $1.5 billion, beginning of year • Annual return 20% • Management fee 2%, based on year-end valuation • Incentive fee 20%, calculated net of management fees If the incentive fee is calculated on returns in excess of a 6% hurdle rate, total annual fees earned by the fund manager are closest to:", "$34,800,000.", "$70,800,000.", "$78,000,000."], "ans": "B", "expl": "A. Incorrect because the performance fee is not calculated net of the management fee:\nManagement fee = $100 million × 120% × 1% = $1.200 million. Performance fee = [($100 million\n× 20%) - ($100 million × 3%)] × 15% = $2.550 million. Total fee = $1.200 million + $2.550 million\n= $3.750 million. Investor return = ($20-$3.750)/$100 = 16.250% 16.3%.\nB. Correct because the hurdle rate is a minimum rate of return, typically 8%, that the GP must\nexceed in order to earn the performance fee. GPs typically receive 20% of the total profit of the\nprivate equity fund net of any hard hurdle rate, in which case the GP earns fees on annual\nreturns in excess of the hurdle rate, or net of the soft hurdle rate, in which case the fee is\ncalculated on the entire annual gross return as long as the set hurdle is exceeded\nManagement fee = $100 million × 120% × 1% = $1.200 million. Performance fee = [($100 million\n× 20%) - ($100 million × 3%) - $1.200 million)] × 15% = $2.370 million. Total fee = $1.200 million\n+ $2.370 million = $3.570 million. Investor return = ($20-$3.570)/$100 = 16.430% 16.4%.\nC. Incorrect because the hurdle rate is deducted from the performance fee rate rather than the\nrate of return: Management fee = $100 million × 120% × 1% = $1.200 million. Performance fee =\n[($100 million × 20%) - $1.200 million)] x (15%-3%) = $2.256 million. Total fee = $1.200 million +\n$2.256 million = $3.456 million. Investor return = ($20-$3.456) / $100 = 16.544% ~~ 16.5%.\nAlternative Investments: calculate and interpret alternative investment returns both before and\nafter fees", "qhtml": null}, {"n": 47, "q": "What is the most likely effect of a redemption fee on the returns of the remaining\ninvestors in a hedge fund? A redemption fee:", "opts": ["reduces investor returns.", "has no effect on investor returns.", "enhances investor returns."], "ans": "C", "expl": "A. Incorrect because the fee increases [not decreases] the value of the hedge fund by the fee\namount. A redemption fee may be charged, typically payable to the fund itself (rather than the\nmanager). This is to protect remaining investors in the fund, particularly in circumstances where\nthe redemption takes place during the lockup period.\nB. Incorrect because the fee increases the value of the hedge fund by the fee amount. A\nredemption fee may be charged, typically payable to the fund itself (rather than the manager).\nThis is to protect remaining investors in the fund, particularly in circumstances where the\nredemption takes place during the lockup period.\nC. Correct because the fee increases the value of the hedge fund by the fee amount. A\nredemption fee may be charged, typically payable to the fund itself (rather than the manager).\nThis is to protect remaining investors in fund, particularly the in circumstances where the\nredemption takes place during the lockup period. This characteristic is called a soft lockup, and\nit offers a path (albeit an expensive one) to redeem early.\nAlternative Investments: explain investment features of hedge funds and contrast them with\nother asset classes", "qhtml": null}, {"n": 48, "q": "If a commodity's storage cost is equal to its convenience yield, its futures prices will be\ngreater than its spot price if the risk-free rate is:", "opts": ["negative.", "zero.", "positive."], "ans": "C", "expl": "A. Incorrect because the futures price can be formalized in the following form: Futures price\nSpot price(1+r) + Storage costs - Convenience yield, where is the period's short-term risk-free\ninterest rate. Thus, if Storage costs = Convenience yield, then Futures price Spot price (1+r). If r\n< 0, then Futures price < Spot price, not Futures price > Spot price.\nB. Incorrect because the futures price can be formalized in the following form: Futures price\nSpot price(1 + r) + Storage costs - Convenience yield, where r is the period's short-term risk-free\ninterest rate. Thus, if Storage costs = Convenience yield, then Futures price Spot price(1+r). If r =\n0, then Futures price Spot price, not Futures price > Spot price.\nC. Correct because the futures price can be formalized in the following form: Futures price Spot\nprice(1 + r) + Storage costs - Convenience yield, where is the period's short-term risk-free\ninterest rate. Thus, if Storage costs = Convenience yield, then Futures price Spot price(1+r), from\nwhich Futures price > Spot price if r > 0.\nAlternative Investments: describe features of commodities and their investment characteristics", "qhtml": null}, {"n": 49, "q": "An analyst gathers the following information about a hedge fund:\nBeginning-of-year assets under management (AUM) €200 million Management fee, based on\nend-of-year AUM before fees 1.5% Incentive fee 20% Hard hurdle rate 5% Annual return\nbefore fees 15%.\nIf the incentive fee is based on returns net of management fees, total fees for the year are\nclosest to", "opts": ["€6.8 million.", "€7.5 million.", "€8.8 million."], "ans": "A", "expl": "A. Correct because the partnership agreement usually specifies that the performance fee is\nearned only after the fund achieves a return known as a hurdle rate. The hurdle rate is a\nminimum rate of return, typically 8%, that the GP must exceed in order to earn the performance\nfee. GPs typically receive 20% of the total profit of the private equity fund net of any hard\nhurdle rate, in which case the GP earns fees on annual returns in excess of the hurdle rate, or\nnet of the soft hurdle rate, in which case the fee is calculated on the entire annual gross return\nas long as the set hurdle is exceeded.\nB. Incorrect because it calculates incentive fees gross of management fees. That is: AUM at year-\nend = €200 million x 115% = €230 million. Management fee = €230 million x 1.5% = €3.45\nmillion. Incentive fee = (€230 million €200 million - €10 million) x 20% = €20 million x 20% =\n€4.00 million, where hard hurdle = €200 million x 5% = €10 million. Thus, total fees = €3.45\nmillion + €4.00 million = €7.45 million €7.5 million.\nC. Incorrect because it excludes the hard hurdle rate in the calculation of incentive fees. That is:\nAUM at year-end = €200 million x 115% = €230 million. Management fee = €230 million x 1.5% =\n€3.45 million. Incentive fee = (€230 million - €200 million - €3.45 million) x 20% = €26.55 million\nx 20% = €5.31 million. Thus, total fees = €3.45 million + €5.31 million = €8.76 million €8.8\nmillion.\nAlternative Investments: calculate and interpret alternative investment returns both before and\nafter fees", "qhtml": null}, {"n": 50, "q": "In the private debt market, venture debt:", "opts": ["entails buying the debt of mature companies in financial difficulty.", "provides capital to early-stage companies that may be generating little cash flow.", "entails buying the debt of mature companies in financial difficulty and provides capital to early-stage companies that may be generating little cash flow."], "ans": "B", "expl": "A. Incorrect because this refers to distressed debt. Involvement in distressed debt typically\nentails buying the debt of\nB. Correct because this is the definition of venture mature companies in financial difficulty.\ndebt. Venture debt is private debt funding that provides venture to start-up or early-stage\ncompanies that may be generating little or negative cash flow. capital backing because the first\npart of the answer is not correct, as indicated in the correct response, venture debt funding to\nstart-up or early-stage companies not mature companies.\nC. Incorrect because the first part of the answer is not correct, as indicated in the correct\nresponse, venture debt provides funding to start-up or early-stage companies not mature\ncompanies.\nAlternative Investments: explain features of private debt and its investment characteristics", "qhtml": null}, {"n": 51, "q": "Timberland investments offer:", "opts": ["an income stream only.", "the potential for capital gain only.", "both an income stream and the potential for capital gain."], "ans": "C", "expl": "A. Incorrect because timberland investment involves ownership of raw land and the harvesting\nof its trees for lumber, thus generating an income stream and the potential for capital gain.\nB. Incorrect because timberland investment involves ownership of raw land and the harvesting\nof its trees for lumber, thus generating an income stream and the potential for capital gain.\nC. Correct because timberland investment involves ownership of raw land and the harvesting of\nits trees for lumber, thus generating an income stream and the potential for capital gain.\nAlternative Investments: explain features of raw land, timberland, and farmland and their\ninvestment characteristics", "qhtml": null}, {"n": 52, "q": "Which of the following real estate investing strategies is most likely to focus on modest\nredevelopment or upgrades, the leasing of vacant space, and the repositioning of underlying\nproperties to earn a higher return?", "opts": ["Core-plus", "Value-add", "Opportunistic"], "ans": "B", "expl": "A. Incorrect because core-plus strategies will also accept slightly higher risks derived from non-\ncore markets and sectors or properties with slightly more leasing risk. Non-core properties\ninclude large sectors with different risk profiles, such as hotels and nursing homes. Assets in\nsecondary and tertiary markets and such niches as student housing, self-storage, and data\ncenters are also considered non-core.\nB. Correct because value-add investments may require modest redevelopment or upgrades, the\nleasing of vacant space, or repositioning the underlying properties to earn a higher return than\ncore properties.\nC. Incorrect because opportunistic investing accepts the much higher risks of development,\nmajor redevelopment, repurposing of assets, taking on large vacancies, and speculating on\nsignificant improvement in market conditions.\nAlternative Investments: explain features and characteristics of real estate", "qhtml": null}, {"n": 53, "q": "All else being equal, when a commodity futures market is in contango, the forward curve\nis most likely:", "opts": ["downward sloping.", "flat.", "upward sloping."], "ans": "C", "expl": "A. Incorrect because when the futures market is trading in backwardation, the futures prices are\nlower than the spot price, [and] the commodity forward curve is downward sloping. A market in\ncontango assumes futures prices are higher than the spot price.\nB. Incorrect because when futures prices are higher than the spot price, the commodity forward\ncurve is upward sloping, and the prices are referred to as being in contango. A flat forward\ncurve can't be associated with a market in contango because a flat curve implies that all future\nprices are equal to the spot price while a market in contango assumes futures prices are higher\nthan the spot price.\nC. Correct because when futures prices are higher than the spot price, the commodity forward\ncurve is upward sloping, and the prices are referred to as being in contango. Alternative\nInvestments describe features of commodities and their investment characteristics\nAlternative Investments: describe features of commodities and their investment characteristics", "qhtml": null}, {"n": 54, "q": "With respect to infrastructure investments, a take-or-pay arrangement is most likely used\nto mitigate:", "opts": ["demand risk.", "operational risk.", "construction risk."], "ans": "A", "expl": "A. Correct because take-or-pay arrangements, where payments are based upon the availability\nrather than the use of an asset, are used to mitigate demand/volume risk.\nB. Incorrect because take-or-pay arrangements, where payments are based upon the availability\nrather than the use of an asset, are used to mitigate demand/volume risk, not operational risk.\nC. Incorrect because take-or-pay arrangements, where payments are based upon the availability\nrather than the use asset, are used to mitigate demand/volume risk, not construction risk. of an\nAlternative Investments: explain the investment characteristics of infrastructure investments", "qhtml": null}, {"n": 55, "q": "Which of the following is most appropriately categorized as a traditional investment?", "opts": ["Gold", "Cash", "Real estate"], "ans": "B", "expl": "A. Incorrect because alternative investments include such assets as real estate and commodities\n(including gold), which are arguably two of the oldest types of investments.\nB. Correct because alternative investments' is a label for a disparate group of investments that\nare distinguished from long-only, publicly traded investments in stocks, bonds, and cash (often\nreferred to as traditional investments)\nC. Incorrect because alternative investments include such assets as real estate and\ncommodities, which are arguably two of the oldest types of investments.\nAlternative Investments: describe features and categories of alternative investments", "qhtml": null}, {"n": 56, "q": "Which of the following is most likely a characteristic of private real estate markets?", "opts": ["Transaction costs are high", "Private market indexes are investable", "It is easy for small investors to establish a diversified portfolio of wholly owned properties"], "ans": "A", "expl": "A. Correct because, for private real estate markets, transaction costs are high.\nB. Incorrect because private market indexes are not investable, and property typically requires\nprofessional operational management.\nC. Incorrect because it may be difficult for small investors to establish a diversified portfolio of\nwholly owned properties.\nAlternative Investments: explain features and characteristics of real estate", "qhtml": null}, {"n": 57, "q": "Alternative investments:", "opts": ["include tangible assets only.", "include intangible assets only.", "may include both tangible and intangible assets."], "ans": "C", "expl": "A. Incorrect because alternative Investments into three categories and several subcategories as\nfollows: 1. Private Capital 2. Real Assets 3. Hedge Funds. Other 'real asset\" investments may\ninclude tangible assets, such as fine wine, art, antique furniture and automobiles, stamps, coins,\nand other collectibles, and intangible assets, such as patents and litigation actions .\nB. Incorrect because alternative Investments into three categories and several subcategories as\nfollows: 1. Private Capital 2. Real Assets 3. Hedge Funds. Other \"real asset\" investments may\ninclude tangible assets, such as fine wine, art, antique furniture and automobiles, stamps, coins,\nand other collectibles, and intangible assets, such as patents and litigation actions.\nC. Correct because alternative Investments into three categories and several subcategories as\nfollows: 1. Private Capital 2. Real Assets 3. Hedge Funds. Other \"real asset\" investments may\ninclude tangible assets, such as fine wine, art, antique furniture and automobiles, stamps, coins,\nand other collectibles, and intangible assets, such as patents and litigation actions.\nAlternative Investments: describe features and categories of alternative investments", "qhtml": null}, {"n": 58, "q": "In alternative investments, a clawback provision represents the right of.", "opts": ["limited partners to reclaim performance losses.", "the general partner to reclaim part of limited partners' distributions.", "limited partners to reclaim part of the general partner's performance fee."], "ans": "C", "expl": "A. Incorrect because a clawback provision refers to reclaiming performance fees, not\nperformance losses themselves. If a general partner (GP) accrues an incentive fee on gains not\nyet fully realized and then subsequently gives back those gains, limited partner (LPs) may claw\nback prior incentive fee payments. A clawback provision reflects the right of LPs to reclaim part\nof the GP's performance fee.\nB. Incorrect because a clawback provision confers rights on the limited partners (LPs), not the\ngeneral partner (GP). A clawback provision reflects the right of LPs to reclaim part of the GP's\nperformance fee.\nC. Correct because if a general partner (GP) accrues an incentive fee on gains not yet fully\nrealized and then subsequently gives back those gains, a limited partner (LP) may claw back\nprior incentive fee payments. A clawback provision reflects the right of LPs to reclaim part of the\nGP's performance fee.\nAlternative Investments: describe investment ownership and compensation structures\ncommonly used in alternative investments", "qhtml": null}, {"n": 59, "q": "Which of the following is the most conservative", "opts": ["Using bid prices for long approach to valuing a hedge fund's underlying positions? positions and ask prices for short positions", "Using bid prices for short positions and ask prices for long positions", "Using the average of the bid and ask prices for both long and short positions"], "ans": "A", "expl": "A. Correct because, when market prices or quotes are used for valuation, funds may differ in\nwhich price or quote they use (bid price, ask price, average quote, or median quote). A more\nconservative and accurate approach is to use bid prices for long positions and ask prices for\nshort positions because these are more realistic prices at which the positions could be closed.\nHowever, some managers use a simplifying approach whereby they take the average of the bid\nand the ask, this approach is not as accurate and could be misleading.\nB. Incorrect because, when market prices or quotes are used for valuation, funds may differ in\nwhich price or quote they use (bid price, ask price, average quote, or median quote). A more\nconservative and accurate approach is to use bid prices for long positions and ask prices for\nshort positions because these are more realistic prices at which the positions could be closed.\nHowever, some managers use a simplifying approach whereby they take the average of the bid\nand the ask; this approach is not as accurate and could be misleading.\nC. Incorrect because, when market prices or quotes are used for valuation, funds may differ in\nwhich price or quote they use (bid price, ask price, average quote, or median quote). A more\nconservative and accurate approach is to use bid prices for long positions and ask prices for\nshort positions because these are more realistic prices at which the positions could be closed.\nHowever, some managers use a simplifying approach whereby they take the average of the bid\nand the ask; this approach is not as accurate and could be misleading.\nAlternative Investments: explain features of private debt and its investment characteristics", "qhtml": null}, {"n": 60, "q": "All else being equal, which of the following types of private debt is most likely to have the\nlowest level of risk?", "opts": ["Mezzanine debt", "Unitranche debt", "Infrastructure debt"], "ans": "C", "expl": "A. Incorrect because, private debt investments vary in risk and return, with senior private debt\nproviding a steadier yield and moderate risk and mezzanine private debt carrying higher growth\npotential, equity upside, and higher risk.\nB. Incorrect because, unitranche debt is a blend of secured and unsecured debt. The unitranche\nloan will usually be structured between senior and subordinated debt in priority ranking. As\nmezzanine debt refers to private credit subordinated to senior secured debt but senior to equity\nin the borrower's capital structure, mezzanine debt has more risk than unitranched debt.\nC. Correct because, as a junior form of subordinated debt, mezzanine private debt offers higher\ngrowth potential, equity upside, and higher risk, with the comparatively highest returns.\nInfrastructure debt is senior and poses the lowest risk, as compared to unitranche debt and\nmezzanine debt.\nAlternative Investments: explain features of private debt and its investment characteristics", "qhtml": null}, {"n": 61, "q": "An analyst gathers the following information about a hedge fund:\n• Beginning-of-year assets under management (AUM) $50 million\n• Annual return before fees 20%\n• Management fee (based on end-of-year AUM before fees) 2%\n• Incentive fee (based on return net of management fees) 20%\nAn investor's net return is:", "opts": ["13.60%.", "14.08%.", "14.40%."], "ans": "B", "expl": "A. Incorrect because it fails to adjust the incentive fee for the management fee: $60 million x 2%\n= $1.2 million management fee. ($60-$50) million x 20% = $2.0 million incentive fee. Total fees =\n$3.2 million. Investor return = ($60-$50-$3.2)/$50 million = 13.60%.\nB. Correct because: $60 million x 2% = $1.2 million management fee. ($60-$50-$1.2) million x\n20% = $1.76 million incentive fee. Total fees = $2.96 million. Investor return = ($60-$50-\n$2.96)/$50 million = 14.08%.\nC. Incorrect because it calculates the management fee based on beginning-of-year AUM as\nopposed to end-of-year AUM: $50 million x 2% = $1.0 million management fee. ($60-$50-$1)\nmillion x 20% = $1.8 million incentive fee. Total fees = $2.8 million. Investor return = ($60-$50-\n$2.8)/$50 million = 14.40%.\nAlternative Investments: calculate and interpret alternative investment returns both before and\nafter fees", "qhtml": null}];
+const CFG = {"title": "Alternative Investments", "subtitle": "Ngân hàng câu hỏi CFA chính thức — Level I", "minutes": 120, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("resumeNote").classList.remove("show");
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

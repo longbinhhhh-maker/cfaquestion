@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "According to CFA Institute Standards of Professional Conduct, which of the following\nstatements about the prohibition against plagiarism is most accurate? The prohibition\nagainst plagiarism applies to written materials:", "opts": ["and oral communications only.", "only.", "oral communications, and telecommunications."], "ans": "C", "expl": "The prohibition against plagiarism applies to all three areas.\n(Module 91.2, LOS 91: I(C))"}, {"n": 2, "q": "Which of the following is most likely permitted under Standard I(C), Misrepresentation?", "opts": ["Using excerpts from reports prepared by others without acknowledgement.", "Including data showing the current government bond yield curve in a report to a client without stating its source.", "Citing quotes attributed to \"investment experts\" without specific reference."], "ans": "B", "expl": "The government bond yield curve is factual information that is available from many\nrecognized financial or statistical reporting services.\n(Module 91.2, LOS 91: I(C))"}, {"n": 3, "q": "According to CFA Institute Standards of Professional Conduct, which of the following is least\nlikely a form of misrepresentation?", "opts": ["Attributing specific quotations to \"leading analysts\" and \"investment experts\" without specific reference.", "Using factual information published by recognized financial and statistical reporting services or similar sources without acknowledgment.", "Presenting statistical estimates of forecasts prepared by others with the source identified, but without qualifying statements or caveats that may have been used."], "ans": "B", "expl": "Standard I(C) provides that \"factual information published by recognized financial and\nstatistical reporting services or similar sources\" may be used without an acknowledgment.\n(Module 91.2, LOS 91: I(C))"}, {"n": 4, "q": "According to Standard I(E) Competence, a member or candidate who fails to acquire the\ncapabilities to complete role-specific tasks has violated the Standard by lacking:", "opts": ["abilities.", "knowledge.", "skills."], "ans": "C", "expl": "Standard I(E) Competence defines skills as \"capabilities to perform a role-specific act or\nfunction to complete specific tasks and achieve professional goals;\" defines knowledge as\n\"the body of information applied directly to the performance of a function and how\neffectively it is applied;\" and defines abilities as \"capabilities and attitudes that support\nbehaviors that result in observable outcomes.\"\n(Module 91.2, LOS 91: I(E))"}, {"n": 5, "q": "A CFA charterholder in a managerial position is in the process of hiring new analysts. If the\ncharterholder conducts background checks on the job applicants with respect to their\ncharacter, the charterholder has:", "opts": ["complied with Standard I(D) concerning professional misconduct.", "complied with Standard VII(A) concerning conduct of members and candidates in the CFA Program.", "violated the Code of Ethics by invading the applicants' privacy."], "ans": "A", "expl": "To avoid potential problems and comply with Standard I(D), employers are encouraged to\nconduct background checks on potential employees.\n(Module 91.2, LOS 91: I(D))"}, {"n": 6, "q": "An analyst belongs to a nationally recognized charitable organization, which requires dues\nfor membership. The analyst has worked out a deal under which he provides money\nmanagement advice in lieu of paying dues. While performing services for the organization,\nthe analyst discovers some useful computer programs that his predecessor developed and\nleft as the property of the organization. The analyst decides to use the computer programs\nin his consulting business. This action is:", "opts": ["a violation of Standard I(D) concerning misconduct.", "a violation of Standard III(B) concerning fair dealing.", "appropriate since the analyst is technically an employee of the organization."], "ans": "A", "expl": "Since the programs are the property of the organization, the analyst can only use them for\nthe organization. It does not matter whether the analyst is an employee or not. Personal\nuse of the programs without permission from the charitable organization is dishonest and\nprohibited.\n(Module 91.2, LOS 91: I(D))"}, {"n": 7, "q": "Sandra Bulow, CFA, is responsible for updating her employing firm's website to include\nchanges in analysis techniques and trading procedures. She is often very delinquent in\nmaking these changes, despite working extensive hours. She is aware clients are using the\nwebsite to make investment decisions, and has received complaints from the sales\ndepartment as the information on the website if often different from what is presented in\nsales meetings. Bulow is most likely:", "opts": ["in violation of Standard I(C) \"Misrepresentation.\"", "in violation of Standard III(B) \"Fair Dealing.\"", "not in violation of any Standard."], "ans": "A", "expl": "Bulow is most likely in violation of Standard I(C) \"Misrepresentation.\" The web site\ninformation is erroneous, and needs to be updated to match the firm's current practices.\n(Module 91.2, LOS 91: I(C))"}, {"n": 8, "q": "Jerry Brock, CFA, is a partner in a small investment advisory firm that caters to high net\nworth individuals. He has experienced a number of financial setbacks in his personal life\nover the past two years and has filed for bankruptcy protection. Brock does not inform his\nclients of this. Has Brock violated CFA Institute Standards of Professional Conduct?", "opts": ["Yes, because a member must conduct both personal and professional business in a manner that protects their reputation and integrity.", "Yes, because he must disclose the bankruptcy filing to his clients.", "No."], "ans": "C", "expl": "Declaring personal bankruptcy does not, by itself, reflect adversely on a member or\ncandidate's integrity or trustworthiness. Only if the circumstances of the bankruptcy\nincluded fraud or dishonesty on the part of the member would it violate Standard I(D)\nMisconduct. Standard VI(A) Avoid or Disclose Conflicts does not require members and\ncandidates to disclose personal matters unless they create the appearance of a conflict of\ninterest.\n(Module 91.2, LOS 91: I(D))"}, {"n": 9, "q": "Hillary Jones, CFA, sometimes promises clients that she will allocate more shares from\noversubscribed initial public offerings (IPOs) than she knows she will actually be able to\ndeliver. Her employer has reprimanded her in the past for similar behavior. Which of the\nfollowing statements is least accurate regarding Jones' behavior?", "opts": ["Her actions are a violation of the standard concerning misrepresentation, because she promised something she knew the firm could not deliver.", "Her actions are a violation of the Standards only if prosecution results in a felony conviction.", "Her actions are a violation of the standard concerning professional misconduct because she deceived her clients."], "ans": "B", "expl": "Jones violated Standard I(C) Misrepresentation by promising clients she would allocate\nmore shares than she could deliver. Her actions also violated Standard I(D) Misconduct\npertaining to acts of dishonesty, fraud, or deceit which reflects adversely on a member's\nprofessional reputation, integrity, or competence. She also violated the Code of Ethics\nwhich states that members and candidates must act with integrity, competence,\ndiligence, respect, and in an ethical manner with the public, clients, and prospective\nclients. The specific punishment for the actions is not relevant.\n(Module 91.2, LOS 91: I(D))"}, {"n": 10, "q": "Which of the following least likely violates the Standard concerning misconduct? Roland\nLawson, a financial analyst:", "opts": ["is arrested for participating in a nonviolent protest.", "drinks excessively during business meetings with clients and returns to work under the influence of alcohol.", "committed perjury in connection with a lawsuit against his firm."], "ans": "A", "expl": "Guidance for Standard I(D) Misconduct recognizes civil disobedience as an activity that is\nnot a violation. The focus of the Standard is on professional conduct, not personal\nconduct, unless the personal conduct involves dishonesty, fraud, or deceit.\n(Module 91.2, LOS 91: I(D))"}, {"n": 11, "q": "Based on CFA Institute Standards of Professional Conduct, which of the following statements\nis a violation of Standard I(C), Misrepresentation?", "opts": ["A broker says XYZ stock is very likely to double in value over the next six months. A young trainee bond trader tells a prospective client that she can assist the client in", "all the client's investment needs: equity, fixed income, and derivatives and based on her years of experience as an analyst in the business that an investment looks like it has lots of potential.", "An investment manager recommends to a prospective client an investment in GNMA bonds because they are guaranteed by the federal government."], "ans": "B", "expl": "CFA Institute members, CFA charterholders, and CFA candidates are prohibited from\nmisrepresenting their services or qualifications and inappropriate assurances about any\ninvestment or its return.\n(Module 91.2, LOS 91: I(C))"}, {"n": 12, "q": "Wes Smith, CFA, has been working toward the completion of a Master of Science in Finance.\nHe has passed all the necessary courses and written the necessary thesis. He still must\ndefend the thesis in one month. Smith's thesis advisor assures him that he will pass the\nthesis defense. Smith has new business cards printed with \"M.S. in Finance\" after his name.\nThis is a violation of:", "opts": ["none of the Standards if Smith does not make the cards public until after he defends his thesis and receives his degree.", "Standard I(C), Misrepresentation.", "Standard VII(B), Reference to CFA Institute, the CFA Designation, and the CFA Program."], "ans": "A", "expl": "If the cards were distributed today he would be in violation of Standard I(C),\nMisrepresentation. However, if Smith does not make the cards public until after he\nreceives the degree, there is no violation.\n(Module 91.2, LOS 91: I(C))"}, {"n": 13, "q": "All of the following violate Standard I(C), Misrepresentation, EXCEPT:", "opts": ["copying a proprietary computerized spreadsheet without seeking authorization from the creators.", "presenting factual information published by recognized statistical reporting services without acknowledgment.", "citing quotes attributable to \"investment experts\" without specific references."], "ans": "B", "expl": "Standard I(C), Misrepresentation, permits using factual information from recognized\nfinancial and statistical reporting services without acknowledgment.\n(Module 91.2, LOS 91: I(C))"}, {"n": 14, "q": "Marc Randall, CFA, is an investment analyst. During a meeting with a potential client,\nRandall's boss states that, \"You can be sure our investments will always outperform Treasury\nBonds because of our fine research staff members, like Marc.\" Randall knows that this\nstatement is:", "opts": ["a violation of fiduciary duties owed to clients under the Standards.", "a violation of the Standard concerning prohibition against misrepresentation.", "not in violation of the Code and Standards."], "ans": "B", "expl": "Under Standard I(C), members are forbidden from guaranteeing a specific rate of return\non volatile investments. Therefore, the statement is in violation of the Standard.\n(Module 91.2, LOS 91: I(C))"}, {"n": 15, "q": "Which of the following are recommended procedures of compliance according to Standard\nI(D), Misconduct?", "opts": ["Conduct background checks on potential employees to ensure that they are of good character.", "Enroll employees in a continuing education program that would provide updates on required ethical behavior.", "Refer to the Professional Conduct Program for arbitration of disputes with other members or candidates."], "ans": "A", "expl": "According to Standard I(D) Misconduct - Procedures for Compliance: Members should\nencourage their employers to conduct background checks on potential employees to\nensure that they are of good character and eligible to work in the investment industry.\n(Module 91.2, LOS 91: I(D))"}, {"n": 16, "q": "An analyst preparing a report needs to cite which of the following?", "opts": ["Estimates of betas provided by Standard & Poor's.", "The individual who developed a chart from the same firm.", "A recent quote from the Federal Reserve Chairman."], "ans": "C", "expl": "Statistics provided by a recognized agency, such as Standard and Poor's, do not need to be\ncited. Charts, quotes, and algorithms developed by the firm would need to be cited when\nthey are used but the individual(s) who developed the materials within the firm do not\nneed to be cited.\n(Module 91.2, LOS 91: I(C))"}, {"n": 17, "q": "A money manager works for a full-service brokerage firm. After meeting with a new client\nand gathering all relevant information, the money manager says that she thinks her firm can\nperform all the financial services the new client needs. With respect to the Standard on\nmisrepresentation, this statement:", "opts": ["is not a violation if it is based on the factual information gathered.", "would only be a violation if it is made in writing.", "is a violation."], "ans": "A", "expl": "There is no violation if the opinion is based upon the factual information gathered and the\nfirm's actual capabilities. This is true whether or not the representation was written, oral,\nor electronic.\n(Module 91.2, LOS 91: I(C))"}, {"n": 18, "q": "Which of the following actions most likely violates Standard I(D) Misconduct?", "opts": ["A Level I candidate submits a request to her employer for auto travel reimbursement using inflated mileage totals.", "A member pursues an employment opportunity with a competing firm, primarily as a means of securing a salary increase from her current employer.", "An analyst is arrested for trespassing while participating in an anti-abortion protest."], "ans": "A", "expl": "Any activity that reflects adversely on a member's professional reputation, integrity, or\ncompetence is a violation of Standard I(D) Misconduct. Standard I(D) is generally not\nintended to extend to legal transgressions resulting from acts of civil disobedience in\nsupport of personal beliefs. A member can pursue an employment opportunity with a\ncompetitor as long as the member abides by the Standards related to Duties to Employers.\n(Module 91.2, LOS 91: I(D))"}, {"n": 19, "q": "A CFA charterholder who comes to work intoxicated is:", "opts": ["in violation of Standard I(D) concerning professional misconduct.", "not in violation of the standards.", "in violation of Standard IV(A) concerning duties to employer."], "ans": "A", "expl": "Being intoxicated at work is poor personal behavior. It is a violation of Standard I(D), which\ncovers professional competence and integrity.\n(Module 91.2, LOS 91: I(D))"}, {"n": 20, "q": "A CFA charterholder is caught shoplifting and is sentenced to nine months in prison. Is this a\nviolation of Standard I(D) Misconduct?", "opts": ["No, because the crime does not relate to the investment profession.", "Yes, because the crime involved stealing.", "Yes, because the prison sentence is more than six months."], "ans": "B", "expl": "Any act involving lying, cheating, stealing, or other dishonest conduct that reflects\nadversely on the charterholder's professional activities is a violation of Standard I(D).\nAlthough the crime did not relate to the investment profession, it certainly reflected\nadversely on the charterholder professionally.\n(Module 91.2, LOS 91: I(D))"}, {"n": 21, "q": "Timothy Hooper, CFA, is a security analyst at an investment firm. In his spare time, Hooper\nserves as a volunteer for City Pride, which collects clothes for the homeless. Hooper has\noccasionally given some of the clothes to his friends or sold the clothes instead of returning\nall of the clothing to City Pride. City Pride discovers what he has been doing and dismisses\nhim. Later, City Pride learns that other volunteer organizations have dismissed Hooper for\nsimilar actions. Has Hooper violated Standard I(D) on professional misconduct in the CFA\nInstitute Standards of Professional Conduct?", "opts": ["No, because Hooper volunteers his services to City Pride.", "No, because Hooper's conduct is unrelated to his professional activities as a security analyst.", "Yes."], "ans": "C", "expl": "Hooper violated Standard I(D) because he repeatedly engaged in conduct that involves\ndishonest conduct. This violation occurred despite the fact that his offenses do not relate\ndirectly to his professional activities. However, Hooper's conduct reflects poorly on his\nprofessional reputation and integrity.\n(Module 91.2, LOS 91: I(D))"}, {"n": 22, "q": "A CFA charterholder takes a trip for which his firm will pay the expenses. Upon his return, he\nalters some of the numbers on restaurant receipts to inflate the expenses by about one half\nof a percent. Is this a violation of the Code and Standards?", "opts": ["Yes, because it reflects dishonesty.", "Yes, because the charterholder should have paid his own expenses.", "This is a violation only if the amount in question is material."], "ans": "A", "expl": "Any action by a member or candidate involving dishonesty, fraud, or deceit is a violation of\nStandard I(D) Misconduct.\n(Module 91.2, LOS 91: I(D))"}, {"n": 23, "q": "Mark Acevedo, CFA, issues a \"buy\" recommendation on Rucker Company shares, based on a\ndividend discount model with inputs supported by Acevedo's industry and company analysis.\nOver the next year, Rucker's share price decreases by 10% while the overall market\nincreases by 5%. With respect to the Code and Standards, Acevedo has most likely:", "opts": ["violated the Standard concerning diligence and reasonable basis.", "not violated any Standards.", "violated the Standard concerning competence."], "ans": "B", "expl": "The member has not violated Standard I(E) Competence or Standard V(A) Diligence and\nReasonable Basis by being wrong about the prospects for a security's price. Negative\noutcomes do not necessarily imply a lack of competence or diligence.\n(Module 91.2, LOS 91: I(E))"}, {"n": 24, "q": "Paul Thomas, CFA, is designing a new layout for research reports his firm writes and issues\non individual stocks. In his design, Thomas includes a stock chart on the first page of each\nreport. He does not reference that the charts are copied from the Standard & Poor's\nwebsite. Thomas has:", "opts": ["violated CFA Institute Standards of Professional Conduct because he did not make sure that the information in these charts is accurate.", "not violated CFA Institute Standards of Professional Conduct because these charts are widely available over the internet.", "violated CFA Institute Standards of Professional Conduct because he did not state the source of the charts."], "ans": "C", "expl": "Standard I(C) Misrepresentation. Members should not copy or use material prepared by\nothers without acknowledging and identifying the source of such material. Using charts\nand graphs without stating their source is a violation of the Standard. Data from\nrecognized statistical reporting services may be used without attribution, but charts,\nanalysis, and other such creative content may not.\n(Module 91.2, LOS 91: I(C))"}, {"n": 25, "q": "The following information involves two research analysts at a brokerage firm.\nErik Bagenot, CFA, is preparing a research report on Global Enterprises, Inc. In\npreparing the report, he uses materials from many sources. For example, he uses\nfactual information published by Standard & Poor's Corporation without\nacknowledging the source. He also uses excerpts from a research report prepared by\nanother analyst. Bagenot makes only a slight change in wording for these excerpts,\nbut acknowledges the source.\nSally Wain, who is currently enrolled in the CFA program, is preparing a research\nreport on Manson Telecommunications. She attends a conference in which several\ninvestment experts provide their views about the future prospects of this company.\nWain cites several quotations from these investment experts in her report without\nspecific reference.\nAccording to CFA Institute Standards of Professional Conduct involving prohibition against\nplagiarism, which of the following statements is CORRECT?", "opts": ["Bagenot violated the Standards, but Wain did not.", "Wain violated the Standards, but Bagenot did not.", "Both Bagenot and Wain violated the Standards."], "ans": "B", "expl": "Bagenot complied with Standard I(C), which permits publishing factual information from\nStandard & Poor's without acknowledgment and using excerpts with acknowledgment.\nWain committed plagiarism because she failed to give specific references for the\nquotations that she used.\n(Module 91.2, LOS 91: I(C))"}, {"n": 26, "q": "Which of the following would be permissible under Standard I(C), Misrepresentation?", "opts": ["Reporting statistics prepared by an outside firm, identifying the source but omitting caveats and qualifying statements.", "Using excerpts from a report prepared by a well known outside research firm without acknowledgement.", "Including a graph showing the central bank’s discount rates over the previous 12 months in a report that goes to clients, without citing the source from which the data were gathered."], "ans": "C", "expl": "The only permissible action in the above list is including a graph of the Fed's discount rates\nover the last 12 months because it is factual information published by a recognizable\nfinancial and statistical reporting service.\n(Module 91.2, LOS 91: I(C))"}, {"n": 27, "q": "All of the following are violations of Standard I(D), Misconduct, EXCEPT:", "opts": ["conviction of a misdemeanor involving civil disobedience in support of one’s personal beliefs.", "conviction of a crime involving fraud.", "any conduct that undermines confidence that the CFA charter represents a level of achievement based on merit and ethical conduct."], "ans": "A", "expl": "The Code and Standards do not focus on personal conduct as long as the conduct does\nnot reflect poorly on one's professional reputation, integrity, or competence.\n(Module 91.2, LOS 91: I(D))"}];
+const CFG = {"title": "Guidance for Standards I(C) and I(D)", "subtitle": "CFA · Ethical & Professional Standards · Reading 91.2 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; stem.textContent = q.q;
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

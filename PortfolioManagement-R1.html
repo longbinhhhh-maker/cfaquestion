@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .stem .qtable{width:100%;border-collapse:collapse;margin:12px 0 2px;font-size:14.5px;
+    border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .stem .qtable th,.stem .qtable td{border:1px solid var(--line);padding:8px 11px;
+    text-align:left;vertical-align:top}
+  .stem .qtable thead th{background:var(--panel2);font-weight:700;color:var(--accent2)}
+  .stem .qtable tbody td:first-child{font-weight:600}
+  .stem .qtable td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+  .stem .qtable tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 45%,transparent)}
+  @media (max-width:520px){.stem .qtable{font-size:13px}.stem .qtable th,.stem .qtable td{padding:6px 8px}}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Stock A has a standard deviation of 0.5 and Stock B has a standard deviation of 0.3. Stock A\nand Stock B are perfectly positively correlated. According to Markowitz portfolio theory how\nmuch should be invested in each stock to minimize the portfolio's standard deviation?", "opts": ["100% in Stock B.", "30% in Stock A and 70% in Stock B.", "50% in Stock A and 50% in Stock B."], "ans": "A", "expl": "Since the stocks are perfectly correlated, there is no benefit from diversification. So, invest\nin the stock with the lowest risk.\n(Module 83.4, LOS 83.f)"}, {"n": 2, "q": "An investor's portfolio currently has an expected return of 11% with a variance of 0.0081.\nShe is considering replacing 20% of the portfolio with a security that has an expected return\nof 12% and a standard deviation of 0.07. If the covariance between the returns on the\nexisting portfolio and the returns on the added security is 0.0058, the variance of returns on\nthe new portfolio will be closest to:", "opts": ["0.00545.", "0.00724.", "0.00984."], "ans": "B", "expl": "222\n0.8(0.0081) + 0.2 (0.07) + 2(0.8)(0.2)(0.0058) = 0.00724.\n(Module 83.3, LOS 83.e)"}, {"n": 3, "q": "Calculating the variance of a two-asset portfolio least likely requires inputs for each asset's:", "opts": ["beta.", "weight in the portfolio.", "standard deviation."], "ans": "A", "expl": "Beta is not an input to calculate the variance of a two-asset portfolio. The formula for\ncalculating the variance of a two-asset portfolio is:\n22222\nσ=wσ+wσ+2wwCov\nABAB\nPAABB\n(Module 83.3, LOS 83.e)"}, {"n": 4, "q": "According to the CAPM, a rational investor would be least likely to choose as his optimal\nportfolio:", "opts": ["a 130% allocation to the market portfolio.", "a 100% allocation to the risk-free asset.", "the global minimum variance portfolio."], "ans": "C", "expl": "According to the CAPM, rational, risk-averse investors will optimally choose to hold a\nportfolio along the capital market line. This can range from a 100% allocation to the risk-\nfree asset to a leveraged position in the market portfolio constructed by borrowing at the\nrisk-free rate to invest more than 100% of the portfolio equity value in the market\nportfolio. The global minimum variance portfolio lies below the CML and is not an efficient\nportfolio under the assumptions of the CAPM.\n(Module 83.4, LOS 83.g)"}, {"n": 5, "q": "Which of the following inputs is least likely required for the Markowitz efficient frontier? The:", "opts": ["covariation between all securities.", "expected return of all securities.", "level of risk aversion in the market."], "ans": "C", "expl": "The level of risk aversion in the market is not a required input. The model requires that\ninvestors know the expected return and variance of each security as well as the covariance\nbetween all securities.\n(Module 83.4, LOS 83.g)"}, {"n": 6, "q": "A portfolio manager adds a new stock that has the same standard deviation of returns as the\nexisting portfolio but has a correlation coefficient with the existing portfolio that is less than\n+1. Adding this stock will have what effect on the standard deviation of the revised\nportfolio's returns? The standard deviation will:", "opts": ["decrease only if the correlation is negative.", "decrease.", "increase."], "ans": "B", "expl": "If the correlation coefficient is less than 1, there are benefits to diversification. Thus,\nadding the stock will reduce the portfolio's standard deviation.\n(Module 83.4, LOS 83.f)"}, {"n": 7, "q": "Risk aversion means that an individual will choose the less risky of two assets:", "opts": ["if they have the same expected return.", "in all cases.", "even if it has a lower expected return."], "ans": "A", "expl": "Investors are risk averse. Given a choice between assets with equal rates of expected\nreturn, the investor will always select the asset with the lowest level of risk. Risk aversion\ndoes not imply that an investor will choose the less risky of two assets in all cases, or that\nan investor is unwilling to accept greater risk to achieve a greater expected return.\n(Module 83.2, LOS 83.b)"}, {"n": 8, "q": "Assets A (with a variance of 0.25) and B (with a variance of 0.40) are perfectly positively\ncorrelated. If an investor creates a portfolio using only these two assets with 40% invested in\nA, the portfolio standard deviation is closest to:", "opts": ["0.3742.", "0.3400.", "0.5795."], "ans": "C", "expl": "220.50.50.5\nThe portfolio standard deviation = [(0.4)(0.25) + (0.6)(0.4) + 2(0.4)(0.6)1(0.25)(0.4)]\n= 0.5795\n(Module 83.3, LOS 83.e)"}, {"n": 9, "q": "Which of the following portfolios falls below the Markowitz efficient frontier?\nPortfolioExpected ReturnExpected Standard Deviation\nA7%14%\nB9%26%\nC15%30%\nD12%22%", "opts": ["B.", "C.", "D."], "ans": "A", "expl": "Portfolio B is not on the efficient frontier because it has a lower return, but higher risk,\nthan Portfolio D.\n(Module 83.4, LOS 83.g)", "qhtml": "<p>Which of the following portfolios falls below the Markowitz efficient frontier?</p><table class=\"qtable\"><thead><tr><th>Portfolio</th><th>Expected Return</th><th>Expected Standard Deviation</th></tr></thead><tbody><tr><td>A</td><td>7%</td><td>14%</td></tr><tr><td>B</td><td>9%</td><td>26%</td></tr><tr><td>C</td><td>15%</td><td>30%</td></tr><tr><td>D</td><td>12%</td><td>22%</td></tr></tbody></table>"}, {"n": 10, "q": "The particular portfolio on the efficient frontier that best suits an individual investor is\ndetermined by:", "opts": ["the current market risk-free rate as compared to the current market return rate.", "the individual's asset allocation plan.", "the individual's utility curve."], "ans": "C", "expl": "The optimal portfolio for each investor is the highest indifference curve that is tangent to\nthe efficient frontier. The optimal portfolio is the portfolio that gives the investor the\ngreatest possible utility.\n(Module 83.2, LOS 83.c)"}, {"n": 11, "q": "An analyst gathered the following data for Stock A and Stock B:\nTime PeriodStock A ReturnsStock B Returns\n110%15%\n26%9%\n38%12%\nWhat is the covariance for this portfolio?", "opts": ["12.", "3.", "6."], "ans": "C", "expl": "The formula for the covariance for historical data is:\ncov = {Σ[(R − Mean R)(R − Mean R)]} / (n − 1)\n1,2stock AAstock BB\nMean R = (10 + 6 + 8) / 3 = 8, Mean R = (15 + 9 + 12) / 3 = 12\nAB\nHere, cov = [(10 − 8)(15 − 12) + (6 − 8)(9 − 12) + (8 − 8)(12 − 12)] / 2 = 6\n1,2\n(Module 83.3, LOS 83.d)", "qhtml": "<p>An analyst gathered the following data for Stock A and Stock B:</p><table class=\"qtable\"><thead><tr><th>Time Period</th><th>Stock A Returns</th><th>Stock B Returns</th></tr></thead><tbody><tr><td>1</td><td>10%</td><td>15%</td></tr><tr><td>2</td><td>6%</td><td>9%</td></tr><tr><td>3</td><td>8%</td><td>12%</td></tr></tbody></table><p>What is the covariance for this portfolio?</p>"}, {"n": 12, "q": "In the Markowitz framework, risk is defined as the:", "opts": ["variance of returns.", "probability of a loss.", "beta of an investment."], "ans": "A", "expl": "The Markowitz framework assumes that all investors view risk as the variability of returns.\nThe variability of returns is measured as the variance (or equivalently standard deviation)\nof returns. The capital asset pricing model (CAPM) employs beta as the measure of an\ninvestment's systematic risk.\n(Module 83.4, LOS 83.g)"}, {"n": 13, "q": "According to Markowitz, an investor's optimal portfolio is determined where the:", "opts": ["investor's lowest utility curve is tangent to the efficient frontier.", "investor's utility curve meets the efficient frontier.", "investor's highest utility curve is tangent to the efficient frontier."], "ans": "C", "expl": "The optimal portfolio for an investor is determined as the point where the investor's\nhighest utility curve is tangent to the efficient frontier.\n(Module 83.2, LOS 83.c)"}, {"n": 14, "q": "Which of the following statements regarding the covariance of rates of return is least\naccurate?", "opts": ["Covariance is not a very useful measure of the strength of the relationship between rates of return.", "If the covariance is negative, the rates of return on two investments will always move in different directions relative to their means.", "Covariance is positive if two variables tend to both be above their mean values in the same time periods."], "ans": "B", "expl": "Negative covariance means rates of return for one security will tend to be above its mean\nreturn in periods when the other is below its mean return, and vice versa. Positive\ncovariance means that returns on both securities will tend to be above (or below) their\nmean returns in the same time periods. For the returns to always move in opposite\ndirections, they would have to be perfectly negatively correlated. Negative covariance by\nitself does not imply anything about the strength of the negative correlation, it must be\nstandardized by dividing by the product of the securities' standard deviations of return.\n(Module 83.3, LOS 83.d)"}, {"n": 15, "q": "Of the six attainable portfolios listed, which portfolios are not on the efficient frontier?\nPortfolioExpected ReturnStandard Deviation\nA26%28%\nB23%34%\nC14%23%\nD18%14%\nE11%8%\nF18%16%", "opts": ["A, B, and C.", "B, C, and F.", "C, D, and E."], "ans": "B", "expl": "Portfolio B cannot lie on the frontier because its risk is higher than that of Portfolio A's\nwith lower return. Portfolio C cannot lie on the frontier because it has higher risk than\nPortfolio D with lower return. Portfolio F cannot lie on the frontier cannot lie on the\nfrontier because its risk is higher than Portfolio D.\n(Module 83.4, LOS 83.g)", "qhtml": "<p>Of the six attainable portfolios listed, which portfolios are not on the efficient frontier?</p><table class=\"qtable\"><thead><tr><th>Portfolio</th><th>Expected Return</th><th>Standard Deviation</th></tr></thead><tbody><tr><td>A</td><td>26%</td><td>28%</td></tr><tr><td>B</td><td>23%</td><td>34%</td></tr><tr><td>C</td><td>14%</td><td>23%</td></tr><tr><td>D</td><td>18%</td><td>14%</td></tr><tr><td>E</td><td>11%</td><td>8%</td></tr><tr><td>F</td><td>18%</td><td>16%</td></tr></tbody></table>"}, {"n": 16, "q": "If two stocks have positive covariance:", "opts": ["they exhibit a strong correlation of returns.", "their rates of return tend to change in the same direction.", "they are likely to be in the same industry."], "ans": "B", "expl": "For two stocks with positive covariance, their prices will tend to move together over time\nand they will tend to produce rates of return greater than their mean returns at the same\ntime and produce rates of return less than their mean returns at the same time.\nPositive covariance does not necessarily imply strong positive correlation. Two stocks need\nnot be in the same industry to have a positive covariance.\n(Module 83.3, LOS 83.d)"}, {"n": 17, "q": "Which of the following statements best describes an investment that is not on the efficient\nfrontier?", "opts": ["There is a portfolio that has a lower return for the same risk.", "The portfolio has a very high return.", "There is a portfolio that has a lower risk for the same return."], "ans": "C", "expl": "The efficient frontier outlines the set of portfolios that gives investors the highest return\nfor a given level of risk or the lowest risk for a given level of return. Therefore, if a portfolio\nis not on the efficient frontier, there must be a portfolio that has lower risk for the same\nreturn. Equivalently, there must be a portfolio that produces a higher return for the same\nrisk.\n(Module 83.4, LOS 83.g)"}, {"n": 18, "q": "If the standard deviation of asset A is 12.2%, the standard deviation of asset B is 8.9%, and\nthe correlation coefficient is 0.20, what is the covariance between A and B?", "opts": ["0.0001.", "0.0022.", "0.0031."], "ans": "B", "expl": "The formula is: (correlation)(standard deviation of A)(standard deviation of B) = (0.20)\n(0.122)(0.089) = 0.0022.\n(Module 83.3, LOS 83.d)"}, {"n": 19, "q": "A portfolio manager invests 40% of a portfolio in Asset X, which has an expected standard\ndeviation of returns of 15%, and the remainder in Asset Y, which has an expected standard\ndeviation of returns of 25%. If the covariance of returns between assets X and Y is 0.0158,\nthe expected standard deviation of portfolio returns is closest to:", "opts": ["18.4%.", "16.3%.", "2.7%."], "ans": "A", "expl": "The expected standard deviation of portfolio returns is:\n22221/2\n[0.40 × 0.15 + 0.60 × 0.25 + 2(0.40 × 0.60 × 0.0158)] = 18.35%.\n(Module 83.3, LOS 83.e)"}, {"n": 20, "q": "Stock 1 has a standard deviation of 10. Stock 2 also has a standard deviation of 10. If the\ncorrelation coefficient between these stocks is –1, what is the covariance between these two\nstocks?", "opts": ["1.00.", "–100.00.", "0.00."], "ans": "B", "expl": "Covariance = correlation coefficient × standard deviation × standard deviation\nStock 1Stock 2\n= (–1.00) (10.00)(10.00) = –100.00.\n(Module 83.3, LOS 83.d)"}, {"n": 21, "q": "Over the long term, the annual returns and standard deviations of returns for major asset\nclasses have shown:", "opts": ["a negative relationship.", "a positive relationship.", "no clear relationship."], "ans": "B", "expl": "In most markets and for most asset classes, higher average returns have historically been\nassociated with higher risk (standard deviation of returns).\n(Module 83.1, LOS 83.a)"}, {"n": 22, "q": "Which one of the following portfolios does not lie on the efficient frontier?\nPortfolioExpected ReturnStandard Deviation\nA75\nB912\nC1110\nD1515", "opts": ["A.", "C.", "B."], "ans": "C", "expl": "Portfolio B has a lower expected return than Portfolio C with a higher standard deviation.\n(Module 83.4, LOS 83.g)"}, {"n": 23, "q": "If the standard deviation of stock A is 10.6%, the standard deviation of stock B is 14.6%, and\nthe covariance between the two is 0.015476, what is the correlation coefficient?", "opts": ["+1.", "0.0002.", "0."], "ans": "A", "expl": "The formula is: (Covariance of A and B) / [(Standard deviation of A)(Standard Deviation of\n(Module 83.3, LOS 83.d)"}, {"n": 24, "q": "The optimal portfolio in the Markowitz framework occurs when an investor achieves the\ndiversified portfolio with the:", "opts": ["highest return.", "lowest risk.", "highest utility."], "ans": "C", "expl": "The optimal portfolio in the Markowitz framework occurs when the investor achieves the\ndiversified portfolio with the highest utility.\n(Module 83.2, LOS 83.c)"}, {"n": 25, "q": "Historically, which of the following asset classes has exhibited the smallest standard\ndeviation of monthly returns?", "opts": ["Large-capitalization stocks.", "Long-term corporate bonds.", "Treasury bills."], "ans": "C", "expl": "Based on data for securities in the United States from 1926 to 2008, Treasury bills\nexhibited a lower standard deviation of monthly returns than both large-cap stocks and\nlong-term corporate bonds.\n(Module 83.1, LOS 83.a)"}, {"n": 26, "q": "An investment advisor is considering a portfolio that is 60% invested in a broad-based stock\nindex fund with the remainder invested in a taxable bond fund. The stock index fund has an\nexpected return of 7% and variance of 0.04, while the bond fund has an expected return of\n3% and a variance of 0.0081. If the covariance of returns between the bond and index funds\nis 0.0108, the standard deviation of returns for the overall portfolio is closest to:", "opts": ["12.56%.", "14.45%.", "1.58%."], "ans": "B", "expl": "The standard deviation of returns for the overall portfolio is as follows:\n22\n√\n0.6(0.04)+0.4(0.0081)+2(0.6)(0.4)(0.0108)=14.4499%\n(Module 83.3, LOS 83.d)"}, {"n": 27, "q": "Which of the following portfolios falls below the Markowitz efficient frontier?\nPortfolioExpected ReturnExpected Standard Deviation\nA12.1%8.5%\nB14.2%8.7%\nC15.1%8.7%", "opts": ["Portfolio B.", "Portfolio C.", "Portfolio A."], "ans": "A", "expl": "Portfolio B is inefficient (falls below the efficient frontier) because for the same risk level\n(8.7%), you could have portfolio C with a higher expected return (15.1% versus 14.2%).\n(Module 83.4, LOS 83.g)", "qhtml": "<p>Which of the following portfolios falls below the Markowitz efficient frontier?</p><table class=\"qtable\"><thead><tr><th>Portfolio</th><th>Expected Return</th><th>Expected Standard Deviation</th></tr></thead><tbody><tr><td>A</td><td>12.1%</td><td>8.5%</td></tr><tr><td>B</td><td>14.2%</td><td>8.7%</td></tr><tr><td>C</td><td>15.1%</td><td>8.7%</td></tr></tbody></table>"}, {"n": 28, "q": "An investor has identified the following possible portfolios. Which portfolio cannot be on the\nefficient frontier?\nPortfolioExpected ReturnStandard Deviation\nV18%35%\nW12%16%\nX10%10%\nY14%20%\nZ13%24%", "opts": ["Z.", "Y.", "X."], "ans": "A", "expl": "Portfolio Z must be inefficient because its risk is higher than Portfolio Y and its expected\nreturn is lower than Portfolio Y.\n(Module 83.4, LOS 83.g)", "qhtml": "<p>An investor has identified the following possible portfolios. Which portfolio cannot be on the</p><p>efficient frontier?</p><table class=\"qtable\"><thead><tr><th>Portfolio</th><th>Expected Return</th><th>Standard Deviation</th></tr></thead><tbody><tr><td>V</td><td>18%</td><td>35%</td></tr><tr><td>W</td><td>12%</td><td>16%</td></tr><tr><td>X</td><td>10%</td><td>10%</td></tr><tr><td>Y</td><td>14%</td><td>20%</td></tr><tr><td>Z</td><td>13%</td><td>24%</td></tr></tbody></table>"}, {"n": 29, "q": "A portfolio currently holds Randy Co. and the portfolio manager is thinking of adding either\nXYZ Co. or Branton Co. to the portfolio. All three stocks offer the same expected return and\ntotal risk. The covariance of returns between Randy Co. and XYZ is +0.5 and the covariance\nbetween Randy Co. and Branton Co. is -0.5. The portfolio's risk would decrease:", "opts": ["more if she bought Branton Co.", "more if she bought XYZ Co.", "most if she put half your money in XYZ Co. and half in Branton Co."], "ans": "A", "expl": "In portfolio composition questions, return and standard deviation are the key variables.\nHere you are told that both returns and standard deviations are equal. Thus, you just want\nto pick the companies with the lowest covariance, because that would mean you picked\nthe ones with the lowest correlation coefficient.\n2222½\nσ = [W σ + W σ + 2W W σ σ r] where σ =Y =\nportfolio112212121,2RandyBranton\nσ so you want to pick the lowest covariance which is between Randy and\nXYZ\nBranton.\n(Module 83.4, LOS 83.f)"}, {"n": 30, "q": "A stock has an expected return of 4% with a standard deviation of returns of 6%. A bond has\nan expected return of 4% with a standard deviation of 7%. An investor who prefers to invest\nin the stock rather than the bond is best described as:", "opts": ["risk averse.", "risk neutral.", "risk seeking."], "ans": "A", "expl": "Given two investments with the same expected return, a risk averse investor will prefer\nthe investment with less risk. A risk neutral investor will be indifferent between the two\ninvestments. A risk seeking investor will prefer the investment with more risk.\n(Module 83.2, LOS 83.b)"}, {"n": 31, "q": "Using the following correlation matrix, which two stocks would combine to make the lowest-\nrisk portfolio? (Assume the stocks have equal risk and returns.)\nStockABC\nA+ 1----\nB- 0.2+ 1--\nC+ 0.6- 0.1+ 1", "opts": ["A and C.", "A and B.", "C and B."], "ans": "B", "expl": "Portfolios A and B have the lowest correlation coefficient and will thus create the lowest-\nrisk portfolio.\n22221/2\nThe standard deviation of a portfolio = [Wσ + Wσ + 2WWσσr]\n112212121,2\nThe correlation coefficient, r, varies from + 1 to - 1. The smaller the correlation\n1,2\ncoefficient, the smaller σ can be. If the correlation coefficient were - 1, it would be\nportfolio\npossible to make σ go to zero by picking the proper weightings of W and W.\nportfolio12\n(Module 83.3, LOS 83.e)"}, {"n": 32, "q": "Which one of the following statements about correlation is NOT correct?", "opts": ["Potential benefits from diversification arise when correlation is less than +1.", "If the correlation coefficient were -1, a zero variance portfolio could be constructed.", "If the correlation coefficient were 0, a zero variance portfolio could be constructed."], "ans": "C", "expl": "A correlation coefficient of zero means that there is no relationship between the stock's\nreturns. The other statements are true.\n(Module 83.4, LOS 83.f)"}, {"n": 33, "q": "Which of the following statements about the optimal portfolio is NOT correct? The optimal\nportfolio:", "opts": ["is the portfolio that gives the investor the maximum level of return.", "may be different for different investors.", "lies at the point of tangency between the efficient frontier and the indifference curve with the highest possible utility."], "ans": "A", "expl": "This statement is incorrect because it does not specify that risk must also be considered.\n(Module 83.2, LOS 83.c)"}, {"n": 34, "q": "Investors who are less risk averse will have what type of indifference curves for risk and\nexpected return?", "opts": ["Flatter.", "Inverted.", "Steeper."], "ans": "A", "expl": "Investors who are less risk averse will have flatter indifference curves, meaning they are\nwilling to take on more risk for a slightly higher return. Investors who are more risk averse\nrequire a much higher return to accept more risk, producing steeper indifference curves.\n(Module 83.2, LOS 83.c)"}, {"n": 35, "q": "A bond analyst is looking at historical returns for two bonds, Bond 1 and Bond 2. Bond 2's\nreturns are much more volatile than Bond 1. The variance of returns for Bond 1 is 0.012 and\nthe variance of returns of Bond 2 is 0.308. The correlation between the returns of the two\nbonds is 0.79, and the covariance is 0.048. If the variance of Bond 1 increases to 0.026 while\nthe variance of Bond 2 decreases to 0.188 and the covariance remains the same, the\ncorrelation between the two bonds will:", "opts": ["decrease.", "increase.", "remain the same."], "ans": "A", "expl": "0.50.5\nP= 0.048/(0.026 × 0.188) = 0.69 which is lower than the original 0.79.\n1,2\n(Module 83.3, LOS 83.d)"}, {"n": 36, "q": "The efficient frontier is best described as the set of attainable portfolios that gives investors:", "opts": ["the lowest risk for any given level of risk tolerance.", "the highest diversification ratio for any given level of expected return.", "the highest expected return for any given level of risk."], "ans": "C", "expl": "The efficient frontier is the set of efficient portfolios that gives investors the highest\nexpected return for any given level of risk, or the lowest risk for any given level of\nexpected return. Efficient portfolios have low diversification ratios.\n(Module 83.4, LOS 83.g)"}, {"n": 37, "q": "Smith has more steeply sloped risk-return indifference curves than Jones. Assuming these\ninvestors have the same expectations, which of the following best describes their risk\npreferences and the characteristics of their optimal portfolios? Smith is:", "opts": ["less risk averse than Jones and will choose an optimal portfolio with a lower expected return.", "more risk averse than Jones and will choose an optimal portfolio with a lower expected return.", "more risk averse than Jones and will choose an optimal portfolio with a higher expected return."], "ans": "B", "expl": "Steeply sloped risk-return indifference curves indicate that a greater increase in expected\nreturn is required as compensation for assuming an additional unit of risk, compared to\nless-steep indifference curves. The more risk-averse Smith will choose an optimal portfolio\nwith lower risk and a lower expected return than the less risk-averse Jones's optimal\nportfolio.\n(Module 83.2, LOS 83.c)"}, {"n": 38, "q": "Which of the following statements about the efficient frontier is least accurate?", "opts": ["Investors will want to invest in the portfolio on the efficient frontier that offers the highest rate of return.", "Portfolios falling on the efficient frontier are fully diversified.", "The efficient frontier shows the relationship that exists between expected return and total risk in the absence of a risk-free asset."], "ans": "A", "expl": "The optimal portfolio for each investor is the highest indifference curve that is tangent to\nthe efficient frontier.\n(Module 83.2, LOS 83.c)"}, {"n": 39, "q": "As the correlation between the returns of two assets becomes lower, the risk reduction\npotential becomes:", "opts": ["greater.", "smaller.", "decreased by the same level."], "ans": "A", "expl": "Perfect positive correlation (r = +1) of the returns of two assets offers no risk reduction,\nwhereas perfect negative correlation (r = -1) offers the greatest risk reduction.\n(Module 83.4, LOS 83.f)"}, {"n": 40, "q": "The correlation coefficient between stocks A and B is 0.75. The standard deviation of stock\nA's returns is 16% and the standard deviation of stock B's returns is 22%. What is the\ncovariance between stock A and B?", "opts": ["0.0352.", "0.3750.", "0.0264."], "ans": "C", "expl": "cov = 0.75 × 0.16 × 0.22 = 0.0264 = covariance between A and B.\n1,2\n(Module 83.3, LOS 83.d)"}, {"n": 41, "q": "The basic premise of the risk-return trade-off suggests that risk-averse individuals\npurchasing investments with higher non-diversifiable risk should expect to earn:", "opts": ["rates of return equal to the market.", "lower rates of return.", "higher rates of return."], "ans": "C", "expl": "Investors are risk averse.  Given a choice between two assets with equal rates of return,\nthe investor will always select the asset with the lowest level of risk. This means that\nthere is a positive relationship between expected returns (ER) and expected risk (Eσ)\nand the risk return line (capital market line [CML] and security market line [SML]) is\nupward sweeping.\n(Module 83.2, LOS 83.c)"}, {"n": 42, "q": "A line that represents the possible portfolios that combine a risky asset and a risk free asset\nis most accurately described as a:", "opts": ["capital allocation line.", "capital market line.", "characteristic line."], "ans": "A", "expl": "The line that represents possible combinations of a risky asset and the risk-free asset is\nreferred to as a capital allocation line (CAL). The capital market line (CML) represents\npossible combinations of the market portfolio with the risk-free asset. A characteristic line\nis the best fitting linear relationship between excess returns on an asset and excess\nreturns on the market and is used to estimate an asset's beta.\n(Module 83.2, LOS 83.c)"}, {"n": 43, "q": "Two assets are perfectly positively correlated. If 30% of an investor's funds were put in the\nasset with a standard deviation of 0.3 and 70% were invested in an asset with a standard\ndeviation of 0.4, what is the standard deviation of the portfolio?", "opts": ["0.151.", "0.426.", "0.370."], "ans": "C", "expl": "22221/2\nσ portfolio = [Wσ + Wσ + 2WWσσr] given r = +1\n112212121,21,2\n22221/221/2\nσ = [Wσ + Wσ + 2WWσσ] = (Wσ + Wσ)]\n11221211122\n2\nσ = (Wσ + Wσ) = (0.3)(0.3) + (0.7)(0.4) = 0.09 + 0.28 = 0.37\n1122\n(Module 83.3, LOS 83.e)"}, {"n": 44, "q": "There are benefits to diversification as long as:", "opts": ["there must be perfect negative correlation between the assets.", "there is perfect positive correlation between the assets.", "the correlation coefficient between the assets is less than 1."], "ans": "C", "expl": "There are benefits to diversification as long as the correlation coefficient between the\nassets is less than 1.\n(Module 83.4, LOS 83.f)"}, {"n": 45, "q": "If the standard deviation of returns for stock X is 0.60 and for stock Y is 0.40 and the\ncovariance between the returns of the two stocks is 0.009, the correlation between stocks X\nand Y is closest to:", "opts": ["0.0375.", "26.6670.", "0.0020."], "ans": "A", "expl": "Cov = (r)(s)(s), where r = correlation coefficient, s = standard deviation of stock X ,\nX,YX,YXYx\nand s = standard deviation of stock Y\nY\nThen, (r) = Cov / (SD × SD) = 0.009 / (0.600 × 0.400) = 0.0375\nX,YX,YXY\n(Module 83.3, LOS 83.d)"}, {"n": 46, "q": "An analyst gathers the following data about the returns for two stocks.\nStock AStock B\nE(R)0.040.09\n2\n0.00250.0064\nσ\nCov= 0.001\nA,B\nThe correlation between the returns of Stock A and Stock B is closest to:", "opts": ["0.25.", "0.50.", "0.63."], "ans": "A", "expl": "The correlation between the two stocks is:\nρ = COV/ (σ × σ) = 0.001 / (0.05 × 0.08) = 0.001 / (0.004) = 0.25\nA,BA,B AB\nNote that the formula uses the standard deviations, not the variances, of the returns on\nthe two securities.\n(Module 83.1, LOS 83.a)"}, {"n": 47, "q": "The covariance of the market's returns with the stock's returns is 0.008. The standard\ndeviation of the market's returns is 0.1 and the standard deviation of the stock's returns is\n0.2. What is the correlation coefficient between the stock and market returns?", "opts": ["0.00016.", "0.40.", "0.91."], "ans": "B", "expl": "Cov = (r)(SD)(SD), where r = correlation coefficient and SD = standard deviation of\nA,BA,BABx\nstock x\nThen, (r) = Cov / (SD × SD) = 0.008 / (0.100 × 0.200) = 0.40\nA,BA,BAB\nRemember: The correlation coefficient must be between -1 and 1.\n(Module 83.3, LOS 83.d)"}, {"n": 48, "q": "If the standard deviation of returns for stock A is 0.40 and for stock B is 0.30 and the\ncovariance between the returns of the two stocks is 0.007 what is the correlation between\nstocks A and B?", "opts": ["0.05830.", "0.00084.", "17.14300."], "ans": "A", "expl": "Cov = (r)(SD)(SD), where r = correlation coefficient and SD = standard deviation of\nA,BA,BABx\nstock x\nThen, (r) = Cov/ (SD × SD) = 0.007 / (0.400 × 0.300) = 0.0583\nA,BA,B AB\n(Module 83.3, LOS 83.d)"}, {"n": 49, "q": "Which of the following possible portfolios is least likely to lie on the efficient frontier?\nPortfolioExpected ReturnStandard Deviation\nX9%12%\nY11%10%\nZ13%15%", "opts": ["Portfolio Z.", "Portfolio X.", "Portfolio Y."], "ans": "B", "expl": "Portfolio X has a lower expected return and a higher standard deviation than Portfolio Y. X\nmust be inefficient.\n(Module 83.4, LOS 83.g)", "qhtml": "<p>Which of the following possible portfolios is least likely to lie on the efficient frontier?</p><table class=\"qtable\"><thead><tr><th>Portfolio</th><th>Expected Return</th><th>Standard Deviation</th></tr></thead><tbody><tr><td>X</td><td>9%</td><td>12%</td></tr><tr><td>Y</td><td>11%</td><td>10%</td></tr><tr><td>Z</td><td>13%</td><td>15%</td></tr></tbody></table>"}, {"n": 50, "q": "If the standard deviation of stock X is 7.2%, the standard deviation of stock Y is 5.4%, and the\ncovariance between the two is –0.0031, their correlation coefficient is closest to:", "opts": ["-0.19.", "-0.64.", "-0.80."], "ans": "C", "expl": "Correlation = (covariance of X and Y) / [(standard deviation of X)(standard deviation of Y)]\n= –0.0031 / [(0.072)(0.054)] = –0.797.\n(Module 83.3, LOS 83.d)"}, {"n": 51, "q": "What is the variance of a two-stock portfolio if 15% is invested in stock A (variance of 0.0071)\nand 85% in stock B (variance of 0.0008) and the correlation coefficient between the stocks is\n–0.04?", "opts": ["0.0007.", "0.0020.", "0.0026."], "ans": "A", "expl": "The variance of the portfolio is found by:\n22 22 22\n[W σ+ W σ+ 2WWσσr], or [(0.15)(0.0071) + (0.85)(0.0008) + (2)\n112212121,2\n(0.15)(0.85)(0.0843)(0.0283)(–0.04)] = 0.0007.\n(Module 83.3, LOS 83.e)"}, {"n": 52, "q": "Kendra Jackson, CFA, is given the following information on two stocks, Rockaway and\nBridgeport.\nCovariance between the two stocks = 0.0325\nStandard Deviation of Rockaway's returns = 0.25\nStandard Deviation of Bridgeport's returns = 0.13\nAssuming that Jackson must construct a portfolio using only these two stocks, which of the\nfollowing combinations will result in the minimum variance portfolio?", "opts": ["100% in Bridgeport.", "50% in Bridgeport, 50% in Rockaway.", "80% in Bridgeport, 20% in Rockaway."], "ans": "A", "expl": "First, calculate the correlation coefficient to check whether diversification will provide any\nbenefit.\nr = cov / [( σ) × (σ) ] =\nBridgeport, RockawayBridgeport, RockawayBridgeportRockaway\n0.0325 / (0.13 × 0.25) = 1.00\nSince the stocks are perfectly positively correlated, there are no diversification benefits\nand we select the stock with the lowest risk (as measured by variance or standard\ndeviation), which is Bridgeport.\n(Module 83.4, LOS 83.g)"}, {"n": 53, "q": "On a graph of risk, measured by standard deviation and expected return, the efficient\nfrontier represents:", "opts": ["the group of portfolios that have extreme values and therefore are “efficient” in their allocation.", "all portfolios plotted in the northeast quadrant that maximize return.", "the set of portfolios that dominate all others as to risk and return."], "ans": "C", "expl": "The efficient set is the set of portfolios that dominate all other portfolios as to risk and\nreturn. That is, they have highest expected return at each level of risk.\n(Module 83.4, LOS 83.g)"}, {"n": 54, "q": "Becky Scott and Sid Fiona have the same expectations about the risk and return of the\nmarket portfolio; however, Scott selects a portfolio with 30% T-bills and 70% invested in the\nmarket portfolio, while Fiona holds a leveraged portfolio, having borrowed to invest 130% of\nhis portfolio equity value in the market portfolio. Regarding their preferences between risk\nand return and their indifference curves, it is most likely that:", "opts": ["Scott is willing to take on more risk to increase her expected portfolio return than Fiona is.", "Scott is risk averse but Fiona is not.", "Fiona’s indifference curves are flatter than Scott’s."], "ans": "C", "expl": "Even risk-averse investors will prefer leveraged risky portfolios if the increase in expected\nreturn is enough to offset the increase in portfolio risk. Scott's portfolio selection implies\nthat she is more risk averse than Fiona, has steeper indifference curves, and is willing to\ntake on less additional risk for an incremental increase in expected returns than Fiona.\n(Module 83.2, LOS 83.c)"}, {"n": 55, "q": "Adding a stock to a portfolio will reduce the risk of the portfolio if the correlation coefficient\nis less than which of the following?", "opts": ["+0.50.", "0.00.", "+1.00."], "ans": "C", "expl": "Adding any stock that is not perfectly correlated with the portfolio (+1) will reduce the risk\nof the portfolio.\n(Module 83.4, LOS 83.f)"}, {"n": 56, "q": "Which one of the following portfolios cannot lie on the efficient frontier?\nPortfolioExpected ReturnStandard Deviation\nA20%35%\nB11%13%\nC8%10%\nD8%9%", "opts": ["Portfolio A.", "Portfolio C.", "Portfolio D."], "ans": "B", "expl": "Portfolio C cannot lie on the frontier because it has the same return as Portfolio D, but has\nmore risk.\n(Module 83.4, LOS 83.g)", "qhtml": "<p>Which one of the following portfolios cannot lie on the efficient frontier?</p><table class=\"qtable\"><thead><tr><th>Portfolio</th><th>Expected Return</th><th>Standard Deviation</th></tr></thead><tbody><tr><td>A</td><td>20%</td><td>35%</td></tr><tr><td>B</td><td>11%</td><td>13%</td></tr><tr><td>C</td><td>8%</td><td>10%</td></tr><tr><td>D</td><td>8%</td><td>9%</td></tr></tbody></table>"}, {"n": 57, "q": "Which of the following statements about the efficient frontier is least accurate?", "opts": ["A portfolio that plots above efficient frontier is not attainable, while a portfolio that plots below the efficient frontier is inefficient.", "The efficient frontier is the set of portfolios with the greatest expected return for a given level of risk.", "The slope of the efficient frontier increases steadily as risk increases."], "ans": "C", "expl": "The slope of the efficient frontier decreases steadily as risk and return increase.\nThe efficient frontier is the set of portfolios with the greatest expected return for a given\nlevel of risk as measured by standard deviation of returns. That is, for a given level of risk,\nan expected return greater than that of the portfolio on the efficient frontier is not\nattainable, and a portfolio with a lower expected return is inefficient.\n(Module 83.4, LOS 83.g)"}, {"n": 58, "q": "In a two-asset portfolio, reducing the correlation between the two assets moves the efficient\nfrontier in which direction?", "opts": ["The efficient frontier is stable unless return expectations change. If expectations change, the efficient frontier will extend to the upper right with little or no change in risk.", "The efficient frontier is stable unless the asset’s expected volatility changes. This depends on each asset’s standard deviation.", "The frontier extends to the left, or northwest quadrant representing a reduction in risk while maintaining or enhancing portfolio returns."], "ans": "C", "expl": "Reducing correlation between the two assets results in the efficient frontier expanding to\nthe left and possibly slightly upward. This reflects the influence of correlation on reducing\nportfolio risk.\n(Module 83.4, LOS 83.g)"}, {"n": 59, "q": "The graph below combines the efficient frontier with the indifference curves for two\ndifferent investors, X and Y.\nA graph illustrating the efficient frontier, showing the trade-off between expected return and\nstandard deviation of returns, along with two investors' indifference curves (Investor X and\nInvestor Y), representing different risk-return preferences.\nWhich of the following statements about the above graph is least accurate?", "opts": ["The efficient frontier line represents the portfolios that provide the highest return at each risk level.", "Investor X is less risk-averse than Investor Y.", "Investor X's expected return is likely to be less than that of Investor Y."], "ans": "B", "expl": "Investor X has a steep indifference curve, indicating that he is risk-averse. Flatter\nindifference curves, such as those for Investor Y, indicate a less risk-averse investor. The\nother choices are true. A more risk-averse investor will likely obtain lower returns than a\nless risk-averse investor.\n(Module 83.2, LOS 83.c)"}, {"n": 60, "q": "Which of the following statements about portfolio theory is least accurate?", "opts": ["Assuming that the correlation coefficient is less than one, the risk of the portfolio will always be less than the simple weighted average of individual stock risks.", "For a two-stock portfolio, the lowest risk occurs when the correlation coefficient is close to negative one.", "When the return on an asset added to a portfolio has a correlation coefficient of less than one with the other portfolio asset returns but has the same risk, adding the asset will not decrease the overall portfolio standard deviation."], "ans": "C", "expl": "When the return on an asset added to a portfolio has a correlation coefficient of less than\none with the other portfolio asset returns but has the same risk, adding the asset will\ndecrease the overall portfolio standard deviation. Any time the correlation coefficient is\nless than one, there are benefits from diversification. The other choices are true.\n(Module 83.4, LOS 83.f)"}, {"n": 61, "q": "Stock A has a standard deviation of 4.1% and Stock B has a standard deviation of 5.8%. If the\nstocks are perfectly positively correlated, which portfolio weights minimize the portfolio's\nstandard deviation?\nStock AStock B", "opts": ["0%100%", "100%0%", "63%37%"], "ans": "B", "expl": "Because there is a perfectly positive correlation, there is no benefit to diversification.\nTherefore, the investor should put all his money into Stock A (with the lowest standard\ndeviation) to minimize the risk (standard deviation) of the portfolio.\n(Module 83.4, LOS 83.f)"}, {"n": 62, "q": "Three portfolios have the following expected returns and risk:\nPortfolioExpected returnStandard deviation\nJones4%4%\nKelly5%6%\nLewis6%5%\nA risk-averse investor choosing from these portfolios could rationally select:", "opts": ["Jones, but not Kelly or Lewis.", "Jones or Lewis, but not Kelly.", "Lewis, but not Kelly or Jones."], "ans": "B", "expl": "Risk aversion means that to accept greater risk, an investor must be compensated with a\nhigher expected return. A risk-averse investor will not select a portfolio if another portfolio\noffers a higher expected return with the same risk, or lower risk with the same expected\nreturn. Thus a rational investor would always choose Lewis over Kelly, because Lewis has\nboth a higher expected return and lower risk than Kelly. Neither Lewis nor Kelly is\nnecessarily preferable to Jones, because although Jones has a lower expected return, it\nalso has lower risk. Therefore, either Jones or Lewis might be selected by a rational\ninvestor, but Kelly would not be.\n(Module 83.2, LOS 83.b)", "qhtml": "<p>Three portfolios have the following expected returns and risk:</p><table class=\"qtable\"><thead><tr><th>Portfolio</th><th>Expected return</th><th>Standard deviation</th></tr></thead><tbody><tr><td>Jones</td><td>4%</td><td>4%</td></tr><tr><td>Kelly</td><td>5%</td><td>6%</td></tr><tr><td>Lewis</td><td>6%</td><td>5%</td></tr></tbody></table><p>A risk-averse investor choosing from these portfolios could rationally select:</p>"}, {"n": 63, "q": "An investor has a two-stock portfolio (Stocks A and B) with the following characteristics:\nσ = 55%\nA\nσ = 85%\nB\nCovariance = 0.09\nA,B\nW = 70%\nA\nW = 30%\nB\nThe variance of the portfolio is closest to:", "opts": ["0.25.", "0.54.", "0.39."], "ans": "A", "expl": "The formula for the variance of a 2-stock portfolio is:\n22222\ns = [Wσ + Wσ + 2WWσσr]\nAABBABABA,B\nSince σσr = Cov, then\nABA,BA,B\n22222\ns = [(0.7 × 0.55) + (0.3 × 0.85) + (2 × 0.7 × 0.3 × 0.09)] = [0.1482 + 0.0650 +\n0.0378] = 0.2511.\n(Module 83.3, LOS 83.e)"}, {"n": 64, "q": "Over long periods of time, compared to fixed income securities, equities have tended to\nexhibit:", "opts": ["lower average annual returns and higher standard deviation of returns.", "higher average annual returns and lower standard deviation of returns.", "higher average annual returns and higher standard deviation of returns."], "ans": "C", "expl": "Based on data for securities in the United States from 1926 to 2008, both small-cap stocks\nand large-cap stocks have exhibited higher average annual returns and higher standard\ndeviations of returns than long-term corporate bonds and long-term government bonds.\nResults over long periods of time have been similar in other developed markets.\n(Module 83.1, LOS 83.a)"}, {"n": 65, "q": "An investor calculates the following statistics on her two-stock (A and B) portfolio.\nσ = 20%\nA\nσ = 15%\nB\nr = 0.32\nA,B\nW = 70%\nA\nW = 30%\nB\nThe portfolio's standard deviation is closest to:", "opts": ["0.1600.", "0.0256.", "0.1832."], "ans": "A", "expl": "The formula for the standard deviation of a 2-stock portfolio is:\n22221/2\nσ = [Wσ + Wσ + 2WWσσρ]\nAABBABABA,B\n2 22 21/2\nσ = [(0.7× 0.2) + (0.3× 0.15) + ( 2 × 0.7 × 0.3 × 0.2 × 0.15 × 0.32)] = [0.0196 +\n1/21/2\n0.002025 + 0.004032] = 0.0256570 = 0.1602, or approximately 16.0%.\n(Module 83.3, LOS 83.e)"}, {"n": 66, "q": "Betsy Minor is considering the diversification benefits of a two stock portfolio. The expected\nreturn of stock A is 14 percent with a standard deviation of 18 percent and the expected\nreturn of stock B is 18 percent with a standard deviation of 24 percent. Minor intends to\ninvest 40 percent of her money in stock A, and 60 percent in stock B. The correlation\ncoefficient between the two stocks is 0.6. What is the variance and standard deviation of the\ntwo stock portfolio?", "opts": ["Variance = 0.02206; Standard Deviation = 14.85%.", "Variance = 0.03836; Standard Deviation = 19.59%.", "Variance = 0.04666; Standard Deviation = 21.60%."], "ans": "B", "expl": "2222\n(0.40)(0.18) + (0.60)(0.24) + 2(0.4)(0.6)(0.18)(0.24)(0.6) = 0.03836.\n0.5\n0.03836 = 0.1959 or 19.59%.\n(Module 83.3, LOS 83.e)"}];
+const CFG = {"title": "Portfolio Risk and Return Part I", "subtitle": "CFA · Portfolio Management · Reading 83 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem";
+    if(q.qhtml){ stem.innerHTML = q.qhtml; } else { stem.textContent = q.q; }
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

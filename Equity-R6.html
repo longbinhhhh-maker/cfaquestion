@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Which of the following barriers to entry will increase the competitiveness of the companies\nwithin an industry?", "opts": ["Low up-front capital requirements.", "Significant regulatory costs.", "Pre-existing customer loyalties."], "ans": "A", "expl": "The higher the threats to entry, the more competitive the industry becomes. If up-front\ncapital requirements are low, it makes it easier for outside companies to enter the\nindustry and compete with the companies already in the industry. Significant regulatory\ncosts will deter outside companies from trying to enter, as will pre-existing customer\nloyalties.\n(Module 44.2, LOS 44.d)"}, {"n": 2, "q": "An industry has a Herfindahl-Hirschman Index (HHI) of 2,740. An implication of this measure\nis that the industry will most likely have:", "opts": ["greater competitive intensity.", "less pricing power.", "greater profitability."], "ans": "C", "expl": "An industry with an HHI above 2,500 is considered highly concentrated. High\nconcentration implies greater profitability (for the companies in the industry), greater\npricing power, and less competitive intensity.\n(Module 44.1, LOS 44.c)"}, {"n": 3, "q": "Company X runs a series of high-end hotels in the Northeastern United States. The average\nroom rate per night is higher than any other hotel in the region. Which of the following best\nallows the company to build upon its differentiation strategy?", "opts": ["Strong cost controls, which allow the company to maintain profit margins.", "A culture of strong customer experience.", "Economies of scale and low variable costs."], "ans": "B", "expl": "A company running high-end hotels with high average room rates is executing a\ndifferentiation strategy, where customers see value in paying more for a product or\nservice. A culture of strong customer experience lends itself to this strategy. Economies of\nscale, low variable costs, and strong cost controls are needed with a cost leadership\nstrategy.\n(Module 44.2, LOS 44.e)"}, {"n": 4, "q": "An aggressive price reduction to gain market share is most likely to be associated with a:", "opts": ["cost leadership strategy.", "product differentiation strategy.", "service differentiation strategy."], "ans": "A", "expl": "Michael Porter identified two competitive strategies: cost leadership and product or\nservice differentiation. A firm that uses a cost leadership or low-cost strategy seeks to\nhave low production costs that will enable it to offer lower prices than its competitors to\nprotect or gain market share. A product or service differentiation strategy seeks to gain a\nprice premium for its products by making them distinctive to the consumer.\n(Module 44.2, LOS 44.e)"}, {"n": 5, "q": "A firm that pursues a differentiation strategy is most likely to emphasize:", "opts": ["gains in market share.", "market research.", "operating efficiency."], "ans": "B", "expl": "A firm that follows a product or service differentiation strategy needs to emphasize market\nresearch to identify needs for which customers are willing to pay a premium. Market share\nand operating efficiency are more of a focus for firms that pursue a low-cost strategy.\n(Module 44.2, LOS 44.e)"}, {"n": 6, "q": "Adrian Martin, CFA, is tasked with evaluating profitability for a mature industry in the textile\nspace. Given that the industry consists entirely of publicly traded companies, the best\nmeasure for her to use is:", "opts": ["return on equity.", "return on invested capital.", "gross profit margin."], "ans": "B", "expl": "Return on invested capital measures return (after taxes) on a base of total invested capital\n(debt and equity). Because it accounts for total capital structure, it is better than return on\nequity (which only accounts for equity capital). Gross profit margin, which is equal to sales\nless cost of goods sold divided by sales, does not assess total profitability because there\nare myriad other costs beyond just cost of goods sold.\n(Module 44.1, LOS 44.c)"}, {"n": 7, "q": "In conducting a PESTLE analysis of external factors impacting an industry, an analyst will\nexamine economic influences focused on trends in which types of structural measures?", "opts": ["Interest rates.", "Growth in gross domestic product.", "Unemployment rates and labor force numbers."], "ans": "C", "expl": "A PESTLE analysis is used to evaluate external factors impacting an industry. These factors\nare political (P), economic (E), social (S), technological (T), legal (L), and environmental (E).\nEconomic influences can be captured by examining cyclical trends (e.g., interest rates,\ngross domestic product) or structural trends (e.g., labor force, unemployment).\n(Module 44.2, LOS 44.d)"}, {"n": 8, "q": "Which of the following competitive strategies lends itself most to industries where product\nofferings are relatively stable and the rate of innovation is slow?", "opts": ["Differentiation.", "Cost leadership.", "Focus."], "ans": "B", "expl": "A cost leadership strategy is one where firms look to generate profits through lower sale\nprices (to attract and maintain customers) and lower production costs. If product offerings\nare relatively stable and innovation is slow, cost leadership is an appropriate strategy.\n(Module 44.2, LOS 44.e)"}, {"n": 9, "q": "If a company shows relatively stable demand for its services through natural fluctuations in\nthe overall economy, the company will be considered a:", "opts": ["cyclical company.", "growth company.", "defensive company."], "ans": "C", "expl": "A defensive company shows stable demand for its products and services, even as business\ncycles trend from expansionary to contractionary to recovery, and so on. A cyclical\ncompany will exhibit fluctuating demand based on what is happening with the economy.\nStable demand is not indicative of a growth company.\n(Module 44.1, LOS 44.b)"}, {"n": 10, "q": "Regarding competitive strategy and Porter's Five Forces, the bargaining power of customers\ncan be overcome by successfully implementing which type of strategy?", "opts": ["Cost leadership, differentiation, and focus.", "Differentiation and cost leadership.", "Cost leadership and focus."], "ans": "A", "expl": "Firms implementing all three strategies (cost leadership, differentiation, and focus) may\novercome the bargaining power of customers. Cost leadership firms can benefit by the\ncustomers' inability to drive down prices beyond the costs of the marginal producer.\nDifferentiation firms and focus firms can take advantage of the customers' inability or\nunwillingness to shop around or switch suppliers.\n(Module 44.2, LOS 44.e)"}, {"n": 11, "q": "In differentiating between an industry and a sector, an analyst may describe transportation\nand airlines in what manner?", "opts": ["Both airline and transportation are industries.", "Transportation is the sector, and airline is the industry.", "Airline is the sector, and transportation is the industry."], "ans": "B", "expl": "An industry is identified by the products it produces and services it provides. A sector is a\ngrouping of similar industries. Transportation is a sector, and airline is an industry within\nthe transportation sector.\n(Module 44.1, LOS 44.b)"}, {"n": 12, "q": "In an industry and competitive analysis, the industry base rate is best described as the:", "opts": ["maximum number of companies an industry can support.", "overall baseline profitability for the industry as a whole.", "average market share for each company within an industry."], "ans": "B", "expl": "While individual companies may have greater (or lesser) profitability than their industry\noverall for a period of time, eventually, they will move toward the industry base rate—\nwhich is a measure of the overall baseline profitability for the industry as a whole. The\nbase rate is not the maximum number of companies in an industry or the average market\nshare for each company within an industry.\n(Module 44.1, LOS 44.a)"}, {"n": 13, "q": "Which of the following types of industries is typically characterized by stable performance\nduring both expansions and contractions of the business cycle?", "opts": ["Defensive.", "Cyclical.", "Growth."], "ans": "A", "expl": "A defensive industry is typically characterized by stable performance during both\nexpansions and contractions of the business cycle.\n(Module 44.1, LOS 44.b)"}, {"n": 14, "q": "After completing a thorough industry analysis, which of the following is most likely an\nadditional element an analyst should examine when analyzing a specific company within the\nindustry?", "opts": ["Competitive strategy.", "Power of buyers.", "Threat of entry."], "ans": "A", "expl": "Company analysis involves examining a specific firm's financial condition, products and\nservices, and competitive strategy (cost leadership or differentiation). Industry analysis\nshould include examining competitive forces such as the threat of entry and the power of\nbuyers.\n(Module 44.2, LOS 44.e)"}, {"n": 15, "q": "Commercial industry classification systems such as the Global Industry Classification\nStandard (GICS) typically classify firms according to their:", "opts": ["correlations of historical returns.", "sensitivity to business cycles.", "principal business activities."], "ans": "C", "expl": "Commercial providers of industry classification systems such as the GICS classify firms\naccording to principal business activity, such as Consumer Staples, Financial Services, or\nHealth Care.\n(Module 44.1, LOS 44.b)"}, {"n": 16, "q": "Factors that increase competition in an industry most likely include:", "opts": ["low barriers to entry, high concentration, and high unused capacity.", "low barriers to entry, low concentration, and high unused capacity.", "high barriers to entry, low concentration, and low unused capacity."], "ans": "B", "expl": "Low barriers to entry increase competition as more firms can enter the business.\nIndustries that are fragmented and have unused capacity tend to be highly competitive as\nthey fight for market share and attempt to utilize excess manufacturing resources.\n(Module 44.2, LOS 44.d)"}, {"n": 17, "q": "Economic profits are most likely to be earned by firms in an industry that is characterized by:", "opts": ["high power of suppliers and low threat of entry.", "high barriers to entry and low power of buyers.", "low threat of substitutes and high rivalry among existing competitors."], "ans": "B", "expl": "High barriers to entry (low threat of entry) and low power of buyers both increase the\npotential for economic profits within an industry. The five forces that shape industry\ncompetition are rivalry among existing competitors, threat of entry, threat of substitutes,\npower of buyers, and power of suppliers. The stronger any of these forces are within an\nindustry, the less potential that industry has to generate (or continue to earn) economic\nprofits.\n(Module 44.2, LOS 44.d)"}, {"n": 18, "q": "The threat of substitutes is most likely to be low for a firm that:", "opts": ["operates in a fragmented market with little unused capacity.", "produces a commodity product in an industry with significant unused capacity.", "produces a differentiated product with high switching costs."], "ans": "C", "expl": "The threat of competition from substitute products is likely to be low for a firm that\nproduces a differentiated product with high switching costs. Unused capacity and low\nindustry concentration (a fragmented market) tend to intensify rivalry among industry\ncompetitors but are not directly related to the threat of substitutes.\n(Module 44.2, LOS 44.d)"}, {"n": 19, "q": "A commercial industry classification system has a hierarchical structure: economic sectors,\nbusiness sectors, industry groups, industries, and activities. Which of the following\nclassifications does this represent?", "opts": ["Industry Classification Benchmark (ICB).", "Refinitiv Business Classification (TRBC).", "Global Industry Classification Standard (GICS)."], "ans": "B", "expl": "This is the hierarchical structure for the TRBC classification system: economic sectors,\nbusiness sectors, industry groups, industries, and activities. For ICB, it is this: industries,\nsupersectors, sectors, and subsectors. For GICS, it is this: sector, industry groups,\nindustries, and subindustries.\n(Module 44.1, LOS 44.b)"}, {"n": 20, "q": "The competitive forces identified by Michael Porter include:", "opts": ["power of existing competitors and threat of entry.", "rivalry among existing competitors and power of buyers.", "threat of substitutes and rivalry among suppliers."], "ans": "B", "expl": "Porter's five competitive forces are: (1) rivalry among existing competitors; (2) threat of\nentry; (3) threat of substitutes; (4) power of buyers; (5) power of suppliers.\n(Module 44.2, LOS 44.d)"}, {"n": 21, "q": "Commercial index providers typically classify companies by:", "opts": ["statistical grouping.", "sensitivity to business cycles.", "principal business activity."], "ans": "C", "expl": "Commercial providers such as Standard and Poor's and MSCI Barra classify companies\naccording to their principal business activity and the products and services they provide.\n(Module 44.1, LOS 44.b)"}, {"n": 22, "q": "An analyst is using the Herfindahl-Hirschman Index (HHI) to evaluate industry concentration.\nThe industry has four firms with the following market shares: 45%, 25%, 20%, and 10%. This\nindustry's concentration will be considered:", "opts": ["high.", "moderate.", "low."], "ans": "A", "expl": "The HHI of this industry is equal to the summation of the squares of each market share.\nHHI = (45 × 45) + (25 × 25) + (20 × 20) + (10 × 10) = 3,150. An HHI greater than 2,500 is\nindicative of high concentration. Low concentration is less than 1,500, and moderate\nconcentration is between 1,500 and 2,500.\n(Module 44.1, LOS 44.c)"}, {"n": 23, "q": "An analyst is reviewing an industry and its associated barriers to entry and bargaining power\nof suppliers. This assessment of industry profitability and competitiveness is a part of which\nstep of the industry and competitive analysis process?", "opts": ["Survey the industry.", "Analyze the industry structure.", "Define the industry."], "ans": "B", "expl": "Of the five steps of industry and competitive analysis, analyzing the industry structure\nwould include using frameworks like Porter's Five Forces (which includes barriers to entry\nand bargaining power of suppliers) to assess competitiveness and profitability. Defining\nand surveying the industry are steps in the process, but they are not where the action in\nthe narrative is performed.\n(Module 44.1, LOS 44.a)"}, {"n": 24, "q": "An analyst develops a style box that categorizes industries based on growth rate and\nsensitivity to economic business cycles. Which of the following industries will most likely land\nin the box for (higher) growth and defensive sensitivity to cycles?", "opts": ["Crude oil production.", "Utilities.", "Biotechnology."], "ans": "C", "expl": "The growth rate category can be further classified as mature versus growth. The business\ncycle sensitivity category can be further classified as cyclical versus defensive.\nBiotechnology is most likely considered growth and defensive. Utilities are mature and\ndefensive. Crude oil production is mature and cyclical.\n(Module 44.1, LOS 44.c)"}, {"n": 25, "q": "Food, beverage, and utility companies are examples of:", "opts": ["cyclical industries.", "declining industries.", "defensive industries."], "ans": "C", "expl": "Food, beverage, and utility companies provide basic necessities of life and are considered\nto be defensive industries. In a recession, the demand for their products will not fall as\nmuch as for some of the other industry groups.\n(Module 44.1, LOS 44.b)"}, {"n": 26, "q": "As part of an industry and competitive analysis, an analyst first defines and then surveys an\nindustry. Which of the following assessments will be made as part of the survey step?", "opts": ["The geographical region in which the industry operates.", "Political and economic impacts on the industry.", "The growth rate of the industry over the last several years."], "ans": "C", "expl": "Surveying the industry involves assessing its size, profitability, growth, and market share\ntrends. Political and economic impacts are evaluated as part of the examine external\ninfluences step, while the geographical region is assessed in the define the industry step.\n(Module 44.1, LOS 44.a)"}, {"n": 27, "q": "If an investor is looking for exposure to more industry-specific risk and less company-specific\nrisk, a financial advisor is most likely to recommend which of the following approaches?", "opts": ["Smaller investments in several companies within a targeted industry.", "Smaller investments in fewer companies across many industries.", "Larger investments in fewer companies within a targeted industry."], "ans": "A", "expl": "A good investment strategy for gaining exposure to more industry-specific risk and less\ncompany-specific risk is to make smaller investments in many companies within the same\ntargeted industry.\n(Module 44.1, LOS 44.a)"}, {"n": 28, "q": "An analyst studying an industry notices that the rivalries among the companies in the\nindustry are fairly significant. Which of the following characteristics of the industry supports\nthe analyst's assessment?", "opts": ["The costs to exit the market exceed the costs of staying in.", "Fixed costs are low relative to variable costs.", "Product offerings are relatively unique."], "ans": "A", "expl": "When the costs to exit a market exceed the costs of staying in, the industry's\ncompetitiveness is more significant because companies are \"stuck.\" Unique product\nofferings and low fixed costs ease (rather than accentuate) competitiveness.\n(Module 44.2, LOS 44.d)"}, {"n": 29, "q": "An analyst studying the defense industry will focus on political influences in a PESTLE\nanalysis for which of the following reasons?", "opts": ["The primary buyers are governmental entities.", "Political parties determine whether or not to spend on defense.", "Defense spending is the number-one priority for governments."], "ans": "A", "expl": "It is an accurate statement that governments are not only the primary, but also often the\nonly buyers for the defense sector. Defense spending is an important priority, but not\nnecessarily the top priority. Political parties may influence how much is spent on defense,\nbut it is not a question of whether or not to spend on defense.\n(Module 44.2, LOS 44.d)"}, {"n": 30, "q": "How would a commercial industry classification system provider classify a firm with two\nbusiness lines, with one line representing 65% of its total revenue and the other\nrepresenting 35%?", "opts": ["The firm would be classified equally into the two business lines.", "The firm would be classified into the line that is associated with 65% of its revenue.", "The firm would be classified into two business lines based on a 65/35 split."], "ans": "B", "expl": "A firm with multiple business lines, with one of them representing more than 60% of its\nrevenue, will be classified into that single business line. Here, with one line representing\n65%, the entire firm will be put into that business line for classification purposes.\n(Module 44.1, LOS 44.b)"}, {"n": 31, "q": "Industry analysis is most likely to provide an analyst with insight about a company's:", "opts": ["competitive strategy.", "financial performance.", "pricing power."], "ans": "C", "expl": "Industry analysis provides a framework for an analyst to understand a firm in relation to\nits competitive environment, which determines how much pricing power a firm has.\nCompetitive strategy and financial performance are aspects of company analysis.\n(Module 44.1, LOS 44.a)"}, {"n": 32, "q": "Which of the following statements is most accurate regarding a firm that chooses to employ\na focus-based competitive strategy?", "opts": ["It is often a hybrid strategy, as it may involve elements of both cost leadership and differentiation.", "The target is a wide range of customers whose needs may differ considerably.", "The appeal is for customers who are willing to pay more for perceived value."], "ans": "A", "expl": "A focus (or niche) strategy can be thought of as hybrid, as it contains elements of both cost\nleadership and differentiation. Companies whose customers will pay more for perceived\nvalue are more likely to pursue a differentiation strategy. The target for a focus strategy is\non a narrower (rather than wide) range of customers.\n(Module 44.2, LOS 44.e)"}, {"n": 33, "q": "Which of the following types of industries is typically characterized by above-normal\nexpansion in sales and profits independent of the business cycle?", "opts": ["Counter-cyclical.", "Growth.", "Defensive."], "ans": "B", "expl": "A growth industry is typically characterized by above-normal expansion in sales and profits\nindependent of the business cycle.\n(Module 44.1, LOS 44.c)"}];
+const CFG = {"title": "Industry and Competitive Analysis", "subtitle": "CFA · Equity Investments · Reading 44 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; stem.textContent = q.q;
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

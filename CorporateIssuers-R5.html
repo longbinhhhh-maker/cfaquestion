@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A firm is reviewing an investment opportunity that requires an initial cash outlay of $336,875\nand promises to return the following irregular payments:\nYear 1: $100,000\nYear 2: $82,000\nYear 3: $76,000\nYear 4: $111,000\nYear 5: $142,000\nIf the required rate of return for the firm is 8%, what is the net present value of the\ninvestment?", "opts": ["$64,582.", "$99,860.", "$86,133."], "ans": "A", "expl": "To determine the net present value of the investment, given the required rate of return,\nwe can discount each cash flow to its present value, sum the present value, and subtract\nthe required investment.\nYearCash FlowPV of Cash flow at 8%\n0–336,875.00–336,875.00\n1100,000.0092,592.59\n282,000.0070,301.78\n376,000.0060,331.25\n4111,000.0081,588.31\n5142,000.0096,642.81\nNet Present Value64,581.74\n(Module 24.1, LOS 24.b)"}, {"n": 2, "q": "Johnson's Jar Lids is deciding whether to begin producing jars. Johnson's pays a consultant\n$50,000 for market research that concludes Johnson's sales of jar lids will increase by 5% if it\nalso produces jars. In choosing the cash flows to include when evaluating a project to begin\nproducing jars, Johnson's should:", "opts": ["include the cost of the market research and exclude the effect on the sales of jar lids.", "exclude the cost of the market research and include the effect on the sales of jar lids.", "include both the cost of the market research and the effect on the sales of jar lids."], "ans": "B", "expl": "Sunk costs should be excluded from cash flows, as they are costs that cannot be avoided\neven if the project is not undertaken. Externalities, such as positive or negative effects of\naccepting a project on sales of the company's existing products, should be included in the\ncash flows. (Module 24.2, LOS 24.c)"}, {"n": 3, "q": "Which of the following steps is least likely to be a step in the capital allocation process?", "opts": ["Arranging financing for capital projects.", "Conducting a post-audit to identify errors in the forecasting process.", "Forecasting cash flows and analyzing project profitability."], "ans": "A", "expl": "Arranging financing is not one of the administrative steps in the capital allocation process.\nThe four administrative steps in the capital allocation process are:\n1. Idea generation\n2. Analyzing project proposals\n3. Creating the firm-wide capital budget\n4. Monitoring decisions and conducting a post-audit\n(Module 24.1, LOS 24.b)"}, {"n": 4, "q": "A movie studio spends $15 million to buy the rights to a novel that will allow the studio to\nproduce a movie based on this novel in the future. Which of the following real options best\ncharacterizes this scenario?", "opts": ["Expansion option.", "Flexibility option.", "Fundamental option."], "ans": "A", "expl": "Expansion (growth) options give companies the right to make additional investments in\nfuture projects (like producing a movie based on the novel) if the projects will create value.\nFlexibility options give the holder the right to make future operational decisions regarding\nfactors like price, overtime pay, input materials, and the type of products produced.\nFundamental options are real options where the project itself is the option. The payoff to\nthe project depends on the price of the underlying asset.\n(Module 24.2, LOS 24.d)"}, {"n": 5, "q": "Lincoln Coal is planning a new coal mine, which will cost $430,000 to build. The mine will\nbring cash inflows of $200,000 annually over the next seven years. It will then cost $170,000\nto close down the mine in the following year. Assume all cash flows occur at the end of the\nyear. Alternatively, Lincoln Coal may choose to sell the site today. If Lincoln has a 16%\nrequired rate of return, the minimum price they should accept for the property is closest to:", "opts": ["$326,000.", "$318,000.", "$310,000."], "ans": "A", "expl": "The key is first identifying this as a NPV problem. The minimum price the company should\naccept for selling the property is the net present value of the mine if the company built\nand operated it.\nNext, the year of each cash flow must be property identified; specifically: CF = –430,000;\n0\nCF = +$200,000; CF = –$170,000.\n1-78\nEntering these values into the cash flow worksheet:\nCF = –430,000; C01 = 200,000; F01 = 7; C02 = –170,000; F02 = 1; I = 16; CPT NPV =\n0\n325,858.76\n(Module 24.1, LOS 24.b)"}, {"n": 6, "q": "Following a significant and persistent increase in nickel prices, a mine operator decides to\nopen a new nickel mine in Canada. Opening the mine is best characterized as:", "opts": ["a fundamental option.", "an expansion option.", "a flexibility option."], "ans": "A", "expl": "Fundamental options are real options where the project (in this case, the nickel mine) itself\nis the option. The company has the flexibility to mine or not mine the product, in part\nbased on the price of the product.\nExpansion options give a company the right to make additional investments in future\nprojects if the projects will create value.\nFlexibility options give a company the right to increase or decrease the price of a product\nor production volumes in the future.\n(Module 24.2, LOS 24.d)"}, {"n": 7, "q": "The CFO of Axis Manufacturing is evaluating the introduction of a new product. The costs of\na recently completed marketing study for the new product and the possible increase in the\nsales of a related product made by Axis are best described (respectively) as:", "opts": ["externality; cannibalization.", "sunk cost; externality.", "opportunity cost; externality."], "ans": "B", "expl": "The study is a sunk cost, and the possible increase in sales of a related product is an\nexample of a positive externality.\n(Module 24.2, LOS 24.c)"}, {"n": 8, "q": "Which of the following examples best represents a flexibility option?", "opts": ["In three years, a company can invest $500 million to increase the size of its project by 40%.", "In one year, a company can increase the price of its product by up to 30% if demand rises.", "In two years, a company can cease operating a factory if the present value of production is negative."], "ans": "B", "expl": "A flexibility option gives the holder the right to make future operational decisions\nregarding price and production. Flexibility relates to overtime pay, input materials, prices\ncharged, and the type of products produced.\nThe answer option referencing a $500 million investment is an example of an expansion\n(growth) option, which gives a company the right to make additional investments in future\nprojects if the projects will create value.\nThe answer option referencing a company ceasing operating a factory is an example of an\nabandonment option, which gives a company the right to abandon a project in the future if\nthe NPV of the project is negative.\n(Module 24.2, LOS 24.d)"}, {"n": 9, "q": "Which of the following types of capital investments are most likely to generate little to no\nrevenue?", "opts": ["Regulatory projects.", "New product or market development.", "Going concern projects."], "ans": "A", "expl": "Mandatory regulatory or compliance projects may be required by a governmental agency\nor insurance company and typically involve safety-related or environmental concerns. The\nprojects typically generate little to no revenue, but they accompany other new revenue\nproducing projects and are accepted by the company in order to continue operating.\n(Module 24.1, LOS 24.a)"}, {"n": 10, "q": "One of the basic principles of capital allocation is that:", "opts": ["opportunity costs should be excluded from the analysis of a project.", "projects should be analyzed on a pre-tax basis.", "decisions are based on cash flows."], "ans": "C", "expl": "Key principles of the capital allocation process are:\n1. Decisions are based on cash flows, not accounting income.\n2. Cash flows are based on opportunity costs.\n3. The timing of cash flows is important.\n4. Cash flows are analyzed on an after-tax basis.\n5. Financing costs are reflected in the project's required rate of return.\n(Module 24.2, LOS 24.c)"}, {"n": 11, "q": "A real option can:", "opts": ["have a negative value only if it is not exercised.", "have a negative value only if a project’s net present value (NPV) is negative.", "never have a negative value."], "ans": "C", "expl": "Real options represent rights, but not obligations, to the option holders. As a result, they\ncan never have negative values because the option holders could simply walk away from\n(not exercise) their option.\nIf a project's NPV is negative, the real option would have zero value.\n(Module 24.2, LOS 24.d)"}, {"n": 12, "q": "An auto manufacturer recently introduced new technologies into its production of its\npopular pickup truck. The new technologies will allow the manufacturer to easily convert its\nproduction pickup trucks to electric vehicles in a few years. This choice is best characterized\nas a:", "opts": ["flexibility option.", "growth option.", "timing option."], "ans": "A", "expl": "A flexibility option gives the holder the right to make future operational decisions\nregarding price and production. Flexibility relates to overtime pay, input materials, prices\ncharged, and the type of products produced—including, in this case, the choice to convert\nproduction to electric vehicles.\nA timing option allows companies to make future decisions regarding timing of\ninvestments.\nAn expansion (growth) option gives companies the right to make additional investments in\nfuture projects if the projects will create value.\n(Module 24.2, LOS 24.d)"}, {"n": 13, "q": "The financial manager at Genesis Company is looking into the purchase of an apartment\ncomplex for $550,000. Net after-tax cash flows are expected to be $65,000 for each of the\nnext five years, then drop to $50,000 for four years. Genesis' required rate of return is 9% on\nprojects of this nature. After nine years, Genesis Company expects to sell the property for\nafter-tax proceeds of $300,000. What is the internal rate of return on this project?", "opts": ["6.66%.", "13.99%.", "7.01%."], "ans": "C", "expl": "CF = –$550,000; CF = $65,000; F = 5; CF = $50,000; F = 3; CF = $350,000; F = 1. CPT\n0112233\nIRR = 7.0152. Note that the cash flows in year 9 have to be netted to calculate the IRR\ncorrectly.\n(Module 24.1, LOS 24.b)"}, {"n": 14, "q": "If a calculated net present value is negative, the discount rate used is:", "opts": ["greater than the internal rate of return.", "less than the internal rate of return.", "equal to the internal rate of return."], "ans": "A", "expl": "When NPV = 0, the discount rate used is equal to the IRR. If a discount rate is used that is\nhigher than the IRR, the NPV will be negative. Conversely, if a discount rate is used that is\nlower than the IRR, the NPV will be positive.\n(Module 24.1, LOS 24.b)"}, {"n": 15, "q": "Should a company accept a project that has an IRR of 14% and an NPV of $2.8 million if the\ncost of capital is 12%?", "opts": ["No, based on the NPV and the IRR.", "Yes, based only on the NPV.", "Yes, based on the NPV and the IRR."], "ans": "C", "expl": "The project should be accepted on the basis of its positive NPV and its IRR, which exceeds\nthe cost of capital.\n(Module 24.1, LOS 24.b)"}, {"n": 16, "q": "An investment is purchased at a cost of $775,000 and returns $300,000 at the end of years 2\nand 3. At the end of year 4 the investment receives a final payment of $400,000. The IRR of\nthis investment is closest to:", "opts": ["8.65%.", "9.45%.", "13.20%."], "ans": "A", "expl": "Cf0 = -775,000, C01 = 0, F01 = 1, C02 = 300,000, F02 = 2, C03 = 400,000, F03 = 1; IRR =\n8.6534.\n(Module 24.1, LOS 24.b)"}, {"n": 17, "q": "Fisher, Inc., is evaluating the benefits of investing in a new industrial printer. The printer will\ncost $28,000 and increase after-tax cash flows by $7,000 during each of the next four years\nand $6,000 in each of the two years after that. The internal rate of return (IRR) of the printer\nproject is closest to:", "opts": ["11.6%.", "11.8%.", "12.0%."], "ans": "A", "expl": "CF = –$28,000; CF = $7,000; F = 4; CF = $6,000; F = 2; CPT  IRR = 11.6175%.\n→\n01122\n(Module 24.1, LOS 24.b)"}, {"n": 18, "q": "Which of the following is least relevant in determining project cash flow for a capital\ninvestment?", "opts": ["Tax impacts.", "Opportunity costs.", "Sunk costs."], "ans": "C", "expl": "Sunk costs are not to be included in investment analysis. Opportunity costs and the\nproject's impact on taxes are relevant variables in determining project cash flow for a\ncapital investment. (Module 24.2, LOS 24.c)"}, {"n": 19, "q": "A company is considering a $10,000 project that will last 5 years.\nAnnual after tax cash flows are expected to be $3,000\nCost of capital = 9.7%\nWhat is the project's net present value (NPV)?", "opts": ["+$1,460.", "-$1,460.", "+$11,460."], "ans": "A", "expl": "Calculate the PV of the project cash flows\nN = 5, PMT = -3,000, FV = 0, I/Y = 9.7, CPT  PV = 11,460\n→\nCalculate the project NPV by subtracting out the initial cash flow\nNPV = $11,460 – $10,000 = $1,460\n(Module 24.1, LOS 24.b)"}, {"n": 20, "q": "The estimated annual after-tax cash flows of a proposed investment are shown below:\nYear 1: $10,000\nYear 2: $15,000\nYear 3: $18,000\nAfter-tax cash flow from sale of investment at the end of year 3 is $120,000\nThe initial cost of the investment is $100,000, and the required rate of return is 12%. The net\npresent value (NPV) of the project is closest to:", "opts": ["$19,113.", "$63,000.", "-$66,301."], "ans": "A", "expl": "10,000 / 1.12 = 8,929\n2\n15,000 / (1.12) = 11,958\n3\n138,000 / (1.12) = 98,226\nNPV = 8,929 + 11,958 + 98,226 − 100,000 = $19,113\nAlternatively: CFO = -100,000; CF1 = 10,000; CF2 = 15,000; CF3 = 138,000; I = 12; CPT  NPV\n→\n= $19,112.\n(Module 24.1, LOS 24.b)"}, {"n": 21, "q": "With respect to capital investments, the greatest amount of detailed analysis is typically\nrequired when deciding whether to:", "opts": ["replace a functioning machine with a newer model to reduce costs.", "address safety-related concerns.", "introduce a new product or develop a new market."], "ans": "C", "expl": "Introducing a new product or entering a new market involves sales and expense\nprojections that can be highly uncertain, and therefore require the greatest degree of\ndetailed analysis. Addressing safety or regulatory concerns or replacing old machinery\ntypically involve less uncertainty and do not require the same depth of analysis as\ndeveloping a new product or entering a new market.\n(Module 24.1, LOS 24.a)"}];
+const CFG = {"title": "Capital Investments and Capital Allocation", "subtitle": "CFA · Corporate Issuers · Reading 24 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; stem.textContent = q.q;
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

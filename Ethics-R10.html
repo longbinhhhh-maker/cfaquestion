@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Recommended procedures to comply with the Standard concerning priority of transactions\nare least likely to include:", "opts": ["blackout periods.", "disclosure to clients of the firm’s policies in regard to personal investing.", "limited front-running by employees."], "ans": "C", "expl": "Standard VI(B) Priority of Transactions. Front-running is the purchase or sale of securities\nin advance of client trades to take advantage of knowledge of client activity and should be\ncompletely prohibited, not simply limited. Blackout periods and pre-clearance of employee\ntrades are ways of accomplishing this.\n(Module 91.8, LOS 91: VI(B))"}, {"n": 2, "q": "Connie Baker, CFA, is an analyst with the brokerage and investment banking firm Hill and\nStevens (H&S). Baker's supervisor, John Lewis, has asked her to write a research report on\nJagged Rock Brewing. The H&S mergers and acquisitions department has represented Jagged\nRock in all of its acquisitions for the past 12 years. Both Hill and Stevens sit on Jagged Rock's\nboard. According to the Standards of Professional Conduct, can Baker write the report?", "opts": ["No.", "Yes, if she discloses the directorships and the mergers-and-acquisitions relationship.", "Yes, if she maintains her independence and objectivity in its preparation."], "ans": "B", "expl": "Standard VI(A) Avoid or Disclose Conflicts requires that members disclose to clients and\nprospects any potential conflicts of interest that could reasonably expect to impair their\nobjectivity. It does not prohibit analysts with potential conflicts from writing the reports.\n(Module 91.8, LOS 91: VI(A))"}, {"n": 3, "q": "Harry Lee, CFA, is an equity research analyst for a long-term investment fund. His annual\nbonus is linked to the fund's three-year average gains. Under a new policy, the bonus\ncriterion is changed to include a link to the fund's quarterly trading profits. According to the\nCode and Standards, best practices dictate:", "opts": ["requiring Hurst to obtain permission from each client prior to implementation of the new policy.", "updating disclosures when the policy change is implemented.", "treating the policy change as proprietary information."], "ans": "B", "expl": "Standard VI(A) Disclosures of Conflicts recognizes this policy as a potential conflict of\ninterest as members and candidates could be incentivized to favor short-term trading\ngains over long-term value creation. Best practices dictate updating disclosures when the\npolicy change is implemented. The long-term investors should know how members and\ncandidates are compensated, especially when there is the potential for conflicts of\ninterest."}, {"n": 4, "q": "An analyst, who is a CFA Institute member, manages a high-grade bond mutual fund. This is\nhis only professional responsibility. When the analyst comes across a speculative stock\ninvestment that he feels is a good investment for his personal portfolio, the analyst:", "opts": ["is in violation of Standard IV(A), Loyalty to Employer, by spending time analyzing stocks when he should only analyze bonds.", "may invest in the stock because the analyst would not purchase the stock for the bond portfolio he manages.", "must notify his supervisor about the stock according to Standard VI(B), Priority of Transactions, to see if it is appropriate for the portfolio that he manages."], "ans": "B", "expl": "The problem says the analyst \"came across\" the speculative stock investment. We do not\nknow if the analyst neglected his duties. Since such an investment is clearly not\nappropriate for a high-grade bond fund, the analyst may invest in the stock without any\nrestrictions relating to the fund."}, {"n": 5, "q": "Referral fees a member must disclose to a prospective client include:", "opts": ["only fees a member pays to others for referrals.", "both fees a member receives and fees a member pays.", "only fees a member receives for referrals."], "ans": "B", "expl": "Members and candidates must disclose all referral arrangements to their employer,\nclients, and prospective clients.\n(Module 91.8, LOS 91: VI(C))"}, {"n": 6, "q": "According to Standard VI(A), Disclosures of Conflicts, members must disclose to their clients\nthe member's (or their firm's) material ownership of all of the following EXCEPT:", "opts": ["corporate finance relationships.", "real estate holdings.", "beneficial ownership of securities."], "ans": "B", "expl": "Unless the firm's real estate holdings would impair their independence and objectivity,\nthey need not be disclosed.\n(Module 91.8, LOS 91: VI(A))"}, {"n": 7, "q": "Andy Rock, CFA, is an analyst at Best Trade Co. The company is going to announce a sell\nrecommendation on Biomed stock in one hour. Rock was a member of the team who\nreached the decision on Biomed. Rock's wife has an account at Best Trade Co. that contains\nBiomed stock. According to the Code and Standards, trading on Rock's wife's account can\nbegin:", "opts": ["only after the recommendation is announced to the general public.", "only after Rock, as a beneficial owner, has given an appropriate amount of time for clients and his employer to act.", "as soon as the information is disseminated to all clients."], "ans": "C", "expl": "Family accounts that are client accounts should be treated like any other firm account and\nshould neither be given special treatment nor be disadvantaged because of an existing\nfamily relationship with the member or candidate. Members or candidates may undertake\ntransactions in accounts for which they are a beneficial owner only after their clients and\nemployers have had adequate opportunity to act on the recommendation. Personal\ntransactions include those made for the member or candidate's own account, for family\n(including spouse, children, and other immediate family members) accounts, and for\naccounts in which the member or candidate has a direct or indirect pecuniary interest,\nsuch as a trust or retirement account. It could be argued that Rock is a beneficial owner of\nhis wife's account and the reason why his wife's account should be treated like any other\nclient account is because it does not state that Rock makes the trades in his wife's account.\nFrom that we are to infer that another person other than Rock is managing his wife's\naccount thus she should be treated like any other client.\n(Module 91.8, LOS 91: VI(B))"}, {"n": 8, "q": "The following scenarios refer to two analysts who are employed at Global Securities, a large\nbrokerage firm.\nPaula Linstrom, CFA, is instructed by her supervisor to write a research report on\nDelta Enterprises. Delta's stock is widely held by institutional and individual investors.\nAlthough Linstrom does not own any of Delta's stocks, she believes that one of her\nfriends may own 10 shares of Delta. The stock currently sells for $25 per share.\nLinstrom does not believe that informing her employer about her friend's possible\nownership of Delta shares is necessary.\nHershel Wadel, a member of CFA Institute, is asked by his supervisor to write a\nresearch report on Gamma Company. Wadel's wife inherited 500 shares of Gamma\nCompany from her father when he died five years ago. Gamma stock currently sells\nfor $35 per share. Wadel does not believe that informing his employer about his wife's\nownership of Gamma shares is necessary.\nAccording to CFA Institute Standards of Professional Conduct, which the following\nstatements about Linstrom and Wadel's conduct is most accurate?", "opts": ["Neither of these analysts must disclose a potential conflict of interest.", "Both of these analysts must disclose a potential conflict of interest.", "Only one of these analysts must disclose a potential conflict of interest."], "ans": "C", "expl": "The possibility that Linstrom's friend may own shares of Delta's stock does not create a\nconflict of interest for Linstrom, who has no beneficial interest in these shares. On the\nother hand, Wadel has a beneficial interest in his wife's ownership of Gamma shares.\nStandard VI(A) Avoid or Disclose Conflicts requires that Wadel disclose this information so\nthat his employer can make the proper determination."}, {"n": 9, "q": "Abner Flome, CFA, is writing a research report on Paulsen Group, an investment advisory\nfirm. Flome's brother-in-law holds shares of Paulsen stock. Flome has recently interviewed\nfor a position with Paulsen and expects a second interview. According to the Standards,\nFlome's most appropriate action is to disclose in the research report:", "opts": ["his brother-in-law’s holding of Paulsen stock and that he is being considered for a job at Paulsen.", "his brother-in-law’s holding of Paulsen stock.", "that he is being considered for a job at Paulsen."], "ans": "C", "expl": "The possibility of employment with Paulsen creates a potential conflict of interest which\nFlome must disclose. Standard VI(A) Avoid or Disclose Conflicts does not require disclosure\nof his brother-in-law's ownership of Paulsen stock."}, {"n": 10, "q": "Ray Stone, CFA, follows the Amity Paving Company for his employer, Rubbell Securities.\nRubbell is a market maker in Amity's common stock. Stone owns $10,000 face value of\nAmity's senior unsecured bonds. Last summer Stone's son, a college student, worked at\nAmity as a laborer. Which of these facts is Stone least likely required to disclose?", "opts": ["Stone's ownership of Amity securities.", "Stone's son’s employment at Amit.", "Rubbell's broker-dealer relationship with Amity."], "ans": "B", "expl": "Members are required to disclose all matters that reasonably could interfere with their\nobjectivity. Personal ownership of securities or a broker-dealer relationship with a covered\nfirm could reasonably interfere with objectivity, but it is unlikely that a family member's\npast employment would reasonably be expected to interfere with Stone's objectivity.\n(Module 91.8, LOS 91: VI(A))"}, {"n": 11, "q": "An analyst who is a member of CFA Institute has composed an introductory information\npacket for her new clients, which includes information on fees she receives for referring\nclients to other professionals and those she pays for having clients referred to her. With\nrespect to Standard VI(C), Referral Fees, this action:", "opts": ["exceeds the requirement of the Standard because she does not need to reveal the fees she pays to those that refer clients to her.", "is not addressed in the Standard.", "may not satisfy the Standard if such information is only provided after the receivers of the information have become clients."], "ans": "C", "expl": "Standard VI(C) says that a member must reveal information both on fees she receives for\nreferring clients to other professionals and those she pays for having clients referred to\nher before a prospect becomes a client. This allows the prospect to evaluate any partiality\nof a recommendation and the full cost of the services."}, {"n": 12, "q": "A firm produces regular proprietary research reports on various companies. According to\nStandard VI(B), Priority of Transactions, which of the following would be an \"access person\"?", "opts": ["A supervisory analyst who reviews all research reports prior to dissemination.", "An independent auditor with access to material, non-public information on a company being analyzed.", "A person working in the mail room."], "ans": "A", "expl": "Persons with access to information during the normal preparation of research\nrecommendations are subject to Standard VI(B). An independent auditor is not involved in\nthe normal preparation of research recommendations."}, {"n": 13, "q": "Phil Trobb, CFA, is preparing a purchase recommendation on Aneas Lumber for his research\nfirm. Which of the following least likely represents a conflict of interest that Trobb should\ndisclose in his report?", "opts": ["Aneas hires Trobb as a consultant to analyze Aneas' financial statements.", "Trobb's cousin repairs machines for Aneas.", "Trobb's research firm has a large stake of ownership in Aneas."], "ans": "B", "expl": "Standard VI(A) Avoid or Disclose Conflicts defines what constitutes a conflict of interest\nwith regard to clients, prospective clients, and employers. All of these represent potential\nconflicts of interest with the exception of the cousin working for Aneas Lumber in a job\nthat is unrelated to the Aneas' financing."}, {"n": 14, "q": "Which of the following statements is most accurate about the Standard concerning referral\nfees?", "opts": ["Referral fees must be disclosed before proceeding with an agreement for service.", "Referral fees must be disclosed after proceeding with an agreement for service.", "Referral fees may be disclosed before or after proceeding with an agreement for service."], "ans": "A", "expl": "According to Standard VI(C) Referral Fees, such fees must be disclosed before proceeding\nwith an agreement for service. This gives the client or employer the opportunity to\ncompute the full cost of the service and to evaluate any potential partiality in the\nrecommendation.\n(Module 91.8, LOS 91: VI(C))"}, {"n": 15, "q": "Standard VI(B), Priority of Transactions, applies to transactions an analyst takes on behalf of:", "opts": ["both of these.", "his employer.", "his clients."], "ans": "A", "expl": "Standard VI(B) addresses the treatment of both these accounts. The accounts of clients\nand employers have priority over personal accounts."}, {"n": 16, "q": "Wes Smith, CFA, refers many of his clients to Bill Towers, CPA, for accounting services. In\nreturn, Towers performs routine services for Smith, such as his tax returns, for no charge.\nTowers has just become a member of CFA Institute. With this development, Towers must:", "opts": ["discontinue his services for Smith.", "only reveal to the prospects referred by Smith that he performs services for Smith.", "reveal to the prospects referred by Smith that he performs services for Smith, along with the estimated value of those services."], "ans": "C", "expl": "According to VI(C), Referral Fees, as a member of CFA Institute, Towers must tell his clients\nabout the payment in kind to Smith along with an estimate of the value of those services."}, {"n": 17, "q": "Standard VI(C), Referral Fees, requires the member to do all of the following EXCEPT:", "opts": ["disclose to the referred client how much the referral source was paid to refer the client.", "disclose to the referred client the percentage of the member's business that comes from referrals.", "make required disclosures to the referred client before an agreement is made to provide services to the referred client."], "ans": "B", "expl": "The applicable Standard, VI(C), does not require a member to disclose the percentage of\ntheir business that comes from referrals.\nStandard VI(C) states, \"Members shall disclose to clients and prospects any consideration\nor benefit received by the member or delivered to others for the recommendation of any\nservices to the client or prospect.\" Appropriate disclosure means telling the client or\nprospect, before agreeing to perform services, of any benefit given or received for\nrecommending the member's services."}, {"n": 18, "q": "An analyst has a large personal holding of a security, and he has just determined that\nmarket conditions warrant selling this security. The analyst contacts clients who have a\nposition in the security and advises them to sell some or all of the security. After waiting 24\nhours, he sells the security from his personal accounts. This is:", "opts": ["a violation of Standard III(B), Fair Dealing.", "a violation of Standard VI(B), Priority of Transactions.", "congruent with Standard VI(B), Priority of Transactions."], "ans": "C", "expl": "According to Standard VI(B), an analyst must give clients the first opportunity to buy or sell\na security before the analyst acts on his own behalf. A 24-hour waiting period seems\nreasonable under the circumstances presented. The analyst seems to have a reasonable\nbasis, and there is no reason to believe that he is violating Standard III(B) since he\ncontacted all of the clients who have a position in the security.\n(Module 91.8, LOS 91: VI(B))"}, {"n": 19, "q": "Arthur Harrow, CFA, is a pharmaceuticals analyst at Dominion Asset Management. His\nsupervisor directs him to prepare separate research reports on Miracle Drug Company and\nWonder Drug Company. Harrow serves on the board of Miracle and owns shares of Wonder.\nAccording to the Standards of Professional Conduct, which of the following actions is Harrow\nrequired to take when he writes the research reports?", "opts": ["Harrow must disclose his relationship with Miracle but not his ownership of shares in Wonder.", "Harrow must disclose his ownership of shares in Wonder but not his relationship with Miracle.", "Harrow must disclose both his relationship with Miracle and his ownership of shares in Wonder."], "ans": "C", "expl": "Standard VI(A) Avoid or Disclose Conflicts requires that Harrow disclose matters that\nreasonably could be expected to interfere with his independence and objectivity. Both\nHarrow's relationship with Miracle and his ownership of Wonder's shares represent\npotential conflicts of interest and must be disclosed prominently and in clear language in\nthe research report, giving clients the ability to weigh the possible effects of these\npotential conflicts on his analysis and conclusions."}, {"n": 20, "q": "An analyst routinely has the opportunity to offer his clients the opportunity to purchase \"hot\nnew issues.\" He tells his clients that he will distribute each issue equally among those\ninterested, with himself included in the distribution. The clients do not object to this. With\nrespect to Standard VI(B), Priority of Transactions, this:", "opts": ["cannot be a violation because the clients know of the practice and agree.", "may be a violation because it is impossible to distribute hot new issues equally.", "may be a violation despite the clients' approval."], "ans": "C", "expl": "Just because the clients know of a practice does not make it right. The analyst must put the\nclients first. It is a violation for the analyst to participate in a \"hot new issue\" which can\nlower the allocation to any given client below what that client would prefer. This is\ntantamount to putting the analyst's interests ahead of the clients' interests."}, {"n": 21, "q": "An analyst has the opportunity to offer his clients shares in a \"hot new issue.\" One of the\nanalyst's clients is his brother. When the new issue comes out, for those clients he deems it\nwould be appropriate, he offers them an equal share. He includes his brother in that group.\nWith respect to Standard VI(B), Priority of Transactions, this is:", "opts": ["congruent with the Standard as long as he does not have a direct personal interest in his brother's account.", "congruent with the Standard even if he has a direct personal interest in his brother's account.", "congruent with the Standard if his brother is not a 'covered person'."], "ans": "A", "expl": "Client accounts that belong to family members should be treated like any other account so\nlong as there is no direct interest on the part of the analyst. In other words, these types of\naccounts should not be at a disadvantage relative to other client accounts when there is\nno direct interest on the part of the analyst overseeing the account."}, {"n": 22, "q": "Isaac Jones, CFA, wishes to buy Maxima common stock for some of his clients' accounts.\nJones also wishes to purchase Maxima for his personal account. In accordance with CFA\nInstitute Standards, Jones:", "opts": ["may purchase Maxima at any time, as long as the execution price is not more favorable than the execution price given to the clients.", "may purchase Maxima for his personal account, but the transactions for his clients must take priority.", "must disclose his personal account purchase, in writing and in advance, to his clients and employer."], "ans": "B", "expl": "In accordance with Standard VI(B) Priority of Transactions, employer and client\ntransactions must take priority over any personal transactions, meaning any transactions\nin which the member or candidate is the beneficial owner. Disclosure is not enough.\n(Module 91.8, LOS 91: VI(B))"}, {"n": 23, "q": "An analyst is serving on the Board of Directors of a local publicly traded company. To avoid\nviolating the CFA Institute Code and Standards, the analyst must disclose this to:", "opts": ["both his employer and his clients and prospective clients.", "no one since it should not cause a conflict of interest for the analyst.", "only his employer."], "ans": "A", "expl": "Serving on a Board of Directors should be disclosed to both the employer and clients and\nprospective clients.\n(Module 91.8, LOS 91: VI(A))"}, {"n": 24, "q": "An analyst likes to trade commodity futures in her own account. She does not deem any of\nher client accounts suitable for commodity futures trading. When she identifies a favorable\ncommodity futures position, the Standard concerning priority of transactions suggests she\nshould:", "opts": ["act on it on her own behalf as she sees fit.", "first tell her clients about it before acting herself.", "refrain from acting until she notifies her supervisor."], "ans": "A", "expl": "The analyst's commodity futures trading is not a violation of Standard VI(B) Priority of\nTransactions because the investment is not suitable for her clients. If the analyst believes\nthat none of her clients should trade commodity futures, she is not obligated to advise\nthem of her own investments in them."}, {"n": 25, "q": "Rochester Frankfurt is a market maker in the stock of Byrne Brands, Inc. The chairman of\nRochester Frankfurt serves on the board of directors of Byrne Brands. If an analyst at\nRochester Frankfurt who is a CFA charterholder makes an investment recommendation on\nByrne Brands, which of these two facts is the analyst required to disclose?", "opts": ["Neither of these facts.", "Both of these facts.", "Only one of these facts."], "ans": "B", "expl": "Both of these are examples of potential conflicts of interest that Standard VI(A) Avoid or\nDisclose Conflicts requires members or candidates to disclose."}, {"n": 26, "q": "Will Lambert, CFA, is a financial analyst for Offshore Investments. He is preparing a purchase\nrecommendation on Burch Corporation for internal use. According to the CFA Institute\nStandards of Professional Conduct, Lambert would least likely need to disclose to his\nemployer that:", "opts": ["he is a beneficiary of a pension plan of his former employer that owns a large number of shares of Burch's stock.", "Offshore is an OTC market maker for Burch Corporation's stock.", "his wife owns 2,000 shares of Burch Corporation."], "ans": "B", "expl": "Standard VI(A), Avoid or Disclose Conflicts, requires members to disclose to their employer\nall matters, including beneficial ownership of securities, that reasonably could be expected\nto interfere with their duty to their employer or ability to make unbiased and objective\nrecommendations. Disclosure of an employer's own involvement with the security is not\nnecessary in this instance. If the report had been for external use, it would have been\nnecessary to make all of the disclosures given as choices."}, {"n": 27, "q": "If a CFA charterholder receives a referral fee, he must:", "opts": ["consult with the firm's compliance officer, and follow his or her instructions concerning disclosure.", "disclose the nature of the fee arrangement to the client before entering into a formal agreement.", "disclose the fee to the supervisor, in written form, as an additional benefit."], "ans": "B", "expl": "According to Standard VI(C), the nature as well as the value of the fee must be disclosed to\nthe client before entering into a formal agreement. The compliance officer and/or the\nemployee's supervisor should be contacted for consultation."}, {"n": 28, "q": "Dwight Dawson, a CFA charterholder and portfolio manager at Ascott Investments, was\nrecently appointed to the investments committee at Brightwood College. He will receive no\ncompensation from Brightwood for serving on this committee. Another person at Ascott\nmanages part of Brightwood's endowment. Dawson does not inform Ascott's compliance\noffice of his involvement with Brightwood, because he does not believe doing so is\nnecessary.\nBrenda Hamilton, a CFA candidate, also works for Ascott as an investment analyst.\nProcedures established at Ascott prohibit personal trading in securities analyzed or\nrecommended by Ascott. One of these securities is Horizon, a telecommunications firm.\nHamilton buys 10 shares of Horizon for her infant son's trust account. She believes that\nreporting this purchase to Ascott's compliance officer is unnecessary because the amount of\nthe transaction is small and is not for her own personal account.\nDid Dawson or Hamilton's actions violate CFA Institute Standards of Professional Conduct?", "opts": ["Dawson: No, Hamilton: Yes.", "Dawson: No, Hamilton: No.", "Dawson: Yes, Hamilton: Yes."], "ans": "C", "expl": "Dawson violated Standard VI(A), Avoid or Disclose Conflicts, by failing to inform Ascott of\nher involvement with Brightwood College. Dawson could reasonably be expected to be\ninvolved with investment policy decisions at Brightwood that could affect Ascott because\nAscott manages a portion of Brightwood's endowment. Hamilton also violated Standard\nVI(A), because she ignored a directive of her employer. Her purchase of Horizon stock has\nan appearance of impropriety. Hamilton could discuss the purchase of Horizon stock with\nher firm's compliance officer and request an exception to the prohibition against personal\ntrading in securities analyzed or recommended by Ascott."}, {"n": 29, "q": "Samuel Goldstein, CFA, is an analyst for Tamarack Securities. Goldstein's father, Reuben, has\na client account at Tamarack. In ordering trades, Goldstein should place orders in:", "opts": ["all accounts simultaneously.", "his clients' accounts first, his father's account second, and his account last.", "his clients' and his father's accounts in the first group and his personal accounts in the second group."], "ans": "C", "expl": "Standard VI(B), Priority of Transactions, provides that transactions for clients have priority\nover personal trades. Family accounts that are considered client accounts receive the\nsame treatment as client accounts.\n(Module 91.8, LOS 91: VI(B))"}, {"n": 30, "q": "The Standard concerning referral fees is applicable to:", "opts": ["only considerations paid for recommending products or services.", "only considerations received for recommending products or services.", "any consideration received or paid for recommending products or services."], "ans": "C", "expl": "Standard VI(C) Referral Fees requires members and candidates to disclose any\nconsideration received or paid for a recommendation.\n(Module 91.8, LOS 91: VI(C))"}, {"n": 31, "q": "Ryan Brown, CFA, is an analyst with a large insurance company. His personal portfolio\nincludes a significant investment in QRS common stock. The director of the research\ndepartment asked Brown to analyze QRS and write a report about its investment potential.\nBased on the Standards of Professional Conduct, Brown is required to:", "opts": ["sell his shares of QRS before issuing the report.", "disclose the ownership of the stock in the report.", "decline to write the report."], "ans": "B", "expl": "Standard VI(A) Avoid or Disclose Conflicts requires that Brown make full disclosure of all\nmatters that could impair his objectivity. Brown needs to disclose his personal holding in\nQRS stock. Neither of the other choices describes an action that the Standard requires.\n(Module 91.8, LOS 91: VI(A))"}, {"n": 32, "q": "Will Lambert, CFA, is a financial analyst for Offshore Investments. He is preparing a purchase\nrecommendation on Burch Corporation. According to the Standards of Professional Conduct,\nwhich of the following relationships with Burch is Lambert least likely required to disclose?", "opts": ["His son-in-law was formerly employed by Burch.", "His wife owns 2,000 shares of Burch.", "He has a material beneficial ownership of Burch through a family trust."], "ans": "A", "expl": "Standard VI(A) Avoid or Disclose Conflicts requires that Members and Candidates fully\ndisclose all matters which may impair their independence or objectivity or interfere with\ntheir duties to their employer, clients and prospects. Beneficial ownership of shares in a\nfirm on which a member is making investment recommendations is an example of such a\nmatter."}, {"n": 33, "q": "An analyst has been covering a particular firm for years. Recently, the analyst's uncle died\nand left the analyst a sizable position in the firm's stock. To comply with the Code and\nStandards, the analyst:", "opts": ["is required to disclose the ownership of the stock to his employer.", "should divest the stock as soon as is practicable.", "is not required to act because the analyst did not purchase the stock."], "ans": "A", "expl": "The analyst is required to disclose the ownership of the stock to his employer by Standard\nVI(A) Avoid or Disclose Conflicts. The analyst must also disclose the stock ownership in any\nsubsequent coverage of the company. The Standard does not require or recommend that\nthe analyst divest the stock.\n(Module 91.8, LOS 91: VI(A))"}];
+const CFG = {"title": "Guidance for Standard VI", "subtitle": "CFA · Ethical & Professional Standards · Reading 91.8 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; stem.textContent = q.q;
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

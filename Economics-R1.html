@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "For profitable firms in an industry characterized by monopolistic competition, over a long\ntime period, positive economic profits will tend to:", "opts": ["increase, along with accounting profits.", "remain constant, regardless of the trend in accounting profits.", "decrease, even if accounting profits remain positive."], "ans": "C", "expl": "Accounting profit is equal to net income, or revenues less expenses on a company's\nincome statement. Economic profit is accounting profit, less implicit (or opportunity) costs.\nIn the short run, a firm in a monopolistically competitive market structure can have both\naccounting and economic profits. But in the long run, economic profit will decrease to zero\nas competitors take advantage of favorable market conditions and low barriers to entry.\n(Module 12.2, LOS 12.c)"}, {"n": 2, "q": "A market has the following characteristics:\nThere is a large number of independent sellers.\nEach produces a differentiated product.\nThere are low barriers to entry.\nProducers face downward-sloping demand curves.\nDemand is highly elastic.\nThis market is best characterized as:", "opts": ["monopolistic competition.", "a monopoly.", "an oligopoly."], "ans": "A", "expl": "These conditions characterize monopolistic competition. By contrast, monopolies and\noligopolies have high barriers to entry and involve either a single seller (monopoly) or a\nsmall number of interdependent sellers (oligopoly).\n(Module 12.2, LOS 12.b)"}, {"n": 3, "q": "The most effective way to assess the impact of a potential merger on the market structure of\nan industry is to:", "opts": ["analyze barriers to entry.", "calculate the Herfindahl-Hirschman Index.", "calculate the n-firm concentration ratio."], "ans": "B", "expl": "The Herfindahl-Hirschman Index is more sensitive to mergers than the n-firm\nconcentration ratio. Although barriers to entry for an industry are important in assessing\nmarket structure, they are not necessarily related to the impact of a merger.\n(Module 12.3, LOS 12.e)"}, {"n": 4, "q": "The law of diminishing returns states that for a given production process, as more and more\nof a resource (such as labor) are added, holding the quantities of other resources fixed:", "opts": ["cost declines at an increasing rate.", "cost declines at a decreasing rate.", "output increases at a decreasing rate."], "ans": "C", "expl": "The law of diminishing returns states that for a given production process, as more and\nmore resources (such as labor) are added holding the quantities of other resources fixed,\noutput increases at a decreasing rate. This occurs because, at some point, adding more\nworkers results in inefficiencies.\n(Module 12.1, LOS 12.a)"}, {"n": 5, "q": "A key difference between the short-run and long-run outputs under monopolistic\ncompetition is that in the long run, the price is:", "opts": ["below average total cost, such that economic profits are negative.", "equal to average total cost, such that economic profits are zero.", "above average total cost, such that economic profits are positive."], "ans": "B", "expl": "In the short run, a firm in a monopolistically competitive market structure can earn a\npositive economic profit because the price charged exceeds average total cost. However,\ncompetitors see this opportunity and are able to enter the market because the barriers to\nentry are low. Over the long run, the demand curve for each individual firm falls such that\nprice is driven down to the level of average total cost, thereby reducing economic profits\ndown to zero.\n(Module 12.2, LOS 12.c)"}, {"n": 6, "q": "An industry characterized by monopolistic competition contains approximately 25 different\ncompanies. Each individual company is most likely to:", "opts": ["attempt to engage in price-fixing, as it will generate reasonable profits.", "have significant power over pricing.", "focus on average market price rather than individual competitor prices."], "ans": "C", "expl": "In a monopolistically competitive market structure, there will be a large number of\nindependent sellers who will each have small market shares (so no one company has a lot\nof power over pricing), collusion or price-fixing will not be possible because of the sheer\nvolume of companies, and each company will focus more on average market price than on\nthe prices individual competitors are charging.\n(Module 12.2, LOS 12.c)"}, {"n": 7, "q": "Which of the following most accurately describes economies of scale? Economies of scale:", "opts": ["are dependent on short-run average costs.", "increase at a decreasing rate.", "occur when long-run unit costs fall as output increases."], "ans": "C", "expl": "Economies of scale occur when the percentage increase in output is greater than the\npercentage increase in the cost of all inputs. Economies of scale occur over the range\nwhere the long-run average cost curve slopes downward.\n(Module 12.1, LOS 12.a)"}, {"n": 8, "q": "Which of the following is most likely to be considered a characteristic of monopolistic\ncompetition?", "opts": ["Inelastic demand curves.", "High barriers to entry and exit.", "Differentiated products."], "ans": "C", "expl": "Differentiated products are a key characteristic of monopolistic competition. Although\nproducers have downward sloping demand curves, they are typically elastic.\n(Module 12.2, LOS 12.b)"}, {"n": 9, "q": "Which of the following is most likely to be a characteristic of an oligopolistic industry?", "opts": ["Interdependence among firms.", "Low barriers to entry.", "Many sellers."], "ans": "A", "expl": "An oligopolistic industry exhibits a high degree of interdependence among firms. One\nfirm's pricing decisions or advertising activities will affect the other firms' demand curves.\nThese industries typically consist of a small number of sellers and have significant barriers\nto entry.\n(Module 12.2, LOS 12.d)"}, {"n": 10, "q": "A firm operating as a price taker will produce the quantity at which:", "opts": ["marginal revenue equals marginal cost.", "revenue is maximized.", "it earns long-run economic profit."], "ans": "A", "expl": "A firm operating as a price taker will produce the quantity where MC = MR. It will maximize\nprofit and not revenue. In the long run, it will make zero economic profit.\n(Module 12.2, LOS 12.b)"}, {"n": 11, "q": "Which of the following is least likely a characteristic of perfect competition?", "opts": ["The products produced within a given market are homogenous.", "The size of each firm is small relative to the size of the overall market.", "The demand curve for an individual firm is a vertical line."], "ans": "C", "expl": "Under perfect competition individual firms have no control over price resulting in a\ndemand schedule that is perfectly elastic or horizontal.\n(Module 12.2, LOS 12.b)"}, {"n": 12, "q": "According to the law of diminishing returns, doubling the number of salespeople for a firm\nwill most likely result in:", "opts": ["doubling the total sales of the firm.", "increasing the total sales of the firm and reducing the average sales per salesperson.", "decreasing the total sales of the firm as a result of competition amongst salespeople."], "ans": "B", "expl": "The law of diminishing returns states that as more of a resource is added to a production\nprocess, holding other resource use constant, increases in output will eventually decrease.\nTherefore, as more salespeople are added they will generate more sales at a decreasing\nrate. Total sales will increase and the average sales per salesperson will decrease.\n(Module 12.1, LOS 12.a)"}, {"n": 13, "q": "A key difference in oligopoly price setting between the Cournot model and the Stackelberg\nmodel is that the latter assumes:", "opts": ["competitors’ prices will not change.", "sequential rather than simultaneous pricing by market participants.", "a strategic game model versus the former, which is a rule-based model."], "ans": "B", "expl": "The Stackelberg model assumes pricing decisions are made sequentially, where the leader\nfirm chooses the price first, and with the other firm choosing its price based on the\nleader's price. The Cournot model assumes competitors' prices will not change. Both\nCournot and Stackelberg models are rule-based (strategic game) models.\n(Module 12.2, LOS 12.d)"}, {"n": 14, "q": "Under which type of market structure are the production and pricing alternatives of a firm\nmost affected by the decisions of its competitors?", "opts": ["Monopolistic competition.", "Oligopoly.", "Perfect competition."], "ans": "B", "expl": "An oligopoly market structure is characterized by a small number of firms producing\nsimilar or differentiated products, with a high degree of interdependence among\ncompetitors. Each firm's optimal price and output are strongly affected by the pricing and\noutput decisions of its competitors.\n(Module 12.2, LOS 12.b)"}, {"n": 15, "q": "Which of the following is most likely a characteristic of monopolistic competition?", "opts": ["Producer decisions are interdependent.", "Each producer offers a differentiated product.", "Producers face horizontal demand curves."], "ans": "B", "expl": "Differentiated products are a feature of monopolistic competition markets.\nInterdependence is a characteristic of oligopoly markets. Horizontal demand curves facing\nproducers are a feature of perfect competition. (Module 12.2, LOS 12.b)"}, {"n": 16, "q": "Which of the following is least accurate regarding product development and marketing for\nfirms under monopolistic competition?", "opts": ["Brand names can provide consumers with information regarding the quality of firm’s products.", "Firms that bring new and innovative products to the market face relatively more elastic demand curves than their competitors.", "Relative to other types of competition, product innovation is critical to the pursuit of economic profits."], "ans": "B", "expl": "Firms under monopolistic competition face less elastic demand curves when they\nintroduce new and innovative products. This enables them to increase price and earn\neconomic profits. However, close substitutes and imitations will eventually erode the\neconomic profit from a new product. So, firms must constantly seek innovative product\nfeatures that make their products relatively more desirable than their competitors.\n(Module 12.2, LOS 12.c)"}, {"n": 17, "q": "The sale price per unit that would maximize profits for all oligopoly participants is equal to\n$25 per unit. The sale price that would exist in a perfectly competitive market structure is\nequal to $18 per unit. The most likely price for a firm in an oligopoly to charge will be closest\nto:", "opts": ["$20.", "$30.", "$25."], "ans": "A", "expl": "The limiting outcomes in an oligopoly situation mean that price will fall somewhere\nbetween where all participants would maximize profits ($25) and the price that would\nresult from perfect competition ($18). So, the most likely price out of the options given will\nbe $20.\n(Module 12.2, LOS 12.d)"}, {"n": 18, "q": "A firm that is experiencing diseconomies of scale should:", "opts": ["decrease its plant size.", "decrease output in the short run.", "shut down in the long run."], "ans": "A", "expl": "If a firm is experiencing diseconomies of scale, it should decrease its plant size to the\nefficient scale, which is the size that minimizes long-run average total cost. Plant size can\nbe adjusted in the long run but not in the short run.\n(Module 12.1, LOS 12.a)"}, {"n": 19, "q": "Which of the following is most likely a characteristic of perfect competition?", "opts": ["The number of firms in the market is small.", "Barriers to entry are not a significant factor.", "Different firms sell their output at different prices."], "ans": "B", "expl": "Under perfect competition there are no significant barriers to entry into the market. An\nindustry that can be characterized as perfect competition typically consists of a large\nnumber of firms, each of which can sell its entire output at the market price, and none of\nwhich are large enough to affect the market price.\n(Module 12.2, LOS 12.b)"}, {"n": 20, "q": "The upward sloping segment of a long-run average total cost curve represents the existence\nof:", "opts": ["diseconomies of scale.", "economies of scale.", "efficiencies of scale."], "ans": "A", "expl": "Diseconomies of scale occur along the upward sloping segment of the long-run average\ntotal cost curve where costs rise as output increases. The flat portion at the bottom of the\nlong-run average total costs curve represents constant returns to scale.\n(Module 12.1, LOS 12.a)"}, {"n": 21, "q": "Which of the following is least likely to be considered a feature that is common to both\nmonopolistic competition and perfect competition?", "opts": ["Extensive advertising to differentiate products.", "Low or no barriers to entry.", "Zero economic profits in the long run."], "ans": "A", "expl": "The only item listed in the question that monopolistic competition and perfect competition\ndo not have in common is the use of advertising to differentiate their products. Extensive\nadvertising is a key feature of monopolistic competition.\n(Module 12.2, LOS 12.b)"}, {"n": 22, "q": "The type of economic market that features a large number of competitors offering\ndifferentiated products is best characterized as:", "opts": ["monopolistic competition.", "oligopoly.", "perfect competition."], "ans": "A", "expl": "Monopolistic competition is used to describe markets where there are a large number of\ncompetitors producing differentiated products.\nIn perfect competition all firms produce identical products. In an oligopoly there is a small\nnumber of firms.\n(Module 12.2, LOS 12.b)"}, {"n": 23, "q": "One way in which monopolistic competition can be distinguished from perfect competition is\nthat in monopolistic competition:", "opts": ["each firm faces a perfectly elastic demand curve.", "marginal revenue is greater than marginal cost at the quantity produced.", "price is greater than marginal cost."], "ans": "C", "expl": "In monopolistic competition, price is greater than marginal cost (i.e., firms can realize a\nmarkup). In perfect competition, P = MC. Firms in monopolistic competition are price\nsearchers, i.e., each firm faces a downward sloping demand curve. Regardless of the\nmarket structure, all firms produce the quantity at which marginal revenue equals\nmarginal cost.\n(Module 12.2, LOS 12.b)"}, {"n": 24, "q": "Based on the concept of diminishing returns, as the quantity of output increases, the short-\nrun marginal costs of production eventually:", "opts": ["fall at a decreasing rate.", "rise at a decreasing rate.", "rise at an increasing rate."], "ans": "C", "expl": "The law of diminishing returns states that as more variable resources are a production\nprocess combined with a fixed input, output will eventually increase at a decreasing rate.\nIn the short run, as the quantity produced rises, costs rise at an increasing rate.\n(Module 12.1, LOS 12.a)"}, {"n": 25, "q": "Which one of the following structures is characterized by free entry and exit, a differentiated\nproduct, and price searcher behavior?", "opts": ["Monopolistic competition.", "Oligopoly.", "Pure competition."], "ans": "A", "expl": "Monopolistic competition is another name for competitive price-searcher markets. There\nare a large number of independent sellers, each produces a differentiated product, each\nmarket has a low barrier to entry, and each producer faces a downward sloping demand\ncurve.\n(Module 12.2, LOS 12.b)"}, {"n": 26, "q": "A firm has the following characteristics:\nrelatively small in size.\nmarginal revenue is equal to the selling price.\neconomic profits will not be earned for any significant period of time.\nThe firm is best described as existing in a(n):", "opts": ["monopolistic market structure.", "price searcher market.", "purely competitive market."], "ans": "C", "expl": "The firm being described is a price taker firm in a purely competitive market. These firms\nmust sell their product at the going market price, there are no barriers to entry, and there\nare a large number of firms that produce a homogeneous product.\n(Module 12.2, LOS 12.b)"}, {"n": 27, "q": "Characteristics of an oligopoly least likely include:", "opts": ["significant barriers to entry.", "identical products.", "interdependence among competitors."], "ans": "B", "expl": "In an oligopoly, a small number of producers sell products that can be similar or\ndifferentiated. An oligopoly typically features significant barriers to entry including\neconomies of scale. Pricing and output decisions by each firm directly influence the\ndecisions of competing firms.\n(Module 12.2, LOS 12.b)"}, {"n": 28, "q": "Monopolistic competition differs from pure monopoly in that:", "opts": ["barriers to entry are high under monopoly, but low under monopolistic competition.", "monopolistic competitors are price takers, monopolists are not.", "monopolists maximize profit; monopolistic competitors do not."], "ans": "A", "expl": "Monopolistic competition is characterized by the low barriers to enter its competitive\nmarkets. In contrast, a monopoly exists only where there are high barriers to market\nentry.\n(Module 12.2, LOS 12.b)"}, {"n": 29, "q": "The law of diminishing returns states that at some point as:", "opts": ["more of a resource is devoted to production, holding the quantity of other inputs constant, the output will increase, but at a decreasing rate.", "less of a resource are devoted to production, holding the quantity of other inputs constant, the output will decrease, but at an increasing rate.", "more of a resource is devoted to production, holding the quantity of other inputs constant, at some point output will begin to decrease."], "ans": "A", "expl": "At low levels of output, increasing marginal returns will exist corresponding to the\ndownward sloping portion of the marginal cost curve. As marginal costs begin to increase\ndiminishing marginal returns will occur.\n(Module 12.1, LOS 12.a)"}, {"n": 30, "q": "Firms in perfectly competitive markets and firms operating in a market characterized by\nmonopolistic competition have several things in common. Which of the following is least\nlikely one of them? Both:", "opts": ["face perfectly elastic demand curves.", "maximize economic profit.", "operate in markets that have low or no barriers to entry."], "ans": "A", "expl": "The only item listed in the question that monopolistic competition and pure competition\ndo not have in common is a perfectly elastic demand curve. Under pure competition,\nproducers face a perfectly elastic demand curve, whereas price searchers face downward\nsloping demand curves.\n(Module 12.2, LOS 12.b)"}, {"n": 31, "q": "Which of the following is least likely a condition of a perfectly competitive market?", "opts": ["Firms face elastic demand curves.", "Indistinguishable products.", "Sellers make economic profits."], "ans": "C", "expl": "The only item listed that is NOT a condition of a perfectly competitive market is that sellers\nmake economic profits. In fact, sellers do not make economic profit after taking into\naccount their opportunity costs.\n(Module 12.2, LOS 12.b)"}, {"n": 32, "q": "Concentration measures are most likely to be used to:", "opts": ["analyze barriers to entry into an industry.", "identify the market structure of an industry.", "measure elasticity of demand facing an industry."], "ans": "B", "expl": "Concentration measures are used to identify the market structure of an industry (perfect\ncompetition, monopolistic competition, oligopoly, or monopoly). Concentration measures\ndo not directly indicate an industry's barriers to entry or elasticity of demand.\n(Module 12.3, LOS 12.e)"}, {"n": 33, "q": "Which of the following is least likely a characteristic of an oligopoly?", "opts": ["Products can either be similar or differentiated.", "Relatively small economies of scale.", "There are few sellers."], "ans": "B", "expl": "Oligopolies have large economies of scale and interdependence among competitors.\n(Module 12.2, LOS 12.b)"}, {"n": 34, "q": "A market structure characterized by a large number of firms all producing identical products\nis best described as:", "opts": ["perfect competition.", "monopoly.", "monopolistic competition."], "ans": "A", "expl": "In a perfectly competitive economic market, there are many independent firms, each seller\nis small relative to the total market, and there are no barriers to entry or exit.\n(Module 12.2, LOS 12.b)"}, {"n": 35, "q": "At a fixed level of capital, output increases as the quantity of labor increases, but at a\ndecreasing rate. This phenomenon is an example of:", "opts": ["diminishing costs to labor.", "diminishing returns to capital.", "diminishing returns to labor."], "ans": "C", "expl": "The law of diminishing returns states that at some point, as more and more of a resource\n(e.g., labor) is devoted to a production process, holding the quantity of other inputs\nconstant, the output increases, but at a decreasing rate.\n(Module 12.1, LOS 12.a)"}, {"n": 36, "q": "An oligopoly is least likely characterized by:", "opts": ["barriers to entry.", "a large number of sellers.", "economies of scale."], "ans": "B", "expl": "Oligopolies consist of a small number of sellers. They tend to be characterized by barriers\nto entry such as significant economies of scale.\n(Module 12.2, LOS 12.b)"}, {"n": 37, "q": "Which of the following statements regarding diminishing marginal returns is most accurate?", "opts": ["As the quantity produced rises, costs begin to rise at a decreasing rate.", "The total cost curve arches downward.", "As the quantity produced rises, costs begin to rise at an increasing rate."], "ans": "C", "expl": "At production levels that are consistent with decreasing marginal returns, costs will\nincrease at an increasing rate as production rises.\n(Module 12.1, LOS 12.a)"}, {"n": 38, "q": "A firm is operating in a perfectly competitive market. Market price is greater than average\nvariable cost (AVC) but lower than average total cost (ATC). Which of the following\nstatements is most accurate?", "opts": ["The firm should continue to produce and sell its product in the short run but not in the long run, unless the price increases.", "The firm should decrease its production in the short run in order to increase price and either reduce losses or produce profits.", "If the owner thinks the price eventually will exceed ATC, the firm should shut down its operations temporarily and resume when price exceeds ATC."], "ans": "A", "expl": "Because the price exceeds the average variable cost, each item sold covers part of the\nfirm's fixed cost, so in the short run the firm should continue to produce and sell its\nproduct. If the firm shuts down temporarily, the costs incurred (fixed costs) will not be\nrecovered partially. In the long run, however, the firm should shut down unless the price is\ngreater than average total cost. Since the firm is a price taker, reducing the firm's output\nwill have no effect on the price since each firm is small relative to the market. (Module\n12.1, LOS 12.a)"}, {"n": 39, "q": "Which of the following regarding monopolistic competition is most accurate ?", "opts": ["Each firm produces a differentiated product.", "There are very few independent sellers.", "Zero barriers to entry and exit exist."], "ans": "A", "expl": "Other characteristics of monopolistic competition (also known as competitive price\nsearcher markets) are: a large number of independent sellers, low barriers to entry, and\nan elastic downward sloping demand curve.\n(Module 12.2, LOS 12.b)"}, {"n": 40, "q": "Which one of the following is least likely a characteristic of monopolistic competition?", "opts": ["A single seller.", "Differentiated products.", "Low barriers to entry and exit."], "ans": "A", "expl": "There are many sellers or producers who sell differentiated products that permit firms to\nattract customers without reducing price; and there are low barriers to entry.\n(Module 12.2, LOS 12.b)"}, {"n": 41, "q": "The market structure in which a firm's optimal pricing strategy depends on the responses of\nother firms is:", "opts": ["Oligopoly.", "Monopolistic competition.", "Perfect competition."], "ans": "A", "expl": "Interdependence of firms is a characteristic of an oligopoly market. Optimal pricing for a\nfirm in an oligopoly market depends on expectations of how its competitors will respond.\n(Module 12.2, LOS 12.d)"}, {"n": 42, "q": "The demand curves faced by monopolistic competitors is:", "opts": ["elastic due to the availability of many close substitutes.", "inelastic due to the availability of many complementary goods.", "not sensitive to price due to absence of close substitutes."], "ans": "A", "expl": "The demand for products from monopolistic competitors is elastic due to the availability of\nmany close substitutes. If a firm increases its product price, it will lose customers to firms\nselling substitute products.\n(Module 12.2, LOS 12.c)"}, {"n": 43, "q": "A venture capitalist is interested in providing funding for a new company. The company\nwants to enter an industry where the market structure is best described as monopolistic\ncompetition. The venture capitalist can expect to find an industry where:", "opts": ["the costs to enter the market are low.", "the products are homogeneous.", "firms compete regularly on price."], "ans": "A", "expl": "In a monopolistically competitive market structure, the products are differentiated (not\nhomogeneous), firms compete more on feature differences and quality than on price, and\nthe barriers to entry (the costs of entering and exiting the market) are low.\n(Module 12.2, LOS 12.c)"}, {"n": 44, "q": "In which of the following industry structures is a firm least likely able to increase its total\nrevenue by decreasing the price of its output?", "opts": ["Oligopoly.", "Perfect competition.", "Monopolistic competition."], "ans": "B", "expl": "Under perfect competition each firm is selling all of its output at the market price.\nTherefore any firm that sells its output at less than the market price will decrease its total\nrevenue. Under monopolistic competition or oligopoly, firms are price searchers.\nDecreasing the price will increase the quantity a firm sells and may increase or decrease\ntotal revenue.\n(Module 12.2, LOS 12.b)"}, {"n": 45, "q": "Which of the following most accurately describes a market with a single seller of a product\nthat has no good substitutes?", "opts": ["Monopolistic competition.", "Oligopoly.", "Monopoly."], "ans": "C", "expl": "A monopoly is characterized by one seller, a specific and well-defined product for which\nthere is no good substitutes, and high barriers to entry.\n(Module 12.2, LOS 12.b)"}, {"n": 46, "q": "Monopolistic competition differs from pure monopoly in that:", "opts": ["monopolists maximize profits and monopolistic competitors do not.", "monopolistic competitors are price takers and monopolists are not.", "monopolistic competitors have low barriers to entry and monopolists do not."], "ans": "C", "expl": "Another name for monopolistic competition is a competitive price searcher market.\nMonopolistic competition refers to a large number of independent sellers, each produces\na differentiated product, each market has a low barrier to entry, and each producer faces\na downward sloping demand curve.\n(Module 12.2, LOS 12.b)"}, {"n": 47, "q": "A market that is characterized by monopolistic competition is least likely to feature:", "opts": ["low barriers to entry.", "a small number of independent sellers.", "sellers that produce a differentiated product."], "ans": "B", "expl": "In monopolistic competition, there is a large, not small, number of independent sellers.\n(Module 12.2, LOS 12.b)"}, {"n": 48, "q": "The most likely limitation of the N-firm and Herfindahl-Hirschman concentration measures\nin assessing market power is that they:", "opts": ["are both backward looking.", "are insensitive to mergers within the industry.", "do not explicitly include the effects of potential competition."], "ans": "C", "expl": "Because potential competition from new entrants is not considered in the calculation of\nindustry concentration measures, market power (pricing power) may be low even though\nthe market shares of the top firms in the industry are quite large.\n(Module 12.3, LOS 12.e)"}, {"n": 49, "q": "Firm X and Firm Y are two firms in a Cournot duopoly model with identical marginal cost\ncurves. In the long run, equilibrium will occur with both firms selling:", "opts": ["the same quantity with an equivalent market share at an equilibrium price above the price in a perfectly competitive market.", "different quantities with different market shares at an equilibrium price above the price in a monopoly market structure.", "the same quantity with differing market shares at an equilibrium price equivalent to the price in a monopoly market structure."], "ans": "A", "expl": "In a Cournot duopoly model, two firms with identical marginal cost curves in the long run\nwill sell the same quantity with equivalent market shares at an equilibrium price above the\nprice in a perfectly competitive market (but below the price in a monopoly market\nstructure).\n(Module 12.2, LOS 12.d)"}];
+const CFG = {"title": "Firms and Market Structures", "subtitle": "CFA · Economics · Reading 12 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; stem.textContent = q.q;
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

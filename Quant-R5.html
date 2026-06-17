@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .stem .qtable{width:100%;border-collapse:collapse;margin:12px 0 2px;font-size:14.5px;
+    border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .stem .qtable th,.stem .qtable td{border:1px solid var(--line);padding:8px 11px;
+    text-align:left;vertical-align:top}
+  .stem .qtable thead th{background:var(--panel2);font-weight:700;color:var(--accent2)}
+  .stem .qtable tbody td:first-child{font-weight:600}
+  .stem .qtable td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+  .stem .qtable tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 45%,transparent)}
+  @media (max-width:520px){.stem .qtable{font-size:13px}.stem .qtable th,.stem .qtable td{padding:6px 8px}}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "For assets A and B we know the following: E(R) = 0.10, E(R) = 0.20, Var(R) = 0.25, Var(R) =\nABAB\n0.36 and the correlation of the returns is 0.6. What is the expected return of a portfolio that\nis equally invested in the two assets?", "opts": ["0.3050.", "0.2275.", "0.1500."], "ans": "C", "expl": "The expected return of a portfolio composed of n-assets is the weighted average of the\nexpected returns of the assets in the portfolio: ((w) × (E(R)) + ((w) × (E(R)) = (0.5 × 0.1) +\n1122\n(0.5 × 0.2) = 0.15.\n(Module 5.1, LOS 5.a)"}, {"n": 2, "q": "Assume two stocks are perfectly negatively correlated. Stock A has a standard deviation of\n10.2% and stock B has a standard deviation of 13.9%. What is the standard deviation of the\nportfolio if 75% is invested in A and 25% in B?", "opts": ["0.00%.", "0.17%.", "4.18%."], "ans": "C", "expl": "The standard deviation of the portfolio is found by:\n22 220.52222\n[W σ+ W σ + 2WWσσr], or [(0.75)(0.102) + (0.25)(0.139) + (2)\n112212121,2\n0.5\n(0.75)(0.25)(0.102)(0.139)(–1.0)] = 0.0418, or 4.18%.\n(Module 5.1, LOS 5.a)"}, {"n": 3, "q": "What is the standard deviation of a portfolio if you invest 30% in stock one (standard\ndeviation of 4.6%) and 70% in stock two (standard deviation of 7.8%) if the correlation\ncoefficient for the two stocks is 0.45?", "opts": ["6.83%.", "6.20%.", "0.38%."], "ans": "B", "expl": "The standard deviation of the portfolio is found by:\n22220.52222\n[W σ + W σ + 2WWσσr], or [(0.30)(0.046) + (0.70)(0.078) + (2)(0.30)\n112212121,2\n0.5\n(0.70)(0.046)(0.078)(0.45)]= 0.0620, or 6.20%.\n(Module 5.1, LOS 5.a)"}, {"n": 4, "q": "Use the following probability distribution.\nState of the EconomyProbabilityReturn on Portfolio\nBoom0.3015%\nBust0.703%\nThe expected return for the portfolio is:", "opts": ["9.0%.", "8.1%.", "6.6%."], "ans": "C", "expl": "Typesetting math: 100%\nThe expected portfolio return is a probability-weighted average:\nState of the EconomyProbabilityReturn on PortfolioProbability × Return\nBoom0.3015%0.3 × 15% = 4.5%\nBust0.703%0.7 × 3% = 2.1%\nExpected Return = ∑Probability × Return6.6%\n(Module 5.1, LOS 5.a)"}, {"n": 5, "q": "If given the standard deviations of the returns of two assets and the correlation between the\ntwo assets, which of the following would an analyst least likely be able to derive from these?", "opts": ["Covariance between the returns.", "Expected returns.", "Strength of the linear relationship between the two."], "ans": "B", "expl": "The correlations and standard deviations cannot give a measure of central tendency, such\nas the expected value.\n(Module 5.1, LOS 5.a)"}, {"n": 6, "q": "If Stock X has a standard deviation of returns of 18.9% and Stock Y has a standard deviation\nof returns equal to 14.73% and returns on the stocks are perfectly positively correlated, the\nstandard deviation of an equally weighted portfolio of the two is:", "opts": ["10.25%.", "14.67%.", "16.82%."], "ans": "C", "expl": "Typesetting math: 100%\nThe standard deviation of two stocks that are perfectly positively correlated is the\nweighted average of the standard deviations: 0.5(18.9) + 0.5(14.73) = 16.82%. This\nrelationship is true only when the correlation is one. Otherwise, you must use the formula:\n√\n2222\nσ=wσ+wσ+2wwσσρ\np1212\n11221,2\n(Module 5.1, LOS 5.a)"}, {"n": 7, "q": "The covariance of returns on two investments over a 10-year period is 0.009. If the variance\nof returns for investment A is 0.020 and the variance of returns for investment B is 0.033,\nwhat is the correlation coefficient for the returns?", "opts": ["0.350.", "0.444.", "0.687."], "ans": "A", "expl": "The correlation coefficient is: Cov(A,B) / [(Std Dev A)(Std Dev B)] = 0.009 / [(√0.02)(√0.033)] =\n0.350.\n(Module 5.1, LOS 5.a)"}, {"n": 8, "q": "An investor is considering investing in one of the following three portfolios:\nStatistical MeasuresPortfolio XPortfolio YPortfolio Z\nExpected annual return12%17%22%\nStandard deviation of return14%20%25%\nIf the investor's minimum acceptable return is 5%, the optimal portfolio using Roy's safety-\nfirst criterion is:", "opts": ["Portfolio Y.", "Portfolio Z.", "Portfolio X."], "ans": "B", "expl": "12−5\nPortfolio X: SFRatio==0.50\n14\n17−5\nPortfolio Y: SFRatio==0.60\n20\n22−5\nPortfolio Z: SFRatio==0.68\n25\nAccording to the safety-first criterion, Portfolio Z, with the largest ratio (0.68), is the best\nalternative. (Module 5.1, LOS 5.c)", "qhtml": "<p>An investor is considering investing in one of the following three portfolios:</p><table class=\"qtable\"><thead><tr><th>Statistical Measures</th><th>Portfolio X</th><th>Portfolio Y</th><th>Portfolio Z</th></tr></thead><tbody><tr><td>Expected annual return</td><td>12%</td><td>17%</td><td>22%</td></tr><tr><td>Standard deviation of return</td><td>14%</td><td>20%</td><td>25%</td></tr></tbody></table><p>If the investor's minimum acceptable return is 5%, the optimal portfolio using Roy's safety-first criterion is:</p>"}, {"n": 9, "q": "An investor has two stocks, Stock R and Stock S in her portfolio. Given the following\ninformation on the two stocks, the portfolio's standard deviation is closest to:\nσ = 34%\nR\nσ = 16%\nS\nr = 0.67\nR,S\nW = 80%\nR\nW = 20%\nS", "opts": ["29.4%.", "8.7%.", "7.8%."], "ans": "A", "expl": "The formula for the standard deviation of a 2-stock portfolio is:\n22221/2\ns = [Ws + Ws + 2WWssr]\nAABBABABA,B\n22221/2\ns = [(0.8 × 0.34) + (0.2 × 0.16) + (2 × 0.8 × 0.2 × 0.34 × 0.16 × 0.67)] =\n1/21/2\n[0.073984 + 0.001024 + 0.0116634] = 0.0866714 = 0.2944, or approximately\n29.4%.\n(Module 5.1, LOS 5.a)"}, {"n": 10, "q": "Which of the following portfolios provides the optimal \"safety first\" return if the minimum\nacceptable return is 9%?\nPortfolioExpected Return (%)Standard Deviation (%)\n1135\n2113\n392", "opts": ["3.", "1.", "2."], "ans": "B", "expl": "Roy's safety-first criterion requires the maximization of the SF Ratio:\nSF Ratio = (expected return – threshold return) / standard deviation\nPortfolioExpected Return (%)Standard Deviation (%)SF Ratio\n11350.80\n21130.67\n3920.00\nPortfolio #1 has the highest safety-first ratio at 0.80.\n(Module 5.1, LOS 5.c)"}, {"n": 11, "q": "For two random variables, P(X = 2, Y = 10) = 0.3, P(X = 6, Y = 2.5) = 0.4, and P(X = 10, Y = 0) =\n0.3. Given that E(X) is 6 and E(Y) is 4, the covariance of X and Y is:", "opts": ["-12.0.", "24.0.", "6.0."], "ans": "A", "expl": "Typesetting math: 100%\nThe covariance is COV(XY) = ((0.3 × ((2 – 6) × (10 – 4))) + ((0.4 × ((6 – 6) × (2.5 – 4))) + (0.3 ×\n((10 – 6) × (0 – 4))) = –12.\n(Module 5.1, LOS 5.b)"}, {"n": 12, "q": "The joint probability function for returns on an equity index (RI) and returns on a stock (RS)is\ngiven in the following table:\nReturns on Index (R)\nI\nReturn on stock (R)R = 0.16R = 0.02R = −0.10\nSIII\nR = 0.24\n0.250.000.00\nS\nR = 0.03\n0.000.450.00\nS\nR = −0.15\n0.000.000.30\nS\nCovariance between stock returns and index returns is closest to:", "opts": ["0.014.", "0.019.", "0.029."], "ans": "A", "expl": "E(I) = (0.25 × 0.16) + (0.45 × 0.02) + (0.30 × –0.10) = 0.0190.\nE(S) = (0.25 × 0.24) + (0.45 × 0.03) + (0.30 × –0.15) = 0.0285.\nCovariance = [0.25 × (0.16 – 0.0190) × (0.24 – 0.0285)] + [0.45 × (0.02 – 0.0190) × (0.03 –\n0.0285)] + [0.30 × (–0.10 – 0.0190) × (–0.15 – 0.0285)] = 0.0138.\n(Module 5.1, LOS 5.b)"}, {"n": 13, "q": "The mean and standard deviation of returns on three portfolios are listed below in\npercentage terms:\nPortfolio X: Mean 5%, standard deviation 3%.\nPortfolio Y: Mean 14%, standard deviation 20%.\nPortfolio Z: Mean 19%, standard deviation 28%.\nUsing Roy's safety first criteria and a threshold of 3%, which of these is the optimal portfolio?", "opts": ["Portfolio X.", "Portfolio Y.", "Portfolio Z."], "ans": "A", "expl": "According to the safety-first criterion, the optimal portfolio is the one that has the largest\nvalue for the SFRatio (mean – threshold) / standard deviation.\nFor Portfolio X, (5 – 3) / 3 = 0.67.\nFor Portfolio Y, (14 – 3) / 20 = 0.55.\nFor Portfolio Z, (19 – 3) / 28 = 0.57.\n(Module 5.1, LOS 5.c)"}, {"n": 14, "q": "Joe Mayer, CFA, projects that XYZ Company's return on equity varies with the state of the\neconomy in the following way:\nState of EconomyProbability of OccurrenceCompany Returns\nGood.2020%\nNormal.5015%\nPoor.3010%\nThe standard deviation of XYZ's expected return on equity is closest to:", "opts": ["1.5%.", "12.3%.", "3.5%."], "ans": "C", "expl": "Typesetting math: 100%\nIn order to calculate the standard deviation of the company returns, first calculate the\nexpected return, then the variance, and the standard deviation is the square root of the\nvariance.\nThe expected value of the company return is the probability weighted average of the\npossible outcomes: (0.20)(0.20) + (0.50)(0.15) + (0.30)(0.10) = 0.145.\nThe variance is the sum of the probability of each outcome multiplied by the squared\n2\ndeviation of each outcome from the expected return: (0.2)(0.20 - 0.145) + (0.5)(0.15 -\n22\n0.145) + (0.3)(0.1-0.145) = 0.000605 + 0.0000125 + 0.0006075 = 0.001225.\nThe standard deviation is the square root of 0.001225 = 0.035 or 3.5%.;\n(Module 5.1, LOS 5.b)"}, {"n": 15, "q": "The covariance of the returns on investments X and Y is 18.17. The standard deviation of\nreturns on X is 7%, and the standard deviation of returns on Y is 4%. What is the value of the\ncorrelation coefficient for returns on investments X and Y?", "opts": ["+0.85.", "+0.32.", "+0.65."], "ans": "C", "expl": "The correlation coefficient = Cov (X,Y) / [(Std Dev. X)(Std. Dev. Y)] = 18.17 / 28 = 0.65\n(Module 5.1, LOS 5.a)"}, {"n": 16, "q": "Tully Advisers, Inc., has determined four possible economic scenarios and has projected the\nportfolio returns for two portfolios for their client under each scenario. Tully's economist has\nestimated the probability of each scenario, as shown in the table below. Given this\ninformation, what is the standard deviation of returns on portfolio A?\nScenarioProbabilityReturn on Portfolio AReturn on Portfolio B\nA15%18%19%\nB20%17%18%\nC25%11%10%\nD40%7%9%", "opts": ["1.140%.", "4.53%.", "5.992%."], "ans": "B", "expl": "E(R) = 11.65%\nA\n2222\nσ = 0.0020506 = 0.15(0.18 – 0.1165) + 0.2(0.17 – 0.1165) + 0.25(0.11 – 0.1165)\n2\n+ 0.4(0.07 – 0.1165)\nσ = 0.0452836\n(Module 5.1, LOS 5.a)", "qhtml": "<p>Tully Advisers, Inc., has determined four possible economic scenarios and has projected the portfolio returns for two portfolios for their client under each scenario. Tully's economist has estimated the probability of each scenario, as shown in the table below. Given this information, what is the standard deviation of returns on portfolio A?</p><table class=\"qtable\"><thead><tr><th>Scenario</th><th>Probability</th><th>Return on Portfolio A</th><th>Return on Portfolio B</th></tr></thead><tbody><tr><td>A</td><td>15%</td><td>18%</td><td>19%</td></tr><tr><td>B</td><td>20%</td><td>17%</td><td>18%</td></tr><tr><td>C</td><td>25%</td><td>11%</td><td>10%</td></tr><tr><td>D</td><td>40%</td><td>7%</td><td>9%</td></tr></tbody></table>"}, {"n": 17, "q": "Which of the following portfolios provides the best \"safety first\" ratio if the minimum\nacceptable return is 6%?\nPortfolioExpected Return (%)Standard Deviation (%)\n1135\n2113\n392", "opts": ["3.", "1.", "2."], "ans": "C", "expl": "Roy's safety-first criterion requires the maximization of the SF Ratio:\nSF Ratio = (expected return – threshold return) / standard deviation\nPortfolioExpected Return (%)Standard Deviation (%)SF Ratio\n11351.40\n21131.67\n3921.50\nPortfolio #2 has the highest safety-first ratio at 1.67.\n(Module 5.1, LOS 5.c)"}, {"n": 18, "q": "Three portfolios with normally distributed returns are available to an investor who wants to\nminimize the probability that the portfolio return will be less than 5%. The risk and return\ncharacteristics of these portfolios are shown in the following table:\nPortfolioExpected returnStandard deviation\nEpps6%4%\nFlake7%9%\nGrant10%15%\nBased on Roy's safety-first criterion, which portfolio should the investor select?", "opts": ["Flake.", "Epps.", "Grant."], "ans": "C", "expl": "Typesetting math: 100%\nRoy's safety-first ratios for the three portfolios:\nEpps = (6 - 5) / 4 = 0.25\nFlake = ( 7 - 5) / 9 = 0.222\nGrant = (10 - 5) / 15 = 0.33\nThe portfolio with the largest safety-first ratio has the lowest probability of a return less\nthan 5%. The investor should select the Grant portfolio.\n(Module 5.1, LOS 5.c)", "qhtml": "<p>Three portfolios with normally distributed returns are available to an investor who wants to</p><p>minimize the probability that the portfolio return will be less than 5%. The risk and return</p><p>characteristics of these portfolios are shown in the following table:</p><table class=\"qtable\"><thead><tr><th>Portfolio</th><th>Expected return</th><th>Standard deviation</th></tr></thead><tbody><tr><td>Epps</td><td>6%</td><td>4%</td></tr><tr><td>Flake</td><td>7%</td><td>9%</td></tr><tr><td>Grant</td><td>10%</td><td>15%</td></tr></tbody></table><p>Based on Roy's safety-first criterion, which portfolio should the investor select?</p>"}, {"n": 19, "q": "Given the following probability distribution, find the covariance of the expected returns for\nstocks A and B.\nP(R)RR\nEvent\niAB\nRecession0.10-5%4%\nBelow Average0.30-2%8%\nNormal0.5010%10%\nBoom0.1031%12%", "opts": ["3.2.", "17.4.", "10.9"], "ans": "B", "expl": "Find the weighted average return for each stock.\nStock A: (0.10)(-5) + (0.30)(-2) + (0.50)(10) + (0.10)(31) = 7%.\nStock B: (0.10)(4) + (0.30)(8) + (0.50)(10) + (0.10)(12) = 9%.\nNext, multiply the differences of the two stocks by each other, multiply by the probability\nof the event occurring, and sum. This is the covariance between the returns of the two\nstocks.\n[(–5 – 7) × (4 – 9)] (0.1) + [(–2 – 7) × (8 – 9)](0.3) + [(10 – 7) × (10 – 9)](0.5) + [(31 – 7)\n× (12 – 9)](0.1) = 6.0 + 2.7 + 1.5 + 7.2 = 17.4\n(Module 5.1, LOS 5.b)", "qhtml": "<p>Given the following probability distribution, find the covariance of the expected returns for stocks A and B.</p><table class=\"qtable\"><thead><tr><th>Event</th><th>P(Rᵢ)</th><th>R_A</th><th>R_B</th></tr></thead><tbody><tr><td>Recession</td><td>0.10</td><td>-5%</td><td>4%</td></tr><tr><td>Below Average</td><td>0.30</td><td>-2%</td><td>8%</td></tr><tr><td>Normal</td><td>0.50</td><td>10%</td><td>10%</td></tr><tr><td>Boom</td><td>0.10</td><td>31%</td><td>12%</td></tr></tbody></table>"}, {"n": 20, "q": "Personal Advisers, Inc., has determined four possible economic scenarios and has projected\nthe portfolio returns for two portfolios for their client under each scenario. Personal's\neconomist has estimated the probability of each scenario as shown in the table below. Given\nthis information, what is the covariance of the returns on Portfolio A and Portfolio B?\nScenarioProbabilityReturn on Portfolio AReturn on Portfolio B\nA15%18%19%\nB20%17%18%\nC25%11%10%\nD40%7%9%", "opts": ["0.890223.", "0.002019.", "0.001898."], "ans": "C", "expl": "R –R –[R – E(R)] × [R –\nPReturn onReturn on\nABAAB\nS\n(S)Portfolio AE(R)Portfolio BE(R)E(R)] × P(S)\nABB\nA15%18%6.35%19%6.45%0.000614\nB20%17%5.35%18%5.45%0.000583\nC25%11%–0.65%10%–2.55%0.000041\nD40%7%–4.65%9%–3.55%0.000660\nE(R) = 11.65%E(R) = 12.55%Cov(R,R) = 0.001898\nABAB\n(Module 5.1, LOS 5.b)", "qhtml": "<p>Personal Advisers, Inc., has determined four possible economic scenarios and has projected the portfolio returns for two portfolios for their client under each scenario. Personal's economist has estimated the probability of each scenario as shown in the table below. Given this information, what is the covariance of the returns on Portfolio A and Portfolio B?</p><table class=\"qtable\"><thead><tr><th>Scenario</th><th>Probability</th><th>Return on Portfolio A</th><th>Return on Portfolio B</th></tr></thead><tbody><tr><td>A</td><td>15%</td><td>18%</td><td>19%</td></tr><tr><td>B</td><td>20%</td><td>17%</td><td>18%</td></tr><tr><td>C</td><td>25%</td><td>11%</td><td>10%</td></tr><tr><td>D</td><td>40%</td><td>7%</td><td>9%</td></tr></tbody></table>"}, {"n": 21, "q": "Expected returns and standard deviations of returns for three portfolios are shown in the\nfollowing table:\nPortfolioExpected ReturnStandard Deviation\n19%5%\n28%4%\n37%3%\nAssuming the risk-free rate is 3%, an investor who wants to minimize the probability of\nreturns less than 5% should choose:", "opts": ["Portfolio 2.", "Portfolio 3.", "Portfolio 1."], "ans": "C", "expl": "The probability of returns less than 5% can be minimized by selecting the portfolio with\nthe greatest safety-first ratio using a threshold return of 5%:\nPortfolio 1 = (9 – 5) / 5 = 4/5 = 0.80\nPortfolio 2 = (8 – 5) / 4 = 3/4 = 0.75\nPortfolio 3 = (7 – 5) / 3 = 2/3 = 0.67\n(Module 5.1, LOS 5.c)", "qhtml": "<p>Expected returns and standard deviations of returns for three portfolios are shown in the following table:</p><table class=\"qtable\"><thead><tr><th>Portfolio</th><th>Expected Return</th><th>Standard Deviation</th></tr></thead><tbody><tr><td>1</td><td>9%</td><td>5%</td></tr><tr><td>2</td><td>8%</td><td>4%</td></tr><tr><td>3</td><td>7%</td><td>3%</td></tr></tbody></table><p>Assuming the risk-free rate is 3%, an investor who wants to minimize the probability of returns less than 5% should choose:</p>"}, {"n": 22, "q": "Given the following probability distribution, find the standard deviation of expected returns.\nP(R)R\nEvent\nAA\nRecession0.10-5%\nBelow Average0.30-2%\nNormal0.5010%\nBoom0.1031%", "opts": ["7.00%.", "10.04%.", "12.45%."], "ans": "B", "expl": "Find the weighted average return (0.10)(–5) + (0.30)(–2) + (0.50)(10) + (0.10)(31) = 7%.\nNext, take differences, square them, multiply by the probability of the event and add them\n2\nup. That is the variance. Take the square root of the variance for Std. Dev. (0.1)(–5 – 7) +\n222\n(0.3)(–2 – 7) + (0.5)(10 – 7) + (0.1)(31 – 7) = 100.8 = variance.\n0.5\n100.8 = 10.04%.\n(Module 5.1, LOS 5.a)"}, {"n": 23, "q": "Given P(X = 2) = 0.3, P(X = 3) = 0.4, P(X = 4) = 0.3. What is the variance of X?", "opts": ["0.3.", "0.6.", "3.0."], "ans": "B", "expl": "The variance is the sum of the squared deviations from the expected value weighted by\nthe probability of each outcome.\nThe expected value is E(X) = 0.3 × 2 + 0.4 × 3 + 0.3 × 4 = 3.\n222\nThe variance is 0.3 × (2 – 3) + 0.4 × (3 – 3) + 0.3 × (4 – 3) = 0.6.\n(Module 5.1, LOS 5.a)"}, {"n": 24, "q": "The following information is available concerning expected return and standard deviation of\nPluto and Neptune Corporations:\nExpected ReturnStandard Deviation\nPluto Corporation11%0.22\nNeptune Corporation9%0.13\nIf the correlation between Pluto and Neptune is 0.25, determine the expected return and\nstandard deviation of a portfolio that consists of 65% Pluto Corporation stock and 35%\nNeptune Corporation stock.", "opts": ["10.3% expected return and 2.58% standard deviation.", "10.0% expected return and 16.05% standard deviation.", "10.3% expected return and 16.05% standard deviation."], "ans": "C", "expl": "ER= (W)(ER) + (W)(ER)\nPortPlutoPlutoNeptuneNeptune\n= (0.65)(0.11) + (0.35)(0.09) = 10.3%\nσ\n22221/2\n= [(w)(σ) + (w)(σ) + 2wwσσ p]\np\n112212121,2\n22221/2\n= [(0.65)(22) + (0.35)(13) + 2(0.65)(0.35)(22)(13)(0.25)]\n1/2\n= [(0.4225)(484) + (0.1225)(169) + 2(0.65)(0.35)(22)(13)(0.25)]\n1/2\n= (257.725) = 16.0538%\n(Module 5.1, LOS 5.a)", "qhtml": "<p>The following information is available concerning expected return and standard deviation of Pluto and Neptune Corporations:</p><table class=\"qtable\"><thead><tr><th></th><th>Expected Return</th><th>Standard Deviation</th></tr></thead><tbody><tr><td>Pluto Corporation</td><td>11%</td><td>0.22</td></tr><tr><td>Neptune Corporation</td><td>9%</td><td>0.13</td></tr></tbody></table><p>If the correlation between Pluto and Neptune is 0.25, determine the expected return and standard deviation of a portfolio that consists of 65% Pluto Corporation stock and 35% Neptune Corporation stock.</p>"}, {"n": 25, "q": "For two random variables, P(X = 20, Y = 0) = 0.4, and P(X = 30, Y = 50) = 0.6. Given that E(X) is\n26 and E(Y) is 30, the covariance of X and Y is:", "opts": ["120.00.", "125.00.", "25.00."], "ans": "A", "expl": "Typesetting math: 100%\nThe covariance is COV(XY) = (0.4 × ((20 – 26) × (0 – 30))) + ((0.6 × (30 – 26) × (50 – 30))) = 120.\n(Module 5.1, LOS 5.b)"}, {"n": 26, "q": "An investor has the following assets:\n$5,000 in bonds with an expected return of 8%.\n$10,000 in equities with an expected return of 12%.\n$5,000 in real estate with an expected return of 10%.\nWhat is the portfolio's expected return?", "opts": ["11.00%.", "10.00%.", "10.50%."], "ans": "C", "expl": "Expected return is the weighted average of the individual expected values. The expected\nreturn is: [(5,000) × (10.00) + (5,000) × (8.00) + (10,000) × (12.00)] / 20,000 = 10.50%.\n(Module 5.1, LOS 5.a)"}, {"n": 27, "q": "The following table shows the weightings and expected returns for a portfolio of three\nstocks:\nE(R)\nStockWeight\nX\nV0.4012%\nM0.358%\nS0.255%\nWhat is the expected return of this portfolio?", "opts": ["9.05%.", "8.85%.", "8.33%."], "ans": "B", "expl": "The expected return is simply a weighted average return.\nMultiplying the weight of each asset by its expected return, then summing, produces: E(RP)\n= 0.40(12) + 0.35(8) + 0.25(5) = 8.85%.\nE(R)\nState of the EconomyWeightProbability × Return\nX\nV0.4012%0.4 × 12%\nM0.358%0.35 × 8%\nS0.255%0.25 × 5%\nExpected Return = ∑ Weight × E(R)\n8.85%\nX\n(Module 5.1, LOS 5.a)"}, {"n": 28, "q": "The mean and standard deviation of returns for three portfolios are listed below in\npercentage terms.\nPortfolio X: Mean 5%, standard deviation 3%.\nPortfolio Y: Mean 14%, standard deviation 20%.\nPortfolio Z: Mean 19%, standard deviation 28%.\nUsing Roy's safety-first criteria and a threshold of 4%, select the optimal portfolio.", "opts": ["Portfolio X.", "Portfolio Y.", "Portfolio Z."], "ans": "C", "expl": "Portfolio Z has the largest value for the SFRatio: (19 – 4) / 28 = 0.5357.\nFor Portfolio X, the SFRatio is (5 – 4) / 3 = 0.3333.\nFor Portfolio Y, the SFRatio is (14 – 4) / 20 = 0.5000.\n(Module 5.1, LOS 5.c)"}, {"n": 29, "q": "Compute the standard deviation of a two-stock portfolio if stock A (40% weight) has a\nvariance of 0.0015, stock B (60% weight) has a variance of 0.0021, and the correlation\ncoefficient for the two stocks is –0.35?", "opts": ["1.39%.", "0.07%.", "2.64%."], "ans": "C", "expl": "The standard deviation of the portfolio is found by:\n222 20.5\n[Wσ + Wσ+ 2WWσσρ]\n112212121,2\n220.5\n= [(0.40)(0.0015) + (0.60) (0.0021) + (2)(0.40)(0.60)(0.0387)(0.0458)(–0.35)]\n= 0.0264, or 2.64%.\n(Module 5.1, LOS 5.a)"}, {"n": 30, "q": "Use the following probability distribution to calculate the standard deviation for the\nportfolio.\nState of the EconomyProbabilityReturn on Portfolio\nBoom0.3015%\nBust0.703%", "opts": ["5.5%.", "6.0%.", "6.5%."], "ans": "A", "expl": "221/2\n[0.30 × (0.15 – 0.066) + 0.70 × (0.03 – 0.066)] = 5.5%.\n(Module 5.1, LOS 5.a)"}, {"n": 31, "q": "The returns on assets C and D are strongly correlated with a correlation coefficient of 0.80.\nThe variance of returns on C is 0.0009, and the variance of returns on D is 0.0036. What is\nthe covariance of returns on C and D?", "opts": ["0.00144.", "0.03020.", "0.40110."], "ans": "A", "expl": "r = Cov(C,D) / (σ × σ)\nCD\n0.5\nσ = (0.0009) = 0.03\nC\n0.5\nσ = (0.0036) = 0.06\nD\n0.8(0.03)(0.06) = 0.00144\n(Module 5.1, LOS 5.a)"}, {"n": 32, "q": "For assets A and B we know the following: E(R) = 0.10, E(R) = 0.10, Var(R) = 0.18, Var(R) =\nABAB\n0.36 and the correlation of the returns is 0.6. What is the variance of the return of a portfolio\nthat is equally invested in the two assets?", "opts": ["0.1102.", "0.1500.", "0.2114."], "ans": "C", "expl": "Typesetting math: 100%\nYou are not given the covariance in this problem but instead you are given the correlation\ncoefficient and the variances of assets A and B from which you can determine the\ncovariance by Covariance = (correlation of A, B) × Standard Deviation of A) × (Standard\nDeviation of B).\nSince it is an equally weighted portfolio, the solution is:\n220.50.5\n[(0.5) × 0.18] + [(0.5) × 0.36] + [2 × 0.5 × 0.5 × 0.6 × (0.18) × (0.36)]  = 0.045\n+ 0.09 + 0.0764 = 0.2114\n(Module 5.1, LOS 5.a)"}];
+const CFG = {"title": "Portfolio Mathematics", "subtitle": "CFA · Quantitative Methods · Reading 5 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem";
+    if(q.qhtml){ stem.innerHTML = q.qhtml; } else { stem.textContent = q.q; }
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A member would most likely violate the Standard regarding duties to clients by:", "opts": ["adding a risky derivative security to the portfolio of a client with moderate risk tolerance.", "executing a client order for a security the member believes is greatly overvalued.", "recommending purchase of securities without a reasonable inquiry into the investment experience of the client."], "ans": "C", "expl": "Standard III(A) Loyalty, Prudence, and Care requires members acting as advisors to make a\nreasonable inquiry into the client's investment experience, risk and return objectives, and\nfinancial constraints before making investment recommendations. Investment decisions\nmust be made based on a total portfolio approach, rather than the quality of an individual\ninvestment in isolation. Some members are not acting as investment advisors and may\nonly have a duty to provide best execution of client orders."}, {"n": 2, "q": "Which of the following statements regarding allocating trades is CORRECT? It is permissible\nunder the Standards to allocate trades:", "opts": ["based upon any method the firm deems suitable so long as the allocation procedure has been disclosed to all clients.", "on a pro-rata basis over all suitable accounts.", "based upon compensation arrangements."], "ans": "B", "expl": "It is permissible to allocate trades on a pro-rata basis over all suitable accounts. It is not\npermissible to base allocations upon compensation arrangements. Any method is not\nnecessarily suitable, and disclosure does not absolve the member from ensuring that the\nallocation is necessarily fair.\n(Module 91.4, LOS 91: III(B))"}, {"n": 3, "q": "Regarding (1) not voting all client proxies, and (2) using a directed brokerage arrangement, a\nmember would violate the Standards by:", "opts": ["engaging in neither of these practices.", "not voting all proxies for client stocks.", "using a directed brokerage arrangement."], "ans": "A", "expl": "Proxies have economic value to the client. To comply with Standard III(A) Loyalty,\nPrudence, and Care, the analyst is obligated to vote proxies in an informed and\nresponsible manner. A cost benefit analysis may show that voting all proxies may not\nbenefit the client, so voting proxies may not be necessary in all instances. Directed\nbrokerage occurs when the client requests that a portion of the client's brokerage be used\nto purchase services that directly benefit the client. Although this may prevent best\nexecution, it does not violate the Standards as it was directed by the client, not the\nbrokerage firm."}, {"n": 4, "q": "Bertha Mader, CFA, received proxy material related to a hostile takeover attempt of Danube\nIndustries by Balnet Company. She holds shares of Danube in most of her client accounts.\nMader has a high opinion of Danube's management because they have run the company\nsuccessfully and have always responded directly and honestly to her inquiries. She is not\nacquainted with Balnet's management team but knows they have a reputation for improving\nthe bottom line at the companies they acquire, partly because they tend to replace upper\nmanagement at their targets and assume their functions. Balnet's offer is 60% higher than\nthe price of Danube shares before the announcement. Danube's management has contacted\nMader and requested that she vote the shares she controls against the takeover because the\nmanagement is concerned for their jobs and for the welfare of the company. To comply with\nthe Code and Standards, Mader should:", "opts": ["delegate her proxy vote to another member of her firm due to the conflict of interest created when she was contacted by management.", "vote for the takeover if it is in the best interest of Danube's shareholders, regardless of the consequences to current management.", "vote for the takeover if she can get assurance that Danube's management team will remain in place."], "ans": "B", "expl": "Standard III(A), Loyalty, Prudence, and Care, requires that members act for the benefit of\ntheir clients. Mader's duty is to her clients, who are shareholders of Danube. She has no\nduty to Danube's management, nor to the company itself, and must vote the shares\naccordingly.\n(Module 91.4, LOS 91: III(A))"}, {"n": 5, "q": "An investment advisor goes straight from a research seminar to a meeting with a\nprospective new client with whom she has never been in contact. The advisor is very excited\nabout the information she just received in the seminar and begins showing the prospect the\nnew ideas her firm is coming up with. This is most likely a violation of:", "opts": ["both of these.", "Standard III(B), Fair Dealing.", "Standard III(C), Suitability."], "ans": "A", "expl": "It is a violation of Standard III(B) because the advisor should act first on behalf of existing\nclients whose needs and characteristics she already knows. It is a violation of Standard\nIII(C) because she has never met the prospect and does not know if the new ideas are\nappropriate for the prospect. Thus, \"both of these\" is the best response."}, {"n": 6, "q": "Concerning Standard III(B), Fair Dealing, which of the following actions is NOT a valid\nprocedure for compliance with the Standard?", "opts": ["Communicate investment recommendations simultaneously within the firm and to customers, where possible.", "Communicate investment recommendations to all customers including those accounts for which the securities are not eligible for purchase.", "Limit the number of people that are involved and are privy to the fact that an investment recommendation is going to be disseminated."], "ans": "B", "expl": "To ensure compliance with the Standard, members should seek to communicate\ninvestment recommendations to all clients who have indicated an interest and also those\nfor whom the securities are suitable. There is no need to communicate recommendations\nto clients for whom the securities are deemed unsuitable.\n(Module 91.4, LOS 91: III(B))"}, {"n": 7, "q": "In securing the shares for all accounts under her management, Linda Kammel of Northwest\nFutures purchased three blocks of shares at three different prices. She then allocated these\nshares by placing shares from the first block in accounts with surnames beginning with A-G.\nThe second was allocated over accounts H-P, and the third over Q-Z. This action is:", "opts": ["consistent with her responsibilities under the Code and Standards.", "not permissible under the Code and Standards.", "permissible only if the clients are informed of the allocation procedure."], "ans": "B", "expl": "Standard III(B) requires a member to deal fairly with all clients when taking investment\nactions. Since she knew at the outset that she was going to place shares in all accounts,\nregardless of the first letter of the surname, all accounts must participate on a pro-rata\nbasis in each block in order to conform to the Standard. Her actions constitute a violation\nof the Standard concerning fair dealing."}, {"n": 8, "q": "With regard to disseminating investment recommendations, the recommended procedures\nfor compliance with the Standard concerning fair dealing least likely state that members and\ncandidates should:", "opts": ["maximize the number of people who know an investment recommendation is going to be disseminated.", "maintain a list of clients and their holdings, to facilitate notifying them of changes in investment recommendations.", "shorten the time frame between the decision to make an investment recommendation and its dissemination."], "ans": "A", "expl": "Recommended procedures for compliance with Standard III(B) Fair Dealing include limiting\nthe number of people who know an investment recommendation is going to be\ndisseminated"}, {"n": 9, "q": "An analyst with his own money management firm trades on behalf of several large pension\nfunds. The analyst now performs all trades through a particular brokerage firm because the\nbrokerage provides his firm with a no-interest line of credit if paid within 60 days. The line of\ncredit is available to all brokerage clients. The brokerage provides the analyst with personal\naccount privileges that he would not otherwise be eligible for. The brokerage also provides\nthe analyst with free research reports on many companies. Which of these benefits are\nviolations of Standard III(A), Loyalty, Prudence, and Care?", "opts": ["Neither of these.", "The personal account privileges.", "The research reports."], "ans": "B", "expl": "The personal account privileges are clearly a violation. The no-interest line of credit could\nbe a violation if the analyst does not factor in the benefits when determining the fees of\nthe clients, but it is not a per se violation. Research reports are least likely to be a\nviolation.\n(Module 91.4, LOS 91: III(A))"}, {"n": 10, "q": "Alan Cramer, CFA, practices in a country that does not regulate the investment of company\nretirement plans. He was retained by Bingham Companies to manage their corporate\npension plan. Bingham's management has approached Cramer and requested that Cramer\ninvest the entire plan in Bingham stock.\nCramer may:", "opts": ["invest a portion of the retirement plan in Bingham Company stock if the investment is prudent and if he keeps the overall portfolio properly diversified.", "invest all of the retirement plan assets in Bingham Company stock according to management's request only if Cramer can document that the investment is more prudent than any other investment opportunity he finds.", "not invest any of Bingham Company's retirement plan in its own stock regardless of the stock's prospects and in spite of management's request."], "ans": "A", "expl": "Standard III(A), Loyalty, Prudence, and Care, requires members to comply with their\nfiduciary duty. Retirement plan managers owe their duty to the plan participants, not to\nthe management of the company sponsoring the plan. The fiduciary duty includes the\nobligation to diversify the plan's investments, regardless of the quality of the sponsoring\ncompany's stock. Investing in the company's stock is not prohibited."}, {"n": 11, "q": "While trading on behalf of a pension account, an analyst receives special research reports\nfrom the brokerage firm with whom she is doing the trades. Such an activity is:", "opts": ["a violation of both Standard III(A), Loyalty, Prudence, and Care, and the Code of Ethics.", "a violation of only The Code of Ethics.", "not in itself a violation of Standard III(A), Loyalty, Prudence, and Care, nor the Code of Ethics."], "ans": "C", "expl": "An analyst can receive research from a brokerage firm with whom she is trading on behalf\nof a client. The analyst should inform the client of the arrangement. The analyst is more\nlikely to violate Standard III(A) by obtaining non-research services or, worse yet, personal\nbenefits from the brokerage firm.\n(Module 91.4, LOS 91: III(A))"}, {"n": 12, "q": "According to the Standard concerning loyalty, prudence, and care, brokerage is an asset of\nthe:", "opts": ["brokerage firm conducting the trades.", "managing firm.", "client."], "ans": "C", "expl": "Brokerage is an asset of the client."}, {"n": 13, "q": "Rey Sanchez, CFA, covers the specialty chemical industry for Rock Advisory Associates. Until\ntoday he has had a buy recommendation on ChemStar, and many of the firm's customers\nhave purchased shares based upon his recommendation. The firm's client accounts are\ndivided into two fundamental categories: trading and buy-and-hold accounts. The firm holds\ndiscretionary trading authority over the trading accounts, but not the buy-and-hold\naccounts. Sanchez has recently come to believe that the fundamentals are changing for the\nworse at ChemStar, and is preparing a sell recommendation. He calls a meeting of the firm's\nportfolio managers with accounts holding ChemStar and tells them of the pending release of\nthe sell recommendation. On this basis, the portfolio managers sell all positions in the\ndiscretionary accounts but not in the buy-and-hold accounts. Sanchez completes and mails\nthe report to all clients two days later, and, shortly thereafter, many of the buy-and-hold\naccounts sell their ChemStar positions. With regard to these actions, Sanchez is:", "opts": ["in violation of the Standard on Fair Dealing; the portfolio managers are in violation of the Standard on Fair Dealing.", "in violation of the Standard on Fair Dealing; the portfolio managers are not in violation of the Standard on Fair Dealing.", "not in violation of the Standard on Fair Dealing; the portfolio managers are in violation of the Standard on Fair Dealing."], "ans": "A", "expl": "Sanchez is in violation of the Standard III(B), Fair Dealing, since he has disseminated his\nrecommendation preferentially to the portfolio managers in advance of making the report\navailable to all clients who hold shares of ChemStar. The portfolio managers are in\nviolation of the Standard since they are effectively giving preferential treatment to the\ntrading accounts over the buy-and-hold accounts in the placement of orders based upon\nthe change in recommendation.\n(Module 91.4, LOS 91: III(B))"}, {"n": 14, "q": "Calvin Moore, CFA, has been transferred from the brokerage house of the Browning\nCompany to the portfolio management department. In portfolio management, Moore learns\nthat clients are grouped into three divisions according to portfolio value, divided as follows:\nGroup 1 up to $10,000\nGroup 2 from $10,001 to $100,000\nGroup 3 more than $100,000\nWhen recommendations are announced or trades are initiated, a particular sequence is\nfollowed in communicating to these groups. At the next monthly meeting, Moore suggests\nthat the sequencing practice is a breach of CFA Institute Standards. One of Moore's co-\nworkers replies that the grouping approach helps the company in applying the Standard\nregarding portfolio recommendations. He further suggests that because Browning's overall\nperformance is more strongly affected by actions taken on the high value portfolios, that\nthese portfolios should take priority over the small value portfolios. What should Moore\ndo? Moore should:", "opts": ["disassociate himself from the problem and seek legal advice.", "prepare a written report to the CEO describing the problem.", "do nothing since there is no breach with the Standards."], "ans": "A", "expl": "Taking a special approach in disseminating information in relation to initiating trades is a\nbreach of Standard III(B), Fair Dealing. Given the fact that Moore works in the department\nand has already unsuccessfully tried to prevent the practice from continuing, he needs to\ndisassociate himself and seek legal advice.\n(Module 91.4, LOS 91: III(B))"}, {"n": 15, "q": "A money management firm has the following policy concerning new recommendations:\nWhen a new recommendation is made, each portfolio manager estimates the likely\ntransaction size for each of their clients. Clients are notified of the new recommendation in\nthe order of their estimated transaction size—largest first. All clients have signed a form\nwhere they acknowledge and consent to this allocation procedure. With respect to Standard\nIII(B), Fair Dealing, this is:", "opts": ["a violation of the standard.", "not a violation because the clients have signed the consent form.", "not a violation because the clients are aware of the policy."], "ans": "A", "expl": "Such a policy is a violation of the Standard and client acknowledgement and/or consent\ndoes not change that fact."}, {"n": 16, "q": "An independent analyst has only one client. One of the client's largest holdings is a\nbrokerage firm. Because of the large holding by his client, the brokerage firm recently began\nallowing the analyst to tap into the firm's computer network to use the firm's research\nfacilities. This is allowable as long as the analyst:", "opts": ["discloses the relationship to the client.", "does both of the actions listed here.", "uses the resources to help manage the client's account."], "ans": "B", "expl": "According to Standard III(A), Loyalty, Prudence, and Care, the analyst must put the client\nfirst and inform the client of any possible conflicts of interest. The analyst must channel\nany benefits derived from his service to the client, back to the client, and inform the client\nof the benefits."}, {"n": 17, "q": "Tony Calaveccio, CFA, is the manager of the TrustCo Small Cap Venture Fund in Toronto.\nCalaveccio places a trade with Quantco Brokerage. While Calaveccio's part of the transaction\nwas conveyed correctly to Quantco, there was a trading error made in Calaveccio's account\ndue to a slip up within Quantco. Calaveccio realizes that the error has taken place, and\ninforms his contact at Quantco. Calaveccio allows Quantco to cover the error, with no cost to\nTrustCo. This is:", "opts": ["a violation of Calaveccio's duty to his employer.", "a violation of Calaveccio's fiduciary duties.", "permissible under CFA Institute Standards."], "ans": "C", "expl": "The issue is similar to an allocation of soft dollars. Clearly, if the broker absorbs the loss,\nthey expect to make up the difference in some way. However, since the error was on the\npart of Quantco Brokerage, Calaveccio is under no obligation to cover the cost of the\ntrading error. Moreover, no reasonable observer expects that there exists any implied\nfuture allocation of trades to Quantco in return for correcting their own mistake. There is\nno violation of Standard III(A), Loyalty, Prudence, and Care."}, {"n": 18, "q": "Bjorn Sandvik, CFA, completes a research report with a buy recommendation for Acorn\nProperties. In the early afternoon, Sandvik e-mails this recommendation to his clients who\nhad responded to his request that they provide Sandvik with their e-mail addresses. Later\nthat afternoon, the printed recommendation is forwarded to the postal service for normal\ndelivery to all customers, who receive the mailing 1 to 3 days later. Sandvik has:", "opts": ["not violated the Code and Standards because he acted fairly in disseminating research information to his clients.", "violated the Code and Standards by sending the e-mail recommendation in advance of the printed report.", "violated the Code and Standards by sending the e-mail recommendation to only some of his clients."], "ans": "A", "expl": "Standard III(B) Fair Dealing requires that members deal fairly with all clients in\ndisseminating investment recommendations. It does not require uniform or equal\ntreatment. Sandvik's approach in sending e-mail correspondence to those of his clients\nwho had given him their e-mail addresses, having made the request to all of his clients,\nand sending regular mail correspondence the same day, is fair to all of his clients.\n(Module 91.4, LOS 91: III(B))"}, {"n": 19, "q": "Ed Staples, CFA, manages a pension fund sponsored by Hill Corporation. The Code and\nStandards most likely require Staples to:", "opts": ["base investment decisions on each beneficiary’s return requirements and risk tolerance.", "act solely in the interest of the ultimate beneficiaries.", "support the sponsor's management during proxy fights."], "ans": "B", "expl": "Standard III(A) Loyalty, Prudence, and Care requires members and candidates who\nmanage investment funds to act in the interest of the beneficiaries. However, the Standard\nstates that fund managers' investment decisions are not required to be based on the\ninvestment needs of each fund investor, but rather should benefit the investors as a\nwhole. In voting proxies, the beneficiaries' interest must prevail over management's\ninterest."}, {"n": 20, "q": "Tony Calaveccio, CFA, is the manager of the TrustCo Small Cap Venture Fund in Toronto. He\nplaces trades for the fund with River City Brokerage. River City provides Calaveccio with soft\ndollars to purchase research. River City also deals in municipal bonds, some of which\nCalaveccio holds in his personal portfolio. He periodically uses the soft dollars to request\nresearch reports on various small cap stocks and also on the status of the municipal bond\nmarket and issues that he holds. These actions are:", "opts": ["in violation of his fiduciary duties regarding both the small cap research and the municipal bond research.", "not in violation of the Code and Standards.", "in violation of his fiduciary duties regarding the municipal bond research but not so regarding the research on the small cap issues."], "ans": "C", "expl": "The issue at hand is the member's fiduciary responsibilities in handling \"soft dollars\" which\nare technically the property of the client. Standard III(A), Loyalty, Prudence, and Care,\ndelineates the member's fiduciary responsibilities with regard to soft dollars. Since\nmunicipal bond research is clearly not relevant to the Small Cap Fund holders, he is clearly\nusing the soft dollars to obtain research for his personal benefit and is in violation of the\nStandard."}, {"n": 21, "q": "In accordance with Standard III (A) Loyalty, Prudence and Care, which of the following\nstatements is NOT a required or recommended action?", "opts": ["Vote all proxies on behalf of clients in a responsible manner.", "Submit to clients, at least quarterly, itemized statements detailing all of the period’s transactions.", "Utilize client brokerage to the sole benefit of the client."], "ans": "A", "expl": "Because of the time and expense involved in voting a proxy, Members and Candidates are\nnot required to vote every proxy. A cost benefit analysis can be performed to determine if\nit is necessary to vote a proxy. Standard III(A) requires that client brokerage be used to\nbenefit the client. Quarterly statements to clients are recommended."}, {"n": 22, "q": "Which of the following most accurately states a limitation that the Fair Dealing standard\nimposes?", "opts": ["Referral fees may be disclosed after proceeding with an agreement for service.", "Clients should not be discriminated against when disseminating investment recommendations.", "Before trading on her own portfolio, a CFA charterholder must wait for employer and client deals to be executed."], "ans": "B", "expl": "Standard III(B) Fair Dealing states that the dissemination of information and\nrecommendations to clients must be handled fairly. The other choices are related to\nStandard VI(B) Priority of Transactions and Standard VI(C) Referral Fees.\n(Module 91.4, LOS 91: III(B))"}, {"n": 23, "q": "Which of the following is least likely required of fiduciaries who are responsible for pension\nplans?", "opts": ["Supporting the sponsor's management during proxy fights.", "Acting solely in the interest of plan participants.", "Judging investments in the context of the total portfolio."], "ans": "A", "expl": "Under Standard III(A) Loyalty, Prudence, and Care, fiduciaries must evaluate\nmanagement's proposals during proxy fights to see if they are in the best interest of the\nplan participants. If management's ideas are justifiable and reasonably ensure plan\nparticipants' betterment, then fiduciaries can support them. If management is only trying\nto further its own objectives, especially at the cost of plan participants, then fiduciaries\nmust vote against management in proxy fights.\n(Module 91.4, LOS 91: III(A))"}];
+const CFG = {"title": "Guidance for Standards III(A) and III(B)", "subtitle": "CFA · Ethical & Professional Standards · Reading 91.4 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; stem.textContent = q.q;
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

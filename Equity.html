@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Q. All else being equal, a reverse stock split results in:", "opts": ["a decrease in the number of shares and an increase in the share price.", "an increase in the number of shares and a decrease in the share price.", "an increase in the number of shares and an increase in the share price."], "ans": "A", "expl": "A. Correct because a reverse stock split involves a reduction in the number of shares\noutstanding with a corresponding increase in share price.\nB. Incorrect because this describes a stock split, not a reverse stock split. A stock split involves\nan increase in the number of shares outstanding with a consequent decrease in share price. A\nreverse stock split involves a reduction in the number of shares outstanding with a\ncorresponding increase in share price.\nC. Incorrect because a reverse stock split involves a reduction in the number of shares\noutstanding with a corresponding increase in share price.\nEquity Investments\n• describe regular cash dividends, extra dividends, stock dividends, stock splits, reverse\nstock splits, and share", "qhtml": null}, {"n": 2, "q": "Q. All else being equal, which of the following has the same effect on shareholders' wealth\nas a cash dividend?", "opts": ["A stock split", "A stock dividend", "A share repurchase"], "ans": "C", "expl": "A. Incorrect because in contrast to stock dividends and stock splits, share repurchases are an\nalternative to cash dividend payments.\nB. Incorrect because in contrast to stock dividends and stock splits, share repurchases are an\nalternative to cash dividend payments.\nC. Correct because a share repurchase is viewed as equivalent to the payment of cash dividends\nof equal value in terms of the effect on shareholders' wealth, all other things being equal.\nEquity Investments\n• describe regular cash dividends, extra dividends, stock dividends, stock splits, reverse\nstock splits, and share repurchases", "qhtml": null}, {"n": 3, "q": "Q. Sponsored depository receipts most likely differ from unsponsored ones in terms of\nwhether:", "opts": ["investors have voting rights.", "they are traded on exchanges.", "their prices are affected by exchange rate movements."], "ans": "A", "expl": "A. Correct because a sponsored DR is when the foreign company whose shares are held by the\ndepository has a direct involvement in the issuance of the receipts. Investors in sponsored DRs\nhave the same rights as the direct owners of the common shares (e.g., the right to vote and the\nright to receive dividends). In contrast, with an unsponsored DR, the underlying foreign\ncompany has no involvement with the issuance of the receipts. Instead, the depository\npurchases the foreign company's shares in its domestic market and then issues the receipts\nthrough brokerage firms in the depository's local market. In this case, the depository bank, not\nthe investors in the DR, retains the voting rights.\nB. Incorrect because a depository receipt (DR) (sponsored or unsponsored) is a security that\ntrades like an ordinary share on a local exchange and represents an economic interest in a\nforeign company.\nC. Incorrect because a depository receipt (DR) (sponsored or unsponsored) is a security that\ntrades like an ordinary share on a local exchange and represents an economic interest in a\nforeign company. The price of each DR will be affected by factors that affect the price of the\nunderlying shares, such as company fundamentals, market conditions, analysts'\nrecommendations, and exchange rate movements.\nEquity Investments\n• describe methods for investing in non-domestic equity securities", "qhtml": null}, {"n": 4, "q": "Q. All else being equal, which of the following are equivalent to stock dividends in terms of\nthe economic effect on the company and shareholders?", "opts": ["Stock splits", "Cash dividends", "Share repurchases"], "ans": "A", "expl": "A. Correct because a stock dividend divides the \"pie\" (the market value of shareholders' equity)\ninto smaller pieces without affecting the value of the pie or any shareholder's proportional\nownership in the company. Thus, stock dividends are not relevant for valuation. Stock splits and\nreverse stock splits are similar to stock dividends in that they have no economic effect on the\ncompany or shareholders.\nB. Incorrect because a cash dividend is a cash distribution made to a company's shareholders.\nNo cash flow from the company to the shareholders happen in case of a stock dividend. A stock\ndividend divides the \"pie\" (the market value of shareholders' equity) into smaller pieces without\naffecting the value of the pie or any shareholder's proportional ownership in the company. Thus,\nstock dividends are not relevant for valuation.\nC. Incorrect because a share repurchase (or buyback) is a transaction in which a company uses\ncash to buy back its own shares. A share repurchase is viewed as equivalent to the payment of\ncash dividends of equal value in terms of the effect on shareholders' wealth, all other things\nbeing equal.", "qhtml": null}, {"n": 5, "q": "Q. Asset-based valuation most likely uses estimates of the company's:", "opts": ["assets only.", "assets and liabilities only.", "assets, liabilities and projected cash flow."], "ans": "B", "expl": "A. Incorrect because an asset-based valuation of a company uses estimates of the market or fair\nvalue of the company's assets and liabilities.\nB. Correct because an asset-based valuation of a company uses estimates of the market or fair\nvalue of the company's assets and liabilities.\nC. Incorrect because an asset-based valuation of a company uses estimates of the market or fair\nvalue of the company's assets and liabilities.\nEquity Investments\n• describe asset-based valuation models and their use in estimating equity value", "qhtml": null}, {"n": 6, "q": "Q. The dividend discount model assumes that dividends are paid:", "opts": ["quarterly.", "half yearly.", "at the end of each year."], "ans": "C", "expl": "A. Incorrect because according to the dividend discount model, each year's dividend D, is the\nexpected dividend in year t, assumed to be paid at the end of the year, not at the beginning of\neach year.\nB. Incorrect because according to the dividend discount model, each year's dividend D, is the\nexpected dividend in year t, assumed to be paid at the end of the year, not at the midpoint of\neach year.\nC. Correct because according to the dividend discount model, each year's dividend D, is the\nexpected dividend in year t, assumed to be paid at the end of the year.\nEquity Investments\n• explain the rationale for using present value models to value equity and describe the\ndividend discount and free- cash-flow-to-equity models", "qhtml": null}, {"n": 7, "q": "An analyst gathers the following information about a company and its common stock:\nForward P/E 8\nRequired rate of return 12%\nDividend growth rate 4%\nQ. Using the Gordon growth model, the company's dividend payout ratio is closest to:", "opts": ["8%.", "33%.", "64%."], "ans": "C", "expl": "A. Incorrect because it confuses the dividend payout ratio with the dividend yield in the Gordon\ngrowth model equation resulting in: D₁/Por-g=0.12-0.04 = 0.08 = 8%.\nB. Incorrect because it confuses the dividend payout ratio as the dividend growth rate divided\nby the required rate of return, resulting in p = 0.04/0.120.33333%. This is also closest to the\nproduct of the forward P/E and the dividend growth rate: 8.0 x 0.04 = 0.32 = 32%.\nC. Correct because according to the Gordon growth model equations", "qhtml": null}, {"n": 8, "q": "Q. Asset-based valuation models are most appropriate for companies with a high\nproportion of:", "opts": ["illiquid assets.", "current assets.", "intangible assets."], "ans": "B", "expl": "A. Incorrect because illiquid assets would not have easily determinable market (fair) values and\nwould be very difficult to analyze using asset valuation methods.\nB. Correct because asset-based valuations work well for companies that do have a high\nproportion of current assets and current liabilities.\nC. Incorrect because asset-based valuations work well for companies that do not have a high\nproportion of intangible or 'off the books' assets.\nEquity Investments\n• describe asset-based valuation models and their use in estimating equity value", "qhtml": null}, {"n": 9, "q": "Q. Both equity and fixed income indexes can be categorized according to the:", "opts": ["currency of payments.", "issuer's economic sector.", "degree of inflation protection."], "ans": "B", "expl": "A. Incorrect because this feature is specific to fixed income indexes.\nB. Correct because both equity and fixed income indexes can be constructed according to\nsector. Similar to equities, fixed-income securities can be categorized according to the issuer's\neconomic sector, the issuer's geographic region, or the economic development of the issuer's\ngeographic region.\nC. Incorrect because this feature is specific to fixed income indexes.\nEquity Investments\n• describe types of fixed-income indexes", "qhtml": null}, {"n": 10, "q": "Q. Trading by arbitrageurs most likely:", "opts": ["reduces liquidity.", "increases pricing discrepancies.", "contributes to market efficiency."], "ans": "C", "expl": "A. Incorrect because arbitrageurs provide liquidity to buyers and sellers who arrive at different\nmarkets at the same time. They move liquidity across markets. Arbitrageurs provide liquidity to\nthe markets because they make it easier for buyers and sellers to trade when and where they\nwant to trade.\nB. Incorrect because the presence of arbitrageurs helps pricing discrepancies disappear quickly.\nC. Correct because arbitrageurs are traders who engage in such trades to benefit from pricing\ndiscrepancies (inefficiencies) in markets. Such trading activity contributes to market efficiency.\nThe presence of these arbitrageurs helps pricing discrepancies disappear quickly.\nEquity Investments\n• explain factors that affect a market's efficiency", "qhtml": null}, {"n": 11, "q": "Q. A feature of an efficient market is that:", "opts": ["the market reflects all past and present information.", "asset prices react to information that is fully anticipated.", "an investor can earn consistent, superior, risk-adjusted returns."], "ans": "A", "expl": "A. Correct because an efficient market is thus a market in which asset prices reflect all past and\npresent information.\nB. Incorrect because in an efficient market, prices should be expected to react only to the\nelements of information releases that are not anticipated fully by investors-that is, to the\n\"unexpected\" or \"surprise\" element of such releases.\nC. Incorrect because consistent, superior, risk-adjusted returns (net of all expenses) are not\nachievable in an efficient market.\nEquity Investments\n• describe market efficiency and related concepts, including their importance to\ninvestment practitioners", "qhtml": null}, {"n": 12, "q": "Q. Decreased market efficiency is most likely associated with an increase in:", "opts": ["transaction costs.", "financial disclosure.", "the number of market participants."], "ans": "A", "expl": "A. Correct because an increase in transaction costs will increase the price discrepancy between\nmarket price and efficient price. Higher transaction costs make it more expensive for traders to\nexploit market inefficiencies, thereby decreasing market efficiency. Inefficiencies may also be\nunexploitable if the amount of the transaction cost offsets the amount of the price discrepancy.\nA price discrepancy must be sufficiently large to leave the investor with a profit (adjusted for\nrisk) after taking account of the transaction costs and information-acquisition costs to reach the\nconclusion that the discrepancy may represent a market inefficiency.\nB. Incorrect because rules and regulations that promote fairness and efficiency in a market\ninclude those pertaining to the disclosure of information and illegal insider trading.\nC. Incorrect because an increase in the number of market participants increases efficiency. If a\nlarge number of investors (individual and institutional) follow the major financial markets\nclosely on a daily basis, and if mispricings exist in these markets, investors will act so that these\nmispricings disappear quickly.", "qhtml": null}, {"n": 13, "q": "Q. Which of the following is most likely a demographic influence on industry growth?", "opts": ["Lifestyle", "Distribution of age", "Spending behavior"], "ans": "B", "expl": "A. Incorrect because changes in the lifestyle of people happen due to societal influences.\nSocietal changes involving how people work, spend their money, enjoy their leisure time, and\nconduct other aspects of their lives can have significant effects on the sales of various\nindustries.\nB. Correct because changes in distribution of age happen due to demographic influence.\nChanges in population size, in the distributions of age and gender, and in other demographic\ncharacteristics may have significant effects on economic growth and on the amounts and types\nof goods and services consumed.\nC. Incorrect because changes in spending behavior of the customers happen due to societal\ninfluences. Societal changes involving how people work, spend their money, enjoy their leisure\ntime, and conduct other aspects of their lives can have significant effects on the sales of various\nindustries.\nEquity Investments\n• analyze an industry's structure and external influences using Porter's Five Forces and\nPESTLE frameworks", "qhtml": null}, {"n": 14, "q": "Q. Fixed-income indexes most likely:", "opts": ["are more easily replicated than equity indexes.", "require the provider to estimate the prices of some constituent securities.", "are created from a smaller universe of possible constituent securities than the universe of equity securities."], "ans": "B", "expl": "A. Incorrect because it is difficult, compared with equity indexes, for investors to replicate fixed-\nincome indexes and duplicate their performance.\nB. Correct because compared to equity indexes, fixed-income index providers must contact\ndealers to obtain current prices on constituent securities to update the index or they must\nestimate the prices of constituent securities using the prices of traded fixed-income securities\nwith similar characteristics.\nC. Incorrect because the number of fixed-income securities is many times larger than the\nnumber of equity securities.\nEquity Investments\n• compare types of security market indexes", "qhtml": null}, {"n": 15, "q": "Q. As time passes after inception, the value of the price version of an index is:", "opts": ["less than the value of the total return version.", "equal to the value of the total return version.", "greater than the value of the total return version."], "ans": "A", "expl": "A. Correct because at inception, the values of the price and total return versions of an index are\nequal. As time passes, however, the value of the total return index will exceed the value of the\nprice return index.\nB. Incorrect because at inception, the values of the price and total return versions of an index\nare equal. As time passes, however, the value of the total return index will exceed the value of\nthe price return index.\nC. Incorrect because at inception, the values of the price and total return versions of an index\nare equal. As time passes, however, the value of the total return index will exceed the value of\nthe price return index.\nEquity Investments\n• calculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 16, "q": "Q. With respect to behavioral finance, which of the following is least likely a behavioral\nbias used to explain pricing anomalies?", "opts": ["Risk aversion", "Loss aversion", "Overconfidence"], "ans": "A", "expl": "A. Correct because behavioral finance allows for the possibility that the dislike for risk is not\nsymmetrical, in contrast to the more general models where researchers assume that investors\ndo not like risk (risk aversion), whether the risk is that returns are higher than expected or lower\nthan expected.\nB. Incorrect because behavioral finance research supports the phenomenon that investors are\nloss averse. Behavioral finance allows for the possibility that the dissatisfaction resulting from a\nloss exceeds the satisfaction resulting from a gain of the same magnitude. Some argue that\nbehavioral theories of loss aversion can explain observed overreaction in markets.\nIncorrect because behavioral finance research supports the phenomenon that investors are\noverconfident.\nC. Evidence has suggested that overconfidence results in mispricing for US, UK, German, French,\nand Japanese markets.\nEquity Investments\n• describe behavioral finance and its potential relevance to understanding market\nanomalies", "qhtml": null}, {"n": 17, "q": "Q. With respect to behavioral finance, which of the following is least likely a behavioral\nbias used to explain pricing anomalies?", "opts": ["Risk aversion", "Loss aversion", "Overconfidence"], "ans": "C", "expl": "A. Incorrect because companies issue equity to both make acquisitions and ensure that debt\ncovenants are met.\nB. Incorrect because companies issue equity to both make acquisitions and ensure that debt\ncovenants are met.\nC. Correct because companies issue equity to both make acquisitions and ensure that debt\ncovenants are met.\nEquity Investments\n• explain the role of equity securities in the financing of a company's assets", "qhtml": null}, {"n": 18, "q": "Q. The voting method that allows shareholders to cast all their votes for a single\ncandidate is best described as:", "opts": ["proxy voting.", "statutory voting.", "cumulative voting."], "ans": "C", "expl": "A. Incorrect because proxy voting is defined as shareholders may vote by proxy, which allows a\ndesignated party-such as another shareholder, a shareholder representative, or management to\nvote on the shareholders' behalf.\nB. Incorrect because cumulative voting allows shareholders to direct their total voting rights to\nspecific candidates, as opposed to [statutory voting] having to allocate their voting rights evenly\namong all candidates.\nC. Correct because cumulative voting allows shareholders to direct their total voting rights to\nspecific candidates, as opposed to [statutory voting] having to allocate their voting rights evenly\namong all candidates.\nEquity Investments\n• describe differences in voting rights and other ownership characteristics among different\nequity classes", "qhtml": null}, {"n": 19, "q": "Q. Convertible preference shares most likely:", "opts": ["are riskier than the underlying common shares for investors.", "allow investors to benefit from a rise in the price of the common shares.", "are issued primarily by companies of lower risk and used as a financing option."], "ans": "B", "expl": "A. Incorrect because preference shares (or preferred stock) rank above common shares with\nrespect to the payment of dividends and the distribution of the company's net assets upon\nliquidation. Their [convertible preference shares'] price is less volatile than the underlying\ncommon shares because the dividend payments are known and more stable.\nB. Correct because convertible preference shares allow investors to benefit from a rise in the\nprice of the common shares through the conversion option.\nC. Incorrect because the use of convertible preference shares is a popular financing option in\nventure capital and private equity transactions in which the issuing companies are considered to\nbe of higher risk and when it may be years before the issuing company 'goes public' (i.e., issues\ncommon shares to the public).\nEquity Investments\n• compare the risk and return characteristics of different types of equity securities", "qhtml": null}, {"n": 20, "q": "Q. Industries whose revenues and profits are least affected by fluctuations in the overall\neconomy are most likely:", "opts": ["growth industries.", "cyclical industries.", "defensive industries."], "ans": "C", "expl": "A. Incorrect because growth industries would include industries with specific demand dynamics\nthat are so strong that they override the significance of broad economic or other external\nfactors and generate growth regardless of overall economic conditions, although their rates of\ngrowth may slow during an economic downturn.\nB. Incorrect because a cyclical industry is one whose profits are strongly correlated with the\nstrength of the overall economy. Such companies experience wider-than-average fluctuations in\ndemand-high demand during periods of economic expansion and low demand during periods of\neconomic contraction-and/or are subject to greater- than-average profit variability related to\nhigh operating leverage (i.e., high fixed costs).\nC. Correct because defensive industries and companies are those whose revenues and profits\nare least affected by fluctuations in overall economic activity. These industries/companies tend\nto produce staple consumer goods (e.g., bread), to provide basic services (grocery stores, drug\nstores, fast food outlets).", "qhtml": null}, {"n": 21, "q": "Q. If it is difficult to find a buyer or a seller for an asset, the asset most likely trades on:", "opts": ["brokered markets.", "order-driven markets.", "quote-driven markets."], "ans": "A", "expl": "A. Correct because brokered markets are markets in which brokers arrange trades among their\nclients. Brokers organize markets for instruments for which finding a buyer or seller willing to\ntrade is difficult because the instruments are unique.\nB. Incorrect because organizing order-driven markets for these instruments (assets for which\nfinding a buyer or seller is difficult) is not sensible because too few traders would submit orders\nfor them.\nC. Incorrect because dealers generally are unable or unwilling to hold these assets in their\ninventories, they will not make markets in them.\nEquity Investments\n• describe how securities, contracts, and currencies are traded in quote-driven, order-\ndriven, and brokered markets", "qhtml": null}, {"n": 22, "q": "Q. A disadvantage of using price multiples to value stocks is that:", "opts": ["multiples are not easily calculated.", "cross-sectional comparisons are not possible.", "accounting methods produce different results that are not easily comparable across companies."], "ans": "C", "expl": "A. Incorrect because price multiples are popular with investors because the multiples can be\ncalculated easily.\nB. Incorrect because the major advantage of using price multiples is that they allow for relative\ncomparisons, both cross-sectional (versus the market or another comparable) and in time\nseries.\nC. Correct because differences in reporting rules among different markets and in chosen\naccounting methods can result in revenues, earnings, book values, and cash flows that are not\neasily comparable.\nEquity Investments\n• explain advantages and disadvantages of each category of valuation model", "qhtml": null}, {"n": 23, "q": "Q. All else being equal, an increase in which of the following most likely increases a\ncompany's enterprise value?", "opts": ["Book value of debt", "Market value of investments", "Market value of preferred stock"], "ans": "C", "expl": "A. Incorrect because enterprise value is most frequently determined as market capitalization\nplus market value of preferred stock plus market value of debt minus cash and investments\n(cash equivalents and short-term investments). Enterprise value increases with an increase in\nthe market value, not book value, of debt.\nB. Incorrect because enterprise value is most frequently determined as market capitalization\nplus market value of preferred stock plus market value of debt minus cash and investments\n(cash equivalents and short-term investments). Enterprise value increases with a decrease, not\nincrease, in the market value of cash and investments.\nC. Correct because enterprise value is most frequently determined as market capitalization plus\nmarket value of preferred stock plus market value of debt minus cash and investments (cash\nequivalents and short-term investments). Therefore, enterprise value increases with an increase\nin the market value of preferred stock.\nEquity Investments\n• describe enterprise value multiples and their use in estimating equity value", "qhtml": null}, {"n": 24, "q": "Q. The Global Industry Classification Standard (GICS) classifies industries based on:", "opts": ["statistical similarities.", "business-cycle sensitivities.", "products and/or services supplied."], "ans": "C", "expl": "A. Incorrect because examples of classification systems based on products and/or services\ninclude the commercial classification systems... namely, the Global Industry Classification\nStandard (GICS).\nB. Incorrect because examples of classification systems based on products and/or services\ninclude the commercial classification systems... namely, the Global Industry Classification\nStandard (GICS).\nC. Correct because examples of classification systems based on products and/or services include\nthe commercial classification systems... namely, the Global Industry Classification Standard\n(GICS).\nEquity Investments\n• describe industry classification methods and compare methods by which companies can\nbe grouped", "qhtml": null}, {"n": 25, "q": "Q. Which of the following indexes is composed of futures contracts?", "opts": ["Commodity index", "Hedge fund index", "Broad equity market index"], "ans": "A", "expl": "A. Correct because commodity indexes consist of futures contracts on one or more\ncommodities.\nB. Incorrect because hedge fund indexes reflect the returns on hedge funds. Hedge funds are\nprivate investment vehicles that typically use leverage and long and short investment strategies.\nA number of research organizations maintain databases of hedge fund returns and summarize\nthese returns into indexes. Although the underlying hedge funds may contain futures contracts,\nthe indexes are not comprised of futures contracts.\nC. Incorrect because a broad equity market index, as its name suggests, represents an entire\ngiven equity market and typically includes securities representing more than 90 percent of the\nselected market. Although the underlying securities may include contracts, the index is not\ncomprised of futures contracts.\nEquity Investments\n• describe indexes representing alternative investments", "qhtml": null}, {"n": 26, "q": "Q. External factors affecting an industry's growth most likely include:", "opts": ["cost structures.", "economies of scale.", "technological influences."], "ans": "C", "expl": "A. Incorrect because external factors affecting an industry's growth include macroeconomic,\ntechnological, demographic, governmental, and social influences. In contrast, cost structures (or\ncost conditions) are internal factors.\nB. Incorrect because external factors affecting an industry's growth include macroeconomic,\ntechnological, demographic, governmental, and social influences. In contrast, economies of\nscale is an internal factor.\nC. Correct because external factors affecting an industry's growth include macroeconomic,\ntechnological, demographic, governmental, and social influences.\nEquity Investments\n• analyze an industry's structure and external influences using Porter's Five Forces and\nPESTLE frameworks", "qhtml": null}, {"n": 27, "q": "Q. Which of the following is most likely used to raise funds for a capital project?", "opts": ["Equity issuance only", "A stock dividend only", "Both equity issuance and a stock dividend"], "ans": "A", "expl": "A. Correct because companies often raise money for projects by selling (issuing) ownership\ninterests (e.g., corporate common stock or partnership interests). Although these equity\ninstruments legally represent ownership in companies rather than loans to the companies,\nselling equity to raise capital is simply another mechanism for moving money from the future to\nthe present.\nB. Incorrect because issuing a stock dividend would not be an activity the company would do to\nfund a capital project. Stock dividends are a non-cash form of dividends and the company\ndistributes additional shares of its common stock to shareholders instead of cash. Thus stock\ndividends will flow to shareholders, not the capital project.\nC. Incorrect because issuing a stock dividend would not be an activity the company would do to\nfund a capital project. Stock dividends are a non-cash form of dividends and the company\ndistributes additional shares of its common stock to shareholders instead of cash. Thus stock\ndividends will flow to shareholders, not the capital project.", "qhtml": null}, {"n": 28, "q": "Q. In dividend payment chronology, the ex-dividend date most likely comes after the:", "opts": ["record date.", "payment date.", "declaration date."], "ans": "C", "expl": "A. Incorrect because ex-dividend date is followed closely (one or two business days later) by the\nholder-of-record date (also called the owner-of-record date, shareholder-of-record date, record\ndate, date of record, or date of book closure), the date that a shareholder listed on the\ncompany's books will be deemed to have ownership of the shares for purposes of receiving the\nupcoming dividend.\nB. Incorrect because the final milestone [in the dividend payment chronology] is the payment\ndate (or payable date), which is the day that the company actually mails out (or electronically\ntransfers) a dividend payment to shareholders.\nC. Correct because first is the declaration date, the day that the company issues a statement\ndeclaring a specific dividend. Next comes the ex-dividend date (or ex- date), the first date that a\nshare trades without (i.e., \"ex\") the dividend.\nEquity Investments\n• describe dividend payment chronology", "qhtml": null}, {"n": 29, "q": "An analyst gathers the following information about an industry and three comparable\ncompanies within the industry:\nCompany 1 Company 2 Company 3 Average\nPrice/sales 8.9 3.2 5.7 6.2\nPrice/book 5.7 2.6 2.3 4.7\nQ. Based only on this information, the most overvalued company is:", "opts": ["Company 1.", "Company 2.", "Company 3."], "ans": "A", "expl": "A. Correct because Company 1's P/S and P/B are both the highest compared to those of its two\npeers and the industry average. All else being equal, high P/S and P/B multiples point to\nrelatively expensive valuations. Therefore, in the absence of conflict between the indications\ngiven by P/S and P/B (as both measures are the highest for the same company), the company\nmost likely to be overvalued is Company 1.\nB. Incorrect because the P/S and P/B of Company 2 are lower than those of both Company 1 and\nthe industry average.\nC. Incorrect because the P/S and P/B of Company 3 are lower than those of both Company 1 and\nthe industry average", "qhtml": null}, {"n": 30, "q": "Q. Which of the following industries or sectors is most likely classified as cyclical?", "opts": ["Utilities", "Industrials", "Health care"], "ans": "B", "expl": "A. Incorrect because utilities are classified as non-cyclical. Examples of non-cyclical industries\nare food and beverage, household and personal care products, health care, and utilities.\nB. Correct because examples of cyclical industries and broader sectors are autos, housing, basic\nmaterials, industrials, and technology.\nC. Incorrect because health care is classified as non-cyclical. Examples of non-cyclical industries\nare food and beverage, household and personal care products, health care, and utilities.\nEquity Investments\n• describe industry classification methods and compare methods by which companies can\nbe grouped", "qhtml": null}, {"n": 31, "q": "Q. An increase in shares held by controlling shareholders most likely impacts the\nconstituent weightings of a(n):", "opts": ["price-weighted index.", "equal-weighted index.", "float-adjusted market-capitalization-weighted index."], "ans": "C", "expl": "A. Incorrect because in price weighting, the weight on each constituent security is determined\nby dividing its price by the sum of all the prices of the constituent securities, which means the\nlower free float (due to increased weight of controlling shareholders) has no impact on\nconstituent weights.\nB. Incorrect because the equal weighting assigns an equal weight to each constituent security at\ninception, which means the lower free float (due to increased number of shares held by\ncontrolling shareholders) has no impact on constituent weights.\nC. Correct because float-adjusted market-capitalization-weighted indexes reflect the shares\navailable for public trading [excluding the ones held by controlling shareholders] by multiplying\nthe market price per share by the number of shares available to the investing public (i.e., the\nfloat-adjusted market capitalization), which means constituent weights are impacted.\nEquity Investments\n• compare the different weighting methods used in index construction", "qhtml": null}, {"n": 32, "q": "Q. Free-cash-flow-to-equity is equal to cash flow from operations:", "opts": ["less fixed capital investment less net borrowing.", "less fixed capital investment plus net borrowing.", "plus fixed capital investment less net borrowing."], "ans": "B", "expl": "A. Incorrect because free-cash-flow-to-equity (FCFE) can be expressed as FCFE = CFO-FCInv +\nNet borrowing [not minus net borrowing] where CFO is cash flow from operations and FCInv is\nfixed capital investment.\nB. Correct because free-cash-flow-to-equity (FCFE) can be expressed as FCFE = CFO-FCInv + Net\nborrowing where CFO is cash flow from operations and FCInv is fixed capital investment.\nC. Incorrect because free-cash-flow-to-equity (FCFE) can be expressed as FCFE = CFOFCInv [not\n+FCInv] + Net borrowing [not minus net borrowing] where CFO is cash flow from operations and\nFCInv is fixed capital investment.\nEquity Investments\n• explain the rationale for using present value models to value equity and describe the\ndividend discount and free- cash-flow-to-equity models", "qhtml": null}, {"n": 33, "q": "Q. Over time, which of the following indexes most likely has portfolio weights that shift\naway from securities that have increased in relative value and toward securities that have\nfallen in relative value? A:", "opts": ["price-weighted index", "fundamentally weighted index", "market-capitalization-weighted index"], "ans": "B", "expl": "A. Incorrect because the main disadvantage of price weighting is that it results in arbitrary\nweights for each security. It does not have a contrarian effect.\nB. Correct because fundamentally weighted indexes generally will have a contrarian 'effect' in\nthat the portfolio weights will shift away from securities that have increased in relative value\nand toward securities that have fallen in relative value whenever the portfolio is rebalanced.\nC. Incorrect because a market capitalization weighting method leads to overweighting stocks\nthat have risen in price (and may be overvalued) and underweighting stocks that have declined\nin price (and may be undervalued). The effect of this weighting method is similar to a\nmomentum investment strategy in that over time, the securities that have risen in price the\nmost will have the largest weights in the index.", "qhtml": null}, {"n": 34, "q": "An analyst gathers the following data for three companies in the same industry (in\nmillions):\nCompany Enterprise Value (EV) Earnings Before Interest, Taxes, Depreciation,\n& Amortization (EBITDA)\n1 $100 $8\n2 $150 $10\n3 $200 $15\nQ. Based on enterprise value multiples, which of the three companies is likely the most\nundervalued?", "opts": ["Company 1", "Company 2", "Company 3"], "ans": "A", "expl": "A. Correct because EV is often viewed as the cost of a takeover and EBITDA is a proxy for\noperating cash flow. Companies with relatively low EV/EBITDA multiples are likely to be\nundervalued. Company 1 has the lowest EV/EBITDA multiple among the three.\nCompany 1: EV/EBITDA = 100,000,000 / 8,000,000 = 12.5;\nCompany 2: EV/EBITDA = 150,000,000/10,000,000 = 15.0;\nCompany 3: EV/EBITDA = 200,000,000 / 15,000,000 = 13.3.", "qhtml": null}, {"n": 35, "q": "Q. Which of the following statements best describes hedge fund indexes?", "opts": ["Index constituents are regulated entities", "Potential survivorship bias is reduced by voluntary performance reporting", "There may be little overlap in index constituents between different indexes offered by different index providers"], "ans": "C", "expl": "A. Incorrect because as unregulated entities hedge funds are not required to report their\nperformance. This means a hedge fund index is unlikely to be composed of regulated entities.\nB. Incorrect because a consequence of the voluntary performance reporting is the potential for\nsurvivorship bias.\nC. Correct because frequently, a hedge fund reports its performance to only one database. The\nresult is little overlap of funds covered by the different indices. With little overlap between their\nconstituents, different global hedge funds indices may reflect very different performance for the\nhedge fund industry over the same period of time.\nEquity Investments\n• describe indexes representing alternative investments", "qhtml": null}, {"n": 36, "q": "Q. A market where security prices fully reflect all publicly known and available\ninformation, but not private information, is:", "opts": ["weak-form efficient.", "semi-strong-form efficient.", "strong-form efficient."], "ans": "B", "expl": "A. Incorrect because in the weak-form efficient market hypothesis, security prices fully reflect all\npast market data. It does not include all publicly known and available information.\nB. Correct because in a semi-strong-form efficient market, prices reflect all publicly known and\navailable information.\nC. Incorrect because in a strong-form efficient market, security prices fully reflect both public\nand private information.\nEquity Investments\n• contrast weak-form, semi-strong-form, and strong-form market efficiency", "qhtml": null}, {"n": 37, "q": "Q. In a highly efficient market, a passive investment strategy most likely has:", "opts": ["higher transaction costs than an active strategy.", "lower information-seeking costs than an active strategy.", "higher risk-adjusted returns before all expenses than an active strategy."], "ans": "B", "expl": "A. Incorrect because in a highly efficient market, a passive investment strategy is preferred to an\nactive investment strategy because of lower costs (for example, transaction and information-\nseeking costs).\nB. Correct because in a highly efficient market, a passive investment strategy (i.e., buying and\nholding a broad market portfolio) that does not seek superior risk-adjusted returns is preferred\nto an active investment strategy because of lower costs (for example, transaction and\ninformation-seeking costs).\nC. Incorrect because since there are no inefficiencies to exploit in a highly efficient market, an\nactive investment strategy would most likely generate the same risk-adjusted returns as a\npassive investment strategy if expenses are not considered. Consistent, superior, risk- adjusted\nreturns (net [not before] of all expenses) are not achievable in an efficient market. In a highly\nefficient market, a passive investment strategy (i.e., buying and holding a broad market\nportfolio) that does not seek superior risk-adjusted returns is preferred to an active investment\nstrategy.\nEquity Investments\n• describe market efficiency and related concepts, including their importance to\ninvestment practitioners", "qhtml": null}, {"n": 38, "q": "Q. Fundamental analysis most likely.", "opts": ["uses stock price patterns to trade.", "is an input for passive portfolio management.", "helps participants understand the value implications of information."], "ans": "C", "expl": "A. Incorrect because fundamental analysis involves the estimation of an asset's value using\ncompany data, such as earnings and sales forecasts and not stock price patterns. Instead,\ntechnical analysis is the use of price patterns in attempt to profit from them.\nB. Incorrect because fundamental analysis is an attempt to make active portfolio management\ndecisions, not passive management. Passive management focuses on replicating indexes as\ninvestment vehicles.\nC. Correct because fundamental analysis is necessary in a well-functioning market because this\nanalysis helps the market participants understand the value implications of information.\nEquity Investments\n• explain the implications of each form of market efficiency for fundamental analysis,\ntechnical analysis, and the choice between active and passive portfolio management", "qhtml": null}, {"n": 39, "q": "Q. Which of the following is considered an external influence on industry growth?", "opts": ["Social trends", "Barriers to entry", "Industry concentration"], "ans": "A", "expl": "A. Correct because external factors affecting an industry's growth include macroeconomic,\ntechnological, demographic, governmental, and social influences.\nB. Incorrect because barriers to entry are considered internal factors affecting an industry, while\nexternal factors affecting an industry's growth include macroeconomic, technological,\ndemographic, governmental, and social influences.\nC. Incorrect because industry concentration is considered an internal factor affecting an\nindustry, while external factors affecting an industry's growth include macroeconomic,\ntechnological, demographic, governmental, and social influences.\nEquity Investments\n• analyze an industry's structure and external influences using Porter's Five Forces and\nPESTLE frameworks", "qhtml": null}, {"n": 40, "q": "Q. In a weak-form efficient market, which of the following information is reflected in\nsecurity prices?", "opts": ["Historical prices only", "Historical prices and historical trading volumes only", "Historical prices, historical trading volumes, and current earnings"], "ans": "B", "expl": "A. Incorrect because in the weak-form efficient market hypothesis, security prices fully reflect all\npast market data, which refers to all historical price and trading volume information. This\nanswer is incomplete as it does not include trading volume information.\nB. Correct because in the weak-form efficient market hypothesis, security prices fully reflect all\npast market data, which refers to all historical price and trading volume information.\nC. Incorrect because in the weak-form efficient market hypothesis, security prices fully reflect all\npast market data, which refers to all historical price and trading volume information but does\nnot refer to current earnings information.\nEquity Investments\n• contrast weak-form, semi-strong-form, and strong-form market efficiency", "qhtml": null}, {"n": 41, "q": "Q. Security market indices most likely serve as proxies for:", "opts": ["nonsystematic risk.", "asset classes in asset allocation models.", "the fair value of assets in asset-based valuation models."], "ans": "B", "expl": "A. Incorrect because security market indices do not serve as proxies for measuring\nnonsystematic risk. Nonsystematic risk is risk that is local or limited to a particular asset or\nindustry that need not affect assets outside of that asset class. Investors are capable of avoiding\nnonsystematic risk through diversification by forming a portfolio of assets that are not highly\ncorrelated with one another. Security market indices are usually broad and well diversified. They\ndo serve as market proxies when measuring risk-adjusted performance. The beta of an actively\nmanaged portfolio allows investors to form a passive alternative with the same level of\nsystematic risk.\nB. Correct because indices play a critical role as proxies for asset classes in asset allocation\nmodels.\nC. Incorrect because asset-based valuation is a method for valuing individual companies, so a\nbroad security market indices is not a useful proxy. Asset-based valuation of a company uses\nestimates of the market or fair value of the company's assets and liabilities. Asset-based\nvaluation models are frequently used together with multiplier models to value private\ncompanies. As public companies increase reporting or disclosure of fair values, asset- based\nvaluation may be increasingly used to supplement present value and multiplier models of\nvaluation.\nEquity Investments\n• describe uses of security market indexes", "qhtml": null}, {"n": 42, "q": "Q. When constructing an equity index, each company's weight in the index is dependent\non its number of shares outstanding if the index is:", "opts": ["price weighted.", "equal weighted.", "market-capitilization weighted."], "ans": "C", "expl": "A. Incorrect because in price weighting, the weight on each constituent security is determined\nby dividing its price by the sum of all the prices of the constituent securities and not by market\ncap, which is price multiplied by shares outstanding.\nB. Incorrect because this method assigns an equal weight to each constituent security at\ninception and therefore the weight is not determined by market cap, which is price multiplied\nby shares outstanding.\nC. Correct because in market-capitalization weighting, or value weighting, the weight on each\nconstituent security is determined by dividing its market capitalization by the total market\ncapitalization (the sum of the market capitalization) of all the securities in the index. Market\ncapitalization or value is calculated by multiplying the number of shares outstanding by the\nmarket price per share.\nEquity Investments\n• compare the different weighting methods used in index construction", "qhtml": null}, {"n": 43, "q": "Q. All else being equal, which of the following preference shares pays the lowest\ndividend?", "opts": ["Putable", "Callable", "Non-callable"], "ans": "A", "expl": "A. Correct because from an investor's point of view, putable common or preference shares are\nless risky than their callable or non-callable counterparts because they give the investor the\noption to sell the shares to the issuer at a pre-determined price. As a result, putable shares\ngenerally pay a lower dividend than non-putable shares.\nB. Incorrect because callable common or preference shares are riskier than their non-callable\ncounterparts because the issuer has the option to redeem the shares at a pre-determined price.\nCallable shares generally pay a higher dividend to compensate investors for the risk that the\nshares could be called in the future.\nC. Incorrect because from an investor's point of view, putable common or preference shares are\nless risky than their callable or non-callable counterparts because they give the investor the\noption to sell the shares to the issuer at a pre-determined price. The lower risk of putables\nshares results in a lower dividend than non-callable shares.", "qhtml": null}, {"n": 44, "q": "Q. When an investment bank guarantees the sale of an entire issue at a negotiated\noffering price, this best describes\na(n):", "opts": ["rights offering.", "best effort offering.", "underwritten offering."], "ans": "C", "expl": "A. Incorrect because corporations can issue new stock via a rights offering. In a rights offering,\nthe corporation distributes rights to buy stock at a fixed price to existing shareholders in\nproportion to their holdings.\nB. Incorrect because in a best effort offering, the investment bank acts only as broker. They do\nnot guarantee the sale of the entire issue at a negotiated offering price.\nC. Correct because in an underwritten offering the most common type of offering the\ninvestment bank guarantees the sale of the issue at an offering price that it negotiates with the\nissuer.\nEquity Investments\n• define primary and secondary markets and explain how secondary markets support\nprimary markets", "qhtml": null}, {"n": 45, "q": "Q.Management is more likely to focus on short-term results instead of long-term earnings\ngrowth if a company raises equity through:", "opts": ["venture capital.", "a leveraged buyout.", "an initial public offering."], "ans": "C", "expl": "A. Incorrect because by going private, management can adopt a more long-term focus and can\neliminate certain costs that are necessary to operate a publicly traded company. Whereas in\noperating a publicly traded company, management often feels pressured to focus on short-term\nresults (e.g., meeting quarterly sales and earnings targets from analysts biased toward near-\nterm price performance) instead of operating the company to obtain long-term sustainable\nrevenue and earnings growth. There are three primary types of private equity investments:\nventure capital, leveraged buyouts, and private investment in public equity (or PIPE).\nB. Incorrect because by going private, management can adopt a more long-term focus and can\neliminate certain costs that are necessary to operate a publicly traded company. Whereas in\noperating a publicly traded company, management often feels pressured to focus on short-term\nresults (e.g., meeting quarterly sales and earnings targets from analysts biased toward near-\nterm price performance) instead of operating the company to obtain long-term sustainable\nrevenue and earnings growth. There are three primary types of private equity investments:\nventure capital, leveraged buyouts, and private investment in public equity (or PIPE).\nC. Correct because in operating a publicly traded company, management often feels pressured\nto focus on short- term results (e.g., meeting quarterly sales and earnings targets from analysts\nbiased toward near-term price performance) instead of operating the company to obtain long-\nterm sustainable revenue and earnings growth.\nEquity Investments\n• compare and contrast public and private equity securities", "qhtml": null}, {"n": 46, "q": "Q. If the index's value is 100 at the beginning of Period 1, the index's value at the end of\nPeriod 3 is closest to:", "opts": ["103.", "105.", "106."], "ans": "B", "expl": "A. Incorrect because the value of the index at the end of period 2, not Period 3 = Beginning\nvalue x (1 + Period 1 return) x (1 + Period 2 return) = 100 ×(100+12%)×(100-8%) = 103.04, which\nis closest to 103.\nB. Correct because it is the value of the index at the end of period 3 = Beginning value x\n(1+Period 1 return) x (1 + Period 2 return) x (1 + Period 3 return) = 100 ×(100+12%)×(100-\n8%)×(1+2%) ~ 105.10, which is closest to 105.\nC. Incorrect because returns for the three periods are added, not compounded: Beginning value\n+ (100 x Period 1 return) + (100 x Period 2 return) + (100 x Period 3 return) = 100+\n(100×12%)+(100×8%) + (100×2%) = 100+128+2=106.\nEquity Investments\n• calculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 47, "q": "Q. If the cost to fill trades increases, the market's informational efficiency most likely:", "opts": ["decreases.", "remains the same.", "increases."], "ans": "A", "expl": "A. Correct because how accurately prices reflect fundamental information depends on the costs\nof obtaining fundamental information and on the liquidity available to well-informed traders. If\nfilling orders is very costly, informed trading may not be profitable. In that case, information-\nmotivated traders will not commit resources to collect and analyze data and they will not trade.\nWithout their research and their associated trading, prices would be less informative.\nB. Incorrect because trading costs do impact informational efficiency: higher costs result in less\ninformed trading and thereby a decrease in efficiency.\nC. Incorrect because higher trading costs result in less informed trading and thereby a decrease\nin efficiency.\nEquity Investments\n• describe characteristics of a well-functioning financial system", "qhtml": null}, {"n": 48, "q": "Q. The best estimate of the company's dividend growth rate is:", "opts": ["5.8%.", "6.7%.", "7.4%."], "ans": "B", "expl": "A. Incorrect because it uses the retention rate instead of the payout ratio;\n220=60/(0.085-g) and g = 0.0577 or 5.8%.\nB. Correct because justified forward P/E = p/ (r-g), where p = payout ratio = (1 - retention rate)\nand r = required rate of return = nominal risk-free rate + risk premium.\n22=(1-0.60)/((0.025 +0.06) - g).\n220.40/(0.085g) and g = 0.0668~6.7%.\nC. Incorrect because it uses the current stock price instead of the P/E ratio to solve for g: 36 =\n0.40 / (0.085-g) and g = 0.0739~7.4%.\nEquity Investments\n• calculate and interpret the intrinsic value of an equity security based on the Gordon\n(constant) growth dividend discount model or a two-stage dividend discount model as\nappropriate", "qhtml": null}, {"n": 49, "q": "Q.Financial intermediaries that help their clients arrange seasoned securities offerings are\nbest known as:", "opts": ["investment banks.", "commercial banks.", "multi-lateral trading facilities. 50.Q. . Over the long run, if a market is semi-strong-form efficient, which of the following investment strategies should result in the highest return to investors? A(n):", "passive investment strategy", "active trading strategy seeking to exploit price patterns", "active trading strategy seeking to exploit public information 51. Q. A multi-market index is most appropriately used as a benchmark:", "for a single country ETF.", "for a small-capitalization growth stock manager.", "to calculate beta for the portfolio of a global stock manager. 52/Q. Industry classification systems are developed and used by:", "commercial entities only.", "governmental agencies only.", "both commercial entities and governmental agencies. 53/Q. If the required rate of return is 10%, using the Gordon growth model, the intrinsic value per share of the stock is closest to:", "$14.56.", "$19.23.", "$20.15. 54. Q. According to the efficient market hypothesis, if market prices reflect private information, the market is most likely:", "strong-form efficient.", "weak-form efficient only.", "semi-strong-form efficient, but not strong-form efficient. 55. Q. The Global Industry Classification Standard's broadest level of classification is a(n):", "sector.", "industry.", "industry group. 56/Q. In which of the following forms of market efficiency are investors able to consistently outperform the market using fundamental analysis?", "Weak-form market efficiency", "Semi-strong-form market efficiency", "Strong-form market efficiency 57/Q. Which of the following indexes are regularly rebalanced by the index provider?", "Price-weighted indexes only", "Equal-weighted indexes only", "Both price-weighted indexes and equal-weighted indexes 58/Q. Which of the following best describes an industry-level force in a thorough industry analysis?", "Threat of new entrants", "Demographic influences", "Technological influences 59/Q. The index's price return is closest to:", "5.6%.", "11.1%.", "25.2%. 60/Q. Commercial industry classification systems are most likely updated:", "less frequently than government classification systems.", "as frequently as government classification systems.", "more frequently than government classification systems. 61/Q. A company's net income available to ordinary shareholders divided by the average total book value of equity is best described the:", "company's intrinsic value.", "company's return on equity.", "minimum required rate of return of investors in the company's equity. 62/Q. A world equity index is most likely considered a:", "style index.", "sector index.", "multi-market index. 63/Q. All else being equal, which of the following preference share characteristics may contain provisions that entitle shareholders to an additional distribution of the company's assets upon liquidation, above the par value?", "Callable", "Cumulative", "Participating 64/Q. A three-stage dividend discount model is most appropriate for valuing a company that is:", "mature.", "transitioning to maturity.", "young and entering the growth phase. 65/Q. A company's management is most likely able to directly influence the company's:", "book value.", "market value.", "intrinsic value. 66/Q. In contrast to the market value of an equity security, intrinsic value is most likely:", "not known with certainty.", "constant throughout the life of the security.", "determined by the intersection of supply and demand. 67/Q. Short sellers are most likely exposed to:", "unlimited gains and limited losses.", "limited gains and unlimited losses.", "unlimited gains and unlimited losses. 68/Q. In which markets are government bills most likely traded?", "Money markets", "Capital markets", "Alternative investment markets 69/Q. Enterprise value is most likely associated with:", "multiplier models.", "present value models.", "asset-based valuation models. 70/Q. A characteristic of real assets is that they most likely:", "trade in liquid markets.", "are inexpensive to manage.", "are unique assets with different attributes. 71/Q. If a European investor believes the US equity market will decline in the next three months, the transaction most likely to allow the investor to profit from this view is the purchase of a:", "put option.", "call option.", "currency swap. 72/Q. If the ability of clients to identify competent agents increases, the need for regulation most likely.", "decreases,", "remains the same.", "increases. 73/An analyst gathers the following book value information about a company and its common shares: Inventories €20 million Net fixed assets €80 million Total assets €150 million Total liabilities €90 million Shares outstanding 4 million Q. The analyst estimates the market value of net fixed assets to be 125% of book value and the market value of inventories to be 90% of book value. If the stock is currently trading at €19.50 per share, the asset-based value per share is most likely:", "less than the market price.", "equal to the market price.", "greater than the market price. 74/Q. The book value of a company's equity is:", "the present value of its future cash flows.", "the difference between its total assets and total liabilities.", "its share price multiplied by the number of outstanding shares. 75/Q. A company's ROE most likely decreases if shareholders' equity increases at:", "a lower rate than net income.", "the same rate as net income.", "a higher rate than net income. 76/Q. An equity index representing groups of securities classified on the basis of market capitalization is most likely a:", "style index.", "sector index.", "multi-market index. 77/An analyst gathers the following information about common shares: Company Peer Group Dividend payout ratio 40% 50% Estimated future dividend growth rate 5% 4% Q. If the investor's required rate of return is 9%, the company's justified forward P/E is:", "less than the peer group's justified forward P/E.", "the same as the peer group's justified forward P/E.", "greater than the peer group's justified forward P/E. 78/An analyst gathers the following information about a company's shares: Dividend payable per share $0.50 Ex-date 20 August Closing share price on 19 August $29.00 Q. All else being equal, at the beginning of trading on 20 August, the company's shares will most likely trade at:", "$28.50.", "$29.00.", "$29.50. 79/An analyst gathers the following information about a company's dividend payment chronology: Ex-dividend date 2 August Holder-of-record date 5 August Q. The last date an investor can purchase the company's stock and be entitled to receive the dividend is most likely.", "1 August.", "2 August.", "4 August. 80/Q. The January effect is an example of:", "loss aversion.", "an earnings surprise.", "a market pricing anomaly. 81/An investor gathers the following data regarding three stocks: Stock Expected Rate of Return Investor’s Required Rate of Return 1 9% 9% 2 13% 11% 3 15% 16% Q. All else being equal, the investor should purchase:", "Stock 1.", "Stock 2.", "Stock 3. 82/Q. Behavioral finance:", "suggests that behavioral biases only affect novice investors.", "provides a possible explanation for a number of pricing anomalies,", "relies on the assumption that people consider all available information in decision-making. 83/An analyst gathers and estimates the following information about a company's stock: Current dividend per share (D) $4 Current EPS $5 Dividend growth rate 4% Q. If the estimated stock value using the Gordon growth model is $92 per share, the required return on this stock is closest to:", "8.35%.", "8.52%.", "9.44%. 84/Q. The first date that a share trades without the declared dividend is the:", "ex-date.", "payable date.", "declaration date. 85/Q. A $25 par value non-callable, non-convertible preferred share pays an annual dividend rate of 5%. If the required rate of return is 4%, the preferred share's intrinsic value is closest to:", "$25.25.", "$26.00.", "$31.25. 86/Q. An investor buys a security on margin posting 50% of the initial price as equity. All else being equal, if the price declines 25%, the investor's new leverage ratio is closest to:", "2.", "3.", "4. 87/Q. When using a multiplier model, the fundamental variable is stated on:", "a trailing basis only.", "a forward basis only.", "either a forward basis or a trailing basis. 88/Q. For a security position purchased on margin, the leverage ratio is the ratio of the value of the position to:", "the value of equity in the position.", "the amount of the margin loan in the position.", "the amount of the margin loan plus equity in the position. 89/Q. A non-callable, non-convertible perpetual preferred share pays a level dividend of $1.20 with a current market price of $20. If an investor has a required rate of return of 6%, the preferred shares are most likely:", "undervalued.", "fairly valued.", "overvalued. 90/Q. Broker 1 has a minimum margin requirement of 62.5% and Broker 2 has a maximum leverage ratio of 1.6. The maximum financial leverage possible with Broker 1 is:", "less than the maximum financial leverage with Broker 2.", "equal to the maximum financial leverage with Broker 2.", "greater than the maximum financial leverage with Broker 2. 91/Q. If securities are purchased on margin with a maximum leverage ratio of 1.75, the minimum margin requirement is closest to:", "43%.", "57%.", "75%. 92/Q. Which of the following market anomalies is best described as a time-series anomaly?", "Size effect", "Momentum", "Initial Public Offerings 93/An analyst gathers the following information about a company: Dividend payout ratio 40% Required rate of return on equity 15% Return on equity 20% Q. The justified forward P/E ratio for the company's stock is closest to:", "5.7.", "8.0.", "13.3. 94/Q. A trader uses margin to purchase a stock for $50 by posting 30% equity. If the first margin call occurs when the price falls below $43.75, the maintenance margin requirement is closest to:", "13%.", "18%.", "20%. 95/A trader buys a stock on margin with the following conditions: Purchase price per share $50 Equity per share $25 Maintenance margin requirement 25% Q. If the share price declines, the highest price at which the trader will receive a margin call is closest to:", "$12.50.", "$33.33.", "$37.50. 96/Q. The observation that a large-capitalization company's stock price is inflated after the company releases unexpected good news at year end is most likely related to the:", "value effect.", "overreaction effect.", "turn-of-the-year effect. 97/Q. Order matching rules in order-driven trading systems are used to:", "match buy orders to sell orders.", "determine the prices at which the orders submitted by dealers are matched.", "determine the prices at which the orders submitted by customers are matched. 98/Q. Which of the following is an objective of market regulation?", "Controlling agency problems only", "Ensuring that long-term liabilities are funded only", "Both controlling agency problems and ensuring that long-term liabilities are funded 99/An analyst gathers the following information about a company and its historical price multiples: Current Historical EPS $3.00 …. Cash flow per share $4.00 …. Book value per share $40.00 …. P/B 0.6 P/E 12.0 P/CF 8.0 Q. Based only on this information, if the share price is $30, the company's shares are most likely overvalued based on:", "P/B.", "P/E.", "P/CF. 100/Q. Porter's five determinants of the intensity of competition in an industry do not include the:", "power of buyers.", "threat of substitutes.", "position of a company in its life-cycle stage. 101/A trader reports the following information about an equity investment which was sold after 1 year: Number of shares purchased 2,000 Leverage ratio 3 Purchase price per share $12.00 Sale price per share $9.50 Call money rate per year 3% Q. The trader's equity value as a result of the trade is closest to:", "$460,", "$2,520.", "$3,000. 102/Q. If a security's intrinsic value is $55 per share and is currently selling for $50 per share, the security is:", "undervalued.", "fairly valued.", "overvalued. 103/Q. Convertible preference shares.", "are popular in financing venture capital and private equity transactions.", "are subject to more price volatility than the underlying common shares.", "do not increase in value due to an increase in price of the underlying common shares. 104/Q. If the price of a stock bought on 30% margin increases by 40%, the return on equity to the buyer is closest to:", "52%.", "75%.", "133%. 105/Q. The size effect anomaly results when it is observed that on a risk-adjusted basis small cap companies tend to:", "underperform equities of large-cap companies.", "perform in line with equities of large-cap companies.", "outperform equities of large-cap companies. 106/Q. Within Porter's five forces framework, the power of buyers within an industry is most likely influenced by the:", "industry concentration.", "availability of lower priced alternative brands.", "number of customers for the industry's products. 107/An investor purchases 1,000 shares of a non-dividend paying stock on margin and sells them after one year as follows: Purchase price per share $25 Sale price per share $20 Annual call money rate 5% Leverage ratio 2 Q. Ignoring commissions, the investor's holding period return is closest to:", "-45%.", "-40%.", "-23%. 108/An analyst gathers the following information about a market-capitalization-weighted index and one of its four constituent stocks: Total Market Capitalization (in $ billions) Stock 20 Index 57 Q. If the stock price is $30 per share and the index value is 100, the stock's weight in the index is closest to:", "25%.", "30%.", "35%. 109/Q. The beginning value for an index is 1540 and the ending value is 1575. If the income for the period is 55, the total return of the index is closest to:", "1.3%.", "2.2%.", "5.8%. 110/Q. If investors can successfully predict future asset prices based on past prices, markets are most likely:", "inefficient.", "weak-form efficient only.", "semi-strong-form efficient. 111/Q. A company's current dividend (D) of $3 per share is expected to grow 20% per year for three years, then 5% per year thereafter. If the required rate of return is 10%, using a multistage dividend discount model, the intrinsic value of the stock at the end of Year 3 is closest to:", "$81.79.", "$92.53.", "$108.86. 112/Q. A disadvantage of an equal-weighted index is that:", "maintaining equal weights requires frequent reconstitution of the index.", "securities that represent a relatively large fraction of the target market value are underrepresented.", "securities that represent a relatively small fraction of the target market value are underrepresented. 113/An analyst gathers the following information about a company's non-callable, non- convertible preferred stock: Par value per share €100 Required rate of return 7.2% Maturity 5 years Q. If the stock's intrinsic value is €125, the company's semi-annual dividend on the preferred stock is closest to:", "€6.62.", "€7.20.", "€9.00. 114/Q. In contrast to a public company, a company that has gone private most likely.", "faces greater regulatory costs.", "focuses more on short-term results.", "lacks an active secondary market for its equity. 115/An analyst gathers the following information about an equal-weighted index composed of three stocks: Stock Beginning of Period Price End of Period Price 1 $10 8$ 2 $20 $24 3 $30 30$ Q. If there is a 2% return from dividends for each of the three stocks, the total return of the index is:", "0%.", "2%.", "6%. 116/Q. Which of the following factors would most likely increase market efficiency? Limits on:", "short selling", "transaction costs", "trading by foreign investors 117/Q. Which of the following index weighting schemes most likely causes a bias in the index when high-priced stocks split?", "Price weighted", "Equal weighted", "Value weighted 118/Q. In the secondary market, funds flow from:", "traders to traders.", "issuers to investors.", "investors to issuers. 119/Q. When issuers sell securities to investors:", "they trade in the primary market.", "they trade in the secondary market.", "funds flow between the primary and the secondary market. 120/Q. In a well-functioning financial system, changes in asset prices primarily reflect changes in:", "execution costs.", "the demand for liquidity.", "fundamental asset values. 121/Q. When a company raises common equity capital in the public market, the company most likely:", "moves money from the present to the future.", "agrees to make scheduled distributions in the future.", "is required to meet regulatory reporting requirements. 122/Q. Preference shares are less risky than common shares because preference shares have:", "fixed dividends.", "a guaranteed return if a company is liquidated.", "a larger portion of total return based on future price return. 123/Q. The Gordon growth model assumes a dividend growth rate:", "less than the required rate of return.", "equal to the required rate of return.", "greater than the required rate of return. 124/Q. Private equity securities most likely", "are listed on public exchanges.", "are illiquid and difficult to trade.", "have easily available financial information. 125./Q. The Gordon growth model is most appropriate for valuing the equity of a dividend- paying:", "electric utility firm.", "technology company.", "automobile manufacturer."], "ans": "A", "expl": "A. Correct because investment banks provide advice to their mostly corporate clients and help\nthem arrange transactions such as initial and seasoned securities offerings. Additionally, a\nseasoned security is a security that an issuer has already issued. If the issuer wants to sell\nadditional units of a previously issued security, it makes a seasoned offering (sometimes called a\nsecondary offering).\nB. Incorrect because depository institutions include commercial banks, savings and loan banks,\ncredit unions, and similar institutions that raise funds from depositors and other investors and\nlend it to borrowers. The banks give their depositors interest and transaction services, such as\ncheck writing and check cashing, in exchange for using their money.\nC. Incorrect because multilateral trading facilities (MTFs) are trading venues that function like\nexchanges but that do not exercise regulatory authority over their subscribers except with\nrespect to the conduct of their trading in their trading systems.", "qhtml": null}];
+const CFG = {"title": "Equity Investments", "subtitle": "Ngân hàng câu hỏi CFA chính thức — Level I", "minutes": 98, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("resumeNote").classList.remove("show");
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

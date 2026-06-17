@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Mark Guenin, CFA, covers the textile industry for a brokerage firm. While at his golf club on\nSaturday, he notices several executives from two of his covered companies entering a\nprivate dining room and sees a pro forma balance sheet combining the two companies\nprojected onto a screen. The executives greet Guenin and confirm that their companies\nintend to merge. Guenin's most appropriate course of action should be to:", "opts": ["divest his personal holdings of both companies.", "encourage the companies to announce the merger.", "write a research report updating the outlook for both companies."], "ans": "B", "expl": "Guenin should make reasonable efforts to have the two companies announce the merger\nin order to achieve public dissemination of the news. Either of the other two choices would\nbe acting or causing others to act on material nonpublic information.\n(Module 91.3, LOS 91: II(A))"}, {"n": 2, "q": "Wallace Manaugh, CFA, is analyzing the stock of a manufacturer of fishing boats. By\nanalyzing public information, speaking with the firm's suppliers and customers, and counting\nthe new boats in the company's boat yard, Manaugh concludes that the company's new\nfishing boat is not meeting sales expectations. Anticipating that this will cause the stock price\nto decline, Manaugh takes a short position in the stock. Manaugh has:", "opts": ["an obligation under the Standards to make reasonable efforts to achieve public dissemination of the nonpublic information.", "not violated CFA Institute Standards.", "violated the Standards by acting on nonpublic information."], "ans": "B", "expl": "Under the mosaic theory, financial analysts are free to combine public information with\nnonmaterial nonpublic information and act based on their conclusions. Standard II(A)\nprohibits members and candidates from acting or causing others to act on material\nnonpublic information. The obligation to make the reasonable efforts to achieve public\ndissemination of nonpublic information applies to situations in which the company\ndiscloses information to the analyst that has not yet been made public.\n(Module 91.3, LOS 91: II(A))"}, {"n": 3, "q": "Ron Taylor, a Level I CFA candidate, trades cotton contracts for a small commodity broker.\nTaylor convinces a government cotton inspector to issue a warning that the Texas cotton\ncrop is in danger from insect infestation. The price of cotton soars. Taylor immediately\nshorts cotton futures. Once the position is created, the government inspector issues a\nsecond report reversing his original opinion and cotton prices plummet.\nCedric Sims, a Level III CFA candidate, would like to generate a tax loss on a security held in\nhis personal portfolio; however, he believes the security has significant upside potential. To\navoid the wash sale provisions of the income tax code, Sims sells the security and\nsimultaneously creates a synthetic long position using derivatives.\nWith regard to Standard II(B) Market Manipulation, which of the following statements\nconcerning Taylor's and Sims's conduct is CORRECT?", "opts": ["Both Taylor and Sims are in violation of Standard II(B).", "Neither Taylor nor Sims is in violation of Standard II(B).", "Taylor is in violation of Standard II(B), but Sims is not in violation."], "ans": "C", "expl": "Taylor is in violation of Standard II(B) Market Manipulation by creating a scheme that\ncaused others to trade on false information. Sims is not in violation of Standard II(B). The\nStandard does not prohibit transactions conducted for tax purposes.\n(Module 91.3, LOS 91: II(B))"}, {"n": 4, "q": "A stockbroker who is a member of CFA Institute has a part-time housekeeper who also\nworks for the CEO of Festival, Inc. One day the housekeeper mentions to the broker that she\nsaw the CEO of Festival having a conversation at his home with John Tater, who is a\nnationally known corporate lawyer and consultant. The stockbroker is restricted from\ntrading on this information:", "opts": ["for both of the reasons listed here.", "if the housekeeper says the meeting concerned a tender offer and the broker knows that it is non-public information.", "only if the broker knows that the meeting is non-public information."], "ans": "B", "expl": "Standard II(A), Material Nonpublic Information, states \"a member cannot trade or cause\nothers to trade in a security while the member possesses material nonpublic information\"\nA tender offer would certainly be material nonpublic information. Knowing that the\nmeeting took place, and nothing else, does not restrict the broker. A reasonable investor\nwould need to know more to determine if the information was material."}, {"n": 5, "q": "The mosaic theory is the idea that an analyst can:", "opts": ["base his recommendations on nonpublic material information only for the clients of the company, but not for the general public.", "make recommendations or trade based on several pieces of public or nonpublic information, each piece by itself being nonmaterial, but when compiled the information becomes material.", "make investment recommendations on the basis of several pieces of nonpublic information as long as the aggregate information remains nonmaterial."], "ans": "B", "expl": "The mosaic theory permits an analyst to make recommendations based upon several\npieces of public or nonmaterial information, even though the complied result is both\nmaterial and nonpublic."}, {"n": 6, "q": "An analyst manages the assets of a charitable organization. Her supervisor tells her to buy a\ncertain stock because the company's chief executive, who is also a board member in the\norganization, told her the company's earnings will exceed the market forecast when they are\nreleased next week. The analyst objects, but the supervisor says this is what they have\nalways done and sees no reason for changing now. The analyst complies with the request.\nThe analyst violated the Standard(s) concerning:", "opts": ["only material nonpublic information.", "both loyalty and material nonpublic information.", "only loyalty."], "ans": "A", "expl": "Complying with the request is a violation of Standard II(A) Material Nonpublic Information\nwhich prohibits trading on insider information. Standard IV(A) Loyalty deals with issues\nsuch as independent practice, leaving an employer and continuing to act in the employer's\nbest interest until their resignation becomes effective, and whistleblowing."}, {"n": 7, "q": "Which of the following is a violation of Standard II(B), Market Manipulation?", "opts": ["Engaging in a block trade to limit the effect on the price of a thinly traded security.", "Implementing a trading strategy to exploit differences in market power and information.", "Overstating an earnings projection in order to increase the price of a stock."], "ans": "C", "expl": "Standard II(B), Market Manipulation, is not intended to prohibit transactions that are done\nin order to minimize income taxes or trading strategies that are not intended to distort\nprices or artificially inflate trading volume. Overstating earnings projections in order to\nincrease the price of a stock is a direct violation.\n(Module 91.3, LOS 91: II(B))"}, {"n": 8, "q": "Which of the following statements concerning material nonpublic information is most\naccurate? A member or candidate may not act or cause others to act on material nonpublic\ninformation:", "opts": ["if the information has been misappropriated.", "if the information was obtained through a breach of duty.", "until the information becomes available to the public."], "ans": "C", "expl": "Members and candidates may not act or cause others to act on material nonpublic\ninformation until that same information is made public. It does not matter if the\ninformation was not misappropriated or not obtained through a breach of duty.\n(Module 91.3, LOS 91: II(A))"}, {"n": 9, "q": "Trude Front, CFA, is a portfolio manager. While in the normal course of her duties, she\nhappens to overhear material non-public information concerning the stock of VTT Bowser.\nShe purchases several exchange traded funds which contain VTT Bowser, while shorting\nsimilar exchange traded funds which do not contain VTT Bowser. This is most likely:", "opts": ["not a violation of Standard II(A) \"Material Non-Public Information.\"", "only a violation of Standard II(A) \"Material Non-Public Information\" because Front is simultaneously shorting the funds which do not contain VTT Bowser.", "a violation of Standard II(A) \"Material Non-Public Information.\""], "ans": "C", "expl": "This is a violation of Standard II(A) \"Material Non-Public Information\" irrespective of\nwhether Front is simultaneously shorting the funds which do not contain VTT Bowser. Her\ntrades are motivated by material non-public information.\n(Module 91.3, LOS 91: II(A))"}, {"n": 10, "q": "Nancy McCoy, CFA, is preparing a report on Gourmet Food Mart. As part of her research, she\ncontacts the company's contractors, suppliers, and competitors. McCoy is told by the CEO of\na major produce vendor that he is about to file a lawsuit against Gourmet Food Mart,\nseeking significant damages. McCoy incorporates this information into her research report,\nwhich projects a decline in profitability for Gourmet Food Mart due to the impending\nlitigation. According to the CFA Institute Standards of Professional Conduct, McCoy:", "opts": ["has violated the Standards by utilizing material nonpublic information.", "has not violated any Standard.", "has violated the Standards by disseminating confidential information."], "ans": "A", "expl": "According to Standard II(A) Material Nonpublic Information, an analyst must not act or\ncause others to act on material nonpublic information. Information about a significant\nlegal dispute is considered material, and in this case is nonpublic because the lawsuit has\nnot yet been filed and is not yet a matter of public record.\n(Module 91.3, LOS 91: II(A))"}, {"n": 11, "q": "Which of the following statements regarding Standard II(A), Material, Nonpublic Information,\nis least accurate?", "opts": ["If you receive the information in a public forum, it has been disseminated, and you can trade on it.", "Information received from an insider who is not breaching his fiduciary responsibility may be traded on.", "Material, non-public information regarding a tender offer may not be traded on."], "ans": "B", "expl": "If the information is material and nonpublic, the Member or Candidate cannot trade or\ncause others to trade. It does not matter if the insider did not breach his fiduciary\nresponsibility. The inside information is still material and nonpublic."}, {"n": 12, "q": "Which of the following is an example of information-based market manipulation?", "opts": ["Spreading false rumors about a stock on social media to influence its price.", "Influencing futures prices by obtaining a dominant position in the underlying commodity.", "Entering large offsetting buy and sell orders to inflate trading volume."], "ans": "A", "expl": "Spreading false rumors about a stock is an example of information-based market\nmanipulation. The other choices are examples of transaction-based market manipulation.\n(Module 91.3, LOS 91: II(B))"}, {"n": 13, "q": "Marion Klatt, CFA, is a representative for Thiel Financial Network. Klatt received a phone call\nat home from William Kind, a junior executive at Westtown Development Company, asking\nwhether Klatt had heard that Westtown had just reached an agreement to acquire a major\nshopping mall chain at a very favorable price. (Klatt had not heard this news, and Klatt was\nable to confirm that the information had not yet been made public.) Kind requested that\nKlatt acquire 10,000 shares of Westtown for Kind's personal account.\nKlatt should:", "opts": ["not acquire the shares until he has contacted Westtown's management and encouraged them to publicly announce the merger discussion.", "not acquire the shares until the information is made public.", "not acquire the shares."], "ans": "B", "expl": "Standard II(A) prohibits members from taking investment action if they possess material\nnonpublic information. Kind has a duty to keep information confidential that he acquired\nin the course of his duties at Westtown. The information is clearly material, so Klatt is not\npermitted to trade on it. Klatt should make reasonable efforts to achieve public\ndissemination of the information by contacting management and encouraging them to\nmake the information public. Klatt may not trade on the information until it is made\npublic.\n(Module 91.3, LOS 91: II(A))"}, {"n": 14, "q": "An analyst is allowed to trade on information that he has predicted, such as a corporate\naction or event, using perceptive assembly and analysis of public information and\nnonmaterial nonpublic information. This is called the:", "opts": ["assessment theory.", "mosaic theory.", "deduction theory."], "ans": "B", "expl": "Based on the mosaic theory, a member or candidate may act on a combination of public\ninformation and nonmaterial nonpublic information, without violating Standard II(A)\nMaterial Nonpublic Information."}, {"n": 15, "q": "During a conference call with 30 analysts, a company's management discloses that its\nquarterly earnings, which will be announced at the end of the week, are equal to the\nconsensus forecast. The analysts participating in the conference call should consider this\ninformation:", "opts": ["material and nonpublic.", "material, but public.", "nonpublic, but not material."], "ans": "A", "expl": "Earnings releases are material because reasonable investors would want to know the\ninformation before making an investment decision. The information is nonpublic until it\nhas been disseminated to the marketplace. Disclosure to analysts is not public\ndissemination.\n(Module 91.3, LOS 91: II(A))"}, {"n": 16, "q": "Darlene Hess, CFA, manages a pension fund that has a sizeable position in Knoll Corporation\ncommon stock. Hess also holds Knoll common stock in her personal account. Hess\nparticipates in an analyst conference call in which Knoll's chief financial officer advises that\nthe company's current-quarter earnings will slip below consensus forecast. Knoll has not\ndisclosed this to the public. Hess believes news of the poor earnings will reduce the stock's\nvalue significantly. Hess may:", "opts": ["sell Knoll stock from the pension fund but may not sell it from her personal account.", "sell Knoll stock from her personal account but may not sell it from the pension fund.", "not sell Knoll stock from either the pension fund or her personal account."], "ans": "C", "expl": "Selling Knoll stock from either the pension fund or Hess's personal account would be\ntrading on material nonpublic information, in violation of Standard II(A) Material Nonpublic\nInformation.\n(Module 91.3, LOS 91: II(A))"}, {"n": 17, "q": "Mark Williamson is \"bearish\" on ABC Manufacturing Company. Williamson is so convinced\nthat ABC is overpriced, two weeks ago, he shorted 100,000 shares. Today, Williamson is\n\"surfing\" several popular investment bulletin boards on the internet and posting false\nderogatory comments about company management. According to Standard II(B), Market\nManipulation, Williamson has engaged in:", "opts": ["both transaction-based manipulation and information-based manipulation.", "transaction-based manipulation, but not information-based manipulation.", "information-based manipulation, but not transaction-based manipulation."], "ans": "C", "expl": "Williamson is in violation of Standard II(B), Market Manipulation, by engaging in\ninformation-based manipulation. Information-based manipulation includes, but is not\nlimited to, spreading false rumors about a firm in order to induce others to trade."}, {"n": 18, "q": "A CFO who is a CFA Institute member is careful to make his press releases—some of them\ncontaining material and previously undisclosed information—clear and understandable to\nhis readers. While writing a new release, he often has his current intern proofread rough\ndrafts. He also sends electronic copies to his brother, an English teacher, to get suggestions\nconcerning style and grammar. With respect to Standard II(A), Material Nonpublic\nInformation, the CFO is:", "opts": ["not in violation of the Standard.", "only in violation by e-mailing the pre-release version to his brother but not the intern, because the intern is in essence an employee of the firm.", "violating the standard by either showing the pre-release version to his intern or sending it to his brother."], "ans": "C", "expl": "Standard II(A), Material Nonpublic Information, says that a member must be careful about\nhandling material non-public information. As a member of CFA Institute, the CFO must\nlimit the people who see important information before it is released. It would not be\nappropriate to involve an intern or a relative in the process."}, {"n": 19, "q": "A stockbroker who is a CFA Institute member is called on the telephone by the CEO of a large\ncompany. The CEO asks to buy shares of the CEO's company for the accounts of the CEO's\nchildren. In the course of the conversation, the CEO says this will really pay off when the\nupcoming takeover goes through. The stockbroker checks her sources and finds no\ninformation about the takeover. In this case the broker should:", "opts": ["do neither of the actions listed here.", "execute the order for all clients as required by Standard III(B), Fair Dealing.", "only execute the order in compliance with Standard III(A), Loyalty, Prudence, and Care. Since the client is buying the stock for the children, there is not a problem."], "ans": "A", "expl": "Doing any of these actions would be a violation of Standard II(A), Material Nonpublic\nInformation. Members and Candidates must not act or induce others to act on material\nnonpublic information."}, {"n": 20, "q": "Which one of the following least accurately describes the CFA Institute Standard about using\nmaterial nonpublic information?", "opts": ["An analyst using material nonpublic information may be fined by CFA Institute.", "An analyst may use nonmaterial nonpublic information as long as it has been developed under the Mosaic Theory.", "An analyst may violate this Standard by passing information to others even when it has been obtained from outside the company."], "ans": "A", "expl": "There is no provision for CFA Institute to issue fines to members. Members may not use\nmaterial nonpublic information for trading purposes. Nonmaterial, nonpublic information\nmay be used together with analysis of public information under the Mosaic Theory."}, {"n": 21, "q": "The investment banking department of the XYZ Brokerage House often has information that\nwould be of significant use to the firm's brokerage clients. To comply with CFA Institute\nStandards of Professional Conduct, which of the following policies should XYZ adopt?", "opts": ["Establish physical and informational barriers to prevent the exchange of information between the investment banking and the brokerage operations.", "Disseminate this information to all clients at the same time.", "Encourage their investment banking clients to publicly disseminate this information."], "ans": "A", "expl": "The physical and information barrier erected between departments to prevent\ncommunication of material nonpublic information from one department to another is\ncalled a \"firewall.\" Departments should be separated. For example, the investment\nbanking and corporate finance departments of a brokerage firm should be segregated\nfrom the sales and research departments. Family member accounts who are also clients\nshould be treated like any other client accounts and should not be given special treatment\nor disadvantaged.\n(Module 91.3, LOS 91: II(A))"}, {"n": 22, "q": "Insider trading can be defined as information that is:", "opts": ["material and nonpublic.", "material and public.", "nonmaterial and nonpublic."], "ans": "A", "expl": "Information is material if it would be important to the investor in their investment making\ndecision. Information is nonpublic if it is not yet available to the public.\n(Module 91.3, LOS 91: II(A))"}, {"n": 23, "q": "Klaus Gerber, CFA, is a regular contributor to the website WizeGuy. This past week Gerber\nhas been incorrectly quoted as recommending that investors buy shares in Bradford, Inc. He\nis unaware that this message has been placed on the site as the quote was placed as a prank\nby an unknown source. This is the third time this has happened over the past month and\neach time the stock being mentioned moved in price according to the buy or sell\nrecommendation.\nFritz Fox, CFA, maintains and updates the WizeGuy site and has learned how to determine if\nthe quotes being attributed to Gerber are actually valid. Several days later, he observes an\ninvestment recommendation, posted on the site, to buy Gresham, Inc. The investment\nrecommendation is purported to be from Gerber, but Fox actually knows it to be bogus. He\nimmediately sells 1,000 Gresham short and e-mails Gerber to inform him of the bogus\nrecommendation. Gerber immediately issues a rebuttal, and Gresham falls by 14%. Fox's\naction is:", "opts": ["a violation of the Standard concerning fiduciary duties.", "not in violation of the Code and Standards.", "a violation of the Standard concerning use of material nonpublic information."], "ans": "C", "expl": "Even though the information is false, this fact is known only to Fox and is thus nonpublic\ninformation. Since such recommendations have in the past had a significant effect on the\nprice of the security in question, the information is clearly material. Fox is in violation of\nStandard II(A) Material Nonpublic Information."}, {"n": 24, "q": "Regarding non-public information, which one of the following statements is NOT correct?", "opts": ["A member can be summarily suspended for having received material non-public information.", "An analyst may use some types of non-public information.", "Disclosing material non-public information would have an impact on the price of a security or be of interest to a reasonable investor."], "ans": "A", "expl": "All of these are true except that a member can be suspended for having received material\nnon-public information. The member can receive such information as part of their regular\nduties or by accident. Neither is punishable in and of itself, and penalties only apply if the\nmember trades or causes others to trade on the information. The member may have\ncertain duties, such as trying to disseminate the information after receiving it. An analyst\nmay use nonmaterial non-public information."}, {"n": 25, "q": "The term \"material\" in the phrase \"material nonpublic information\" refers to information\nthat is likely to affect significantly the market price of the issuing company's securities or\nthat:", "opts": ["is acquired by the financial analyst from a special or confidential relationship with the issuing company.", "is likely to be considered important by reasonable investors in determining whether to trade a particular security.", "is derived by the financial analyst from direct communication with an issuing company's management."], "ans": "B", "expl": "An item of information is material if its disclosure would be likely to have an impact on the\nprice of a security, or if reasonable investors would want to know the information before\ninvesting."}, {"n": 26, "q": "Don Benjamin, CFA, is the compliance officer for a large brokerage firm. He wants to prevent\nthe communication of material nonpublic information and other sensitive information from\nhis firm's investment banking and corporate finance departments to its sales and research\ndepartments. The most common and widespread approach that Benjamin can use to\nprevent insider trading by employees is the:", "opts": ["fire wall.", "legal list.", "Wall Street Rule."], "ans": "A", "expl": "To comply with Standard II(A), a fire wall provides an information barrier that prevents\ncommunication of material nonpublic information and other sensitive information from\none department to another within a firm."}, {"n": 27, "q": "All of the following are violations of Standard II(B) Market Manipulation EXCEPT:", "opts": ["disseminating misleading information about the development of new products and technologies.", "exploiting differences in market inefficiencies.", "securing a controlling interest in an equity security in order to influence the price of a related derivative instrument."], "ans": "B", "expl": "Standard II(B) Market Manipulation prohibits practices that distort prices or artificially\ninflate trading volumes with the intent to mislead market participants. The Standard is not\nintended to prohibit legitimate trading strategies that exploit differences in market\ninefficiencies.\n(Module 91.3, LOS 91: II(B))"}, {"n": 28, "q": "A brokerage firm has a trading department and an investment-banking department. Often\nthe investment-banking department receives material non-public information that would be\nvaluable in advising the firm's brokerage clients. In order to comply with the Standards, the\nfirm:", "opts": ["should restrict employee trading in securities for which the firm is in possession of material non-public information.", "must divest one of the departments.", "should record the exchange of information between the investment-banking department and the brokerage department."], "ans": "A", "expl": "Restricting employee trading in stocks for which the firm has material non-public\ninformation is the best answer. Recording the exchange of information between the two\ndepartments is not the best option because there should be no exchange of information\nbetween these two departments. Divesting a department is not a suitable method for\naddressing this potential problem."}, {"n": 29, "q": "According to CFA Institute Standards of Professional Conduct, which of the following\nstatements about material nonpublic information is NOT correct? Information is:", "opts": ["material if reasonable investors would want to know the information before making an investment decision.", "nonpublic until it has been disseminated to a select group of investors.", "nonpublic until it has been disseminated to the marketplace in general."], "ans": "B", "expl": "Standard II(A), Material Nonpublic Information, states that information is \"nonpublic\" until\nit has been disseminated to the marketplace in general as opposed to a select group of\ninvestors.\n(Module 91.3, LOS 91: II(A))"}, {"n": 30, "q": "Andrea Waters is an investment analyst who has accumulated and analyzed several pieces of\nnonpublic information through her contacts with drug firms. Although no one piece of the\ninformation she collected is \"material,\" Waters correctly concluded that the earnings of one\nof the drug companies would be unexpectedly high in the coming year. According to CFA\nInstitute Standards of Professional Conduct, Waters:", "opts": ["can use the information to make investment recommendations and decisions.", "cannot legally invest or make recommendations based on this information.", "may use the information, but only after approval from a compliance officer or supervisor."], "ans": "A", "expl": "Members who can piece together items of nonmaterial nonpublic information with public\ninformation can, based upon the mosaic theory, use such information for trading\npurposes."}];
+const CFG = {"title": "Guidance for Standard II", "subtitle": "CFA · Ethical & Professional Standards · Reading 91.3 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; stem.textContent = q.q;
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

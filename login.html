@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đăng nhập — Ôn tập CFA</title>
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+</script>
+<style>
+  :root{ --bg:#0f1115; --panel:#171a21; --panel2:#1f2430; --line:#2a3040;
+         --text:#e8eaf0; --muted:#9aa3b2; --accent:#4f8cff; --danger:#ff6b6b; --ok:#3ecf8e; }
+  html[data-theme="light"]{ --bg:#f4f6fb; --panel:#fff; --panel2:#eef1f7; --line:#dde3ee;
+         --text:#1b2230; --muted:#5c6678; --accent:#2f6fed; }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px}
+  .card{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--line);
+        border-radius:16px;padding:26px 24px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+  h1{font-size:20px;margin:0 0 4px} .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .tabs{display:flex;gap:6px;background:var(--panel2);border-radius:10px;padding:4px;margin-bottom:18px}
+  .tabs button{flex:1;border:0;background:transparent;color:var(--muted);font-weight:600;
+        font-size:14px;padding:9px;border-radius:7px;cursor:pointer}
+  .tabs button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:12px 0 5px}
+  input{width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--line);
+        background:var(--bg);color:var(--text);font-size:15px}
+  input:focus{outline:none;border-color:var(--accent)}
+  .btn{width:100%;margin-top:18px;padding:12px;border:0;border-radius:9px;background:var(--accent);
+       color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:default}
+  .link{background:0;border:0;color:var(--accent);font-size:12.5px;cursor:pointer;padding:0;margin-top:12px}
+  .msg{margin-top:14px;font-size:13px;min-height:18px}
+  .msg.err{color:var(--danger)} .msg.ok{color:var(--ok)}
+  .foot{margin-top:18px;text-align:center;font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Ôn tập CFA</h1>
+    <p class="sub">Đăng nhập để truy cập ngân hàng câu hỏi & đề thi thử.</p>
+    <div class="tabs">
+      <button id="tabLogin" class="on" onclick="setMode('login')">Đăng nhập</button>
+      <button id="tabReg" onclick="setMode('register')">Đăng ký</button>
+    </div>
+    <form id="form" onsubmit="return submitForm(event)">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" required placeholder="ban@email.com">
+      <label for="pw">Mật khẩu</label>
+      <input id="pw" type="password" autocomplete="current-password" required minlength="6" placeholder="Tối thiểu 6 ký tự">
+      <button id="submit" class="btn" type="submit">Đăng nhập</button>
+    </form>
+    <button id="forgot" class="link" onclick="resetPw()">Quên mật khẩu?</button>
+    <div id="msg" class="msg"></div>
+    <p class="foot">CFA Level I · cfaquestion</p>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="firebase-init.js"></script>
+  <script>
+    var mode = "login";
+    function $(id){ return document.getElementById(id); }
+    function nextUrl(){ return new URLSearchParams(location.search).get("next") || "index.html"; }
+    function setMsg(t, cls){ var m=$("msg"); m.textContent=t||""; m.className="msg"+(cls?" "+cls:""); }
+
+    function setMode(m){
+      mode=m;
+      $("tabLogin").classList.toggle("on", m==="login");
+      $("tabReg").classList.toggle("on", m==="register");
+      $("submit").textContent = m==="login" ? "Đăng nhập" : "Tạo tài khoản";
+      $("pw").autocomplete = m==="login" ? "current-password" : "new-password";
+      setMsg("");
+    }
+
+    var VI = {
+      "auth/invalid-email":"Email không hợp lệ.",
+      "auth/user-not-found":"Không tìm thấy tài khoản này.",
+      "auth/wrong-password":"Sai mật khẩu.",
+      "auth/invalid-credential":"Email hoặc mật khẩu không đúng.",
+      "auth/email-already-in-use":"Email này đã được đăng ký.",
+      "auth/weak-password":"Mật khẩu quá yếu (tối thiểu 6 ký tự).",
+      "auth/too-many-requests":"Thử quá nhiều lần, vui lòng đợi một lát.",
+      "auth/network-request-failed":"Lỗi mạng, kiểm tra kết nối."
+    };
+    function err(e){ return VI[e && e.code] || (e && e.message) || "Có lỗi xảy ra."; }
+
+    function submitForm(ev){
+      ev.preventDefault();
+      var email=$("email").value.trim(), pw=$("pw").value, btn=$("submit");
+      btn.disabled=true; setMsg(mode==="login"?"Đang đăng nhập…":"Đang tạo tài khoản…");
+      var auth=firebase.auth();
+      var p = mode==="login"
+        ? auth.signInWithEmailAndPassword(email, pw)
+        : auth.createUserWithEmailAndPassword(email, pw);
+      p.then(function(){ location.replace(nextUrl()); })
+       .catch(function(e){ btn.disabled=false; setMsg(err(e),"err"); });
+      return false;
+    }
+
+    function resetPw(){
+      var email=$("email").value.trim();
+      if(!email){ setMsg("Nhập email phía trên rồi bấm lại để nhận liên kết đặt lại mật khẩu.","err"); return; }
+      firebase.auth().sendPasswordResetEmail(email)
+        .then(function(){ setMsg("Đã gửi email đặt lại mật khẩu tới "+email+".","ok"); })
+        .catch(function(e){ setMsg(err(e),"err"); });
+    }
+
+    // Already signed in? Skip the form.
+    firebase.auth().onAuthStateChanged(function(u){ if(u) location.replace(nextUrl()); });
+  </script>
+</body>
+</html>

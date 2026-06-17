@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .stem .qtable{width:100%;border-collapse:collapse;margin:12px 0 2px;font-size:14.5px;
+    border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .stem .qtable th,.stem .qtable td{border:1px solid var(--line);padding:8px 11px;
+    text-align:left;vertical-align:top}
+  .stem .qtable thead th{background:var(--panel2);font-weight:700;color:var(--accent2)}
+  .stem .qtable tbody td:first-child{font-weight:600}
+  .stem .qtable td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+  .stem .qtable tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 45%,transparent)}
+  @media (max-width:520px){.stem .qtable{font-size:13px}.stem .qtable th,.stem .qtable td{padding:6px 8px}}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+  /* two-column question table */
+  .q-cols-header{display:flex;margin:6px 0 12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .q-cols-header span{flex:1;text-align:center;padding:9px 14px;font-weight:700;
+    color:var(--accent2);font-size:13.5px;background:var(--panel2)}
+  .q-cols-header span+span{border-left:1px solid var(--line)}
+  .opt[data-cols="2"]{display:flex;align-items:stretch;padding:0;overflow:hidden;gap:0}
+  .opt[data-cols="2"] .lead{display:flex;align-items:center;padding:10px 12px;
+    border-right:1px solid var(--line);white-space:nowrap}
+  .opt[data-cols="2"] .opt-col{flex:1;padding:10px 14px;text-align:center;font-size:14.5px;line-height:1.4}
+  .opt[data-cols="2"] .opt-col+.opt-col{border-left:1px solid var(--line)}
+  html[data-theme="light"] .q-cols-header{border-color:var(--line)}
+  html[data-theme="light"] .q-cols-header span{background:var(--panel2)}
+  html[data-theme="light"] .opt[data-cols="2"] .lead,
+  html[data-theme="light"] .opt[data-cols="2"] .opt-col{border-color:var(--line)}
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "How will a firm's operating cash flow be affected by a decrease in accounts receivable and by
+an increase in accounts payable?", "opts": ["One will increase operating cash flow and one will decrease operating cash flow.", "Both will increase operating cash flow.", "Both will decrease operating cash flow."], "ans": "B", "expl": "A decrease in the accounts receivable amount on the balance sheet indicates that cash
+collections exceed revenues (sales). This increases operating cash flow because
+receivables are being collected. An increase in the accounts payable amount on the
+balance sheet indicates that purchases from suppliers exceed cash payments. This
+increases operating cash flow because the cash was not used to pay the suppliers.
+(Module 30.1, LOS 30.b)"}, {"n": 2, "q": "What is the impact on accounts receivable if sales exceed cash collections and what is the
+impact on accounts payable if cash paid to suppliers exceeds purchases?", "opts": ["Only accounts receivable will increase.", "Both accounts payable and accounts receivable will increase.", "Only accounts payable will increase."], "ans": "A", "expl": "If a firm sells more than it collects, accounts receivable will increase. If a firm pays
+suppliers more than it purchases, accounts payable will decrease.
+(Module 30.1, LOS 30.b)"}, {"n": 3, "q": "Convenience Travel Corp.'s financial information for the year ended December 31, 20X4
+included the following:
+Property Plant & Equipment$15,000,000
+Accumulated Depreciation9,000,000
+The only asset owned by Convenience Travel in 20X5 was a corporate jet airplane. The
+airplane was being depreciated over a 15-year period on a straight-line basis at a rate of
+$1,000,000 per year. On December 31, 20X5 Convenience Travel sold the airplane for
+$10,000,000 cash. Net income for the year ended December 31, 20X5 was $12,000,000.
+Based on the above information, and ignoring taxes, what is cash flow from operations (CFO)
+for Convenience Travel for the year ended December 31, 20X5?", "opts": ["$8,000,000.", "$11,000,000.", "$13,000,000."], "ans": "A", "expl": "Using the indirect method, CFO is net income increased by 20X5 depreciation ($1,000,000)
+and decreased by the gain recognized on the sale of the plane [$10,000,000 sale price −
+($15,000,000 original cost − $10,000,000 accumulated depreciation including 20X5) =
+$5,000,000]. $12,000,000 + $1,000,000 − $5,000,000 = $8,000,000.
+(Module 30.2, LOS 30.b)"}, {"n": 4, "q": "Which of the following is most accurate about the consideration of depreciation in the
+operations section of a cash flow statement?", "opts": ["Considers | Considers", "Does not consider | Considers", "Does not consider | Does not consider"], "ans": "B", "expl": "The indirect method must add back depreciation expense because the starting point is net
+income. Since the direct method does not begin with net income it does not need to
+consider non-cash expenses such as depreciation.
+(Module 30.2, LOS 30.b)", "cols": ["Direct Method", "Indirect Method"]}, {"n": 5, "q": "Murray Company reported the following revenues and expenses for the year ended 2007:
+Sales revenue$200,000
+Wage expense89,000
+Insurance expense17,000
+Interest expense10,400
+Depreciation expense50,000
+Following are the related balance sheet accounts:
+20072006
+Unearned revenue$15,600$13,200
+Wages payable5,4006,600
+Prepaid insurance1,2000
+Interest payable5001,600
+Accumulated depreciation95,00045,000
+Calculate cash collections and cash expenses.
+Cash collectionsCash expenses", "opts": ["$202,400$119,900", "$197,600$119,900", "$202,400$58,100"], "ans": "A", "expl": "Cash collections are $202,400 ($200,000 sales + $2,400 increase in unearned revenue).
+Cash expenses are $119,900 (–$89,000 wages expense – $1,200 decrease in wages payable
+– $17,000 insurance expense – $1,200 increase in prepaid insurance – $10,400 interest
+expense – $1,100 decrease in interest payable). Depreciation expense is a non-cash
+expense.
+(Module 30.1, LOS 30.b)"}, {"n": 6, "q": "To convert an indirect statement of cash flows to a direct basis, the analyst would:", "opts": ["increase cost of goods sold by any depreciation that was included.", "reduce cost of goods sold by any decreases in accounts payable.", "reduce cost of goods sold by any decreases in inventory."], "ans": "C", "expl": "Decreases in inventory represent a source of cash so these would be subtracted from cost
+of goods sold. Any depreciation and/or amortization included in the cost of goods sold
+does not represent an actual use of cash, so this amount should be subtracted from cost
+of goods sold. Decreases in accounts payable represent a use of cash so these should be
+added to cost of goods sold.
+(Module 30.3, LOS 30.c)"}, {"n": 7, "q": "Assuming, US GAAP is applied, determine the cash flow from financing given the following
+table.
+ItemAmount
+Cash payment of dividends$30
+Sale of equipment$10
+Net income$25
+Purchase of land$15
+Increase in accounts payable$20
+Sale of preferred stock$25
+Increase in deferred taxes$5
+Profit on sale of equipment$4", "opts": ["-$5.", "$15.", "$20."], "ans": "A", "expl": "CFF = 25(Sale of Stock) − 30(Div Paid) = -$5
+(Module 30.3, LOS 30.b)", "qhtml": "<p>Assuming, US GAAP is applied, determine the cash flow from financing given the following</p><p>table.</p><table class=\"qtable\"><thead><tr><th>Item</th><th>Amount</th></tr></thead><tbody><tr><td>Cash payment of dividends</td><td>$30</td></tr><tr><td>Sale of equipment</td><td>$10</td></tr><tr><td>Net income</td><td>$25</td></tr><tr><td>Purchase of land</td><td>$15</td></tr><tr><td>Increase in accounts payable</td><td>$20</td></tr><tr><td>Sale of preferred stock</td><td>$25</td></tr><tr><td>Increase in deferred taxes</td><td>$5</td></tr><tr><td>Profit on sale of equipment</td><td>$4</td></tr></tbody></table>"}, {"n": 8, "q": "Darth Corporation's net income was $1,200 in the most recent period. Its depreciation
+expense was $800 and its accounts receivable increased by $1,000. Based only on this
+information, cash flow from operating activities reported by Darth should be:", "opts": ["$1,200.", "$1,000.", "$2,200."], "ans": "B", "expl": "Adjustments to reconcile net income to cash flow from operating activities will require that
+depreciation ($800) be added back, and the increase in accounts receivable ($1,000) be
+subtracted: $1,200 + 800 – 1,000 = $1,000.
+(Module 30.2, LOS 30.b)"}, {"n": 9, "q": "Pacific, Inc.'s financial information includes the following, with \"change\" referring to the
+difference from the prior year (in $ millions):
+Net Income27
+Change in Accounts Receivable+4
+Change in Accounts Payable+1
+Change in Inventory+5
+Loss on sale of equipment-8
+Gain on sale of real estate+4
+Change in Retained Earnings+21
+Dividends declared and paid+4
+Pacific, Inc.'s cash flow from operations (CFO) in millions was:", "opts": ["$15.", "$23.", "$27."], "ans": "B", "expl": "Using the indirect method, cash flow from operations is net income less increase in
+accounts receivable, plus increase in accounts payable, less increase in inventory, plus loss
+on sale of equipment, less gain on sale of real estate. 27 – 4 + 1 – 5 + 8 – 4 = $23 million.
+(Module 30.2, LOS 30.b)"}, {"n": 10, "q": "An analyst contemplates using the indirect method to create the projected statement of cash
+flows. She decides to research the differences between the direct and indirect methods.
+Which of the following is least likely a component of the statement of cash flows under the
+direct method?", "opts": ["Net income.", "Payment of dividends.", "Investment in Property, Plant, & Equipment."], "ans": "A", "expl": "Property, Plant, & Equipment and payment of dividends are components of the statement
+of cash flows under both the direct and indirect methods. Net income is the first figure
+under the indirect method, but it is not a part of the statement of cash flows under the
+direct method. The correct response is net income.
+(Module 30.1, LOS 30.b)"}, {"n": 11, "q": "Which balance sheet accounts are most closely related to the operating activities on a firm's
+cash flow statement?", "opts": ["Equity and non-current liabilities.", "Non-current assets.", "Working capital."], "ans": "C", "expl": "Typically, operating activities on the cash flow statement are most closely related to the
+working capital accounts (current assets and current liabilities) on the balance sheet.
+Investing activities are typically related to non-current assets. Financing activities are
+typically related to non-current liabilities for transactions with creditors, or equity for
+transactions with shareholders.
+(Module 30.1, LOS 30.a)"}, {"n": 12, "q": "To convert an indirect statement of cash flows to a direct basis, the analyst would:", "opts": ["add decreases in accounts receivables to net sales.", "subtract increases in inventory from cost of goods sold.", "add increases in accounts payable to cost of goods sold."], "ans": "A", "expl": "A decrease in accounts receivable represents an increase in cash so this should be added
+to sales. Increases in accounts payable represent an increase in cash so these should be
+subtracted from cost of goods sold. Increases in inventory represent a use of cash so
+these would be added to cost of goods sold.
+(Module 30.3, LOS 30.c)"}, {"n": 13, "q": "A firm has net sales of $3,500, earnings after taxes (EAT) of $1,000, depreciation expense of
+$500, cost of goods sold (COGS) of $1,500, and cash taxes of $500. Also, inventory decreased
+by $100, and accounts receivable increased by $300. What is the firm's cash flow from
+operations?", "opts": ["$1,200.", "$1,300.", "$1,800."], "ans": "B", "expl": "Indirect Method
+EAT+1,000
+Depreciation+500
+Change in Inv.+ 100 a source
+Change in Accts. Rec.(300) a use
+CFO1,300
+Direct Method
+Net Sales+3,500
+Change in Accts. Rec.(300) a use
+COGS(1,500)
+Cash Taxes(500)
+Change in Inv.+100 a source
+CFO1,300
+(Module 30.1, LOS 30.b)"}, {"n": 14, "q": "What is the difference between the direct and the indirect method of calculating cash flow
+from operations?", "opts": ["Balance sheet items are not included in the cash flow from operations for the direct method, while they are included for the indirect method.", "The direct method starts with sales and follows cash as it flows through the income statement, while the indirect method starts with net income and adjusts for non- cash charges and other items.", "The indirect method starts with gross income and adjusts to cash flow from operations, while the direct method starts with gross profit and flows through the income statement to calculate cash flows from operations."], "ans": "B", "expl": "The main difference between the direct and indirect methods of calculating cash flows is
+the way that cash flow from operations is calculated. The direct method starts with sales
+and follows cash as it flows through the income statement, while the indirect method
+starts with income after taxes and adjusts backwards for non-cash and other items. Both
+methods will have the same result for operating cash flows. The direct and indirect
+method calculates the financing and investing cash flows the same way and both methods
+will result in the same cash flow figure.
+(Module 30.3, LOS 30.d)"}, {"n": 15, "q": "Determine the cash flow from investing given the following table:
+ItemAmount
+Cash payment of dividends$30
+Sale of equipment$25
+Net income$25
+Purchase of land$15
+Increase in accounts payable$20
+Sale of preferred stock$25
+Increase in deferred taxes$5", "opts": ["-$5.", "$10.", "-$10."], "ans": "B", "expl": "ItemAmount
+Cash payment of dividendsCFF-$30
+Sale of equipmentCFI+$25
+Net incomeCFO+$25
+Purchase of landCFI-$15
+Increase in accounts payableCFO+$20
+Sale of preferred stockCFF+$25
+Increase in deferred taxesCFO+$5
+CFI = Sale of Equipment (+25) + Purchase of Land (–15) = $10.
+(Module 30.3, LOS 30.b)"}, {"n": 16, "q": "Favor, Inc.'s capital and related transactions during 20X5 were as follows:
+On January 1, $1,000,000 of 5-year 10% annual interest bonds were issued to Cover
+Industries in exchange for old equipment owned by Cover.
+On June 30, Favor paid $50,000 of interest to Cover.
+On July 1, Cover returned the bonds to Favor in exchange for $1,500,000 par value 6%
+preferred stock.
+On December 31, Favor paid preferred stock dividends of $45,000 to Cover.
+Favor, Inc.'s cash flow from financing (CFF) for 20X5 (assume U.S. GAAP) is:", "opts": ["–$1,045,000.", "–$45,000.", "–$95,000."], "ans": "B", "expl": "Only the preferred stock dividends paid would be considered CFF. Issuing bonds in
+exchange for equipment and exchanging bonds for stock are both noncash transactions
+that should be disclosed in a footnote to the Statement of Cash Flows. Interest paid is an
+operating cash flow under U.S. GAAP.
+(Module 30.3, LOS 30.b)"}, {"n": 17, "q": "The following information is from the balance sheet of Silverstone Company:
+Net Income for 5/1/20X5 to 5/31/20X5: $8,000
+Balance 5/01/20X5AccountBalance 5/31/20X5
+$2,000Inventory$1,750
+$1,200Prepaid exp.$1,700
+$800Accum. Depr.$975
+$425Accounts payable$625
+$650Bonds payable$550
+Using the indirect method, calculate the cash flow from operations for Silverstone Company
+as of 5/31/20X5:", "opts": ["Increase in cash of $7,725.", "Increase in cash of $8,125.", "Increase in cash of $8,025."], "ans": "B", "expl": "Silverstone Company's cash flow from operations would be calculated as +Net Income
+$8,000 + Inventory $250 - Prepaid exp. $500 + Depreciation $175 + A/P $200 = $8,125.
+Bonds payable is a financing activity and would not be included in the cash flow from
+operations. The indirect method takes the change in the non-cash accounts and decreases
+or increases net income to get to the change in cash flow.
+(Module 30.2, LOS 30.b)"}, {"n": 18, "q": "An analyst contemplates using the indirect methods to create the projected statement of
+cash flows. She decides to research the differences between the direct and indirect
+methods. Which of the following statements is most accurate? Under the:", "opts": ["direct method, depreciation must be added to cash collections because it is a non- cash expense.", "indirect method, changes in accounts receivable are already included in the net income figure.", "indirect method, depreciation must be added to net income, because it is a non- cash expense."], "ans": "C", "expl": "The indirect method begins with net income, which has already included all cash and non-
+cash expenses. Therefore, under the indirect method, depreciation must be added to net
+income, because it is a non-cash expense.
+(Module 30.2, LOS 30.b)"}, {"n": 19, "q": "Use the following information to calculate cash flows from operations using the indirect
+method.
+Net Income: $12,000
+Depreciation Expense: $1,000
+Loss on sale of machinery: $500
+Increase in Accounts Receivable: $2,000
+Decrease in Accounts Payable: $1,500
+Increase in Income taxes payable: $500
+Repayment of Bonds: $3,000", "opts": ["Increase in cash of $10,500.", "Increase in cash of $7,500.", "Increase in cash of $9,500."], "ans": "A", "expl": "Cash flow from operations would be calculated as +Net Income $12,000 + Depreciation
+$1,000 + Loss on sale of machinery $500 − A/R $2,000 − A/P $1,500 + Income taxes payable
+$500 = $10,500.
+Repayment of Bonds is a financing activity and would not be included with operating
+activities. Depreciation is not a cash flow activity and is therefore always added back to net
+income to calculate CFO. The loss on the sale of machinery is not a cash outflow so it is
+also added back to calculate CFO. Accounts receivable is subtracted when there is an
+increase as this increases net income but does not affect cash.
+(Module 30.2, LOS 30.b)"}, {"n": 20, "q": "Juniper Corp. has the following transactions in 20X5.
+Juniper's equipment with a book value of $55,000 was sold for $85,000 cash.
+A parcel of land was purchased for $100,000 worth of Juniper common stock.
+ABC company paid Juniper preferred dividends of $40,000.
+Juniper declared and paid a $100,000 cash dividend.
+Under U.S. GAAP, what is cash flow from financing (CFF) for Juniper for 20X5?", "opts": ["–$100,000.", "–$115,000.", "–$60,000."], "ans": "A", "expl": "The only item involving cash flow from financing (CFF) was the payment of a cash dividend
+by Juniper. The sale of equipment affects cash flow from investing (CFI), the purchase of
+land has no effect on cash, and the preferred dividends received are cash flow from
+operations under U.S. GAAP.
+(Module 30.3, LOS 30.b)"}, {"n": 21, "q": "To compute cash collections from customers when converting a statement of cash flows
+from the indirect to the direct method, an analyst begins with:", "opts": ["net income and adds back non-cash expenses.", "sales, subtracts any increase in accounts receivable, and adds any increase in unearned revenue.", "cost of goods sold, subtracts any increase in accounts payable, adds any increase in inventory, and subtracts any inventory write-offs."], "ans": "B", "expl": "To compute cash collections from customers, begin with net sales from the income
+statement, subtract (add) any increase (decrease) in accounts receivable, and add
+(subtract) any increase (decrease) in unearned revenue. (Module 30.3, LOS 30.c)"}, {"n": 22, "q": "Which set of accounting standards allows a firm to classify interest received as a financing
+cash flow and interest paid as an investing cash flow on its cash flow statement?", "opts": ["Neither the IFRS nor U.S. GAAP.", "The IFRS only.", "U.S. GAAP only."], "ans": "A", "expl": "The IFRS allows a firm to classify interest received as either operating or investing cash
+flow and to classify interest paid as either operating or financing cash flow. U.S. GAAP
+requires that interest received and paid both be classified as operating cash flows.
+(Module 30.3, LOS 30.d)"}, {"n": 23, "q": "In converting a statement of cash flows from the indirect to the direct method, which of the
+following adjustments should be made for a decrease in unearned revenue when calculating
+cash collected from customers, and for an inventory writedown (when market value is less
+than cost) when calculating cash payments to suppliers?
+Cash collections from customers:Cash payments to suppliers", "opts": ["Subtract an inventory Add decrease in unearned revenue writedown", "Subtract decrease in unearned Add an inventory writedown revenue", "Subtract decrease in unearnedSubtract an inventory revenuewritedown"], "ans": "C", "expl": "Beginning with net sales, calculating cash collected from customers requires the addition
+(subtraction) of any increase (decrease) in unearned revenue. Cash advances from
+customers represent unearned revenue and are not included in net sales, so any advances
+must be added to net sales in order to calculate cash collected.
+An inventory writedown, as a result of applying the lower of cost or market rule, will
+reduce ending inventory and increase COGS for the period. However, no cash flow is
+associated with the writedown, so COGS is reduced by the amount of the writedown in
+calculating cash paid to suppliers.
+(Module 30.3, LOS 30.c)"}, {"n": 24, "q": "A company's financial statement data for the most recent year include the following:
+Net income $100
+Depreciation expense 25
+Purchase of machine 50
+Sale of company trucks 30
+Sale of common stock 45
+Decrease in accounts receivable 10
+Increase in inventory 20
+Issuance of bonds 25
+Increase in accounts payable 15
+Increase in wages payable 10
+Based only on these items, cash flow from financing activities is closest to:", "opts": ["$140.", "$85.", "$70."], "ans": "C", "expl": "Sale of common stock45
+Issuance of bonds25
+Financing cash flows$70
+(Module 30.3, LOS 30.b)"}, {"n": 25, "q": "Selected information from Rockway, Inc.'s U.S. GAAP financial statements for the year ended
+December 31, included the following (in $):
+20042005
+Sales17,000,00021,000,000
+Cost of Goods Sold11,000,00015,000,000
+Interest Paid800,0001,000,000
+Current Income Taxes Paid700,0001,000,000
+Accounts Receivable3,000,0002,500,000
+Inventory2,400,0003,000,000
+Property, Plant & Equip.2,000,00016,000,000
+Accounts Payable1,000,0001,400,000
+Long-term Debt8,000,0009,000,000
+Common Stock4,000,0005,000,000
+Using the direct method, cash provided or used by operating activities(CFO) in the year 2005
+was:", "opts": ["$5,300,000.", "$6,300,000.", "$4,300,000."], "ans": "C", "expl": "Cash provided or used by operating activities under the direct method is computed by
+adding cash inflows and subtracting cash inputs and cash outflows. Operating Cash
+inflows for Rockway Inc. for 2005 came from sales ($21,000,000) and decrease in accounts
+receivable ($3,000,000 − $2,500,000 = $500,000) for net cash inflows of ($21,000,000 +
+$500,000 =) $21,500,000. Operating cash inputs were cost of goods sold ($15,000,000),
+plus the increase in inventory ($3,000,000 − $2,400,000 = $600,000) less the increase in
+accounts payable, (which is a source of funds) ($1,000,000 − $1,400,000 = -$400,000) for
+net cash inputs of ($15,000,000 + $600,000 - $400,000 =) $15,200,000. Other operating
+cash outflows were interest paid ($1,000,000) and current income taxes paid ($1,000,000)
+totaling ($2,000,000). Cash provided by operations was ($21,500,000 − $15,200,000 −
+$2,000,000 =) $4,300,000. Changes in property, plant and equipment, long-term debt and
+common stock do not affect cash from operations.
+(Module 30.1, LOS 30.b)"}, {"n": 26, "q": "When calculating cash flow from operations (CFO) using the indirect method which of the
+following is most accurate?", "opts": ["The indirect method requires an additional schedule to reconcile net income to cash flow.", "When recognizing a gain on the sale of fixed assets, the amount is a deduction to operating cash flows.", "In using the indirect method, each item on the income statement is converted to its cash equivalent."], "ans": "B", "expl": "When recognizing a gain on the sale of fixed assets, the amount is a deduction to
+operating cash flows. This is because the gain would be double counted in the investing
+section and in net income. Therefore, the gain must be removed from net income. The
+direct method of cash flow calculation converts the income statement items to their cash
+equivalents, not the indirect method. Also, depreciation is added to net income in order to
+calculate CFO using the indirect method.
+(Module 30.2, LOS 30.b)"}, {"n": 27, "q": "Noncurrent assets on the balance sheet are most closely linked to which part of the cash
+flow statement?", "opts": ["Financing cash flows.", "Investing cash flows.", "Operating cash flows."], "ans": "B", "expl": "Investing cash flows are most closely linked with a firm's noncurrent assets. For example,
+purchases and sales of property, plant, and equipment are classified as investing cash
+flows.
+(Module 30.1, LOS 30.a)"}, {"n": 28, "q": "Given the following information, what is the adjustment to net income when calculating cash
+flow from operations using the indirect method?
+Increase in accounts payable of $25.
+Sold one share of stock for $15.
+Paid dividends of $10 to shareholders.
+Depreciation expense of $100.
+Increase in inventory of $20.", "opts": ["-$50.", "+$105.", "-$95."], "ans": "B", "expl": "Using the indirect method, the increase in accounts payable is a source of cash from
+operations (+25), depreciation expense is a non-cash expense added back in computing
+cash from operations (+100), and increase in inventory is a use of cash from operations
+(-20) = 25 + 100 - 20 = 105. The sale of stock and the dividends paid are financing cash
+flows that are not included in net income, so they do not require adjustment when
+calculating CFO.
+(Module 30.2, LOS 30.b)"}, {"n": 29, "q": "The Beeline Company has the following balance sheet and income statement.
+Beeline Company Balance Sheet
+As of December 31, 20X4
+2003200420032004
+Cash$50$60Accounts payable$100$150
+Accounts receivable100110Long-term debt400300
+Inventory200180Common stock5050
+Retained earnings400500
+Fixed assets (gross)800900Total liabilities and equity$950$1,000
+Less: Accumulated depreciation200250
+Fixed assets (net)600650
+Total assets$950$1,000
+Beeline Company Income Statement
+For year ended December 31, 20X4
+Sales$1,000
+Less:
+COGS600
+Depreciation50
+Selling, general, and administrative expenses160
+Interest expense23
+Income before taxes$167
+Less tax67
+Net income$100
+The cash flow from operations for 2004 is:", "opts": ["$150.", "$260.", "$210."], "ans": "C", "expl": "Cash flow from operations (CFO) calculated using the indirect method is: net income (100)
++ depreciation (50) – increase in accounts receivable (10) + decrease in inventory (20) +
+increase in accounts payable (50) = $210.
+(Module 30.2, LOS 30.b)"}, {"n": 30, "q": "An analyst compiled the following information for Universe, Inc. for the year ended
+December 31, 20X4:
+Net income was $850,000.
+Depreciation expense was $200,000.
+Common stock was sold for $100,000.
+Preferred stock (eight percent annual dividend) was sold at par value of $125,000.
+Common stock dividends of $25,000 were paid.
+Preferred stock dividends of $10,000 were paid.
+Equipment with a book value of $50,000 was sold for $100,000.
+Using the indirect method and assuming U.S. GAAP, what was Universe Inc.'s cash flow from
+operations (CFO) for the year ended December 31, 20X4?", "opts": ["$1,000,000.", "$1,015,000.", "$1,050,000."], "ans": "A", "expl": "Cash flow from operations (CFO) using the indirect method is computed by taking net
+income plus non-cash expenses (i.e. depreciation) less gains from the equipment sale.
+Note that cash flow from operations must be adjusted downward for the amount of the
+gain on the sale of the equipment. Cash flow from operations is ($850,000 + $200,000 –
+($100,000 – $50,000)) = $1,000,000. The other information relates to financing cash flows.
+(Module 30.2, LOS 30.b)"}, {"n": 31, "q": "An analyst has gathered the following information about a company:
+Income Statement for the Year 20X4
+Sales$1,500
+Expenses
+COGS$1,300
+Depreciation30
+Int. Expenses40
+Total expenses1,370
+Income from cont. op.130
+Gain on sale30
+Income before tax160
+Income tax64
+Net Income$96
+Additional Information:
+Dividends paid$30
+Common stock sold20
+Equipment purchased50
+Bonds issued80
+Fixed asset sold for (original cost of $100 with accumulated depreciation of $70)60
+Accounts receivable decreased by30
+Inventory decreased by20
+Accounts payable increased by20
+Wages payable decreased by10
+What is the cash flow from operations?", "opts": ["$156.", "$150.", "$170."], "ans": "A", "expl": "Net Income+$96
+Depreciation+30
+Gain on sale of asset-30
+Accts. Rec.+30
+Inventory+20
+Accts. Payable+20
+Wages Payable-10
+ CFO+$156
+(Module 30.2, LOS 30.b)"}, {"n": 32, "q": "Financial information for Jefferson Corp. for the year ended December 31st, was as follows:
+Sales$3,000,000
+Purchases1,800,000
+Inventory at Beginning500,000
+Inventory at Ending800,000
+Accounts Receivable at Beginning300,000
+Accounts Receivable at Ending200,000
+Accounts Payable at Beginning100,000
+Accounts Payable at Ending100,000
+Other Operating Expenses Paid400,000
+Based upon this data and using the direct method, what was Jefferson Corp.'s cash flow
+from operations (CFO) for the year ended December 31st?", "opts": ["$800,000.", "$1,200,000.", "$900,000."], "ans": "C", "expl": "CFO = sales $3,000,000 – change in accounts receivable ($200,000 – $300,000) – purchases
+$1,800,000 – other cash operating expenses $400,000 = $900,000.
+Note that no adjustment for inventories is necessary because purchases are given. From
+the inventory equation, P = COGS + EI - BI.
+(Module 30.1, LOS 30.b)"}, {"n": 33, "q": "Under IFRS, which cash flow statement classifications for dividends paid and interest
+received, respectively, are least likely permitted?", "opts": ["Operating activity | Investing activity", "Financing activity | Operating activity", "Investing activity | Financing activity"], "ans": "C", "expl": "Under IFRS, interest received may be classified as CFO or CFI, while dividends paid may be
+classified as CFO or CFF. (Module 30.3, LOS 30.d)", "cols": ["Dividends paid", "Interest received"]}, {"n": 34, "q": "A U.S. GAAP reporting company has the following changes in its balance sheet accounts:
+Net Sales$500
+An increase in accounts receivable20
+A decrease in accounts payable40
+An increase in inventory30
+Sale of common stock100
+Repayment of debt10
+Depreciation2
+Net Income100
+Interest expense on debt5
+The company's cash flow from financing is:", "opts": ["-$10.", "$90.", "$100."], "ans": "B", "expl": "Sale of common stock$100
+Repayment of debt(10)
+Financing cash flows$ 90
+(Module 30.3, LOS 30.b)", "qhtml": "<p>A U.S. GAAP reporting company has the following changes in its balance sheet accounts:</p><table class=\"qtable\"><thead><tr><th>Item</th><th>Value</th></tr></thead><tbody><tr><td>Net Sales</td><td>$500</td></tr><tr><td>An increase in accounts receivable</td><td>20</td></tr><tr><td>A decrease in accounts payable</td><td>40</td></tr><tr><td>An increase in inventory</td><td>30</td></tr><tr><td>Sale of common stock</td><td>100</td></tr><tr><td>Repayment of debt</td><td>10</td></tr><tr><td>Depreciation</td><td>2</td></tr><tr><td>Net Income</td><td>100</td></tr><tr><td>Interest expense on debt</td><td>5</td></tr></tbody></table><p>The company's cash flow from financing is:</p>"}, {"n": 35, "q": "Which of the following statements regarding depreciation expense in the cash flow
+statements is most accurate? Depreciation is added back to net income when determining
+CFO using:", "opts": ["either the direct or indirect methods.", "the direct method.", "the indirect method."], "ans": "C", "expl": "Depreciation is a non-cash expense. Only in the indirect method is depreciation added
+back to net income when determining CFO because net income is only used in the indirect
+method and not the direct method. The direct method instead starts with cash sales and
+works down the income statement.
+(Module 30.2, LOS 30.b)"}, {"n": 36, "q": "The net income for Miller Bat Company was $3 million for the year ended December 31,
+20X4. Additional information is as follows:
+Depreciation on fixed assets: $1,500,000
+Gain from cash sales of land: 200,000
+Increase in accounts payable: 300,000
+Dividends paid on preferred stock: 400,000
+Under U.S. GAAP, the net cash provided by operating activities in the statement of cash flows
+for the year ended December 31, 20X4 is:", "opts": ["$4,200,000.", "$4,500,000.", "$4,600,000."], "ans": "C", "expl": "$3,000,000 + $1,500,000 – $200,000 + $300,000 = $4,600,000.
+(Module 30.2, LOS 30.b)"}, {"n": 37, "q": "Impala Corporation reported the following financial information:
+20062007
+Balance sheet values as of December 31:
+Prepaid insurance$650,000$475,000
+Interest payable250,000300,000
+Cash flows for the year ended December 31:
+Insurance premiums paid$845,000$750,000
+Interest paid900,000900,000
+Calculate Impala's insurance expense and interest expense for the year ended December 31,
+2007.
+Insurance expenseInterest expense", "opts": ["$925,000$850,000", "$925,000$950,000", "$1,020,000$950,000"], "ans": "B", "expl": "Cash paid for insurance = insurance expense + change in prepaid insurance, so insurance
+expense = cash paid for insurance – change in prepaid insurance. Insurance expense for
+2007 is equal to $925,000 [($750,000 cash paid for insurance – (–$175,000)]. Interest
+expense for 2007 is equal to $950,000 ($900,000 cash interest paid + $50,000 increase in
+interest payable).
+(Module 30.1, LOS 30.b)"}, {"n": 38, "q": "Use the following financial data for Moose Printing Corporation, a U.S. GAAP reporting firm,
+to calculate the cash flow from operations (CFO) using the indirect method.
+Net income: $225
+Increase in accounts receivable: $55
+Decrease in inventory: $33
+Depreciation: $65
+Decrease in accounts payable: $25
+Increase in wages payable: $15
+Decrease in deferred taxes: $10
+Purchase of new equipment: $65
+Dividends paid: $75", "opts": ["Increase in cash of $248.", "Increase in cash of $183.", "Increase in cash of $173."], "ans": "A", "expl": "CFO for Moose Printing Corporation is calculated as follows:
++Net Income $225 − A/R $55 + Inventory $33 + Depreciation $65 − A/P $25 +
+Wages Payable $15 − Deferred taxes $10 = $248.
+The purchase of new equipment is an investing activity and therefore is not included in
+CFO. Dividends paid is a financing activity and is not included in CFO.
+(Module 30.2, LOS 30.b)"}, {"n": 39, "q": "To calculate cash received from customers, an analyst would most appropriately:", "opts": ["add the change in accounts receivable to credit sales.", "subtract accounts receivable from gross sales.", "subtract the change in accounts receivable from net sales."], "ans": "C", "expl": "Cash received from customers is most appropriately calculated by subtracting the change
+in accounts receivable from net sales.
+(Module 30.1, LOS 30.a)"}, {"n": 40, "q": "Maverick Company reported the following financial information for 2007:
+in millions
+Beginning accounts receivable$180
+Ending accounts receivable225
+Sales11,000
+Beginning inventory2,000
+Ending inventory2,300
+Purchases8,100
+Beginning accounts payable1,600
+Ending accounts payable1,200
+Calculate Maverick's cost of goods sold and cash paid to suppliers for 2007.
+Cost of goods soldCash paid to suppliers", "opts": ["$7,800 million$8,500 million", "$7,800 million$7,100 million", "$3,800 million$8,500 million"], "ans": "A", "expl": "Cost of goods sold is equal to $7,800 million ($2,000 million beginning inventory + $8,100
+million purchases – $2,300 million ending inventory). Cash paid to suppliers is equal to
+$8,500 million (–$7,800 COGS – $300 million increase in inventory – $400 million decrease
+in accounts payable). Alternate solution: Cash paid to suppliers is equal to $8,500 million (–
+$8,100 million purchases – $400 decrease in accounts payable).
+(Module 30.1, LOS 30.b)", "qhtml": "<p>Maverick Company reported the following financial information for 2007:</p><p>in millions</p><table class=\"qtable\"><thead><tr><th>Item</th><th>Value</th></tr></thead><tbody><tr><td>Beginning accounts receivable</td><td>$180</td></tr><tr><td>Ending accounts receivable</td><td>225</td></tr><tr><td>Sales</td><td>11,000</td></tr><tr><td>Beginning inventory</td><td>2,000</td></tr><tr><td>Ending inventory</td><td>2,300</td></tr><tr><td>Purchases</td><td>8,100</td></tr><tr><td>Beginning accounts payable</td><td>1,600</td></tr><tr><td>Ending accounts payable</td><td>1,200</td></tr></tbody></table><p>Calculate Maverick's cost of goods sold and cash paid to suppliers for 2007.</p><p>Cost of goods soldCash paid to suppliers</p>"}, {"n": 41, "q": "Galaxy, Inc.'s U.S. GAAP balance sheet as of December 31, 20X4 included the following
+information (in $):
+12-31-X312-31-X4
+Accounts Payable300,000500,000
+Dividends Payable200,000300,000
+Common Stock1,000,0001,000,000
+Retained Earnings700,0001,000,000
+Galaxy's net income in 20X4 was $800,000. What was Galaxy's cash flow from financing (CFF)
+in 20X4?", "opts": ["–$400,000.", "–$500,000.", "–$300,000."], "ans": "A", "expl": "Dividends declared are net income less the increase in retained earnings ($800,000 -
+$300,000 = $500,000). Dividends declared less the increase in dividends payable is
+dividends paid ($500,000 – ($300,000 - $200,000) = $400,000). This is a cash outflow so it is
+a negative number. Dividends paid are always cash flow from financing under U.S. GAAP.
+Note that accounts payable changes are included in cash flow from operations (CFO).
+(Module 30.3, LOS 30.b)"}, {"n": 42, "q": "An analyst has gathered the following information about a company:
+Income Statement for the Year 20X5
+Sales$1,500
+Expenses
+COGS$1,300
+Depreciation20
+Goodwill10
+Int. Expenses40
+Total expenses1,370
+Income from cont. op.130
+Gain on sale30
+Income before tax160
+Income tax64
+Net Income$96
+Additional Information:
+Dividends paid30
+Common stock sold20
+Equipment purchased50
+Bonds issued80
+Fixed asset sold for (original cost of $100 with accumulated depreciation of $70)60
+Accounts receivable decreased by30
+Inventory decreased by20
+Accounts payable increased by20
+Wages payable decreased by10
+What is the cash flow from investing?", "opts": ["$130.", "$10.", "$110."], "ans": "B", "expl": "Purchase of equipment-$50
+Fixed asset sold$60
+ CFI$10
+(Module 30.3, LOS 30.b)"}, {"n": 43, "q": "Independence, Inc. reports interest received and dividends paid as part of its cash flow from
+operations. This treatment is acceptable under:", "opts": ["either IFRS or U.S. GAAP.", "IFRS but not under U.S. GAAP.", "U.S. GAAP but not under IFRS."], "ans": "B", "expl": "IFRS permits interest received to be reported as either cash flow from operations or cash
+flow from investing, and permits dividends paid to be reported as either cash flow from
+operations or cash flow from financing. U.S. GAAP requires interest received to be
+reported as cash flow from operations, but requires dividends paid to be reported as cash
+flow from financing.
+(Module 30.3, LOS 30.d)"}, {"n": 44, "q": "Determine the cash flow from operations given the following table.
+ItemAmount
+Cash payment of dividends$30
+Sale of equipment$25
+Net income$25
+Purchase of land$15
+Increase in accounts payable$20
+Sale of preferred stock$25
+Increase in deferred taxes$5
+Profit on sale of equipment$15", "opts": ["$45.", "$20.", "$35."], "ans": "C", "expl": "Using the indirect method, CFO = Net income 25 + increase in accounts payable 20 +
+increase in deferred taxes 5 – profit on sale of equipment 15 = $35.
+Increases in accounts payable and deferred taxes are sources of operating cash that are
+not included in net income and must be added. Profit on sale of equipment is a CFI item
+that must be removed from net income.
+No adjustment needs to be made for cash payment of dividends (CFF), sale of preferred
+stock (CFF), or purchase of land (CFI) because they are not included in net income. Only the
+profit on sale of equipment, not the full proceeds from sale, is included in net income.
+(Module 30.2, LOS 30.b)"}, {"n": 45, "q": "The correct set of cash flow treatments as they relate to interest paid according to U.S.
+generally accepted accounting principles (GAAP) and International Accounting Standards
+(IAS) GAAP is:
+U.S. GAAPIAS GAAP", "opts": ["CFO or CFFCFO", "CFOCFO or CFF", "CFFCFF"], "ans": "B", "expl": "U.S. GAAP treats interest paid as CFO whereas IAS GAAP treats interest paid as either CFO
+or CFF.
+(Module 30.3, LOS 30.d)"}, {"n": 46, "q": "A company prepares its financial statements under International Financial Reporting
+Standards. The company's cash flow statement will classify interest paid as either an:", "opts": ["operating or financing cash flow.", "investing or financing cash flow.", "operating or investing cash flow."], "ans": "A", "expl": "IFRS allows interest paid to be reported in either the operating or financing section of the
+cash flow statement. U.S. GAAP requires interest paid to be reported in the operating
+section of the cash flow statement.
+(Module 30.3, LOS 30.d)"}, {"n": 47, "q": "According to U.S. Generally Accepted Accounting Principles (GAAP) and International
+Accounting Standards (IAS) GAAP, should dividends paid be treated as a cash flow from
+financing (CFF) or as a cash flow from operations (CFO)?
+U.S. GAAPIAS GAAP", "opts": ["CFF or CFOCFO", "CFOCFF", "CFFCFF or CFO"], "ans": "C", "expl": "U.S. GAAP treats dividends paid as CFF whereas IAS GAAP treats dividends paid as either
+CFO or CFF.
+(Module 30.3, LOS 30.d)"}, {"n": 48, "q": "An analyst has gathered the following information about a company that reports under U.S.
+GAAP:
+Income Statement for the Year
+Sales$1,500
+Expenses
+COGS$1,300
+Depreciation20
+Goodwill10
+Int. Expenses40
+Total expenses1,370
+Income from cont. op.130
+Gain on sale30
+Income before tax160
+Income tax64
+Net Income$96
+Additional Information:
+Dividends paid$30
+Common stock issued20
+Equipment purchased50
+Bonds issued80
+Fixed asset sold for(original cost of $100 with accumulated depreciation of $70)60
+Accounts receivable decreased by30
+Inventory decreased by20
+Accounts payable increased by20
+Wages payable decreased by10
+What is the cash flow from financing?", "opts": ["$110.", "$130.", "$70."], "ans": "C", "expl": "Dividends paid-$30
+Stock issued20
+Bonds issued80
+ CFF$70
+(Module 30.3, LOS 30.b)"}, {"n": 49, "q": "Fricks Ltd. is a gold mining company headquartered in Indonesia with operations throughout
+the world. Fricks reports under IFRS. When subsidiaries located in the United States and
+Canada pay dividends to the Indonesian parent company, Fricks may classify the dividends
+as:", "opts": ["cash flow from either investing or operations.", "cash flow from financing only.", "cash flow from investing only."], "ans": "A", "expl": "Under IFRS, interest and dividends received may be shown as either cash flow from
+operations or cash flow from investing.
+(Module 30.3, LOS 30.d)"}, {"n": 50, "q": "When using the indirect method for computing cash flow from operating activities, a change
+in accounts payable will require which of the following?", "opts": ["A negative (positive) adjustment to net income when accounts payable increases (decreases).", "A negative adjustment to net income regardless of whether accounts payable increases or decreases.", "A positive (negative) adjustment to net income when accounts payable increases (decreases)."], "ans": "C", "expl": "A decrease in accounts payable represents an outflow. Hence, a negative adjustment will
+be required. Conversely, an increase represents an inflow and a positive adjustment.
+(Module 30.2, LOS 30.b)"}, {"n": 51, "q": "Mark Industries' income statement and related notes for the year ended December 31 are as
+follows (in $):
+Sales42,000,000
+Cost of Goods Sold(32,000,000)
+Wages Expense(1,500,000)
+Depreciation Expense(2,500,000)
+Interest Expense(1,000,000)
+Income Tax Expense(2,000,000)
+Net Income3,000,000
+During the year:
+Wages Payable increased $100,000.
+Accumulated Depreciation increased $2,500,000.
+Interest Payable decreased $200,000.
+Income Taxes Payable increased $500,000.
+Dividends of $100,000 were declared and paid.
+Under U.S. GAAP, Mark Industries' cash flow from operations (CFO) for the year ended
+December 31 was:", "opts": ["$4,800,000.", "$4,400,000.", "$5,900,000."], "ans": "C", "expl": "Using the indirect method, net income is adjusted by adding back depreciation (a non-cash
+expense) and changes in working capital: the increase in wages payable and the increase
+in income taxes payable are sources of cash, and the decrease in interest payable is a use
+of cash. Dividends paid are financing cash flows under U.S. GAAP.
+CFO = $3,000,000 + $2,500,000 + $100,000 + $500,000 - $200,000 = $5,900,000.
+(Module 30.2, LOS 30.b)"}, {"n": 52, "q": "Capital Corp.'s activities in the year 20X5 included the following:
+At the beginning of the year, Capital purchased a cargo plane from Aviation Partners
+for $10 million in exchange for $2 million cash, $3 million in Capital Corp. bonds and
+$5 million in Capital Corp. preferred stock.
+Interest of $150,000 was paid on the bonds, and dividends of $250,000 were paid on
+the preferred stock.
+At the end of the year, the cargo plane was sold for $12,000,000 cash to Standard
+Company. Proceeds from the sale were used to pay off the $3 million in bonds held by
+Aviation Partners.
+On Capital Corp.'s U.S. GAAP statement of cash flows for the year ended December 31, 20X5,
+cash flow from investments (CFI) related to the above activities is:", "opts": ["$6,750,000.", "$9,750,000.", "$10,000,000."], "ans": "C", "expl": "Investing cash of $2 million was used to purchase the cargo plane. Proceeds from the sale
+of the plane were a source of $12 million of investing cash. Net CFI is $12 million − $2
+million = $10 million. Under U.S. GAAP, the interest payment is included in cash from
+operations (CFO) and the dividend payment in cash from financing (CFF). Redemption of
+the bonds is a use of cash from financing (CFF).
+(Module 30.3, LOS 30.b)"}, {"n": 53, "q": "Eagle Company's financial statements for the year ended December 31, 20X5 were as follows
+(in $ millions):
+Income Statement
+Sales150
+Cost of Goods Sold(48)
+Wages Expense(56)
+Interest Expense(12)
+Depreciation(22)
+Gain on Sale of Equipment6
+Income Tax Expense( 8)
+Net Income10
+Balance Sheet
+12-31-X412-31-X5
+Cash3252
+Accounts Receivable1822
+Inventory4644
+Property, Plant & Equip. (net)182160
+Total Assets278278
+Accounts Payable2833
+Long-term Debt145135
+Common Stock7070
+Retained Earnings3540
+Total Liabilities & Equity278278
+Cash flow from operations (CFO) for Eagle Company for the year ended December 31, 20X5
+was (in $ millions).", "opts": ["$29.", "$37.", "$41."], "ans": "A", "expl": "Using the indirect method:
+Add: Net Income$10
+Add: Depreciation Expense22
+Less: Gain from Sale of Equip.(6)
+Less: Increase in Accounts Receivable(4)
+Add: Decrease in Inventory2
+Add: Increase in Accounts Payable5
+Cash flow from operations (CFO)29
+(Module 30.2, LOS 30.b)"}];
+const CFG = {"title": "Analyzing Statements of Cash Flows I", "subtitle": "CFA · Financial Statement Analysis · Reading 30 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem";
+    if(q.qhtml){ stem.innerHTML = q.qhtml; } else { stem.textContent = q.q; }
+    card.appendChild(stem);
+
+    if(q.cols){
+      const ch = document.createElement("div");
+      ch.className = "q-cols-header";
+      q.cols.forEach(h=>{
+        const sp = document.createElement("span"); sp.textContent = h;
+        ch.appendChild(sp);
+      });
+      card.appendChild(ch);
+    }
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      if(q.cols && t.includes(" | ")){
+        b.dataset.cols = "2";
+        t.split(" | ").forEach(p=>{
+          const sp = document.createElement("span"); sp.className = "opt-col"; sp.textContent = p;
+          b.appendChild(sp);
+        });
+      } else {
+        b.appendChild(document.createTextNode(t));
+      }
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

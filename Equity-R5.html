@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<title>Quiz</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "In setting her expectations for a company she is analyzing, Lisa Kale, CFA, will use which\ncompany model as the foundation?", "opts": ["Risk based.", "Financial.", "Business."], "ans": "C", "expl": "The business model is the foundation for helping an analyst set expectations, as it\nconsiders elements such as customers; products and services; sales channels; suppliers;\nand pricing or payment.\n(Module 43.1, LOS 43.b)"}, {"n": 2, "q": "An analyst assesses a company's business model primarily by using press releases and\ninformation from the company's investor relations department. These sources of\ninformation are best categorized as:", "opts": ["proprietary third-party information.", "direct information from the company.", "proprietary primary research."], "ans": "B", "expl": "Information directly obtained from the company includes regulatory filings, press releases,\ninvestor presentations, investor relations department communications, and the company\nwebsite. The analyst performs proprietary primary research themselves rather than from\nthe company. Also, proprietary third-party information comes from certain analyst reports\nand other companies that perform the research.\n(Module 43.1, LOS 43.b)"}, {"n": 3, "q": "The percent change in a company's net income that results from a given percent change in\nits operating income is the company's degree of:", "opts": ["operating leverage.", "financial leverage.", "total leverage."], "ans": "B", "expl": "The degree of financial leverage is the ratio of the percent change in net income to the\npercent change in operating income. The degree of financial leverage increases with\ngreater use of debt financing.\n(Module 43.2, LOS 43.e)"}, {"n": 4, "q": "Which of the following ratios should an analyst use who wishes to evaluate the returns a\ncompany generates based on the amount of financial leverage?", "opts": ["Return on assets (ROA).", "Return on invested capital (ROIC).", "Return on equity (ROE)."], "ans": "C", "expl": "ROE will incorporate the use of financial leverage. In fact, ROE is equal to ROA multiplied\nby the financial leverage ratio (assets/equity). Both ROA and ROIC are used to express\nunlevered returns.\n(Module 43.2, LOS 43.e)"}, {"n": 5, "q": "Laurie Palmer, CFA, is analyzing the business model for ABC Corp. Given that this is a new\ncompany for Palmer, what is one of the first questions she will need to answer?", "opts": ["“What products and services does the company offer?”", "“What is the company’s customer retention ratio?”", "“Has the company been able to meet its debt covenants related to its outstanding bond issuances?”"], "ans": "A", "expl": "While all three questions are legitimate questions, for understanding a company's\nbusiness model for the first time, asking about the products and services the company\noffers is an appropriate first (or early) question to ask. How the company obtains\ncustomers is important as well, although the retention ratio is very specific. Debt\ncovenants associated with bond issuances must be met, but that is not one of the first\nquestions to ask in understanding a company's business model.\n(Module 43.1, LOS 43.b)"}, {"n": 6, "q": "Which of the following companies is most likely to benefit by raising their sale prices and\nexercising significant pricing power?", "opts": ["A company in a price-taker market structure.", "A company whose products are highly elastic.", "A company whose products have few substitutes."], "ans": "C", "expl": "If a company provides a product with few substitutes, it will have greater pricing power\nand can raise its prices without significantly impacting quantity demanded in a negative\nway. The company may lose some demand, but the price increase will more than offset the\ndemand loss and will still allow the company to increase sales. In a price-taker market\nstructure, companies have low pricing power. Elasticity is a measure of sensitivity, and a\nhighly elastic product will not provide a company with much pricing power.\n(Module 43.2, LOS 43.c)"}, {"n": 7, "q": "A firm is most likely to have pricing power if:", "opts": ["costs to exit the industry are high.", "its market share is high.", "its product is differentiated."], "ans": "C", "expl": "Firms offering products that are differentiated in terms of quality and features are more\nlikely to have pricing power than firms that produce undifferentiated (commodity-like)\nproducts. High market share does not necessarily imply pricing power; for example, if four\nfirms each have 25% market share, none of them are likely to have significant pricing\npower. High exit costs can create overcapacity in an industry and result in a high degree of\nprice competition as firms try to maintain production volume during a period of reduced\ndemand.\n(Module 43.2, LOS 43.c)"}, {"n": 8, "q": "Which of the following elements can be found in the \"front matter\" section of a company\nresearch report?", "opts": ["A target buy price of $12 per share.", "A competitive analysis of the industry in which the company operates.", "A description of the company’s business model."], "ans": "A", "expl": "In a company research report, the front matter section will include things like issuer name,\nlegal disclosures, a recommendation (buy, sell, hold), and target purchase/sale prices. The\nother items listed will be in the research report, but they will not be considered front\nmatter.\n(Module 43.1, LOS 43.a)"}, {"n": 9, "q": "A company's main product sells for $20 per unit and has variable costs of $15 per unit. If\nfixed costs are $25,000 and the company is able to sell 8,000 units, the total contribution\nmargin is equal to:", "opts": ["$40,000.", "$25,000.", "$15,000."], "ans": "A", "expl": "The contribution margin per unit is equal to the sale price per unit less variable costs per\nunit ($20 – $15 = $5 per unit). The total contribution margin is equal to 8,000 units × $5 per\nunit = $40,000—$15,000 represents the operating profit, and $25,000 is the fixed cost\ntotal.\n(Module 43.2, LOS 43.d)"}, {"n": 10, "q": "An analyst is reviewing an income statement that reflects two years of information. Over\nthose two years, sales have risen from $10 million to $12 million. At the same time,\noperating profit has risen from $1.2 million to $1.5 million. The company's degree of\noperating leverage is closest to:", "opts": ["1.25.", "0.80.", "0.15."], "ans": "A", "expl": "Operating leverage represents the fixed-cost component of a company's operating cost\nstructure. The degree of operating leverage is a measure used to express the extent to\nwhich a company uses fixed costs relative to variable costs. It is calculated by dividing the\nchange in operating profit by the change in sales.\nHere, operating profit has increased 25% ($1.2 million to $1.5 million). Sales have\nincreased 20% ($10 million to $12 million). The degree of operating leverage (DOL) = 25% /\n20% = 1.25. With the other answer options, 0.15 is equal to the change in operating profit\n($0.3 million) by the change in sales ($2.0 million), and 0.80 puts the sales change of 20%\nover the operating profit change of 25%.\n(Module 43.2, LOS 43.d)"}, {"n": 11, "q": "In reviewing whether a company requires fairly common materials and inputs in its\nproduction process or ones that are more specialized, an analyst is evaluating the bargaining\npower of which party?", "opts": ["Customers.", "Suppliers.", "Frontline workers."], "ans": "B", "expl": "The bargaining power of suppliers relates to the types of inputs a company uses in its\nproduction process. If the inputs are fairly common, the suppliers have less bargaining\npower—but if they are more specialized, suppliers will have more bargaining power.\nBargaining power of customers and frontline workers is important, but it is not what is\ndescribed in this situation.\n(Module 43.1, LOS 43.b)"}, {"n": 12, "q": "Items in an initial research report on a company that are most likely to also appear in\nsubsequent reports include a(n):", "opts": ["industry overview and analysis of the company’s competitive position.", "description of the company’s business model and strategy.", "rationale for the investment recommendation."], "ans": "C", "expl": "Both initial and subsequent research reports typically include a buy/hold/sell\nrecommendation and an explanation of the rationale for the recommendation. A company\ndescription and industry overview are included in an initial research report but are\ntypically not repeated in subsequent reports unless new information has emerged.\n(Module 43.1, LOS 43.a)"}, {"n": 13, "q": "If a company's operating income increases from $3 million to $3.3 million and its net income\nincreases from $1.5 million to $1.8 million, its degree of financial leverage is closest to:", "opts": ["1.0.", "0.5.", "2.0."], "ans": "C", "expl": "The degree of financial leverage (DFL) is a measure used to evaluate the extent to which a\ncompany uses debt relative to equity in its capital structure. The DFL is calculated by\ntaking the change in net income and dividing it by the change in operating income. Here,\nnet income increased by 20% ($1.5 million to $1.8 million) and operating income increased\nby 10% ($3 million to $3.3 million); 20% / 10% = 2.0. With the other answer options, 0.5\nswitches the numerator and denominator, and 1.0 just takes the $0.3 million change in\nboth rather than the percentage changes.\n(Module 43.2, LOS 43.e)"}, {"n": 14, "q": "An analyst will often include pro forma financial statements in a company research report\nbecause they are useful in helping investors understand:", "opts": ["how the company has changed its mix of debt and equity in its capital structure.", "the growth in sales numbers over the last several years.", "forecasted bottom-line profits over the next several years."], "ans": "C", "expl": "Pro forma financial statements are projected financial statements based on historical\nnumbers and expectations for the future. Forecasted bottom-line profits will appear in a\npro forma presentation. The growth in sales numbers over the last several years and the\nchange of debt and equity in the capital structure are all historical data found in the actual\nfinancial statements themselves.\n(Module 43.1, LOS 43.a)"}, {"n": 15, "q": "A company's income statement for the previous year reflects the following amounts:\nRevenue: $1,500,000\nCost of sales: $900,000\nOperating expenses: $250,000\nDepreciation and amortization: $50,000\nThe company's EBITDA is closest to:", "opts": ["$300,000.", "$350,000.", "$600,000."], "ans": "B", "expl": "EBITDA is equal to earnings before interest, taxes, depreciation, and amortization. It is\ncalculated by subtracting the cost of sales and operating expenses from revenue. EBITDA\nfor this company = $1,500,000 – $900,000 – $250,000 = $350,000—$300,000 subtracts\ndepreciation and amortization of $50,000, which produces EBIT (earnings before interest\nand taxes), and $600,000 is just revenue less cost of sales.\n(Module 43.2, LOS 43.d)"}, {"n": 16, "q": "Which of the following statements is most accurate regarding a company who is\nexperiencing economies of scale as production output is increasing?", "opts": ["Total fixed costs are decreasing, with no change to variable costs.", "Both fixed costs per unit and variable costs per unit may be decreasing.", "Fixed costs are decreasing, but variable costs are increasing."], "ans": "B", "expl": "Economies of scale result in decreasing unit costs as output increases. Fixed costs are\npresumably constant overall, but as production increases, the per-unit fixed cost will\ndecrease. Also, variable costs per unit may decreases as well due to gains in production\nefficiencies and increased bargaining power over suppliers.\n(Module 43.2, LOS 43.d)"}, {"n": 17, "q": "Publicly available third-party information that can be used to determine a company's\nbusiness model most likely includes:", "opts": ["reports produced by well-known analysts.", "social media commentary.", "filings with regulatory agencies."], "ans": "B", "expl": "Social media commentary on a company by third parties is publicly available information.\nFilings with regulatory agencies come directly from a company. Some analyst reports are\npublicly available while others are proprietary.\n(Module 43.1, LOS 43.b)"}, {"n": 18, "q": "In a given period, which of the following metrics is most likely to be the largest for a\ncompany?", "opts": ["Pretax earnings.", "EBITDA.", "EBIT."], "ans": "B", "expl": "EBITDA represents earnings before subtracting the expenses for interest, tax,\ndepreciation, and amortization. EBIT is EBITDA minus depreciation and amortization\nexpenses. Pretax earnings are EBIT minus interest expense.\n(Module 43.2, LOS 43.d)"}, {"n": 19, "q": "In assessing a company's uses of capital, an analyst may look at:", "opts": ["treasury stock purchases and principal payments on debt.", "new stock issuances and intangible asset purchases.", "marketable security sales and dividend payments."], "ans": "A", "expl": "Uses of capital represents outflows, which will include share repurchases (treasury stock)\nand principal payments on debt. Dividend payments and intangible asset purchases are\nalso uses of capital. Marketable security sales and new stock issuances are sources (rather\nthan uses) of capital.\n(Module 43.2, LOS 43.e)"}, {"n": 20, "q": "Jason Schmidt, CFA, is preparing his very first company research report. It will be distributed\ninternally within his company, as well as to external advisors and investors. He can expect\nthat, relative to his initial report, his subsequent reports will be:", "opts": ["equivalent in depth.", "less thorough.", "more thorough."], "ans": "B", "expl": "While the initial company research report prepared for both internal and external parties\nwill be very thorough, subsequent reports will be less so under the premise that the initial\nreport contains the bulk of the foundational information needed in a report.\n(Module 43.1, LOS 43.a)"}, {"n": 21, "q": "A market has 10 companies and total revenue of $88 million in the last fiscal year. Company\nXYZ had revenue last year of $17.6 million. Which of the following statements is most\naccurate about this market and Company XYZ?", "opts": ["The market size is $105.6 million.", "Company XYZ’s market share is larger than the average company in this market.", "Company XYZ’s market share is $17.6 million."], "ans": "B", "expl": "The market size, which is the total revenue of all companies in the market, is $88 million. A\ncompany's market share is a ratio (not a dollar amount) of the company's revenue to the\nmarket size. With 10 companies, the average market share will be 10%. Company XYZ's\nmarket share is 20% ($17.6 million / $88 million).\n(Module 43.2, LOS 43.c)"}, {"n": 22, "q": "An analyst assesses that the gross domestic product for a country is growing (on average) by\n3% per year. He also determines that the market share for a company is approximately 6%\nof its overall industry. By using these statistics to forecast revenue growth, the analyst is\ntaking a(n):", "opts": ["top-down approach.", "economic approach.", "bottom-up approach."], "ans": "A", "expl": "A top-down approach to forecasting revenue growth will start with economic measures\n(such as gross domestic product) and industry market share. A bottom-up approach looks\nvery specifically at price, volume, and business segments. The \"economic\" approach is not\na valid approach to forecasting revenue.\n(Module 43.2, LOS 43.c)"}, {"n": 23, "q": "Joel Lettner, CFA, is an analyst studying the balance sheets of several companies within the\nsame industry. His boss has asked him to do comparisons of capital structures between the\ncompanies. Which elements of the balance sheet will Lettner most likely focus on?", "opts": ["Noncurrent assets and liabilities.", "Noncurrent assets and stockholders’ equity.", "Liabilities and stockholders’ equity."], "ans": "C", "expl": "A company's capital structure is the combination of its liabilities (current and noncurrent)\nand stockholders' equity. Assets comprise the company's asset structure.\n(Module 43.2, LOS 43.e)"}, {"n": 24, "q": "During a period of increasing sales, compared to firms with lower operating leverage,\nearnings growth for firms with high operating leverage will be:", "opts": ["unaffected.", "higher.", "lower."], "ans": "B", "expl": "High operating leverage, other things held constant, means that a relatively small change\nin sales will result in a large change in operating income. Therefore, during a period of\nincreasing sales, a highly leveraged firm will have higher earnings growth than a lesser\nleveraged firm.\n(Module 43.2, LOS 43.d)"}, {"n": 25, "q": "A highly competitive market structure will reflect which of the following characteristics?", "opts": ["Significant barriers to entry.", "Relatively high switching costs.", "High levels of commoditization."], "ans": "C", "expl": "Commoditization is found in highly competitive markets where there is less differentiation,\nlots of substitute products, minimal barriers to entry, minimal brand loyalty, and\ninsignificant switching costs (the costs for customers to change from one product to\nanother).\n(Module 43.2, LOS 43.c)"}, {"n": 26, "q": "Which of the following items will most likely be found in both the initial company research\nreport and any subsequent reports that are issued?", "opts": ["An overview of the company’s industry.", "Environmental, social, and governance factors.", "Recommendations and associated rationales."], "ans": "C", "expl": "An initial company research report will include a recommendation (buy, sell, hold) and\nrationales for the recommendation. Any subsequent reports will also include a\nrecommendation and rationales. Industry overviews and environmental, social, and\ngovernance factors are most likely found in just the initial research report.\n(Module 43.1, LOS 43.a)"}];
+const CFG = {"title": "Company Analysis Past and Present", "subtitle": "CFA · Equity Investments · Reading 43 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; stem.textContent = q.q;
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>
