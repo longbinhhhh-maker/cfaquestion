@@ -533,7 +533,7 @@ function saveProg(){
     }
     let prev = {}; try{ prev = JSON.parse(localStorage.getItem(PROG_KEY)||"null")||{}; }catch(e){}
     const slug = PROG_KEY.replace(/^cfa:prog:/,"");
-    const day = new Date().toISOString().slice(0,10);
+    const _d=new Date(); const day=_d.getFullYear()+"-"+String(_d.getMonth()+1).padStart(2,"0")+"-"+String(_d.getDate()).padStart(2,"0");
     let tbase = prev.tbase;
     if(!tbase || tbase.d !== day) tbase = {d:day, base:(prev.done||0)};
     const answeredToday = Math.max(0, done - tbase.base);
