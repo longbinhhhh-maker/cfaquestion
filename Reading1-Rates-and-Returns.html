@@ -15,7 +15,7 @@
 <style>
   :root{
     --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
-    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#d86413; --accent2:#f0a05a;
     --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
   }
   *{box-sizing:border-box}
@@ -103,7 +103,7 @@
   html[data-theme="light"] #themeBtn::after{content:"☀️"}
   html[data-theme="light"]{
     --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
-    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#d86413; --accent2:#a8500e;
     --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
   }
   html[data-theme="light"] .opt.sel{background:#e0e7ff}
@@ -124,20 +124,20 @@
 <style id="ui-polish">
   :root{
     --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
-    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#d86413; --accent2:#f0a05a;
     --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
     --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
   }
   html[data-theme="light"]{
     --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
-    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#d86413; --accent2:#a8500e;
     --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
     --shadow:0 8px 24px rgba(15,27,45,.08);
   }
   body{
     background:
-      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
-      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      radial-gradient(1100px 520px at 100% -8%, rgba(216,100,19,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(240,160,90,.14), transparent 55%),
       var(--bg);
     background-attachment:fixed;
     font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
@@ -163,8 +163,8 @@
   .back-btn{font-weight:600}
   .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
   .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
-    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
-  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(216,100,19,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(216,100,19,.5)}
   .progress-wrap{height:6px}
   .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
   main{max-width:880px;padding-top:22px}
@@ -243,9 +243,9 @@
   <span id="badge" class="badge"></span>
   <span id="timer" class="timer hidden">--:--</span>
   <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
-  <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#6d5efc,secondary:#9d8bff"></lord-icon>Câu hỏi</button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#d86413,secondary:#f0a05a"></lord-icon>Câu hỏi</button>
   <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
-  <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#6d5efc,secondary:#9d8bff"></lord-icon>Làm lại</button>
+  <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#d86413,secondary:#f0a05a"></lord-icon>Làm lại</button>
   <button class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
 </header>
 <div class="progress-wrap"><div id="progress" class="progress"></div></div>
@@ -278,7 +278,7 @@
 
 <div id="pauseOverlay" class="overlay">
   <div class="modal pause-box">
-    <div class="big"><lord-icon src="https://cdn.lordicon.com/kbtmbyzy.json" trigger="loop" colors="primary:#6d5efc,secondary:#9d8bff"></lord-icon></div>
+    <div class="big"><lord-icon src="https://cdn.lordicon.com/kbtmbyzy.json" trigger="loop" colors="primary:#d86413,secondary:#f0a05a"></lord-icon></div>
     <h3>Đã tạm dừng</h3>
     <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
     <div class="modal-actions" style="justify-content:center">
@@ -290,7 +290,7 @@
 <div id="resultOverlay" class="overlay">
   <div class="modal">
     <span id="rEmoji" class="r-emoji">🎉</span>
-    <lord-icon id="rIcon" src="https://cdn.lordicon.com/lupuorrc.json" trigger="loop" colors="primary:#6d5efc,secondary:#9d8bff"></lord-icon>
+    <lord-icon id="rIcon" src="https://cdn.lordicon.com/lupuorrc.json" trigger="loop" colors="primary:#d86413,secondary:#f0a05a"></lord-icon>
     <h3 id="rTitle"></h3>
     <p id="rScore" class="r-score"></p>
     <div class="modal-actions" style="justify-content:center">
@@ -681,7 +681,7 @@ render();
       .catch(function(){});
   }
   function confetti(){
-    var cols=['#6d5efc','#9d8bff','#22c55e','#f59e0b','#f43f5e','#38bdf8'];
+    var cols=['#d86413','#f0a05a','#22c55e','#f59e0b','#f43f5e','#38bdf8'];
     for(var i=0;i<70;i++){(function(){
       var d=document.createElement('i'); d.className='fx-confetti';
       d.style.left=Math.random()*100+'vw';
