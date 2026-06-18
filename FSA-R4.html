@@ -314,8 +314,19 @@ function saveProg(){
       correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
       pct = Math.round(correct/total*100);
     }
+    let prev = {}; try{ prev = JSON.parse(localStorage.getItem(PROG_KEY)||"null")||{}; }catch(e){}
+    const slug = PROG_KEY.replace(/^cfa:prog:/,"");
+    const day = new Date().toISOString().slice(0,10);
+    let tbase = prev.tbase;
+    if(!tbase || tbase.d !== day) tbase = {d:day, base:(prev.done||0)};
+    const answeredToday = Math.max(0, done - tbase.base);
+    try{
+      const daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}");
+      (daily[day] = daily[day]||{})[slug] = {answered:answeredToday, done, total, graded, correct, pct, title:(CFG.title||slug), ts:Date.now()};
+      localStorage.setItem("cfa:daily", JSON.stringify(daily));
+    }catch(e){}
     localStorage.setItem(PROG_KEY, JSON.stringify(
-      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, tbase, ts:Date.now()}));
   }catch(e){}
 }
 function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
