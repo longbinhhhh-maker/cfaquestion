@@ -687,6 +687,20 @@ function renderToday(){
   }));
   items.sort((a,b)=>(b.ts||0)-(a.ts||0));
 
+  // Đồng bộ hoạt động hôm nay vào cfa:daily để "7 ngày qua" + streak luôn khớp
+  // với danh sách hiển thị (kể cả đề mở qua fallback, hoặc làm lại khi answered=0).
+  if(items.length){
+    const tkey = dayKey(now), merged = {};
+    items.forEach(it=>{ const st = it.st||{};
+      const cnt = (st.answered>0 ? st.answered : (st.done||it.answered||0));
+      merged[it.slug] = {answered:cnt, done:st.done, total:st.total,
+        graded:st.graded, correct:st.correct, pct:st.pct,
+        title:st.title||(it.m&&it.m.title)||it.slug, ts:st.ts||it.ts||Date.now()};
+    });
+    daily[tkey] = merged;
+    try{ localStorage.setItem("cfa:daily", JSON.stringify(daily)); }catch(e){}
+  }
+
   const stk = streakCount(daily);
   $("streakBadge").textContent = stk>=2 ? `🔥 ${stk} ngày liên tiếp` : "";
 
