@@ -233,6 +233,10 @@
     pointer-events:none;border-radius:2px;animation:fxFall linear forwards}
   @keyframes fxFall{to{transform:translateY(105vh) rotate(640deg);opacity:.9}}
 </style>
+<style id="lord2-css">
+  header button lord-icon.hi{width:18px;height:18px;vertical-align:-4px;margin-right:5px}
+  .pause-box .big lord-icon{width:56px;height:56px}
+</style>
 </head>
 <body>
 <header>
@@ -244,10 +248,10 @@
   <span id="badge" class="badge"></span>
   <span id="timer" class="timer hidden">--:--</span>
   <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
-  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#6d5efc,secondary:#9d8bff"></lord-icon>Câu hỏi</button>
   <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
-  <button onclick="restart()">↻ Làm lại</button>
-  <button class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/tdrtiskw.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
+  <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#6d5efc,secondary:#9d8bff"></lord-icon>Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
 </header>
 <div class="progress-wrap"><div id="progress" class="progress"></div></div>
 <div id="resumeNote" class="resume-note"></div>
@@ -279,7 +283,7 @@
 
 <div id="pauseOverlay" class="overlay">
   <div class="modal pause-box">
-    <div class="big">⏸</div>
+    <div class="big"><lord-icon src="https://cdn.lordicon.com/kbtmbyzy.json" trigger="loop" colors="primary:#6d5efc,secondary:#9d8bff"></lord-icon></div>
     <h3>Đã tạm dừng</h3>
     <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
     <div class="modal-actions" style="justify-content:center">
