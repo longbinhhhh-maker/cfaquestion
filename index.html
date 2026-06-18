@@ -194,8 +194,36 @@
 </header>
 
 <main>
+  <style id="today-css">
+    #todayPanel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius,16px);
+      padding:16px 18px;margin:0 0 22px;box-shadow:var(--shadow,0 8px 28px rgba(2,6,23,.25))}
+    #todayPanel .t-head{display:flex;align-items:baseline;gap:10px}
+    #todayPanel .t-head h2{margin:0;font-size:18px;font-weight:800;letter-spacing:-.01em}
+    #todayPanel .t-date{margin-left:auto;color:var(--muted);font-size:13px;text-transform:capitalize}
+    #todayPanel .t-summary{color:var(--muted);font-size:13.5px;margin:4px 0 12px}
+    #todayPanel .t-summary:empty{display:none}
+    #todayPanel .t-empty{color:var(--muted);font-size:14px;padding:4px 0 2px}
+    #todayPanel .t-list{display:flex;flex-direction:column;gap:8px}
+    .t-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);
+      border-radius:11px;background:var(--panel2);text-decoration:none;color:inherit;transition:border-color .15s,transform .1s}
+    .t-item:hover{border-color:var(--accent);transform:translateX(2px)}
+    .t-item .t-ic{font-size:18px;flex:none}
+    .t-item .t-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+    .t-item .t-info b{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .t-item .t-info .t-sub{font-size:12.5px;color:var(--muted)}
+    .t-item .t-bar{height:5px;border-radius:3px;background:rgba(127,127,127,.22);overflow:hidden}
+    .t-item .t-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+    .t-item .t-stat{flex:none;font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+    .t-stat.done{background:var(--okbg);color:var(--ok)}
+    .t-stat.doing{background:rgba(245,158,11,.16);color:#f59e0b}
+  </style>
   <!-- VIEW 1: subjects -->
   <section id="subjectsView">
+    <div id="todayPanel">
+      <div class="t-head"><h2>📅 Hôm nay</h2><span id="todayDate" class="t-date"></span></div>
+      <div id="todaySummary" class="t-summary"></div>
+      <div id="todayList" class="t-list"></div>
+    </div>
     <div class="crumb"><b>Các môn học</b></div>
     <div id="subjectGrid" class="grid"></div>
   </section>
@@ -448,6 +476,51 @@ function resetProg(file, ev){
   else renderSubjects();
 }
 
+/* ===== Hôm nay: tổng hợp các đề đã làm trong ngày ===== */
+function renderToday(){
+  const list = $("todayList"), sum = $("todaySummary"), dateEl = $("todayDate");
+  if(!list) return;
+  const now = new Date();
+  dateEl.textContent = now.toLocaleDateString("vi-VN",
+    {weekday:"long", day:"numeric", month:"numeric", year:"numeric"});
+  const today = now.toDateString();
+  const items = [];
+  HUB.forEach(s=>s.modules.forEach(m=>{
+    if(m.status!=="ready") return;
+    const p = getProg(m.file);
+    if(!p || !p.ts) return;
+    if(new Date(p.ts).toDateString() !== today) return;
+    if(!(p.done>0) && !p.graded) return;
+    items.push({s, m, p});
+  }));
+  items.sort((a,b)=>(b.p.ts||0)-(a.p.ts||0));
+  if(!items.length){
+    sum.textContent = "";
+    list.innerHTML = `<div class="t-empty">Hôm nay bạn chưa làm câu nào. Chọn một đề bên dưới để bắt đầu nhé! 💪</div>`;
+    return;
+  }
+  let qsum = 0, graded = 0;
+  items.forEach(it=>{ qsum += (it.p.done||0); if(it.p.graded) graded++; });
+  sum.textContent = `${items.length} đề · ${qsum} câu đã làm${graded?` · ${graded} đã nộp`:''}`;
+  list.innerHTML = items.map(it=>{
+    const p = it.p, total = p.total||it.m.q||0, done = p.done||0;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const time = new Date(p.ts).toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"});
+    const stat = p.graded
+      ? `<span class="t-stat done">✓ ${p.correct}/${p.total} · ${p.pct!=null?p.pct:0}%</span>`
+      : `<span class="t-stat doing">⏳ ${done}/${total}</span>`;
+    return `<a class="t-item" href="${it.m.file}">
+      <span class="t-ic">${it.s.ico||"📘"}</span>
+      <span class="t-info">
+        <b>${it.m.title}</b>
+        <span class="t-sub">${it.s.short||it.s.name} · ${time}</span>
+        <span class="t-bar"><i style="width:${pct}%"></i></span>
+      </span>
+      ${stat}
+    </a>`;
+  }).join("");
+}
+
 function renderSubjects(){
   const grid = $("subjectGrid"); grid.innerHTML = "";
   const q = query.toLowerCase();
@@ -541,10 +614,11 @@ function onSearch(){ query = $("search").value.trim();
   if(!$("subjectsView").classList.contains("hide")) renderSubjects();
 }
 
+renderToday();
 renderSubjects();
 // làm mới tiến trình khi quay lại từ một đề (kể cả bfcache)
 window.addEventListener("pageshow", ()=>{
-  if($("modulesView").classList.contains("hide")) renderSubjects();
+  if($("modulesView").classList.contains("hide")){ renderToday(); renderSubjects(); }
   else if(currentSubj) showModules(currentSubj);
 });
 </script>
