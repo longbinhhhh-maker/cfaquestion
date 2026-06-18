@@ -1,0 +1,88 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Palette preview — CFA Quiz</title>
+<style>
+ body{margin:0;font-family:"Be Vietnam Pro",system-ui,Arial,sans-serif;background:#0b0f14;color:#e6edf6;padding:24px}
+ h1{font-size:20px;margin:0 0 4px} .src{color:#8aa;font-size:13px;margin:0 0 20px}
+ .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:22px;align-items:start}
+ .palbar{display:flex;gap:6px;align-items:center;margin:0 0 8px}
+ .palbar span{width:30px;height:30px;border-radius:7px;border:1px solid #2a3744}
+ .palbar code{margin-left:auto;color:#9fb0bf;font-size:12px}
+ .caption{text-align:center;color:#9fb0bf;font-size:12px;margin-top:8px;text-transform:uppercase;letter-spacing:.04em}
+ .demo{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:16px;padding:16px}
+ .demo .dhead{display:flex;align-items:center;gap:8px} .demo .sub{color:var(--muted);font-size:12px}
+ .demo .badge{margin-left:auto;background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok);font-weight:700;font-size:12px;padding:3px 10px;border-radius:999px}
+ .demo .btns{display:flex;gap:8px;margin-top:12px}
+ .demo .b{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:12.5px;cursor:pointer}
+ .demo .b.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0;color:#fff;font-weight:600}
+ .demo .prog{height:6px;background:var(--line);border-radius:99px;margin:12px 0;overflow:hidden}
+ .demo .prog i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+ .demo .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+ .demo .qn{display:inline-block;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700;font-size:12px;padding:2px 10px;border-radius:8px;margin-bottom:8px}
+ .demo .card p{margin:0 0 10px;font-size:13.5px;line-height:1.5}
+ .demo .opt{border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin:7px 0;font-size:13px}
+ .demo .opt b{color:var(--accent2);margin-right:6px}
+ .demo .opt.correct{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent)}
+ .demo .opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,transparent)}
+ .demo .today{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+ .demo .trow{display:flex;align-items:center} .demo .streak{margin-left:auto;font-size:12px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);padding:2px 9px;border-radius:99px}
+ .demo .titem{display:flex;align-items:center;gap:10px;margin-top:10px;text-decoration:none;color:var(--txt)}
+ .demo .ti{flex:1} .demo .ti b{font-size:13px} .demo .tb{display:block;height:5px;background:var(--line);border-radius:99px;margin-top:5px;overflow:hidden}
+ .demo .tb i{display:block;height:100%;background:var(--accent)} .demo .stat{font-size:12px;color:var(--ok);font-weight:700}
+ .demo .ic{width:30px;height:30px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 16%,transparent);border-radius:8px}
+ .t0{--bg:#f3f2f3;--panel:#ffffff;--line:#e6e9ee;--txt:#0a0c14;--muted:#64727c;--accent:#538297;--accent2:#86a7b5;--ok:#16a34a;--bad:#dc2626}
+  .t1{--bg:#f2f3f3;--panel:#ffffff;--line:#e6e9ee;--txt:#15212e;--muted:#64727c;--accent:#e45d19;--accent2:#e99265;--ok:#16a34a;--bad:#dc2626}
+  .t2{--bg:#f5f3f1;--panel:#ffffff;--line:#e6e9ee;--txt:#242b30;--muted:#64727c;--accent:#d86413;--accent2:#eb9152;--ok:#16a34a;--bad:#dc2626}
+  .tc{--bg:#0f141b;--panel:#161d27;--line:#243140;--txt:#e6edf6;--muted:#93a1b0;--accent:#6d5efc;--accent2:#9d8bff;--ok:#22c55e;--bad:#f43f5e}
+</style></head><body>
+<h1>🎨 Palette preview — giao diện quiz CFA</h1>
+<p class="src">Nguồn: Colormind (model: ui) — live · hex chuẩn hoá qua xColors · accent2 = làm sáng accent (cùng hue)</p>
+<div class="grid"><div><div class="palbar"><span style=background:#f8f7f8 title=#f8f7f8></span><span style=background:#9ea8b3 title=#9ea8b3></span><span style=background:#5a8da4 title=#5a8da4></span><span style=background:#8e88a6 title=#8e88a6></span><span style=background:#262b4a title=#262b4a></span><code>Palette 1</code></div><div class="cell"><div class="demo t0">
+  <div class="dhead"><div><b>Portfolio Management</b><div class="sub">Reading 85 · Schweser</div></div>
+    <span class="badge">ĐẠT · 85%</span></div>
+  <div class="btns"><button class="b">↻ Làm lại</button><button class="b primary">✓ Nộp bài</button></div>
+  <div class="prog"><i></i></div>
+  <div class="card"><div class="qn">Câu 3</div>
+    <p>The portfolio approach to investing evaluates each investment based on its:</p>
+    <div class="opt"><b>A.</b> excess return potential.</div>
+    <div class="opt correct"><b>B.</b> contribution to overall risk &amp; return ✅</div>
+    <div class="opt wrong"><b>C.</b> issuer fundamentals ❌</div></div>
+  <div class="today"><div class="trow"><b>📅 Hôm nay</b><span class="streak">🔥 3 ngày</span></div>
+    <a class="titem"><span class="ic">📈</span><span class="ti"><b>Equity – R2</b><span class="tb"><i style="width:70%"></i></span></span><span class="stat">✓ 19/27</span></a></div>
+  </div><div class="caption">🌞 Palette 1 (Colormind)</div></div></div><div><div class="palbar"><span style=background:#f7f8f8 title=#f7f8f8></span><span style=background:#e3bb9d title=#e3bb9d></span><span style=background:#e86929 title=#e86929></span><span style=background:#eb588b title=#eb588b></span><span style=background:#7b7d7a title=#7b7d7a></span><code>Palette 2</code></div><div class="cell"><div class="demo t1">
+  <div class="dhead"><div><b>Portfolio Management</b><div class="sub">Reading 85 · Schweser</div></div>
+    <span class="badge">ĐẠT · 85%</span></div>
+  <div class="btns"><button class="b">↻ Làm lại</button><button class="b primary">✓ Nộp bài</button></div>
+  <div class="prog"><i></i></div>
+  <div class="card"><div class="qn">Câu 3</div>
+    <p>The portfolio approach to investing evaluates each investment based on its:</p>
+    <div class="opt"><b>A.</b> excess return potential.</div>
+    <div class="opt correct"><b>B.</b> contribution to overall risk &amp; return ✅</div>
+    <div class="opt wrong"><b>C.</b> issuer fundamentals ❌</div></div>
+  <div class="today"><div class="trow"><b>📅 Hôm nay</b><span class="streak">🔥 3 ngày</span></div>
+    <a class="titem"><span class="ic">📈</span><span class="ti"><b>Equity – R2</b><span class="tb"><i style="width:70%"></i></span></span><span class="stat">✓ 19/27</span></a></div>
+  </div><div class="caption">🌞 Palette 2 (Colormind)</div></div></div><div><div class="palbar"><span style=background:#f9f8f7 title=#f9f8f7></span><span style=background:#eda794 title=#eda794></span><span style=background:#f19a5d title=#f19a5d></span><span style=background:#a3949c title=#a3949c></span><span style=background:#47565e title=#47565e></span><code>Palette 3</code></div><div class="cell"><div class="demo t2">
+  <div class="dhead"><div><b>Portfolio Management</b><div class="sub">Reading 85 · Schweser</div></div>
+    <span class="badge">ĐẠT · 85%</span></div>
+  <div class="btns"><button class="b">↻ Làm lại</button><button class="b primary">✓ Nộp bài</button></div>
+  <div class="prog"><i></i></div>
+  <div class="card"><div class="qn">Câu 3</div>
+    <p>The portfolio approach to investing evaluates each investment based on its:</p>
+    <div class="opt"><b>A.</b> excess return potential.</div>
+    <div class="opt correct"><b>B.</b> contribution to overall risk &amp; return ✅</div>
+    <div class="opt wrong"><b>C.</b> issuer fundamentals ❌</div></div>
+  <div class="today"><div class="trow"><b>📅 Hôm nay</b><span class="streak">🔥 3 ngày</span></div>
+    <a class="titem"><span class="ic">📈</span><span class="ti"><b>Equity – R2</b><span class="tb"><i style="width:70%"></i></span></span><span class="stat">✓ 19/27</span></a></div>
+  </div><div class="caption">🌞 Palette 3 (Colormind)</div></div></div><div><div class="cell"><div class="demo tc">
+  <div class="dhead"><div><b>Portfolio Management</b><div class="sub">Reading 85 · Schweser</div></div>
+    <span class="badge">ĐẠT · 85%</span></div>
+  <div class="btns"><button class="b">↻ Làm lại</button><button class="b primary">✓ Nộp bài</button></div>
+  <div class="prog"><i></i></div>
+  <div class="card"><div class="qn">Câu 3</div>
+    <p>The portfolio approach to investing evaluates each investment based on its:</p>
+    <div class="opt"><b>A.</b> excess return potential.</div>
+    <div class="opt correct"><b>B.</b> contribution to overall risk &amp; return ✅</div>
+    <div class="opt wrong"><b>C.</b> issuer fundamentals ❌</div></div>
+  <div class="today"><div class="trow"><b>📅 Hôm nay</b><span class="streak">🔥 3 ngày</span></div>
+    <a class="titem"><span class="ic">📈</span><span class="ti"><b>Equity – R2</b><span class="tb"><i style="width:70%"></i></span></span><span class="stat">✓ 19/27</span></a></div>
+  </div><div class="caption">⬛ Hiện tại (tím)</div></div></div></div>
+</body></html>
