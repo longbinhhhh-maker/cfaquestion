@@ -265,6 +265,84 @@
     .t-day .t-lbl{font-size:10.5px;color:var(--muted)}
     .t-day.today .t-lbl{color:#f59e0b;font-weight:700}
   </style>
+
+  <!-- ===== Thanh quote động lực (Zen Quotes + fallback) ===== -->
+  <style id="quote-css">
+    #quoteBar{position:relative;display:flex;align-items:center;gap:14px;
+      background:linear-gradient(120deg,var(--panel),var(--panel2));
+      border:1px solid var(--line);border-left:4px solid var(--accent);
+      border-radius:var(--radius,14px);padding:14px 16px;margin:0 0 22px;
+      box-shadow:var(--shadow,0 8px 28px rgba(2,6,23,.25));overflow:hidden}
+    #quoteBar .q-ic{font-size:22px;flex:none;line-height:1}
+    #quoteBar .q-body{flex:1;min-width:0}
+    #quoteBar .q-text{font-size:14.5px;font-style:italic;color:var(--txt);
+      transition:opacity .25s}
+    #quoteBar .q-author{display:block;margin-top:4px;font-size:12.5px;
+      font-weight:700;color:var(--accent2)}
+    #quoteBar .q-author:empty{display:none}
+    #quoteBar .q-refresh{flex:none;background:var(--panel2);border:1px solid var(--line);
+      color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;
+      font-size:15px;line-height:1;transition:.15s}
+    #quoteBar .q-refresh:hover{color:var(--txt);border-color:var(--accent);transform:rotate(60deg)}
+    #quoteBar.is-loading .q-text{opacity:.4}
+    @media(max-width:520px){#quoteBar .q-ic{display:none}}
+  </style>
+  <div id="quoteBar" class="is-loading">
+    <span class="q-ic">💡</span>
+    <div class="q-body">
+      <span id="quoteText" class="q-text">Đang tải câu nói truyền cảm hứng…</span>
+      <span id="quoteAuthor" class="q-author"></span>
+    </div>
+    <button class="q-refresh" onclick="loadQuote(true)" title="Đổi câu khác">🔄</button>
+  </div>
+  <script>
+  (function(){
+    // Danh sách dự phòng — chủ đề đầu tư & học tập, hợp người ôn CFA
+    var FALLBACK=[
+      ["An investment in knowledge pays the best interest.","Benjamin Franklin"],
+      ["Risk comes from not knowing what you're doing.","Warren Buffett"],
+      ["The stock market is a device for transferring money from the impatient to the patient.","Warren Buffett"],
+      ["In investing, what is comfortable is rarely profitable.","Robert Arnott"],
+      ["Know what you own, and know why you own it.","Peter Lynch"],
+      ["The four most dangerous words in investing are: 'this time it's different.'","Sir John Templeton"],
+      ["The big money is not in the buying and selling, but in the waiting.","Charlie Munger"],
+      ["It's not whether you're right or wrong, but how much money you make when you're right.","George Soros"],
+      ["Success is the sum of small efforts repeated day in and day out.","Robert Collier"],
+      ["Discipline is the bridge between goals and accomplishment.","Jim Rohn"],
+      ["The expert in anything was once a beginner.","Helen Hayes"],
+      ["Continuous effort, not strength or intelligence, is the key to unlocking our potential.","Winston Churchill"],
+      ["Don't watch the clock; do what it does. Keep going.","Sam Levenson"],
+      ["Compound interest is the eighth wonder of the world.","Albert Einstein"]
+    ];
+    function render(q,a,loading){
+      var bar=document.getElementById('quoteBar');
+      document.getElementById('quoteText').textContent='“'+q+'”';
+      document.getElementById('quoteAuthor').textContent=a?'— '+a:'';
+      if(bar) bar.classList.toggle('is-loading',!!loading);
+    }
+    function showLocal(){
+      var p=FALLBACK[Math.floor(Math.random()*FALLBACK.length)];
+      render(p[0],p[1],false);
+    }
+    window.loadQuote=function(force){
+      // Hiển thị ngay 1 câu nội bộ (tức thì, không phụ thuộc mạng)
+      showLocal();
+      // Thử lấy câu mới từ Zen Quotes; nếu bị CORS/lỗi thì giữ câu nội bộ
+      var ctrl=('AbortController' in window)?new AbortController():null;
+      if(ctrl) setTimeout(function(){try{ctrl.abort();}catch(e){}},4000);
+      fetch('https://zenquotes.io/api/random'+(force?('?_='+Date.now()):''),
+            ctrl?{signal:ctrl.signal}:{})
+        .then(function(r){return r.json();})
+        .then(function(d){
+          if(d&&d[0]&&d[0].q) render(d[0].q,d[0].a||'',false);
+        })
+        .catch(function(){/* CORS hoặc offline -> dùng câu nội bộ đã hiển thị */});
+    };
+    if(document.readyState!=='loading') loadQuote();
+    else document.addEventListener('DOMContentLoaded',function(){loadQuote();});
+  })();
+  </script>
+
   <!-- VIEW 1: subjects -->
   <section id="subjectsView">
     <div id="todayPanel">

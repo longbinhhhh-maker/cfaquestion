@@ -213,6 +213,26 @@
   html[data-theme="light"] .opt[data-cols="2"] .lead,
   html[data-theme="light"] .opt[data-cols="2"] .opt-col{border-color:var(--line)}
 <!--ui-polish-end-->
+<!-- ===== Lordicon + feedback sinh động ===== -->
+<script src="https://cdn.lordicon.com/lordicon.js" defer></script>
+<style id="fx-css">
+  .btn-primary lord-icon{width:20px;height:20px;vertical-align:-4px;margin-right:6px}
+  .opt .fx-mark{display:inline-block;margin-left:8px;font-size:16px;
+    transform:scale(0);animation:fxPop .42s cubic-bezier(.18,1.5,.5,1) forwards}
+  @keyframes fxPop{0%{transform:scale(0) rotate(-25deg)}
+    70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  #resultOverlay .modal{max-width:380px;text-align:center}
+  #resultOverlay lord-icon{width:120px;height:120px;margin:0 auto 6px}
+  #resultOverlay .r-emoji{font-size:46px;line-height:1;margin-bottom:4px;
+    display:block;animation:fxPop .5s cubic-bezier(.18,1.5,.5,1) both}
+  #resultOverlay h3{font-size:22px;margin:4px 0 6px}
+  #resultOverlay .r-score{font-size:15px;color:var(--muted);margin:0}
+  #resultOverlay h3.pass{color:var(--ok)}
+  #resultOverlay h3.fail{color:var(--bad)}
+  .fx-confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:60;
+    pointer-events:none;border-radius:2px;animation:fxFall linear forwards}
+  @keyframes fxFall{to{transform:translateY(105vh) rotate(640deg);opacity:.9}}
+</style>
 </head>
 <body>
 <header>
@@ -227,7 +247,7 @@
   <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
   <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
   <button onclick="restart()">↻ Làm lại</button>
-  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+  <button class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/tdrtiskw.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
 </header>
 <div class="progress-wrap"><div id="progress" class="progress"></div></div>
 <div id="resumeNote" class="resume-note"></div>
@@ -264,6 +284,18 @@
     <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
     <div class="modal-actions" style="justify-content:center">
       <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<div id="resultOverlay" class="overlay">
+  <div class="modal">
+    <span id="rEmoji" class="r-emoji">🎉</span>
+    <lord-icon id="rIcon" src="https://cdn.lordicon.com/lupuorrc.json" trigger="loop" colors="primary:#6d5efc,secondary:#9d8bff"></lord-icon>
+    <h3 id="rTitle"></h3>
+    <p id="rScore" class="r-score"></p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="document.getElementById('resultOverlay').classList.remove('show')">Xem lại bài</button>
     </div>
   </div>
 </div>
@@ -809,6 +841,71 @@ function restart(){
 }
 
 render();
+</script>
+<script>
+/* ===== Feedback sinh động: chạy sau khi chấm bài ===== */
+(function(){
+  if(typeof grade!=='function') return;
+  var _grade=grade;
+  grade=function(a){ _grade(a); try{ afterGrade(); }catch(e){} };
+
+  function afterGrade(){
+    if(!CFG.hasAnswers) return;
+    document.querySelectorAll('.opt.correct').forEach(function(o){ addMark(o,'✅'); });
+    document.querySelectorAll('.opt.wrong').forEach(function(o){ addMark(o,'❌'); });
+    var pass=document.getElementById('badge').classList.contains('pass');
+    showResult(pass, document.getElementById('badge').textContent);
+  }
+  function addMark(el,sym){
+    if(el.querySelector('.fx-mark')) return;
+    var s=document.createElement('span'); s.className='fx-mark'; s.textContent=sym;
+    el.appendChild(s);
+  }
+  function showResult(pass, badgeText){
+    var ov=document.getElementById('resultOverlay');
+    var icon=document.getElementById('rIcon');
+    var title=document.getElementById('rTitle');
+    var emoji=document.getElementById('rEmoji');
+    var score=document.getElementById('rScore');
+    var m=badgeText.split('·'); score.textContent=m.length>1?m[1].trim():'';
+    if(pass){
+      title.textContent='Chúc mừng! Bạn đã ĐẠT'; title.className='pass';
+      icon.setAttribute('src','https://cdn.lordicon.com/lupuorrc.json');
+      emoji.textContent='🎉';
+      fetchEmoji('face-positive', emoji);
+      confetti();
+    }else{
+      title.textContent='Chưa đạt — cố lên nhé!'; title.className='fail';
+      icon.setAttribute('src','https://cdn.lordicon.com/jdgfsfzr.json');
+      emoji.textContent='💪';
+    }
+    ov.classList.add('show');
+  }
+  function fetchEmoji(group, el){
+    var ctrl=('AbortController'in window)?new AbortController():null;
+    if(ctrl) setTimeout(function(){try{ctrl.abort();}catch(e){}},3500);
+    fetch('https://emojihub.yurace.pro/api/random/group/'+group, ctrl?{signal:ctrl.signal}:{})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.htmlCode&&d.htmlCode.length){
+        el.innerHTML=d.htmlCode.join('');
+        el.style.animation='none'; void el.offsetWidth; el.style.animation='';
+      }})
+      .catch(function(){});
+  }
+  function confetti(){
+    var cols=['#6d5efc','#9d8bff','#22c55e','#f59e0b','#f43f5e','#38bdf8'];
+    for(var i=0;i<70;i++){(function(){
+      var d=document.createElement('i'); d.className='fx-confetti';
+      d.style.left=Math.random()*100+'vw';
+      d.style.background=cols[i%cols.length];
+      d.style.animationDuration=(2.2+Math.random()*1.6)+'s';
+      d.style.animationDelay=(Math.random()*0.5)+'s';
+      d.style.transform='rotate('+(Math.random()*360)+'deg)';
+      document.body.appendChild(d);
+      setTimeout(function(){d.remove();},4500);
+    })();}
+  }
+})();
 </script>
 </body>
 </html>
