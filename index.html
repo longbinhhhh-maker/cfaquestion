@@ -180,6 +180,39 @@
   @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
 </style>
 <!--ui-polish-end-->
+<style id="subj-cards">
+  /* ===== Thẻ môn học: color-coded ===== */
+  .grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  .subj{
+    position:relative;overflow:hidden;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:4px solid var(--c,var(--accent));
+    border-radius:16px;padding:16px 18px;cursor:pointer;
+    display:flex;flex-direction:column;gap:10px;min-height:0;
+    box-shadow:var(--shadow);
+  }
+  .subj::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(150px 110px at 8% -10%,
+      color-mix(in srgb,var(--c) 18%,transparent),transparent 70%);}
+  .subj:hover{transform:translateY(-3px);border-color:var(--c);
+    box-shadow:0 12px 30px color-mix(in srgb,var(--c) 30%,transparent)}
+  .subj-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .subj-ico{width:46px;height:46px;flex:none;border-radius:13px;
+    display:flex;align-items:center;justify-content:center;font-size:25px;
+    background:color-mix(in srgb,var(--c) 20%,var(--panel2));
+    border:1px solid color-mix(in srgb,var(--c) 38%,transparent)}
+  .subj h3{margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
+  .subj .meta{margin-top:0;font-size:12.5px}
+  .subj .pill{align-self:auto;background:color-mix(in srgb,var(--c) 16%,var(--panel2));
+    color:color-mix(in srgb,var(--c) 70%,var(--txt));border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
+    font-weight:700;white-space:nowrap}
+  .subj .pill.live{background:color-mix(in srgb,var(--c) 16%,var(--panel2));
+    color:color-mix(in srgb,var(--c) 72%,var(--txt));border-color:color-mix(in srgb,var(--c) 32%,transparent)}
+  .subj .bar{background:color-mix(in srgb,var(--c) 12%,var(--panel2))}
+  .subj .bar > i{background:linear-gradient(90deg,
+    color-mix(in srgb,var(--c) 70%,var(--accent)),var(--c))}
+</style>
 </head>
 <body>
 <header>
@@ -468,8 +501,21 @@ const HUB = [
 const $ = id => document.getElementById(id);
 let query = "";
 
+/* màu nhấn riêng cho từng môn */
+const SUBJ_COLOR = {
+  quant:"#3b82f6", econ:"#06b6d4", ci:"#8b5cf6", fsa:"#10b981",
+  equity:"#22c55e", fi:"#f59e0b", deriv:"#ec4899", alt:"#f97316",
+  pm:"#14b8a6", ethics:"#eab308", mock:"#ef4444", uword:"#a855f7"
+};
+function subjColor(s){ return SUBJ_COLOR[s.id] || "var(--accent)"; }
+
 function readyCount(s){ return s.modules.filter(m=>m.status==="ready").length; }
 function totalCount(s){ return s.modules.length; }
+/* tổng số câu — bỏ module n:0 ("Toàn bộ môn") để khỏi đếm trùng với các reading */
+function totalQ(s){
+  const mods = s.modules.length>1 ? s.modules.filter(m=>m.n!==0) : s.modules;
+  return mods.reduce((a,m)=>a+(m.q||0),0);
+}
 
 /* ===== tiến trình: đọc localStorage do từng đề lưu lại ===== */
 function progKey(file){ return "cfa:prog:" + file.replace(/\.html$/i,"").toLowerCase(); }
@@ -613,12 +659,17 @@ function renderSubjects(){
     const pct = total ? Math.round(st.done/total*100) : 0;
     const card = document.createElement("div");
     card.className = "subj";
+    card.style.setProperty("--c", subjColor(s));
     card.onclick = ()=>showModules(s.id);
+    const qsum = totalQ(s);
     const meta = st.done||st.doing
       ? `Đã làm ${st.done}/${total} đề${st.doing?` · ${st.doing} đang làm`:''}`
-      : `${ready}/${total||'—'} đề · ${s.short||''}`;
+      : `${s.short||''}${qsum?` · ${qsum} câu`:''}`;
     card.innerHTML = `
-      <span class="pill ${ready?'live':''}">${ready?ready+' đề sẵn sàng':'Sắp có'}</span>
+      <div class="subj-top">
+        <span class="subj-ico">${s.ico||'📘'}</span>
+        <span class="pill ${ready?'live':''}">${ready?ready+' đề':'Sắp có'}</span>
+      </div>
       <h3>${s.name}</h3>
       <div class="bar"><i style="width:${pct}%"></i></div>
       <div class="meta">${meta}</div>`;
