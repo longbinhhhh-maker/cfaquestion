@@ -359,6 +359,18 @@
   </section>
 
   <!-- VIEW 2: modules of one subject -->
+  <style id="subjavg-css">
+    #subjAvg{background:var(--panel);border:1px solid var(--line);
+      border-left:4px solid var(--accent);border-radius:var(--radius,14px);
+      padding:14px 18px;margin:0 0 18px;box-shadow:var(--shadow,0 8px 28px rgba(2,6,23,.25))}
+    #subjAvg.hide{display:none}
+    #subjAvg .sa-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+    #subjAvg .sa-title{font-size:14.5px;font-weight:700}
+    #subjAvg .sa-score{margin-left:auto;font-size:24px;font-weight:800;letter-spacing:-.01em}
+    #subjAvg .sa-sub{color:var(--muted);font-size:12.5px;margin-top:3px}
+    #subjAvg .sa-bar{height:8px;border-radius:99px;background:var(--panel2);overflow:hidden;margin-top:11px}
+    #subjAvg .sa-bar i{display:block;height:100%;border-radius:99px;transition:width .3s ease}
+  </style>
   <section id="modulesView" class="hide">
     <div class="crumb">
       <button onclick="showSubjects()">Các môn học</button>
@@ -367,6 +379,7 @@
     <div class="subj-head">
       <div><h2 id="mName"></h2><p id="mDesc"></p></div>
     </div>
+    <div id="subjAvg" class="hide"></div>
     <div id="moduleList"></div>
   </section>
 </main>
@@ -604,11 +617,26 @@ function getProg(file){
 }
 function subjStats(s){
   let done=0, doing=0;
+  const graded=[];
   s.modules.forEach(m=>{
     const p = getProg(m.file); if(!p) return;
-    if(p.graded) done++; else if((p.done||0)>0) doing++;
+    if(p.graded){ done++; graded.push({m,p}); }
+    else if((p.done||0)>0) doing++;
   });
-  return {done, doing};
+  // Điểm trung bình cả môn: bỏ module n:0 ("Toàn bộ môn") nếu đã có reading
+  // riêng được chấm, để không tính trùng câu hỏi.
+  let avgSet = graded;
+  if(s.modules.length>1 && graded.some(g=>g.m.n!==0))
+    avgSet = graded.filter(g=>g.m.n!==0);
+  let correct=0, total=0;
+  avgSet.forEach(g=>{ correct+=g.p.correct||0; total+=g.p.total||0; });
+  const pct = total ? Math.round(correct/total*100) : null;
+  return {done, doing, gradedCount:avgSet.length, correct, total, pct};
+}
+/* màu theo mức điểm — chuẩn pass CFA ~70% */
+function scoreColor(pct){
+  if(pct==null) return "var(--accent)";
+  return pct>=70 ? "var(--ok)" : (pct>=50 ? "var(--pin,#f59e0b)" : "var(--bad,#f43f5e)");
 }
 function resetProg(file, ev){
   ev.stopPropagation();
@@ -777,7 +805,7 @@ function renderSubjects(){
     card.onclick = ()=>showModules(s.id);
     const qsum = totalQ(s);
     const meta = st.done||st.doing
-      ? `Đã làm ${st.done}/${total} đề${st.doing?` · ${st.doing} đang làm`:''}`
+      ? `Đã làm ${st.done}/${total} đề${st.doing?` · ${st.doing} đang làm`:''}${st.pct!=null?` · TB <b style="color:${scoreColor(st.pct)}">${st.pct}%</b>`:''}`
       : `${s.short||''}${qsum?` · ${qsum} câu`:''}`;
     card.innerHTML = `
       <div class="subj-top">
@@ -801,6 +829,27 @@ function showModules(id){
   $("crumbSubj").textContent = s.name;
   $("mName").textContent = s.name;
   $("mDesc").textContent = s.desc || "";
+
+  // Điểm trung bình cả môn
+  const sa = $("subjAvg"), stx = subjStats(s);
+  if(stx.pct!=null){
+    const c = scoreColor(stx.pct);
+    const passTxt = stx.pct>=70 ? "✅ Đạt chuẩn (≥70%)"
+      : (stx.pct>=50 ? "⚠️ Gần đạt — cần ôn thêm" : "❗ Cần ôn lại kỹ");
+    sa.classList.remove("hide");
+    sa.style.borderLeftColor = c;
+    sa.innerHTML = `
+      <div class="sa-top">
+        <span class="sa-title">📊 Điểm trung bình cả môn</span>
+        <span class="sa-score" style="color:${c}">${stx.pct}%</span>
+      </div>
+      <div class="sa-sub">${stx.correct}/${stx.total} câu đúng · ${stx.gradedCount} đề đã nộp · ${passTxt}</div>
+      <div class="sa-bar"><i style="width:${stx.pct}%;background:${c}"></i></div>`;
+  } else {
+    sa.classList.add("hide");
+    sa.innerHTML = "";
+  }
+
   const list = $("moduleList"); list.innerHTML = "";
   if(!s.modules.length){
     list.innerHTML = `<div class="empty">Chưa có module nào cho môn này.<br>Bạn upload đề sau, mình thêm vào đây.</div>`;
