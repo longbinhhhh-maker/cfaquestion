@@ -365,7 +365,7 @@ function saveProg(){
       {answers, pinned, graded, done, total, correct, pct, remaining, started, tbase, ts:Date.now()}));
   }catch(e){}
 }
-function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); var __slug = PROG_KEY.replace(/^cfa:prog:/,""); var __daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}"), __ch=false; for(var __d in __daily){ if(__daily[__d] && __daily[__d][__slug]){ delete __daily[__d][__slug]; __ch=true; } if(__daily[__d] && Object.keys(__daily[__d]).length===0) delete __daily[__d]; } if(__ch) localStorage.setItem("cfa:daily", JSON.stringify(__daily)); }catch(e){} }
 // paint the option selections / pins that were restored from storage
 function applySaved(){
   Object.keys(answers).forEach(i=>{
