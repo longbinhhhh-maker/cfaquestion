@@ -678,6 +678,16 @@ function renderToday(){
   dateEl.textContent = now.toLocaleDateString("vi-VN",
     {weekday:"long", day:"numeric", month:"numeric", year:"numeric"});
   const daily = getDaily(), map = slugToMod();
+  // Tự đối chiếu: nếu một đề trong nhật ký đã bị xoá tiến trình (reset) thì
+  // gỡ luôn khỏi cfa:daily — tránh trường hợp trang đề bản cũ không dọn được.
+  let _pruned = false;
+  for(const day in daily){
+    for(const slug in daily[day]){
+      if(getProg(slug+".html")==null){ delete daily[day][slug]; _pruned = true; }
+    }
+    if(daily[day] && Object.keys(daily[day]).length===0) delete daily[day];
+  }
+  if(_pruned){ try{ localStorage.setItem("cfa:daily", JSON.stringify(daily)); }catch(e){} }
   const todayObj = daily[dayKey(now)] || {};
 
   const seen = {}, items = [];
