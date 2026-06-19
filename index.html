@@ -614,9 +614,21 @@ function resetProg(file, ev){
   ev.stopPropagation();
   if(!confirm("Xoá tiến trình của đề này?")) return;
   try{ localStorage.removeItem(progKey(file)); }catch(e){}
+  // Cũng xoá bản ghi của đề này trong nhật ký "Hôm nay" + lịch sử (cfa:daily),
+  // nếu không phần "Hôm nay" vẫn ghi nhận hoạt động dù đã reset.
+  try{
+    const slug = file.replace(/\.html$/i,"").toLowerCase();
+    const daily = getDaily(); let changed = false;
+    for(const day in daily){
+      if(daily[day] && daily[day][slug]){ delete daily[day][slug]; changed = true; }
+      if(daily[day] && Object.keys(daily[day]).length===0){ delete daily[day]; }
+    }
+    if(changed) localStorage.setItem("cfa:daily", JSON.stringify(daily));
+  }catch(e){}
   // re-render whatever view is open
   if(!$("modulesView").classList.contains("hide")) showModules(currentSubj);
   else renderSubjects();
+  renderToday();
 }
 
 /* ===== Hôm nay + lịch sử + streak ===== */
