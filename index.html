@@ -835,7 +835,7 @@ function showModules(id){
   if(stx.pct!=null){
     const c = scoreColor(stx.pct);
     const passTxt = stx.pct>=70 ? "Đạt chuẩn (≥70%)"
-      : (stx.pct>=50 ? "⚠️ Gần đạt — cần ôn thêm" : "❗ Cần ôn lại kỹ");
+      : (stx.pct>=50 ? "Gần đạt — cần ôn thêm" : "Cần ôn lại kỹ");
     sa.classList.remove("hide");
     sa.style.borderLeftColor = c;
     sa.innerHTML = `
