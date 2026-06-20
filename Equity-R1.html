@@ -186,6 +186,15 @@
   .expl{border-radius:12px}
   .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
     box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .stem .qtable{width:100%;border-collapse:collapse;margin:12px 0 2px;font-size:14.5px;
+    border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .stem .qtable th,.stem .qtable td{border:1px solid var(--line);padding:8px 11px;
+    text-align:left;vertical-align:top}
+  .stem .qtable thead th{background:var(--panel2);font-weight:700;color:var(--accent2)}
+  .stem .qtable tbody td:first-child{font-weight:600}
+  .stem .qtable td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+  .stem .qtable tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 45%,transparent)}
+  @media (max-width:520px){.stem .qtable{font-size:13px}.stem .qtable th,.stem .qtable td{padding:6px 8px}}
   .badge{box-shadow:var(--shadow)}
   #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
   .cell{border:1px solid var(--line);border-radius:9px}
@@ -381,7 +390,8 @@ function render(){
     card.appendChild(head);
 
     const stem = document.createElement("div");
-    stem.className = "stem"; stem.textContent = q.q;
+    stem.className = "stem";
+    if(q.qhtml){ stem.innerHTML = q.qhtml; } else { stem.textContent = q.q; }
     card.appendChild(stem);
 
     const opts = document.createElement("div");
