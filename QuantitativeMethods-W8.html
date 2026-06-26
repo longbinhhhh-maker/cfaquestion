@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "An automotive industry analyst uses a linear regression to test the relationship between gas prices (in USD/gallon) and vehicle sales (in millions of units). Selected data is presented below: Coefficients Standard Error Intercept 2.060 0.273 Gas Price (0.323) 0.128 ± If critical t-values are 2.10 at a 5% significance level, then based only on this data, the analyst's most appropriate conclusion is that:", "opts": ["average monthly vehicle sales are 2.060 million.", "changes in gas prices explain changes in vehicle sales.", "the slope of the linear regression line is not significantly different from zero."], "ans": "B", "expl": "Hypothesis testing is used to test the statistical significance of a linear regression by testing whether results are random. The t-statistic (t) is\nused to test whether the slope coefficient estimated by a regression (b ) differs from a hypothesized (tested) value (B ). This is achieved by\n1 1\ncomparing B with the appropriate critical t-value, which is based on the desired level of significance and degrees of freedom.\n1\nThis scenario is a two-tailed test since it tests whether b ≠ B , with no direction specified (ie, tests if b < B and if b > B ). If the t-statistic is\n1 1 1 1 1 1\nbeyond the critical t-value area (ie, t < −2.10 or t > +2.10), then reject the null hypothesis, H , which is b = 0 since it tests if the population slope ≠\n0 1\n0:\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level LOS\nCopyright©UWorld CopyrightCFAInstitute Allrightsreserved\n2. Which of the following characteristics of point estimates and confidence intervals is most likely correct?\nA. A point estimate has a sampling distribution.\nB. The standard error is required to calculate a point estimate.\n C. A confidence interval widens as the confidence level increases.\nExplanation\nA point estimate is a single value that is used to estimate a parameter of the population. For instance, the mean of each sample drawn from a\npopulation is a point estimate of the population mean. Since each sample mean is a unique number based on the sample from which it was\ncalculated, a point estimate has no sampling distribution (Choice A).\nDue to sampling error, a point estimate is usually different from the parameter. A confidence interval is a range of values greater or less than a\npoint estimate that, for a given level of probability (ie, confidence), includes the actual population parameter.\nIn the diagram above, the sample mean (4%) is a point estimate of the actual population mean (5%), which is greater than the sample mean. The\n90% confidence interval around the sample mean (shown on the left) is too narrow to include the population mean, but the wider 95% confidence\ninterval does include the population mean. A greater confidence level results in a wider confidence interval.\n(Choice B) Confidence intervals, not point estimates, are calculated using the standard error.\nThings to remember:\nA point estimate is a single number used to estimate a parameter of the population. Due to sampling errors, point estimates often do not equal the\npopulation parameter being estimated; instead, the parameter is estimated by using confidence intervals. A confidence interval is a range of\nvalues greater or less than the point estimate that includes the true parameter within a specified level of confidence (ie, probability).\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 2, "q": "Which of the following characteristics of point estimates and confidence intervals is most likely correct?", "opts": ["A point estimate has a sampling distribution.", "The standard error is required to calculate a point estimate.", "A confidence interval widens as the confidence level increases."], "ans": "C", "expl": "A point estimate is a single value that is used to estimate a parameter of the population. For instance, the mean of each sample drawn from a\npopulation is a point estimate of the population mean. Since each sample mean is a unique number based on the sample from which it was\ncalculated, a point estimate has no sampling distribution (Choice A).\nDue to sampling error, a point estimate is usually different from the parameter. A confidence interval is a range of values greater or less than a\npoint estimate that, for a given level of probability (ie, confidence), includes the actual population parameter.\nIn the diagram above, the sample mean (4%) is a point estimate of the actual population mean (5%), which is greater than the sample mean. The\n90% confidence interval around the sample mean (shown on the left) is too narrow to include the population mean, but the wider 95% confidence\ninterval does include the population mean. A greater confidence level results in a wider confidence interval.\n(Choice B) Confidence intervals, not point estimates, are calculated using the standard error.\nThings to remember:\nA point estimate is a single number used to estimate a parameter of the population. Due to sampling errors, point estimates often do not equal the\npopulation parameter being estimated; instead, the parameter is estimated by using confidence intervals. A confidence interval is a range of\nvalues greater or less than the point estimate that includes the true parameter within a specified level of confidence (ie, probability).\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 3, "q": "A company's management is concerned that the company might be paying its suppliers earlier than its historical average of 32 days. A recent sample of 70 invoices shows that it took, on average, 28 days to pay suppliers, with a standard deviation of 3 days. Which of the following is the most appropriate formulation of the null hypothesis for testing management's concern?", "opts": ["Average payment time is less than 32 days.", "Average payment time is greater than 32 days.", "Average payment time is greater than or equal to 32 days."], "ans": "C", "expl": "Hypothesis testing statistically assesses the validity of a claim or concern on a population. Here, management is concerned that the company\nmight be paying its suppliers in less than 32 days on average. There are two possibilities: on average, the company is paying suppliers in less\nthan 32 days (µ< 32), or it is paying suppliers in 32 or more days (µ≥ 32). These two instances are formulated into hypotheses.\nFor a concern to be statistically valid, the researcher must reject the null hypothesis (H ) and accept the alternative hypothesis (H ). It is\n0 a\ncommon to express the claim in the form of H . However, as an absolute rule, the null hypothesis always contains some form of equality (ie, =,\na\n≤, or ≥). Here, the hypothesis that the average payment time is 32 or more days is the null hypothesis, or H : µ≥ 32. The hypothesis that the\n0\naverage payment time is less than 32 days is the alternative hypothesis, or H : µ< 32.\na\nA rejection of the null hypothesis(H : µ≥ 32) means that there is sufficient evidence to support the alternative hypothesis (H : µ< 32) that the\n0 a\ncompany has been paying suppliers in less than 32 days.\n(Choice A) The alternative hypothesis states that the company is paying suppliers in less than 32 days. For the alternative hypothesis to be valid,\nthe null hypothesis that the company is paying suppliers in 32 or more days must be rejected.\n(Choice B) The null hypothesis states that average payment time is greater than or equal to, not strictly greater than 32 days. The null and\nalternative hypotheses should be exhaustive of all possibilities.\nThings to remember:\nThe null hypothesis always contains a form of equality (ie, =, ≤, or ≥).\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 4, "q": "A retailer generates higher revenues in the months it runs sales campaigns. An investor runs a linear regression in which the retailer's monthly sales are the dependent variable and an indicator (dummy) variable is the independent variable. The indicator variable takes on a value of 1 in the months with sales campaigns and a value of 0 in the other months. The intercept in this regression is most appropriately interpreted as the:", "opts": ["mean monthly revenues in the months with sales campaigns.", "mean monthly revenues in the months without sales campaigns.", "difference in revenues between months with and without sales campaigns."], "ans": "B", "expl": "An indicator variable, also called a dummy variable, takes on the value of 0 or 1 to represent mutually exclusive categories (eg, yes/no,\ngrowth/value, before/after). It can be used as the independent variable (X) in a regression model. In this scenario, X is an indicator variable that\nassigns the value of 1 to the months with sales campaigns and 0 to the months without a sales campaign.\nThe scatterplot on the left shows two distinct trends since revenues peak in months with sales campaigns (in green). Consequently, the time-\nseries regression model does not fit the data appropriately. In the second graph, using the indicator variable as X concentrates all sales data in\ntwo columns: when X = 0 and when X = 1.\nThe intercept and the slope have singular interpretations when X is an indicator variable:\nIntercept is the average revenue in the months without sales campaigns (ie, when X = 0)\nSlope is the average difference in revenues of months without sales campaigns (ie, when X = 0) and with sales campaigns (ie, when X = 1)\n(Choice C)\nAs a result, the average revenue in months with sales campaigns is the sum of the intercept and the slope (Choice A)\nThings to remember:\nAn indicator or dummy variable takes on the value 0 or 1 and can represent categorical data or qualitative facts in a regression model. When an\nindicator variable is the independent variable (X) of a simple linear regression, the intercept is interpreted as the mean value of the dependent\nvariable (Y) when X = 0, and the slope is interpreted as the mean difference in Y when X = 1 (compared with the mean value of Y when X = 0).\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 5, "q": "An analyst performs hypothesis testing on a normal distribution. If the distribution's p-value is 0.01, most likely:", "opts": ["there is a 1% probability of a Type II error.", "the null hypothesis can be rejected at the 95% confidence level.", "for a two-tailed test, the null rejection point is approximately 2.33 standard deviations from the mean."], "ans": "B", "expl": "The p-value is the lowest level of significance (shown as α in the images above), where the null hypothesis can be rejected. In this question, a p-\nvalue of 0.01 means that the null should be rejected if the hypothesis is tested at a significance of 0.01. A confidence level for a test equals 1 − the\nlevel of significance, so a 95% confidence level is the same as a significance level of 0.05.\nIf the p-value is less than a specified level of significance, the null should be rejected. In this question, 0.01 is less than 0.05, so the correct\ndecision is to reject the null at the 95% confidence level.\n(Choice A) The significance level of the test equals the probability of a Type I error, not a Type II error.\n(Choice C) For hypothesis tests on a normal distribution, a two-tailed hypothesis test with a 0.01 significance level results in a null rejection point\nof approximately 2.58. This represents a value that is ± 2.58 standard deviations from the mean. The rejection point for a one-tailed test at a 0.01\nsignificance level is approximately 2.33.\nThings to remember:\nThe p-value represents the smallest level of significance at which a null hypothesis can be rejected. When a p-value is less than a specified level\nof significance, the correct decision is to reject the null hypothesis.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 6, "q": "An analyst runs a regression with 30 observations, producing the following regression model: Y = 0.53 + 0.85 X + e. The analyst wants to test, at a 5% significance level, if Y will change by more than 0.50 for each one-unit change of X. Additional data that the analyst needs to perform this test is most likely the:", "opts": ["F-statistic.", "standard error of the forecast.", "standard error of the slope coefficient."], "ans": "C", "expl": "Hypothesis testing in a linear regression is used to evaluate the statistical significance of the coefficients. In the case of a simple linear\nregression (SLR), the t-statistic is used to test whether the estimated slope differs from a hypothesized value. The test compares:\nthe appropriate critical t-value, which is based on the desired level of significance and degrees of freedom, with\nthe t-statistic, shown above as the ratio of the difference between the estimated slope and its hypothesized value to its standard error.\nIn this scenario, since the goal is to test the change in Y for every one-unit change in X (ie, the slope coefficient), an analyst needs the following\ninformation:\nTo perform the hypothesis test, the analyst needs the standard error of the slope, which is a measure of error that estimates how far the\nregression slope (ie, 0.85) may be from the population slope.\n(Choice A) The F-statistic tests the statistical significance of the slopes, and, in a SLR, of the only slope. However, the F-statistic tests if the\nslope is different from zero; since the tested value is 0.50, the F-statistic cannot be used in this case.\n(Choice B) The standard error of the forecast is a measure of the regression's accuracy when forecasting a prediction interval. It is not used to\ntest the slope of a regression model.\nThings to remember:\nThe t-statistic is the ratio of the difference between the estimated coefficient and its hypothesized value to its standard error. The t-test compares\nthe t-statistic with the appropriate critical t-value, which is a function of the level of significance and the degrees of freedom.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 7, "q": "All else equal, a smaller p-value implies that:", "opts": ["there is stronger evidence for rejecting the null hypothesis.", "there is stronger evidence for supporting the null hypothesis.", "the sample estimate is closer to the hypothesized population parameter."], "ans": "A", "expl": "The p-value is the smallest level of significance for which the null hypothesis can be rejected. The decision to reject the null hypothesis rests on\nthe level of significance (ie, alpha α) that is chosen by the tester. The rule is to reject the null hypothesis if the p-value is less than the α.\nTests with smaller p-values provide stronger evidence against the null than tests with larger p-values. For smaller p-values, hypothesis tests\nhave larger nonrejection regions and smaller rejection regions. This indicates strong evidence for rejecting the null hypothesis at a small p-value,\nx¯ μ\nwhen the sample mean ( ) is far from the hypothesized population mean ( 0).\n(Choice B) The smaller the p-value, the stronger the evidence for rejecting, not for supporting, the null hypothesis.\n(Choice C) The smaller the p-value, the further the sample estimate is from the hypothesized population parameter.\nThings to remember:\nAll else equal, the smaller the p-value, the stronger the evidence against the null hypothesis.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 8, "q": "When testing a hypothesis that concerns a sample mean, it is most appropriate to use a nonparametric (rather than parametric) test if the sample size is large and: ", "opts": ["the population data are ranked.", "the population variance is unknown.", "the population is non-normally distributed."], "ans": "A", "expl": "Appropriate situations for applying nonparametric tests\nSituation Example\nNo assumptions can be made about the distribution, or data fail to meet a distributional\nDistribution is indeterminate\nrequirement\nTest concerning portfolio manager\nData are given in ranks\nrankings\nTest concerning whether a sample is\nHypothesis does not concern a population parameter\nrandom\nHypothesis tests are classified as either parametric or nonparametric. A parametric test focuses on the value of a population parameter (eg,\nmean, variance) based on the value of a sample drawn from that population. A parametric test should be used only if certain assumptions can be\nmade concerning the population's distribution (eg, distribution is known, data use a ratio measurement scale).\nBy contrast, a nonparametric test is appropriate when:\nIt is difficult to make assumptions about the population's distribution;\nData are ranked using a weaker measurement scale such as interval or ordinal scaling; or\nThe test does not involve a parameter.\n(Choices B and C) When the sample size is large (ie, ≥ 30), a z- or t-test can help to validate a hypothesis that a sample mean equals the\npopulation mean. Both tests are parametric and can be used regardless of what is known about the population's distribution (normal vs. non-\nnormal) or variance.\nThings to remember:\nNonparametric tests are used for hypothesis testing when the sample data are ranked or when assumptions cannot be made concerning the\npopulation distribution.\nCompare and contrast parametric and nonparametric tests, and describe situations where each is the more appropriate type of test", "qhtml": null}, {"n": 9, "q": "The level of significance (α) of a hypothesis test directly specifies:", "opts": ["the power of the test.", "the probability of a Type I error.", "the probability of a Type II error."], "ans": "B", "expl": "In hypothesis testing, the decision to reject or not reject the null hypothesis can result in different types of errors (ie, Type I or Type II), depending\non whether the null hypothesis is true.\nWhen the null hypothesis is true, the correct decision is to not reject the null hypothesis. A Type I error results from rejecting a null hypothesis\nwhen it is actually true. The level of significance (alpha [α]) of the test specifies the probability of committing a Type I error. The level of\nsignificance establishes the rejection point (ie, critical value), which is compared with the test statistic when deciding whether to reject the null\nhypothesis.\nα does not alter the accuracy of the test; rather, it changes the degree of difficulty in rejecting the null hypothesis. All else equal, a smaller α leads\nto a greater rejection point value, which makes it more difficult to reject a null hypothesis that is false and commit a Type I error. Therefore, the\nprobability of a Type I error can be decreased by increasing the level of significance.\nSuppose that a null hypothesis stating a country's average inflation is not greater than 2% (H : μ ≤ 2%) is tested at an α of 0.05. An analyst would\n0\nhave a 5% chance of making a Type I error, which is rejecting the null hypothesis while thinking that the average inflation is greater than 2%, when\nactual average inflation is not greater than 2%, meaning the null is true.\n(Choice A) The power of the test, which equals 1 − beta (β), specifies the probability of not making a Type II error.\n(Choice C) β, not α, specifies the probability of making a Type II error.\nThings to remember:\nA Type I error results from rejecting a true null hypothesis. The level of significance (alpha [α]) of the test specifies the probability of committing a\nType I error.\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 10, "q": "The z-statistic calculated for a sample mean is 2.50. An analyst performs a hypothesis test on the sample at the 0.05 significance level and does not reject the null hypothesis. The analyst most likely makes a:", "opts": ["Type I error.", "Type II error.", "correct decision."], "ans": "B", "expl": "Decision rules for hypothesis testing\nAll hypothesis tests involve a null hypothesis and an alternative hypothesis. The z-test is used to test whether a sample mean is a good estimate\nof the population mean. For a two-tailed z-test, the null hypothesis is that the sample mean equals the population mean, and the alternative\nhypothesis is that the sample mean does not equal the population mean. Only the null hypothesis is tested; if rejected, the alternative hypothesis\nis accepted by default.\nThe decision is made by comparing the absolute value of the test statistic to the appropriate critical value, which can be found in a distribution\ntable. If the test statistic is greater than or equal to the critical value, there is enough evidence that the null hypothesis is false and should be\nrejected.\nThe critical value for a two-tailed z-test at a 0.05 significance level is 1.96. In this scenario, the z-statistic of 2.50 is greater than the critical value,\nindicating enough evidence exists to reject the null hypothesis. Not rejecting a false null hypothesis is a Type II error.\n(Choice A) Rejecting a true null hypothesis is a Type I error. This would be the case if it were later determined that the population parameter was\nthe same as the sample statistic (ie, null is true) but the null hypothesis had nonetheless been rejected.\n(Choice C) Since the z-statistic of 2.50 is greater than the critical value of 1.96, the null hypothesis is false. The correct decision would be to\nreject it.\nThings to remember:\nFor a z-test, the calculated z-statistic is compared to the appropriate critical value. If the z-statistic is greater than the critical value, the correct\ndecision is to reject the null hypothesis. If not, the correct decision is to not reject the null hypothesis.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 11, "q": "A company releases a new product at the beginning of Year 10, significantly increasing its revenues as shown: An investor wants to understand this shift and runs a simple linear regression (SLR) with an indicator (dummy) variable that takes on the value 0 for the years before the product release and 1 for the years following the release. The sum of the slope and the intercept of the SLR is best described as the average: ", "opts": ["annual revenue after the product release.", "annual revenue before the product release.", "increase in revenues after the product release."], "ans": "A", "expl": "An indicator (dummy) variable is created artificially to represent mutually exclusive categories. It takes on the value of 0 or 1 and is useful\nwhen the dependent variable may be influenced by qualitative variables (eg, yes/no, before/after).\nThis graph is based on the current scenario. The average revenue over 20 years is USD 276.45 million, but this number is not meaningful since\nthe observations are far from this value and are clearly split into two subsets:\nIn the first 9 years (purple observations), the average revenue was USD 180.11 million.\nIn the remaining 11 years (green observations), average revenue reached USD 355.27 million.\nThe release of the new product, a qualitative variable, is the reason for this gap. Therefore, the indicator variable applies as the independent\n(explanatory) variable, assuming the value 0 for observations before the release and 1 for observations after the release, resulting in the\nregression line:\nThe intercept, 180.11, is the average revenue before releasing the product when X = 0 (Choice B)\nThe slope, 175.16 (= 355.27 − 180.11), is the average increase in revenues after the release (ie, the difference between average revenues\nwhen X = 0 and when X = 1) (Choice C)\nAs a result, the sum of the slope and the intercept is 355.27, which is the average annual revenue after the release when X = 1.\nThings to remember:\nAn indicator (dummy) variable is artificially created to represent mutually exclusive categories. It takes on the value of 0 or 1 and can be used as\nthe independent variable in a linear regression when qualitative variables may influence the dependent variable.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 12, "q": "As the significance level of a hypothesis test increases, the most likely outcome is a decrease in the probability of:", "opts": ["a Type I error.", "a Type II error.", "both a Type I and a Type II error."], "ans": "B", "expl": "In hypothesis testing, a Type I error results from rejecting a true null hypothesis. The probability of a Type I error increases with the test's\nlevel of significance. For instance, a 1% level of significance means that the probability of a Type I error is 1%. If the level of significance\nincreases to 5%, the probability of a Type I error also increases to 5% (Choice A).\nA Type II error results from failing to reject a false null hypothesis. As shown in the left graph, the test statistic is in the white \"nonrejection\"\nregion when the test is at a lower level of significance. When the significance level increases as shown in the right graph, the test statistic is in the\nblue-shaded \"rejection\" region. Increasing the significance level causes the null hypothesis to be rejected more frequently. Since a Type II error is\nbased on failing to reject a false null hypothesis, all else equal, a higher significance level means a reduced probability of making a Type II error.\n(Choice C) The only way to simultaneously decrease the probability of a Type I error and a Type II error is to increase the size of the sample from\nwhich the test statistic is generated.\nThings to remember:\nIncreasing a hypothesis test's level of significance increases the probability of making a Type I error. However, increasing the level of significance\nalso means the null hypothesis will be rejected less often. Since a Type II error occurs from failing to reject a false null hypothesis, increasing the\nlevel of significance will decrease the probability of a Type II error.\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 13, "q": "A consultant formulates a hypothesis to test whether the standard deviation of monthly returns for a portfolio has been less than 6% since inception. After statistical testing, the consultant makes the statistically correct decision to reject the null hypothesis if the actual standard deviation of monthly returns for the portfolio is:", "opts": ["less than 6%.", "equal to 6%.", "greater than 6%."], "ans": "A", "expl": "Hypothesis testing involves a statistical decision regarding whether to reject a null hypothesis (H ). In this question, the null hypothesis should\n0\nstate that the monthly return standard deviation is greater than or equal to 6% (H : σ ≥ 6%). Conversely, the alternative hypothesis should state\n0\nthat the standard deviation is less than 6% (H : σ < 6%).\na\nThe null and alternative hypotheses together exhaust all possibilities, so the consultant must reject the null hypothesis (H ) to accept the\n0\nalternative hypothesis (H ). The decision to reject or not reject the null hypothesis is based on statistical sampling results. For that reason, the\na\ndecision may sometimes be an error (ie, Type I, Type II).\nIn this question, the consultant rejects the null hypothesis (H : σ ≥ 6%). This rejection decision is correct if the null hypothesis is false,\n0\nmeaning σ < 6%. If σ ≥ 6%, then the null hypothesis is true; rejecting a true null hypothesis results in a Type I error (Choices B and C).\nThings to remember:\nThe decision to reject or not reject a null hypothesis is based on statistical sampling results. For that reason, the decision may sometimes be an\nerror (ie, Type I, Type II). A correct decision can result from rejecting a false null hypothesis or not rejecting a true null hypothesis. An error can\nresult from rejecting a true null hypothesis (Type I error) or failing to reject a false null hypothesis (Type II error).\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 14, "q": "A nonparametric test can be most appropriately applied to which of the following?", "opts": ["A chi-square test concerning a single variance", "A paired comparison test concerning two means", "A Spearman's rank correlation coefficient test"], "ans": "C", "expl": "Appropriate situations for applying nonparametric tests\nSituation Example\nNo assumptions can be made about the distribution, or data fail to meet a distributional\nDistribution is indeterminate\nrequirement\nTest concerning portfolio manager\nData are given in ranks\nrankings\nTest concerning whether a sample is\nHypothesis does not concern a population parameter\nrandom\nParametric tests concern the hypothesized value of a parameter (eg, mean, variance) and are based on distributional assumptions (eg, normally\ndistributed). For example, a researcher can test for the mean or variance of a population when the population is assumed to follow a normal\ndistribution.\nUnlike parametric tests, nonparametric tests are used when a hypothesis does not concern the value of a parameter or when few assumptions\nabout the underlying population can be made. Instead, these tests may concern the correlation between two populations (tested by Spearman's\nrank correlation coefficient which gauges correlation strength), the ranking of population members, or whether a sample is random.\nThings to remember:\nNonparametric tests are used when a hypothesis does not concern the value of a parameter or when few assumptions about the underlying\npopulation can be made. Nonparametric tests can be used in situations when the underlying data is non-normally distributed, given in ranks, or\nwhen the test does not concern a parameter value. Spearman's rank correlation coefficient is a nonparametric test for correlation strength.\nCompare and contrast parametric and nonparametric tests, and describe situations where each is the more appropriate type of test", "qhtml": null}, {"n": 15, "q": "An analyst conducts two hypothesis tests using different samples. The null and alternative hypotheses are the same for each test: H : population mean is less than or equal to zero 0 H : population mean is greater than zero a The tests are at the 0.05 significance level, and the critical value is 1.685. In Test 1, the value of the test statistic is 1.745, and in Test 2 the p- value is 0.0027. Assume that the probability of an outcome less than 1.745 is 95.95%. Test 2's evidence to reject the null hypothesis is most likely:", "opts": ["weaker than Test 1's evidence.", "the same as Test 1's evidence.", "stronger than Test 1's evidence."], "ans": "C", "expl": "For a given hypothesis test, the p-value is the probability of an outcome more extreme than the resulting test statistic. For example, in Test 1, the\ntest statistic is 1.745. Considering a one-tailed test and assuming the probability of an outcome less than 1.745 is 0.9595, the probably of an\noutcome greater than 1.745 is 1 − 0.9595 = 0.0405. Thus, the p-value corresponding to a test statistic of t = 1.745 is p = 0.0405.\nThe p-value is useful since it can be compared directly to the critical value to determine:\nthe outcome of the hypothesis test, and/or\nthe strength of the evidence to reject the null hypothesis (ie, a lower value means that there is more evidence to reject the null).\nIn this scenario, the level of significance is α = 0.05. In Test 1, p = 0.0405, which is less than α, so the result of the test is to reject the null\nhypothesis. In Test 2, p = 0.0027. The p-value for Test 2 is much less than for Test 1, so the Test 2 confidence level of 1 − 0.0027 = 0.9973 is\nmuch higher than for Test 1. The appropriate conclusion is that Test 2 provides stronger evidence to reject the null hypothesis (Choices A and B).\nThings to remember:\nFor a given hypothesis test, the p-value is the probability of an outcome more extreme than the test statistic. The p-value is useful since it can be\ncompared directly to the critical value to determine the outcome of the hypothesis test and/or the strength of the evidence to reject the null\nhypothesis.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 16, "q": "An analyst runs a linear regression between the prices of Stock A and Stock B, with 24 observations, resulting in the following coefficients table: Coefficients Standard Error Intercept 402.314 29.689 Stock A (1.339) 0.332 The coefficient of determination (R2) of this regression is 0.425 and the critical t-value at a 5% significance level is ±2.074. The most appropriate conclusion about the correlation of the stocks is that there is:", "opts": ["sufficient evidence that the stocks are positively correlated.", "sufficient evidence that the stocks are negatively correlated.", "not sufficient evidence that the stocks are positively or negatively correlated."], "ans": "B", "expl": "Hypothesis testing is used to test the statistical significance of the intercept and the slope of a simple linear regression (SLR). It also tests the\nsample correlation (r), which measures the direction and strength of the linear relationship between the independent (X) and dependent (Y)\nvariables, from −1 to 1. In an SLR:\nThe direction of r, indicated by its sign (ie, positive or negative), will always have the same sign as the slope coefficient, since both are\nratios with the same numerator (ie, covariance [X,Y]) and both have positive numbers as denominators.\nThe strength of r can be calculated from the coefficient of determination (R2), which is the square of r.\nIn this scenario, the slope is negative (−1.339), so r must be negative (Choice A). Therefore, since R2 = 0.425, r = −0.652. The next step is to\nuse the sample correlation to test the population correlation (ρ) using the t-statistic:\nThe null hypothesis is rejected since there is enough evidence that Stock A and Stock B are negatively correlated and that ρ is different from\nzero (Choice C).\nNote: The t-statistic for the correlation is always equal to the t-statistic that tests the significance of the slope (ie, (−1.339 − 0) / 0.332 = −4.033).\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 17, "q": "An analyst is testing the returns generated by a portfolio manager. The mean return from samples drawn by the analyst was 5%, but the analyst suspects that the manager's actual returns are 4%. After applying a hypothesis test, the analyst rejects the null hypothesis. The analyst's most appropriate conclusion is that the manager's mean return is:", "opts": ["equal to 4%.", "not equal to 4%.", "not equal to 5%."], "ans": "C", "expl": "Hypothesis testing requires a null and an alternative hypothesis. The null hypothesis is what is being tested; if the null is rejected, the\nalternative hypothesis is accepted.\nIn this question, the analyst's only evidence is the sample indicating the average returns are 5%. While the analyst suspects the average is\nactually lower, the hypothesis test should test the sample's actual results: the null cannot relate to testing the analyst's \"suspicion\" that the average\nis actually 4% since there is nothing other than the analyst's \"suspicion\" to support it (Choices A and B).\nThe appropriate hypothesis test is a two-sided test. The null is that the average return equals 5%, while the alternative is that it does not equal\n5%:\nH : μ = 5% (null)\n0\nH : μ ≠ 5% (alternative)\na\nIf there is sufficient evidence to reject the null hypothesis, the correct conclusion is that the manager's returns are not equal to 5%, not that they\nare equal to some other value. If the analyst rejects the null hypothesis, the appropriate process would be for the analyst to gather more evidence\nto test whether the returns in fact equal 4%.\nThings to remember:\nIn hypothesis testing, the null hypothesis is what is tested, and the alternative hypothesis is accepted if the null is rejected. The convention is to\nformulate the hypotheses so that the alternative reflects the \"true\" condition. If the null hypothesis is rejected, the alternative hypothesis is that the\nstatistic does not equal the hypothesized parameter or is greater than or less than the parameter, not that the parameter equals some other\nspecific value.\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 18, "q": "An analyst tests a hypothesis concerning the ranking of the top three portfolio managers this year. If the underlying data are purely ordinal and no return performance data are available, which type of test is most appropriate?", "opts": ["Parametric only", "Nonparametric only", "Either parametric or nonparametric"], "ans": "B", "expl": "Appropriate situations for applying nonparametric tests\nSituation Example\nNo assumptions can be made about the distribution, or data fail to meet a distributional\nDistribution is indeterminate\nrequirement\nTest concerning portfolio manager\nData are given in ranks\nrankings\nTest concerning whether a sample is\nHypothesis does not concern a population parameter\nrandom\nParametric tests concern the hypothesized value of a parameter (eg, mean, variance) and are based on distributional assumptions (eg, normally\ndistributed) (Choice A). For example, a researcher can test for the mean or variance of a population that is assumed to follow a normal\ndistribution.\nUnlike parametric tests, nonparametric tests are used when a hypothesis does not concern the value of a parameter or when few assumptions\nabout the underlying population can be made. Here, the hypothesis concerns the ranking of the portfolio managers.\nThe data provided to the analyst are purely ordinal (ie, listed in order), and no performance data are available to calculate sample estimates (eg,\nmean, variance). Furthermore, no assumptions on the distribution of the data are available. A nonparametric test concerning the ordinal ranking\nof the managers is more appropriate here.\nThings to remember:\nNonparametric tests are used when a hypothesis does not concern the value of a parameter or when there are few or no reasonable assumptions\nabout the underlying population. Nonparametric tests can be used when the underlying data are non-normally distributed, given in ranks, or when\nthe test does not concern a parameter value.\nCompare and contrast parametric and nonparametric tests, and describe situations where each is the more appropriate type of test", "qhtml": null}, {"n": 19, "q": "An analyst wants to measure a mutual fund's performance and volatility against a benchmark and runs a regression where the benchmark is the single independent variable. Selected data for the regression, based on 12 observations, is: Coefficients Standard Error Intercept 0.127 0.022 Benchmark 1.055 0.026 The analyst tests whether the intercept is greater than 0.10 and whether the slope is greater than 1.00. If the critical t-values, with 5% significance, are 2.228 (two-sided) and 1.812 (one-sided), the data most likely supports the hypothesis(es) that:", "opts": ["the intercept is greater than 0.10, and the slope is greater than 1.00.", "the intercept is greater than 0.10, but the slope is not greater than 1.00.", "the intercept is not greater than 0.10, but the slope is greater than 1.00."], "ans": "C", "expl": "Hypothesis testing is used to evaluate the statistical significance of a linear regression by testing the regression coefficients. The t-statistic is\nused to test whether the population intercept (b ) and slope (b ) differ from hypothesized values (ie, if b ≠ B, b > B, or b < B). The test compares\n0 1 i i i i i i\nthe calculated t-statistic with the appropriate critical t-value, which is based on the desired level of significance and degrees of freedom.\nˆ\n(b )\nt-statistics are calculated as the ratio of difference between the estimated coefficient i and its hypothesized value (B i ) to its standard error\n(s )\nˆ . The calculation is presented below:\nbi\nIf the t-statistic (step 4) is greater than the critical t-value, there is evidence that the tested hypothesis is true. Since 2.115 is greater than\n1.812, the analyst can be confident at a 95% confidence level that the regression results in a population slope greater than 1.00.\nIt is important to remember that the test may use different critical t-values depending on the number of sides (tails). This scenario requires a one-\nsided test since it tests both coefficients in a single direction (ie, tests if b > 0.10 and if b > 1.00).\n0 1\n(Choices A and B) There is not enough evidence to infer that the population intercept is greater than 0.10 since 1.227 < 1.812, so although the\nregression model resulted in an intercept greater than 0.10, this test shows that the population intercept could be less than 0.10.\nThings to remember:\nThe t-statistic is the ratio of the difference between the estimated coefficient and its hypothesized value to its standard error. Testing if a\npopulation coefficient is statistically greater (or less) than a hypothesized value (ie, in a single direction) requires the use of a one-sided t-test. If\nthe t-statistic is greater than the critical t-value, there is evidence that the tested hypothesis is true.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 20, "q": "A researcher formulates a null hypothesis stating that a country's average inflation is 2%. After testing a sample, the researcher fails to reject the null hypothesis when the actual average inflation is not 2%. This most likely results in a:", "opts": ["Type I error.", "Type II error.", "correct decision."], "ans": "B", "expl": "Hypothesis testing involves a decision regarding whether to reject a null hypothesis (H ) based on statistical tests. In this question, the null\n0\nhypothesis states that the country's average inflation is 2% (H : μ = 2%). Conversely, the alternative hypothesis states that the country's average\n0\ninflation is not 2% (H : μ ≠ 2%).\na\nThere are two types of errors that can result from the decision to reject or to not reject the null hypothesis:\nType I error: Rejecting the null hypothesis when it is true\nType II error: Failing to reject the null hypothesis when it is false\nHere, the null hypothesis is false since actual average inflation is not 2%. Failing to reject the false null hypothesis in this case results in a Type\nII error.\n(Choice A) A Type I error results from rejecting a null hypothesis when it is true. An example of a Type I error would be the analyst rejecting the\nnull hypothesis (H : μ = 2%) when the actual average inflation is 2%.\n0\n(Choice C) Given the actual situation that the average inflation is not 2% (ie, the null hypothesis is false), the correct decision is to reject the null\nhypothesis (H : μ = 2%).\n0\nThings to remember:\nA Type I error results from rejecting the null hypothesis when it is true. A Type II error results from failing to reject the null hypothesis when it is\nfalse.\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 21, "q": "An analyst has created a regression to verify whether the return on a company's stock is related to its reported free cash flow (FCF) over the prior 30 quarters. Information from the regression is: Regression Output Coefficient Standard Error t-statistic Intercept 37.743 6.745 5.596 FCF 0.085 0.046 1.859 ANOVA Output df Sum of Squares (SS) Mean Square (MS) Regression 1 961.01 961.01 Residual 28 7,784.86 278.03 Total 29 8,745.87 The analyst tests the FCF slope coefficient at a 5% level of significance (α). If the critical t-values at the 5% level of significance are 1.701 for a one-tailed test and 2.048 for a two-tailed test, then the most appropriate null hypothesis and conclusion regarding the FCF slope coefficient is:", "opts": ["H : FCF ≠ 0; reject the null hypothesis. 0", "H : FCF = 0; reject the null hypothesis. 0", "H : FCF = 0; cannot reject the null hypothesis. 0"], "ans": "C", "expl": "Hypothesis testing is used to assess whether a regression coefficient explains the relationship between independent and dependent variables,\ngiven a certain level of significance. In this scenario, the analyst assumes the relationship between the independent and dependent variables is\nstatistically significant, which would suggest a slope coefficient not equal to zero. Therefore, the null hypothesis (H ) is that the slope coefficient is\n0\nzero, and the alternative hypothesis (H ) is that the coefficient does not equal zero (Choice A).\na\nIn this case, H is tested by comparing the t-statistic for the coefficient with a critical t-value (t ), which is the cutoff between rejecting or failing to\n0 c\nreject H . If H is rejected, then\n0 0\nH is accepted,\na\nthe coefficient is statistically significant (ie, is not equal to 0), and\nthe linear regression explains the relationship between the variables.\nThe value of t depends on the significance level, the degrees of freedom, and whether a one-tailed or two-tailed test is used. Since the analyst is\nc\ntesting whether the coefficient differs from zero, not whether it is greater or less than zero, a two-tailed test is required.\nThe test is conducted as follows:\nTherefore, the null hypothesis is not rejected (Choice B). The linear regression as specified does not properly explain the relationship between\nthe independent and dependent variables.\nThings to remember:\nHypothesis testing is used to assess whether a linear regression explains the relationship between independent and dependent variables, given a\ncertain level of significance. The null hypothesis, H , assumes that the condition to be tested is not true, and a t-test is used to verify whether H\n0 0\ncan be rejected.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 22, "q": "A global investment firm claims that its average annual returns exceed 20%. A consultant tests that claim by sampling 20 years of available annual returns. The sample's mean annual return is 24% with a standard deviation of 10%. If the firm's returns are normally distributed, then the rejection point for the null hypothesis at a 0.05 level of significance is closest to:", "opts": ["1.729", "1.789", "2.093"], "ans": "A", "expl": "Hypothesis testing statistically assesses the validity of a claim made about a population. Here, the claim is that average annual returns exceed\n20%. For the claim to be valid, the researcher must reject the null hypothesis that the average annual return is not greater than 20% (H : µ ≤\n0 0\n20%) and accept the alternative hypothesis that the average annual return is greater than 20% (H : µ > 20%).\na 0\nThe rejection point (critical value) is the reference for deciding whether to reject the null hypothesis based on the calculated sample test\nstatistic (eg, a t-statistic value). A t-test is applied to a sample of less than 30 observations drawn from a normally distributed population. The\nrejection point is found by referencing the significance level and the degrees of freedom from a t-table. Here, the rejection point at a 5%\nsignificance level and 19 degrees of freedom is 1.729 for a one-tailed test.\nThe rejection point values become larger as alpha (p) decreases, as illustrated above. This means that it is harder to reject the null hypothesis at\nsmaller levels of significance (ie, significantly more evidence is needed to reject the null hypothesis).\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.\n23. In contrast to a confidence interval, a point estimate refers to a:\n A. specific value.\nB. range of values.\nC. more accurate estimate.\nExplanation\nA point estimate is a specific estimated value for a population parameter. For example, a broker may estimate that the average client account\nsize at the firm is €50,000. Point estimates can be imprecise, so confidence intervals present an alternative way to express parameter estimates.\nA confidence interval establishes the range of possible values that may contain the actual population parameter at a certain probability (ie, degree\nof confidence) (Choice B). For example, a broker may estimate that the average client account size at the firm is between €40,000 and €60,000\nwith 90% certainty. The range of a confidence interval is calculated around the point estimate using standard deviation.\n(Choice C) Point estimates are more specific, not more accurate, than estimates derived from confidence intervals.\nThings to remember:\nA point estimate is a specific estimated value for a population parameter. A confidence interval establishes the range of possible values that may\ncontain the actual population parameter at a certain probability (ie, degree of confidence).\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 23, "q": "In contrast to a confidence interval, a point estimate refers to a:", "opts": ["specific value.", "range of values.", "more accurate estimate."], "ans": "A", "expl": "A point estimate is a specific estimated value for a population parameter. For example, a broker may estimate that the average client account\nsize at the firm is €50,000. Point estimates can be imprecise, so confidence intervals present an alternative way to express parameter estimates.\nA confidence interval establishes the range of possible values that may contain the actual population parameter at a certain probability (ie, degree\nof confidence) (Choice B). For example, a broker may estimate that the average client account size at the firm is between €40,000 and €60,000\nwith 90% certainty. The range of a confidence interval is calculated around the point estimate using standard deviation.\n(Choice C) Point estimates are more specific, not more accurate, than estimates derived from confidence intervals.\nThings to remember:\nA point estimate is a specific estimated value for a population parameter. A confidence interval establishes the range of possible values that may\ncontain the actual population parameter at a certain probability (ie, degree of confidence).\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 24, "q": "An analyst finds that there is significant statistical evidence to suggest that return premiums in the emerging market of Country Y are greater than those of Country X. To finalize an investment decision, the analyst should most appropriately:", "opts": ["based only on the statistical evidence, invest in Country Y.", "also consider economic factors before making an investment in Country Y.", "ignore the statistical evidence and consider economic factors in Country Y."], "ans": "B", "expl": "Investors should consider both statistical results and economic factors when making an investment decision. Statistical evidence can quantitively\nassess the likelihood of success for an investment, whereas economic considerations can further assess incremental risk and costs that may\nerode returns.\nHere, the investor statistically concludes that Country Y has better return premiums than Country X. However, economic considerations pertaining\nto Country Y, such as taxes, transaction costs, or exchange rate fluctuations, may reduce returns. Therefore, the analyst must consider both\nstatistical and economic factors.\nThings to remember:\nInvestors should consider statistical results and economic factors when making economic (ie, investment) decisions. An economic decision is\nbased on the consideration of relevant economic issues after factoring in statistical results. Economic factors may include transaction costs,\ntaxes, currency fluctuations, and political risks.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}, {"n": 25, "q": "A researcher's null hypothesis states that a firm's average annual returns are 20%. After calculating the test statistic, the researcher rejects the null hypothesis when the firm's average annual returns are indeed 20%. This most likely results in a: ", "opts": ["Type I error.", "Type II error.", "correct decision."], "ans": "A", "expl": "Hypothesis testing involves a decision regarding whether to reject a null hypothesis (H ) based on statistical tests. In this question, the null\n0\nH : μ = 20%\nhypothesis states that the firm's average annual returns are 20% ( 0 ). Conversely, the alternative hypothesis states that the firm's\nH : μ ≠ 20%\naverage annual returns are not 20% ( a ).\nThere are two types of errors associated with decision-making surrounding hypothesis testing.\nType I error: Rejecting the null hypothesis when it is true\nType II error: Failing to reject the null hypothesis when it is false\nHere, the null hypothesis is true since average annual returns are actually 20%. Rejecting the true null hypothesis in this case results in a Type I\nerror.\n(Choice B) A Type II error results from not rejecting a null hypothesis when it is false. For example, not rejecting the null hypothesis if the firm's\naverage annual returns are not 20% would be classified as a Type II error.\n(Choice C) Given the actual situation that the null hypothesis is true, the correct decision would have been to not reject the null hypothesis.\nThings to remember:\nHypothesis testing involves a decision regarding whether to reject a null hypothesis (H ) based on statistical tests. A Type I error results from\n0\nrejecting the null hypothesis when it is true. A Type II error results from failing to reject the null hypothesis when it is false.\nExplain hypothesis testing and its components, including statistical significance, Type I and Type II errors, and the power of a test.", "qhtml": null}, {"n": 26, "q": "In hypothesis testing, an increase to the power of the test most likely increases the probability of:", "opts": ["not making a Type I error.", "not making a Type II error.", "calculating an accurate test statistic."], "ans": "B", "expl": "In hypothesis testing, the decision to reject or not reject the null hypothesis can result in different types of errors (ie, Type I or Type II), depending\non whether the null hypothesis is true:\nWhen the null hypothesis is false, the correct decision is to reject the null hypothesis. A Type II error results from failing to reject a false null\nhypothesis. Beta (β) specifies the probability of making a Type II error. The power of the test is the probability of not making a Type II error\n(or 1 – β). All else equal, the greater the power of the test, the greater the probability of not making a Type II error.\nSuppose a null hypothesis states that a country's average inflation is not greater than 2% (H : μ ≤ 2%). The analyst would have made the\n0\nstatistically correct decision if the analyst rejected the null and the actual average inflation is greater than 2% (actual: μ > 2%). Not rejecting the\nnull would have resulted in a Type II error. Increasing the power of the test improves the analyst's chances of making the correct decision and not\nmaking a Type II error.\n(Choice A) Increasing the power of the test decreases the probability of a Type II error but increases the probability of a Type I error.\n(Choice C) The accuracy of the test statistic is based on the data in the underlying sample, not on the power of the test.\nThings to remember:\nA Type II error results from failing to reject a false null hypothesis. Beta (β) specifies the probability of making a Type II error. The power of the\ntest is the probability of not making a Type II error (or 1 – β). All else equal, the greater the power of the test, the greater the probability of not\nmaking a Type II error.\nConstruct hypothesis tests and determine their statistical significance, the associated Type I and Type II errors, and power of the test given a\nsignificance level", "qhtml": null}];
+const CFG = {"title": "Wiley · Hypothesis Testing", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Quantitative Methods · 26 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

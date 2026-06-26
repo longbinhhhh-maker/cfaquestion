@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "The city of Dallas, Texas issues a nine-month bond to finance its operations while it receives property taxes. The bond's principal amount will be paid from the property tax receipts. The issue's interest rate is significantly below market interest rates. Which of the following best describes the bond?", "opts": ["Surety bond", "Money market security", "Sovereign government bond"], "ans": "B", "expl": "Bonds can be classified many ways. A money market security is an example of a bond classified by maturity, as measured by the time between\nthe issue date and maturity date (ie, original maturity). Money market securities have an original maturity of one year or less from the date\noriginally issued. Bonds with an original maturity of more than one year are called capital market securities. The issue in this question has an\noriginal maturity of nine months, so it is considered a money market security.\nMoney market securities mainly refer to short-term debt instruments that are very liquid. The largest issuers tend to be sovereign governments, so\nthe risk of default is very small. For these reasons, these instruments are very similar to cash. The term \"money market\" indicates their status as\na near-cash equivalent.\n(Choice A) A surety bond is not a fixed-income security; it is a financial guarantee provided by an insurance company to ensure payment of\ncoupon interest and principal.\n(Choice C) A sovereign issuer is a national government, such as the United States. Nonsovereign issuers are state and local governments, so a\nbond issued by the City of Dallas is classified as a nonsovereign bond.\nThings to remember:\nA bond with an original maturity of one year or less is a money market security. Money market securities tend to be very short-term, highly liquid\ndebt instruments. Holding them is little different than holding cash. A bond that matures in more than one year from the date of issue is a capital\nmarket security. A sovereign issuer is a national government; nonsovereign issuers are state and local governments.\nDescribe the features of a fixed-income security.", "qhtml": null}, {"n": 2, "q": "Last year, a company issued bonds with a total principal amount of €65 million. The face value of each bond was €5,000. The bonds' price at the end of last year was 101. At the end of last year, the total number of bonds issued was closest to:", "opts": ["12,871", "13,000", "13,130"], "ans": "B", "expl": "A bond represents a contract between a borrower (ie, issuer) and its lenders (ie, bondholders). Face value, principal amount, and par value\nare synonymous terms that refer to the amount that the issuer pays to the bondholders when the bond matures. The number of bonds issued\nequals the total face value of the issuance divided by the face value of an individual bond.\nIn this question, the issuer repays €65 million to the bondholders at maturity. Each bond has a face value of €5,000, so the total number of bonds\nissued equals €65 million ÷ €5,000, or 13,000. The convention is to express the price of a bond as a percentage of its par value. A price quote of\n98 means that the bond is trading at 98% of its par value, whereas 101 indicates that the price is 101% of par value.\nMany factors, such as supply and demand, can cause the price of a bond in a given issue to fluctuate, but the total number of bonds issued does\nnot change. This is similar to a stock offering: if a company sells 1 million shares, the market value of the entire issue increases as the stock's\nprice increases, but the number of shares remains constant at 1 million.\n(Choice A) A bond with a face value of €5,000 that is priced at 101 means that it is trading at €5,000 × 101%, or €5,050. The result of 12,871 is\nreached by dividing €65 million by the bond's price instead of its par value.\n(Choice C) If the bond's €5,000 face value is divided instead of multiplied by 101%, the result is a price of €4,950.495 per bond. Dividing the total\nprincipal amount by this price results in the number of bonds being equal to 13,130.\nThings to remember:\nThe number of bonds in a given issuance does not change, regardless of how the price of the bond fluctuates. The number of bonds issued\nequals the total face value of the issuance divided by the face value of an individual bond.\nDescribe the features of a fixed-income security.", "qhtml": null}, {"n": 3, "q": "Which of the following would most likely be considered a positive covenant for a bond issuer?", "opts": ["To provide audited financial statements on an annual basis", "To refrain from issuing new bonds that are senior to the existing debt", "To impose a limit on disposal of company assets during the bond's term"], "ans": "A", "expl": "Common debt covenants\nNegative covenants Positive covenants\nRestrict borrowers' ability to: Borrowers agree to:\nPay dividends Maintain collateral in good order\nBorrow additional funds Comply with accounting standards\nSell assets Keep ratios at or above lender requirements\nEngage in mergers and acquisitions Pay principal and interest on time\nBond covenants are binding rules for bond issuers that are set as part of the overall bond indenture. They can be classified as either positive or\nnegative. Positive, or affirmative, covenants describe actions that the issuer is required to take during the term of the bond (eg, providing\naudited financial statements on a predetermined schedule).\nNegative covenants describe actions that issuers must refrain from or in some way restrict. Examples include refraining from issuing new bonds\nof higher seniority than the existing bond issuance and agreeing to set a limit on asset disposals during the term of the bond (Choices B and C).\nThings to remember:\nBond covenants are binding rules for bond issuers that are set as part of the overall bond indenture. Positive covenants describe actions that are\nrequired of issuers (eg, pay interest on time), while negative covenants describe actions that issuers must refrain from or in some way restrict (eg,\nno additional borrowing).\nDescribe the contents of a bond indenture and contrast affirmative and negative covenants.", "qhtml": null}, {"n": 4, "q": "An investor purchases a bond that makes coupon payments in JPY, with the principal paid in USD. This bond is best described as a:", "opts": ["Samurai bond.", "dual-currency bond.", "currency option bond."], "ans": "B", "expl": "Dual-currency bond Bond with interest paid in one currency and principal paid in another\nCurrency option bond Bond with principal and interest payable in one of two currencies at the investor's discretion\nBonds are often denominated and issued in one of the world's major currencies to appeal to a broad investor base; however, bonds can be issued\nin any currency. Issuing bonds in a currency other than the currency of the issuer's home country can increase the risk of currency mismatch for\nthe issuer. For example, a Japanese company that operates only in Japan can issue bonds in USD, but if the value of the JPY declines relative to\nthe USD, the debt becomes more expensive to service.\nDual-currency bonds allow issuers to pay interest in one currency while paying principal in another. For example, if a Japanese company\nbuilds a factory in the United States, it can issue a bond to fund the construction. The bond can be structured with interest payments made in JPY\nwhile the factory is being built and with the principal paid in USD using the revenues generated from the new factory.\n(Choice A) A Samurai bond is a foreign bond denominated in JPY and issued in Japan by a non-Japanese company.\n(Choice C) A currency option bond is a bond with principal and interest payable in one of two currencies at the investor's discretion. In essence,\nthe investor owns a bond and a currency option.\nThings to remember:\nDual-currency bonds pay interest in one currency and pay principal in another. A currency option bond is a bond with principal and interest\npayable in one of two currencies at the investor's discretion.\nDescribe the features of a fixed-income security.", "qhtml": null}, {"n": 5, "q": "A promise by an issuer to pay all taxes that it incurs is most likely an example of a(n):", "opts": ["surety bond.", "affirmative covenant.", "internal credit enhancement."], "ans": "B", "expl": "Covenants are legally enforceable promises made by a bond issuer to its bondholders. There are two main types of covenants: affirmative\ncovenants and negative covenants. Affirmative (ie, positive) covenants are actions the issuer is required to perform; negative covenants deal\nwith prohibitions on the issuer's actions.\nAffirmative covenants tend to be administrative in nature. They cover issues such as timely payment of interest and principal, maintenance of\nexisting lines of business, and payment of obligations such as taxes and payroll. Affirmative covenants do not materially affect the issuer's\ndiscretion over how to conduct its business. Negative covenants tend to restrict how the issuer conducts business. Examples of negative\ncovenants include restrictions on paying dividends to shareholders, on disposing assets, or on making certain investments.\n(Choice A) A surety bond is an external credit enhancement provided by insurance companies. While it provides additional protection to\nbondholders, a surety bond is neither an affirmative nor a negative covenant.\n(Choice C) An internal credit enhancement is a process the issuer undertakes that offers further security to the bondholders in addition to the\ncollateral backing the bond. Examples of internal credit enhancements include maintaining reserve accounts of excess cash that can be available\nto the bondholders in case of a default and overcollateralization of the issue.\nThings to remember:\nCovenants can be affirmative, which requires the issuer to take some action, or negative, which prohibits the issuer from taking certain actions.\nDescribe the contents of a bond indenture and contrast affirmative and negative covenants.", "qhtml": null}, {"n": 6, "q": "In a corporate bond indenture, which of the following is most likely a negative covenant?", "opts": ["Prohibiting a bond call before the first call date", "Restricting the issuance of debt senior to existing bond issues", "Limiting interest payments on bonds if profitability fails to meet specified thresholds"], "ans": "B", "expl": "A bond is a contract between the issuer and the bondholders. The rights of the bondholders and obligations of the issuer are itemized in an\nindenture. Indentures include provisions designed to protect the bondholders' interests. These provisions are categorized as:\nAffirmative covenants that require the issuer to take specified actions\nNegative covenants that restrict or prohibit specified actions\nNegative covenants protect bondholders by restricting actions by the issuer that would impair the issuer's ability to pay interest and/or repay\nprincipal. For example, a negative covenant may restrict the issuance of new debt that would be senior to debt already outstanding. Otherwise,\nthe new debt would disadvantage the existing bondholders by creating a more senior claim on the company's assets.\n(Choice A) Call protection, which prohibits calling a bond for a period after issuance, is not considered a negative covenant since it does not\nprevent the issuer from taking action that impairs its ability to repay debt.\n(Choice C) Payment of interest on bonds is a legal obligation for an issuer, so negative covenants would not restrict such payments. However, a\ncommon negative covenant is a limit on distributions to shareholders (eg, cash dividends) if profitability fails to meet specified thresholds.\nThings to remember:\nNegative covenants protect bondholders by restricting actions by the issuer that would impair the issuer's ability to pay interest and repay\nprincipal. One common negative covenant is to restrict the issuance of new debt that would be senior to already outstanding debt and create a\ndisadvantage for existing bondholders.\nDescribe the contents of a bond indenture and contrast affirmative and negative covenants.", "qhtml": null}, {"n": 7, "q": "A floating rate note (FRN) pays coupon interest quarterly on 31 March, 30 June, 30 September, and 31 December. The coupon rate for each payment is calculated as three-month LIBOR plus 50 basis points. Three-month LIBOR was 2.25% on 31 March, 2.50% on 30 June, 2.00% on 30 September, and 2.75% 31 December. The month in which the coupon rate was 2.50% is:", "opts": ["June.", "September.", "December."], "ans": "C", "expl": "Floating rate notes (FRN) are bonds for which the coupon interest can fluctuate during the bond's life (ie, tenor). The interest rate in effect for\neach coupon payment is based on a reference rate such as LIBOR. The actual rate is calculated by adding a spread, measured in basis points\n(bp), to the reference rate.\nUsually, bond interest is paid at the end of each interest period. In this question, the bond pays interest at the end of every three months, so each\ncoupon payment applies to the three-month period that just ended. On September 30, the three-month LIBOR rate was 2.0%. This is the base for\ndetermining December 31's coupon payment. The coupon rate for December 31 is calculated by adding 50 bp (ie, 0.5%) to the September 30\nthree-month rate, the sum of which is 2.5%.\n(Choice A) Three-month LIBOR on June 30 was 2.5%. This is the reference rate, not the coupon rate.\n(Choice B) The coupon rate of 3.0% on September 30 is obtained by adding the 50 bp spread to the June 30 reference rate of 2.5%.\nThings to remember:\nFloating rate notes are bonds with a variable interest rate. The coupon rate for each payment is based on the reference rate that was in effect\nwhen the prior coupon payment was made. A spread is added to the reference rate to determine the actual coupon rate.\nDescribe the features of a fixed-income security.", "qhtml": null}, {"n": 8, "q": "If securities are issued in the structured finance sector, which of the following is most likely the issuer?", "opts": ["A special legal entity holding a collateral pool of securitized assets.", "A nonsovereign government imposing a special tax to repay a bond.", "A business pledging operating assets it owns as collateral on a debt issue."], "ans": "A", "expl": "One way to define fixed-income market sectors is by the type of issuer. Most issuer sectors consist of bonds sold by existing organizations (eg,\ngovernments, corporations) to fund investments or ongoing operations.\nStructured finance refers to securities issued by special legal entities (SLEs) to fund the purchase of an asset portfolio. The asset portfolio's\ncash flows are used to pay the interest and principal on the securities issued by the SLE.\nA sponsor organizes the SLE (eg, trust) and arranges for the transfer of assets (eg, mortgages, auto loans) into the SLE to create a collateral pool\n(ie, asset portfolio). This is the process of asset securitization; the securities issued by the SLE are known as asset-backed securities (ABS).\nOnce assets are transferred to an SLE, the SLE becomes the legal owner, and the original lender no longer has an economic interest in the\nassets.\n(Choice B) Nonsovereign government bonds to be repaid by revenues from a special tax are a type of revenue bond. Such securities are a type\nof traditional debt instrument and are not part of the structured finance sector.\n(Choice C) Company debt with operating assets pledged as collateral is a type of secured bond. Secured bonds are part of the corporate sector\nsince they are direct obligations of the issuing corporation.\nThings to remember:\nStructured finance refers to securities issued by a special legal entity (SLE) created to hold an asset portfolio. The asset portfolio's cash flows are\nused to pay the interest and principal on the securities issued by the SLE. Such securities are known as asset-backed securities (ABS).\nDescribe the features of a fixed-income security.", "qhtml": null}, {"n": 9, "q": "With regard to credit enhancement, cash collateral accounts most likely:", "opts": ["are a form of external credit enhancement.", "expose the investor to greater counterparty risk.", "are pledges of cash from a third-party financial institution."], "ans": "A", "expl": "Bond credit enhancements and uses\nEnhancement Use\nSubordination Senior tranches have priority over junior tranches\nInternal Overcollateralization Issuer pledges assets worth more than the amount borrowed\nReserve accounts Excess cash received from financed asset deposited in a separate account\nSurety bonds Payment guarantees issued by insurance companies\nExternal Letters of credit Guarantees from financial institutions other than insurance companies\nCash collateral accounts Cash deposited by guarantor that issuer can borrow\nCredit risk refers to the risk that a bond's issuer (ie, the borrower) may default in paying interest and/or principal. Credit enhancement is one\nmethod for reducing the credit risk borne by the investor (ie, the lender) and can be categorized as internal or external.\nInternal enhancements are processes undertaken by the issuer to reduce its own credit risk, such as setting aside funds in a reserve account to\ncover potential future cash shortages in servicing debt. External enhancements, such as cash collateral accounts, consist of assurances made\nby third-party financial guarantors (eg, banks).\nIn a cash collateral account, a bank lends money to the issuer, who in turn immediately invests the proceeds in short-term commercial paper. This\ninvestment essentially serves as collateral if the borrower experiences a credit event.\n(Choice B) A cash collateral account reduces the investor's exposure to counterparty (third-party) risk (ie, risk that bank or another guarantor will\nnot meet its obligation) since the issuer immediately invests the borrowed funds into a money market account.\n(Choice C) A cash collateral account contains actual deposits of cash, not just pledges of cash for support in the event of default.\nThings to remember:\nCredit enhancement is one method for reducing the credit risk borne by the investor (ie, the lender). Internal enhancements are processes\nundertaken by the issuer to reduce its own credit risk. External enhancements, such as cash collateral accounts, consist of assurances made by\nthird-party financial guarantors (eg, banks).\nDescribe the contents of a bond indenture and contrast affirmative and negative covenants.", "qhtml": null}, {"n": 10, "q": "The terms in a bond indenture that require the issuer to make interest payments at specific periods are known as:", "opts": ["collateral.", "covenants.", "credit enhancements."], "ans": "B", "expl": "Covenants are legally enforceable promises made by a bond issuer to its bondholders. These promises are set forth in the bond indenture,\nwhich is the legal contract that establishes all rights and obligations of the issuer and bondholders.\nThere are two main types of covenants: affirmative covenants and negative covenants. Affirmative covenants are actions the issuer is required\nto perform; negative covenants address prohibited actions by the issuer. One type of affirmative covenant is the issuer's promise to pay interest\nand principal on the dates required by the bond.\n(Choice A) Collateral consists of assets that the issuer pledges as security for the bonds. Generally, the bond indenture gives the bondholders\nthe right to sell the collateral to satisfy their claims under the bond if the issuer defaults. Collateral can consist of the asset purchased with the\nbond proceeds or other assets (including securities and other bonds).\n(Choice C) Credit enhancements consist of security in addition to any collateral backing the bond. They can be provided by the issuer (ie,\ninternal enhancements) or other entities (ie, external enhancements). Examples include additional collateral and third-party guarantees.\nThings to remember:\nCovenants are legally enforceable promises that establish the rights and obligations of the issuer and the bondholders. Covenants can either\nrequire an issuer to take specific action (ie, affirmative covenants) or prohibit certain actions by the issuer (ie, negative covenants).\nDescribe the contents of a bond indenture and contrast affirmative and negative covenants.", "qhtml": null}, {"n": 11, "q": "Which of the following is least likely a form of internal credit enhancement?", "opts": ["Letter of credit", "Credit tranching", "Reserve account"], "ans": "A", "expl": "Bond credit enhancements and uses\nEnhancement Use\nSubordination Senior tranches have priority over junior tranches\nInternal Overcollateralization Issuer pledges assets worth more than the amount borrowed\nReserve accounts Excess cash received from financed asset deposited in a separate account\nSurety bonds Payment guarantees issued by insurance companies\nExternal Letters of credit Guarantees from financial institutions other than insurance companies\nCash collateral accounts Cash deposited by guarantor that issuer can borrow\nCredit risk refers to the risk that a bond's issuer (ie, the borrower) may default in paying interest and/or principal. Credit enhancement is one\nmethod for reducing the credit risk borne by the investor (ie, the lender). Credit enhancements can be classified as internal or external.\nInternal enhancements are processes undertaken by the issuer to reduce its own credit risk, such as overcollateralization. External\nenhancements (eg, letters of credit) consist of assurances made by third-party financial guarantors, such as banks and other financial\ninstitutions. These institutions can offer letters of credit to borrowers, effectively providing borrowers with a line of credit to draw from when they\nare short on cash to service the loan.\n(Choice B) Credit tranching (ie, subordination) is an internal enhancement that provides senior claimants with priority of cash flows.\n(Choice C) A reserve account is an internal enhancement that entails the borrower setting aside cash reserves to absorb potential cash shortfalls.\nThings to remember:\nInternal enhancements are processes undertaken by the issuer to reduce its own credit risk, such as overcollateralization. External\nenhancements (eg, letters of credit) consist of assurances made by third-party financial guarantors, such as banks and other financial institutions.\nLetters of credit provide issuers with funds when they face short-term cash shortages.\nDescribe the contents of a bond indenture and contrast affirmative and negative covenants.", "qhtml": null}, {"n": 12, "q": "Overcollateralization is a credit enhancement most likely used for:", "opts": ["surety bonds.", "mortgage-backed securities.", "debentures issued by United States issuers."], "ans": "B", "expl": "Bond credit enhancements and uses\nEnhancement Use\nSubordination Senior tranches have priority over junior tranches\nInternal Overcollateralization Issuer pledges assets worth more than the amount borrowed\nReserve accounts Excess cash received from financed asset deposited in a separate account\nSurety bonds Payment guarantees issued by insurance companies\nExternal Letters of credit Guarantees from financial institutions other than insurance companies\nCash collateral accounts Cash deposited by guarantor that issuer can borrow\nFor most secured bonds, the primary source of security is the bond's collateral. Credit enhancement refers to security in addition to collateral.\nInternal enhancement refers to processes undertaken by the issuer to reduce its own credit risk, such as overcollateralization. External\nenhancement consists of assurances made by entities other than the issuer.\nWith overcollateralization, an issuer provides collateral for the bonds that is worth more than the bonds' principal amount. An example is a $50\nmillion bond issue that is collateralized with assets worth $70 million. The bonds are said to be overcollateralized by $20 million.\nOvercollateralization is most frequently used for mortgage-backed securities (MBSs), which are bonds formed from pools of mortgages. Payment\nof interest and principal with an MBS depends on whether the borrowers on the underlying mortgages make timely payments. The excess\ncollateral absorbs losses caused by defaults in those underlying mortgages.\n(Choice A) Surety bonds are issued by insurance companies to guarantee payment of the bonds' principal and interest. They are a type of\nexternal credit enhancement.\n(Choice C) Debentures are generally unsecured bonds (ie, not backed by collateral), so they are unlikely to be overcollateralized.\nThings to remember:\nOvercollateralization is a type of internal credit enhancement typically used for mortgage-backed securities. A surety bond is a type of external\ncredit enhancement. Debentures are generally not backed by any collateral, so they are unsecured.\nDescribe the features of a fixed-income security.", "qhtml": null}, {"n": 13, "q": "In the context of bonds, a cash collateral account is an example of a(n):", "opts": ["covered bond.", "credit enhancement.", "affirmative covenant."], "ans": "B", "expl": "Bond credit enhancements and uses\nEnhancement Use\nSubordination Senior tranches have priority over junior tranches\nInternal Overcollateralization Issuer pledges assets worth more than the amount borrowed\nReserve accounts Excess cash received from financed asset deposited in a separate account\nSurety bonds Payment guarantees issued by insurance companies\nExternal Letters of credit Guarantees from financial institutions other than insurance companies\nCash collateral accounts Cash deposited by guarantor that issuer can borrow\nCredit risk refers to the risk that a bond's issuer may default in paying interest and/or principal. Bondholders try to reduce their credit risk in three\nways: through collateral, covenants, and credit enhancements. Collateral are assets that the issuer pledges as security for payment of interest\nand principal. Covenants are legally enforceable promises that establish the rights and obligations of the issuer and bondholders.\nCredit enhancement refers to security in addition to collateral and comes in two forms. Internal enhancements are processes undertaken by\nthe issuer to reduce its own credit risk, such as overcollateralization. External enhancements consist of assurances made by entities other\nthan the issuer.\nExternal enhancements that consist of guarantees, such as letters of credit or surety bonds, may still expose bondholders to credit risk if the\nguarantor is unable to perform its obligation. A cash collateral account consists of a cash deposit by the guarantor. This reduces the bondholders'\nrisk since the enhancement is not just a promise but an actual cash deposit that the issuer can use.\n(Choice A) A covered bond is secured by collateral (eg, mortgage). During the covered bond's life, the issuer promises to replace collateral if it\ndecreases in value to the point that it provides inadequate security (ie, becomes nonperforming).\n(Choice C) An affirmative covenant is a promise by the issuer to take action with respect to enhancing the bondholders' protection. Bondholders\nmay have legal recourse with respect to breaches of covenant.\nThings to remember:\nCredit enhancements refer to supplemental risk mitigation that an issuer provides in addition to any collateral backing the bond. A cash collateral\naccount is an external enhancement that reduces the issuer's credit risk since it consists of cash on deposit.\nDescribe the contents of a bond indenture and contrast affirmative and negative covenants.", "qhtml": null}, {"n": 14, "q": "A trustee of a bond indenture is most likely appointed by a bond issuer to:", "opts": ["broker the sale of the bonds.", "disburse coupon and principal payments.", "monitor issuer compliance with bond covenants."], "ans": "C", "expl": "Bond trustee\nAppointed by the issuer\nOverview Usually a financial institution with powers of a trustee\nActs in a fiduciary capacity for bondholders\nMonitors issuer compliance with bond indenture\nDuties Acts on behalf of bondholders (eg, issuer missed payment)\nMaintains required records and documentation\nThe bond indenture (ie, trust deed) is the contract that forms the legal basis of a bond issue. The trustee is hired by the issuer to administer\nthe implementation of the contract but has a fiduciary duty to represent bondholders' interests. The trustee is usually a financial institution with\ntrust powers. Trustees have a wide range of responsibilities, such as administrative record-keeping, holding and safeguarding funds, ensuring that\ninvestors' funds are spent for the intended purpose, and representing bondholders' interests in the event of default.\n(Choice A) A bond underwriter guides the issuer through the issuance process, often helping in the selection of the trustee before ultimately\nbrokering the bond issue to investors.\n(Choice B) A paying agent acts as an intermediary, receiving coupon and principal payments from the issuer and disbursing those funds to\nbondholders. This is largely a mechanical/processing role without the legal obligations of the trustee.\nThings to remember:\nThe trustee is hired by the issuer to administer the implementation of the bond indenture but has a fiduciary duty to represent bondholders'\ninterests. A trustee is usually a financial institution. The trustee handles record-keeping, manages custody funds, and protects investors' financial\ninterests, both during the regular course of the bond's life and in the event of default.\nDescribe the contents of a bond indenture and contrast affirmative and negative covenants.", "qhtml": null}, {"n": 15, "q": "With regards to a bond issue, a trust deed can be best described as:", "opts": ["a contract that forms the legal basis of a bond issue.", "the legal restrictions placed on the issuer when a new bond is issued.", "a pledge by a financial institution to provide credit support for a bond issue."], "ans": "A", "expl": "Trust deed or indenture\nLegal contract that forms the basis of a bond issue\nDescription \"Indenture\" more common term in the US and Canada\nDefinition of issuers' obligations and bondholders' rights\nPar value, coupon rates, maturities, and payment dates\nInformation contained Sources of funds that pay the bonds\nCovenants, collateral, credit enhancements\nThe trust deed, also called the bond indenture, is the contract that forms the legal basis of a bond issue. The indenture spells out the rights\nand obligations of both the issuer and bondholder. The indenture identifies the pertinent details of the bond issue, such as par value, coupon\nrates, maturities, and covenants.\n(Choice B) Covenants are one component of the bond indenture. The covenants detail the rights of investors and any legal restrictions (eg,\nrequired collateral, debt restrictions) placed on the issuer.\n(Choice C) A letter of credit is a form of external credit enhancement for a bond in which a financial institution pledges a line of credit to cover any\npotential cash flow shortfall. Such credit enhancements would be explained in the bond indenture.\nThings to remember:\nThe trust deed (or indenture) is the contract that forms the legal basis of a bond issue. The indenture recognizes the issuers' obligations and the\nbondholders' rights. The indenture identifies the pertinent details of the bond issue, such as par value, coupon rates, maturities, and covenants.\nDescribe the features of a fixed-income security.", "qhtml": null}, {"n": 16, "q": "The main difference between a covered bond and other types of asset-backed securities is:", "opts": ["only covered bonds are overcollateralized.", "a covered bond's collateral remains on the issuer's balance sheet.", "the issuer of a covered bond does not substitute for defaulted collateral."], "ans": "B", "expl": "Covered bonds vs. other asset-backed securities (ABS)\nCovered bonds Other ABS\nAssets transferred to special entity\nAssets remain on issuer's balance sheet\nInvestors exposed to credit risk if collateral\nIssuer replaces nonperforming collateral\ndefaults\nA covered bond is a type of asset-backed security (ABS). ABS are bonds secured by collateral consisting of pools of loans, such as auto loans\nand home mortgages. Interest and principal payments on ABS depend on timely interest and principal payments on the underlying loans. If the\nunderlying loans default, the ABS investors risk not receiving interest and principal.\nThe general structure for most ABS issues is that the collateral is transferred to a special-purpose entity that becomes the legal issuer of the ABS.\nBond indentures (ie, contracts that govern the rights and obligations of the issuer and bondholders) generally provide that bondholders can seek\npayment only from the special entity if the ABS defaults. This can limit recovery, since in most cases the special entity has no assets other than\nthe ABS collateral.\nCovered bonds mitigate bondholders' risk in two ways. First, collateral remains on the issuer's balance sheet instead of being transferred to a\nspecial entity, giving ABS investors direct recourse against the issuer. Also, if the ABS collateral is in default, the issuer must replace it with good\ncollateral. This replacement feature is not commonly used in other types of ABS.\n(Choice A) Overcollateralization is an internal credit enhancement in which the issuer pledges collateral worth more than the principal of the\nbonds. It can be used with all types of bonds, not just covered bonds.\n(Choice C) Covered bonds use collateral substitution to protect bondholders against losses from defaults in the collateral.\nThings to remember:\nA covered bond is a type of asset-backed security (ABS). It differs from most types of ABS in that the collateral for the ABS remains on the\nissuer's balance sheet, and the issuer commits to substitute defaulted collateral with good collateral.\nDescribe the contents of a bond indenture and contrast affirmative and negative covenants.", "qhtml": null}, {"n": 17, "q": "A bond with principal and interest payable in either USD or EUR, at the investor's discretion, is best described as a:", "opts": ["Eurodollar bond.", "Dual-currency bond.", "Currency option bond."], "ans": "C", "expl": "Dual-currency bond Bond with interest paid in one currency and principal paid in another\nCurrency option bond Bond with principal and interest payable in one of two currencies at the investor's discretion\nBonds are often denominated and issued in a major currency to appeal to a broad investor base; however, they can be issued in any currency.\nInvestors expose themselves to exchange rate risk by investing in bonds denominated in a currency other than their home currency.\nCurrency option bonds offer investors an alternative to conventional bond structures since they pay both principal and interest in one of two\ncurrencies, at the investor's discretion, which can change from payment to payment. The exchange rate is typically fixed at issuance, giving\nboth investors and issuers some certainty regarding payment amounts.\nA currency option bond structure is desirable for investors who want to hedge exchange rate risk. To compensate the issuer for assuming\nadditional currency risk, the bonds are issued with a lower YTM than conventional fixed-rate bonds.\n(Choice A) A Eurobond is a bond issued in any currency, outside the jurisdiction of any specific country, and named after the currency in which it\nis denominated. For example, a Eurodollar bond is denominated in USD but issued outside the United States by a foreign entity. In this case,\n\"Euro\" refers only to bonds issued outside their home jurisdiction.\n(Choice B) Dual-currency bonds pay interest in one currency and pay principal in another.\nThings to remember:\nA currency option bond pays both principal and interest in one of two currencies, at the investor's discretion, which can change from payment to\npayment. Dual-currency bonds pay interest in one currency and pay principal in another.\nDescribe the features of a fixed-income security.", "qhtml": null}];
+const CFG = {"title": "Wiley · Fixed-Income Instrument Features", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Fixed Income · 17 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

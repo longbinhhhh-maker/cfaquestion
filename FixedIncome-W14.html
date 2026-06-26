@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "An analyst has compiled the following data on a corporate bond: Selected Data Maturity (years) 12 Coupon (%) 5 Price 100 Modified duration 8.94 Convexity 90 The price impact from an instantaneous 80 basis points of spread narrowing is closest to (%):", "opts": ["6.86", "7.15", "7.44"], "ans": "C", "expl": "The price change of a bond is a function of its modified duration, its convexity, and a change in its yield. The yield of a corporate bond is a\nfunction of interest rates and the bond's yield spread. The yield spread is the difference in yields between the corporate bond and a government\nissue of the same maturity, reflecting the greater credit and liquidity risks (ie, spread risk) of the corporate bond. A change in spread can\nsignificantly impact the price of a bond.\nBond prices and yields move in opposite directions. Therefore, narrowing spreads (ie, smaller spreads) positively impact prices and widening\nspreads (ie, larger spreads) have a negative impact. Note that the negative sign in the price impact equation accounts for this inverse relationship.\nPrice impact can be determined by entering the values into the formula:\n(Choice A) 6.86% is the estimated price decline if the spread widens by 80 basis points.\n(Choice B) 7.15% results from approximating price impact (L54761) using only modified duration, which is appropriate for only small changes in\nspreads.\nThings to remember:\nThe price change of a bond is a function of its modified duration, its convexity, and a change in its yield. Bond prices and yields move in opposite\ndirections. Therefore, narrower spreads positively impact prices and widening spreads have a negative impact.\nDescribe macroeconomic, market, and issuer-specific factors that influence the level and volatility of yield spreads\n2.All else being equal, in which of the following situations would a rating agency's bond rating be least likely to reflect the true risk of default?\nA. The issuer paid the rating agency's fee.\n\nB. The issuer may have to pay significant penalties for environmental damage.\nC. The bond is issued by a subsidiary of a holding company that issues its own bonds.\nExplanation\nCredit rating agencies\nAdvantages Disadvantages\nLaws and regulations often require Potential conflicts of interest\nbonds to be rated by rating Market prices are affected by changes in credit\nagencies. risk faster than rating agencies can change their\nRatings are often based on material ratings.\nnonpublic information. Contingent risks (eg, legal, business risks) may\nBoth issuers and specific bonds are not be reflected in ratings.\nrated. Agencies make mistakes.\nRatings allow easy comparison\nacross bonds and issuers.\nRating agencies such as Moody's and S&P provide credit ratings for bonds and issuers that investors can use to compare the default risk of\ndifferent bond investments. One advantage of relying on rating agencies is that they may have access to material nonpublic information that is\nunavailable to investors. However, contingencies that might affect default risk (eg, legal exposure that cannot be accurately determined) may not\nbe reflected in a rating. In such a case, the rating may not indicate the true risk of default.\n(Choice A) The convention is that the issuer pays the agency's fees in the rating process. There are several rating agencies, which raises the\npossibility an issuer might choose the agency likely to bestow the highest rating. However, the curriculum indicates that the \"issuer pays\" model\ndoes not cause ratings to be biased upward.\n(Choice C) A holding company and its subsidiaries may both issue bonds. Cash flows generated by a subsidiary must first be used to service\nthat subsidiary's bonds, and then the cash can be used by the holding company to service its bonds. The subsidiary's bond rating reflects its\ndefault risk independent of bonds issued by the holding company.\nThings to remember:\nRating agencies assess the default risk of bonds and the credit risk of the issuers. Ratings may be based on information that is unavailable to\ninvestors, but they may not reflect contingencies such as legal exposure that cannot be quantified.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 2, "q": "All else being equal, in which of the following situations would a rating agency's bond rating be least likely to reflect the true risk of default?", "opts": ["The issuer paid the rating agency's fee.", "The issuer may have to pay significant penalties for environmental damage.", "The bond is issued by a subsidiary of a holding company that issues its own bonds."], "ans": "B", "expl": "Credit rating agencies\nAdvantages Disadvantages\nLaws and regulations often require Potential conflicts of interest\nbonds to be rated by rating Market prices are affected by changes in credit\nagencies. risk faster than rating agencies can change their\nRatings are often based on material ratings.\nnonpublic information. Contingent risks (eg, legal, business risks) may\nBoth issuers and specific bonds are not be reflected in ratings.\nrated. Agencies make mistakes.\nRatings allow easy comparison\nacross bonds and issuers.\nRating agencies such as Moody's and S&P provide credit ratings for bonds and issuers that investors can use to compare the default risk of\ndifferent bond investments. One advantage of relying on rating agencies is that they may have access to material nonpublic information that is\nunavailable to investors. However, contingencies that might affect default risk (eg, legal exposure that cannot be accurately determined) may not\nbe reflected in a rating. In such a case, the rating may not indicate the true risk of default.\n(Choice A) The convention is that the issuer pays the agency's fees in the rating process. There are several rating agencies, which raises the\npossibility an issuer might choose the agency likely to bestow the highest rating. However, the curriculum indicates that the \"issuer pays\" model\ndoes not cause ratings to be biased upward.\n(Choice C) A holding company and its subsidiaries may both issue bonds. Cash flows generated by a subsidiary must first be used to service\nthat subsidiary's bonds, and then the cash can be used by the holding company to service its bonds. The subsidiary's bond rating reflects its\ndefault risk independent of bonds issued by the holding company.\nThings to remember:\nRating agencies assess the default risk of bonds and the credit risk of the issuers. Ratings may be based on information that is unavailable to\ninvestors, but they may not reflect contingencies such as legal exposure that cannot be quantified.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 3, "q": "An analyst has compiled the following information on three new bond issues: Issuer Industry Moody's Issuer Rating Standard & Poor's Issuer Rating Bond Seniority Bond X Pharmaceutical Aa1 AA+ Senior subordinated Bond Y Utility Baa1 A− Senior unsecured Bond Z Industrial machinery B2 B Senior subordinated Which bond would have the greatest notching adjustment?", "opts": ["Bond X", "Bond Y", "Bond Z"], "ans": "C", "expl": "Notching example for an investment-grade bond issuer\nNotches above (+) or\nSecurity class Seniority ranking\nbelow (−) issuer rating\nSecured debt Secured bonds +1\nSenior unsecured bonds 0\nSenior subordinated bonds −1\nUnsecured debt\nSubordinated bonds −1\nJunior subordinated bonds −1\nEquity Preferred stock −2\nA bond's credit rating reflects the general creditworthiness of the issuer (ie, borrower) and specific factors (eg, collateral, subordination) related to\nthat particular bond. Senior unsecured bondholders are general creditors of the issuer and therefore reflect the issuer's overall creditworthiness.\nCredit rating agencies use notching to indicate whether an individual bond issue merits a higher or lower credit rating than the issuer's senior\nunsecured debt.\nThe notching adjustment is based primarily on a bond's seniority compared to the issuer's other bonds, which indicates its loss-severity risk. For\nexample, since the seniority of a senior subordinated bond ranks below the senior unsecured debt rating, its credit rating is a notch below. This\nprocess continues down the capital structure as each bond issue, in order of declining creditworthiness, is rated a notch below a more senior\nissue.\nNotching for investment-grade bonds (eg, Bonds X and Y) tends to be very incremental (eg, ± 1 notch) since the default risk of these bonds is low\n(Choice A). Default risk and loss-severity risk increase in lower-rated issues (ie, high-yield/junk bonds), so greater notching adjustments are\nused. For bonds that are not investment-grade (eg, Bond Z), the rating adjustment for subordinated and junior debt classes is often two notches\nlower.\n(Choice B) Bond Y is a senior unsecured bond (reflecting the overall creditworthiness of the issuer), so it is a base by which related company\nbonds can be judged. There is no notching adjustment for this bond.\nThings to remember:\nCredit rating agencies use notching to indicate whether an individual bond issue merits a higher or lower credit rating than the issuer's senior\nunsecured debt. Default risk and loss-severity risk increase in lower-rated issues, so greater notching adjustments are used.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 4, "q": "If a debt security has a higher credit rating than its issuer, it is most likely due to:", "opts": ["a bond indenture that includes few covenants restricting issuer operating flexibility.", "an indenture provision that grants a second lien claim on company-owned property.", "market expectations that rating agencies intend to upgrade the issuer's credit rating."], "ans": "B", "expl": "Investment grade credit ratings\nStandard &\nMoody's Fitch\nPoor's\nAaa AAA AAA\nAa1 AA+ AA+\nAa2 AA AA\nAa3 AA− AA−\nA1 A+ A+\nA2 A A\nA3 A− A−\nBaa1 BBB+ BBB+\nBaa2 BBB BBB\nBaa3 BBB− BBB−\nCredit ratings reflect both the probability of default and severity of loss in case of default. The probability of default is usually similar for each of an\nissuer's bonds due to the prevalence of cross-default clauses. Cross-default clauses specify that a default on any single bond issue is considered\na default on all of an issuer's bonds.\nRating agencies sometimes give individual debt issues credit ratings that differ from the company's general credit rating. Any difference in\nratings reflects an issue's seniority ranking and whether the bonds are secured by company assets (ie, second lien). Having valuable assets\npledged as collateral often results in a bond having a higher credit rating than its issuer. The process for establishing different ratings for\nindividual issues in known as notching.\n(Choice A) Less restrictive covenants cause a bond to be riskier than would otherwise be the case.\n(Choice C) Market expectations of a credit rating upgrade would likely cause all the issuer's bonds to increase in value. However, anticipation of\nan issuer rating change would not explain an existing difference between an issue and the issuer rating.\nThings to remember:\nIndividual debt issues sometimes have higher or lower credit ratings compared to the general credit rating of the issuing company. Rating\ndifferences reflect an issue's seniority ranking and the value of any assets pledged as collateral.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 5, "q": "In credit analysis, the size of the notching adjustment for the rating on a corporate bond issue is most likely:", "opts": ["unrelated to the issuer's reference credit rating.", "directly related to the issuer's reference credit rating.", "inversely related to the issuer's reference credit rating."], "ans": "C", "expl": "Notching guidelines relative to credit rating\nSecurity class Seniority ranking Ba2 or higher Ba3 or lower\nSecured debt Secured bonds +1 +1\nSenior unsecured bonds 0 0*\nSenior subordinated bonds −1 −2\nUnsecured debt\nSubordinated bonds −1 −2\nJunior subordinated bonds −1 −2 or −3\nEquity Preferred stock −2 −3 or −4\n*The reference rate for issuers rated Ba3 or lower may be either the senior unsecured debt\nrating or the corporate family credit rating.\nSource: Moody's Investors Service\nBond credit ratings are based on expected losses from default, which reflect estimates of default probability and the severity of loss in case of\ndefault. A bond's rating reflects both the general creditworthiness of the issuer and issue-specific factors (eg, collateral, subordination). Notching\nis the rating agencies' process for determining the rating on individual issues relative to the issuer's reference credit rating, which is typically\nthe rating on the issuer's senior unsecured debt or the corporate family credit rating.\nThe image above illustrates the notching guidelines and shows how notching adjustments are inversely related to a company's reference credit\nrating. The smaller notching adjustments for issuers with higher credit ratings reflect the much lower probability of default. The probability of\ndefault by lower-rated issuers is much higher, so their issues require larger notching adjustments to capture the greater risk exposure (Choices A\nand B).\nThings to remember:\nBond credit ratings are based on expected losses resulting from default, which reflect both the general creditworthiness of the issuer and issue-\nspecific factors. Notching adjustments are inversely related to an issuer's reference credit rating. Therefore, the debt of issuers with higher credit\nratings will have smaller notching adjustments due to the lower exposure to credit risk.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 6, "q": "The process for assigning different credit ratings for individual bond issues versus the issuer's credit rating is best described as:", "opts": ["notching.", "credit migration.", "spread widening."], "ans": "A", "expl": "Notching is the rating agency process for establishing credit ratings on individual bond issues that differ from the issuer's credit rating. Any\ndifference reflects issue-specific factors that improve or worsen credit quality. The image above shows one rating agency's notching guidelines.\nCredit ratings reflect both the probability of default and the severity (ie, amount) of loss in case of default. Default probability is usually similar for\neach of an issuer's bonds due to cross-default clauses, meaning that a default on any bond issue is considered a default on all the issuer's bonds.\nDifferences in ratings on individual issues result from seniority ranking and the value of any assets pledged as collateral. These factors impact the\nseverity of loss on different issues if a default occurs.\n(Choice B) Credit migration refers to the risk of a decline in an issuer's creditworthiness that ultimately results in a credit rating downgrade.\n(Choice C) Spread widening refers to an increase in a bond's YTM relative to a benchmark government bond.\nThings to remember:\nNotching is the rating agency process for establishing individual bond credit ratings that differ from the issuer's rating. Issue-specific factors that\nimpact credit quality relate to relative seniority ranking and the value of assets pledged as collateral. These factors impact the severity of loss on\ndifferent issues in case of default.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 7, "q": "The type of debt security most likely to have a credit rating the same as the issuer's is:", "opts": ["secured.", "senior unsecured.", "senior subordinated."], "ans": "B", "expl": "Bond credit ratings reflect the general creditworthiness of the issuer (ie, borrower) and issue specific factors (eg, collateral, degree of\nsubordination). Notching is the process that rating agencies use to determine whether an individual issue merits a higher or lower credit rating\nthan its issuer. The image above indicates how agency notching guidelines scale up or down from the company's rating. The differential for senior\nunsecured debt is 0.\nSenior unsecured bondholders are general creditors of the issuer. Such debt is backed by the issuer's obligation to pay interest and principal.\nThis gives senior unsecured debtholders a general claim on the cash flow and assets of the issuer but no priority regarding specific assets. Their\ncredit risk reflects the overall creditworthiness of the borrower, so senior unsecured bonds usually have the same rating as the issuer.\n(Choice A) Secured bonds entail a priority claim against specific assets pledged as collateral. Secured bonds often have a higher credit rating\nthan the issuer.\n(Choice C) Senior subordinated debt is contractually junior to senior unsecured debt. The lower seniority ranking means senior subordinated\ndebt often has a lower credit rating than the issuer.\nThings to remember:\nSenior unsecured bondholders are general creditors of the issuer. Such debt is backed by the issuer's obligation to pay interest and principal,\ngiving the holders a general claim on cash flow and assets. Their credit risk reflects the overall creditworthiness of the borrower, so senior\nunsecured bonds usually have the same rating as the issuer.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 8, "q": "Which of the following factors is most likely to result in a narrowing of corporate bond yield spreads?", "opts": ["Falling government bond yields", "Strengthening economic conditions", "Increasing supply of new-issue corporate debt"], "ans": "B", "expl": "Corporate bonds have more credit and liquidity risk than government bonds. Yield spread, the difference between YTMs on same-maturity\ngovernment and corporate bonds, reflects the market's pricing of those risks. Yield spreads narrow when investors perceive that corporate bonds\nare relatively less risky.\nWhen analyzing spreads and assessing how they are likely to change, corporate yield spreads are typically disaggregated into two elements: a\ncredit spread and a liquidity premium. A stronger economy implies increased revenue and operating profits. Higher operating profits mean\ncompanies are less likely to default. This leads to a narrowing of credit spreads, and by extension, a narrowing of yield spreads.\n(Choice A) The direction of government bond yield changes does not provide any direct information on corporate yield spreads.\n(Choice C) An increase in the supply of corporate bonds typically results in wider yield spreads. An increased supply of corporate bonds tends to\ndepress their prices. Lower prices result in higher yields. Other things being equal, this results in wider spreads of corporate over government\nbond yields.\nThings to remember:\nCorporate bond yield spreads narrow when investors perceive corporate bonds as relatively less risky compared to government bonds.\nStrengthening economic conditions reduce investor concerns over credit risk. Credit spreads are a component of corporate yield spreads, so a\nreduction in credit risk leads to a reduction in yield spreads.\nDescribe credit risk and its components, probability of default and loss given default.", "qhtml": null}, {"n": 9, "q": "When analyzing the credit risk of a bond issue, the expected loss can most likely be estimated knowing only the bond's:", "opts": ["spread risk and loss severity.", "downgrade risk and recovery rate.", "default probability and loss severity."], "ans": "C", "expl": "Rating agencies' assessments of credit risk reflect the expected loss that results from a borrower (ie, bond issuer) default. The two elements of\ncredit risk are default probability and loss severity:\nDefault probability is the estimated likelihood of a default occurring.\nLoss severity is an estimate of the decrease in value of the bondholder's claim (ie, principal and any past-due coupons) in the event of a\ndefault.\nExpected loss is estimated as the product of two factors: default probability and loss severity, where loss severity equals 1 − Recovery rate.\nThe terms loss severity, loss given default, and loss severity given default are used interchangeably, and whichever expression is used is equal to\n1 − Recovery rate.\n(Choices A and B) Spread risk (ie, change in the difference of a bond's YTM versus a benchmark yield) and downgrade risk (ie, potential of a\nbond's credit rating being reduced) reflect possible changes in a bond's credit quality, but neither directly measures default probability.\nThings to remember:\nThe two elements of credit risk are the probability of a default and the severity of loss if a default occurs. Bondholder losses from default are\nestimated by multiplying default probability by loss severity (1 − Recovery rate).\nDescribe credit risk and its components, probability of default and loss given default.", "qhtml": null}, {"n": 10, "q": "Analysts evaluating the credit risk of AA/Aa2-rated issuers tend to place most emphasis on:", "opts": ["asset values.", "probability of default.", "severity of loss in default."], "ans": "B", "expl": "Credit risk and analysis\nElements of risk Focus of analysis Relevant companies\nCapacity High quality\nDefault probability\n(Operating cash flow sufficiency) (Rated AA/Aa2 or higher)\nSeverity of loss Collateral Low quality/distressed\n(in event of default) (Value of asset versus debt levels) (Rated B or lower)\nThe two elements of credit risk are default probability and loss severity if default occurs. The credit quality of the issuer determines the relative\nimportance of each element for credit analysis. For very high-quality issuers, the focus of analysis is on default probability.\nTriple A– and double A–rated companies almost never default. Consequently, the evaluation of highly rated companies concentrates on whether\nthe rating is deserved and can be maintained. The analysis focuses on the ability to generate cash flow well in excess of the amounts necessary\nto make timely debt service payments (ie, capacity). As long as a double- or triple-A rating is maintained, the default probability is near 0%. If\nthere is no probability of default, default-related losses are not considered when evaluating a bond.\n(Choices A and C) Issuers rated single B or lower default at significantly higher rates. The annual average default rate is approximately 3% and\nspikes dramatically higher (often well above 10%) during economic downturns. The credit analysis of such companies must account for the\npotential for default-related losses, including the degree to which collateral (asset values) may mitigate losses.\nThings to remember:\nThe two elements of credit risk are the probability of default and the severity of loss if default occurs. The higher the rating of the issuer, the\ngreater the emphasis on the probability of default and the maintenance of the higher rating. If the capacity to service debt is deemed great\nenough, the probability of default is near 0%, so default-related losses are inconsequential.\nDescribe credit risk and its components, probability of default and loss given default.", "qhtml": null}, {"n": 11, "q": "In the event of a default, a bondholder's expected loss is most appropriately expressed as:", "opts": ["Par value × [Probability of default × (1 − Recovery rate)] ÷ ×", "Par value [Probability of default (1 − Recovery rate)] × ×", "Market value [Probability of default (1 − Recovery rate)]"], "ans": "A", "expl": "The two elements of credit risk are the probability of a default and the severity of loss when a default occurs. Default probability is an estimate of\nthe likelihood of a default occurring. Loss severity is an estimate of the decrease in value of the bondholder's claim in the event of a default.\nNote that loss estimates are made relative to the par value, not the market price (Choice C).\nAs shown in the image above, losses are estimated by multiplying default probability by loss severity (ie, 1 − recovery rate) and can be\nexpressed as a percentage or an amount of money. Typically, credit quality deteriorates and market values decline for years before a default.\nWhen a default occurs, price declines are usually much smaller than the amounts estimated by formulas.\n(Choice B) This formula incorrectly divides (rather than multiplies) par value by the product of default probability and loss severity.\nThings to remember:\nThe two elements of credit risk are the probability of a default and the severity of loss when a default occurs. Bondholder losses from default are\nestimated by combining default probability with loss severity (ie, 1 − recovery rate). Loss estimates are relative to the par value, not the market\nprice.\nDescribe credit risk and its components, probability of default and loss given default.", "qhtml": null}, {"n": 12, "q": "Which of the following risks is least likely to impact yield spreads between corporate and government bonds?", "opts": ["Credit risk", "Inflation risk", "Liquidity risk"], "ans": "B", "expl": "Corporate bonds trade at higher YTMs than government bonds of the same maturity. The difference in yields, or the yield spread, reflects the\ngreater credit and liquidity risks of corporates. The yield spread is calculated by finding the difference in yields on the same maturity bonds:\nInflation risk is reflected in the nominal risk-free rate (ie, government bond yield) from which the spread is calculated. Inflation risk is not a\ncomponent of the yield spread. Regardless of the source of funds, changes in the price level (ie, inflation) impact the purchasing power of\nmoney to the same degree. It makes no difference whether the money was received from holding a corporate bond or a government bond.\n(Choice A) Credit risk is reflected in corporate bond yields. Compared to governments, corporations face greater uncertainty regarding their\nability to make debt payments. Government bonds are usually default risk-free.\n(Choice C) Due to the size of the markets and the volume of trading, government bonds are more liquid than same-country corporate bonds.\nEspecially in periods of financial stress, when liquidity for even high-credit-quality corporate debt is greatly diminished, there are usually ready\nbuyers for major country government bonds.\nThings to remember:\nCorporate bonds trade at higher YTMs than same-maturity government bonds. The yield spread (ie, difference in yields) is due to the greater\ncredit and liquidity risk of corporate bonds compared to government bonds. Inflation risk is not a component of the yield spread. It is a component\nof the nominal risk-free rate from which the spread is calculated.\nDescribe credit risk and its components, probability of default and loss given default.", "qhtml": null}, {"n": 13, "q": "Which of the following best describes loss severity for a debt instrument?", "opts": ["Loss given default −", "One default rate", "Par value × default probability"], "ans": "A", "expl": "Credit risk refers to the expected financial loss that occurs if a bond issuer defaults in paying interest and/or principal. Expected loss comprises\ntwo components, the probability that a default occurs and the severity of the loss. Loss severity, also known as loss given default, is the\nportion of a bond's value, including unpaid interest, that a bond investor loses when an issuer defaults:\nLoss severity = (1 − recovery rate)\nThe recovery rate is the principal amount recovered in a default, expressed as a percentage of par. When defaults do occur, the severity of the\nloss can range from a total loss to a complete recovery of principal and interest.\n(Choice B) Loss severity is expressed as (1 − recovery rate), not (1 − default rate).\n(Choice C) Loss severity is expressed as (1 − recovery rate), not (par value × default probability).\nThings to remember:\nLoss severity, also known as loss given default, is the portion of a bond's value, including unpaid interest, that a bond investor loses when an\nissuer defaults. Loss severity is expressed as (1 − recovery rate).\nDescribe credit risk and its components, probability of default and loss given default.", "qhtml": null}, {"n": 14, "q": "A company's bonds are currently trading at a lower YTM than bonds with similar maturities but have the same credit rating as those other bonds. Based only on this information, the most appropriate conclusion by market participants is that rating agencies are:", "opts": ["underestimating the company's probability of default.", "overestimating the bonds' recovery rate in event of default.", "slower to recognize the company's improving credit quality."], "ans": "C", "expl": "Bond market values can adjust immediately as traders react to new information. Therefore, changes in issuer credit quality are quickly reflected\nin bond YTMs. Conversely, agency credit ratings result from a much slower, multistep process, involving the bond's rating by a team of analysts\nand approval by a rating committee.\nThis timing difference means that credit quality changes are likely to be recognized by the market well before being reflected in a revised credit\nrating. A lower yield on a company's bonds compared to other bonds of the same credit rating and maturity most likely means that the company's\ncredit quality has improved. The reduced credit risk is reflected by the lower YTM in the market before it is recognized in a credit rating\nupgrade.\n(Choice A) If rating agencies underestimate the default probability, then the market expects a greater probability of default and demands higher\n(not lower) YTMs, compared to similar bonds, to compensate for the greater risk.\n(Choice B) If rating agencies overestimate the recovery rate (and consequently underestimate loss severity), then the market expects larger\nlosses from default than is reflected in the credit rating. Larger expected losses make bonds less valuable and result in higher (not lower) YTMs,\ncompared to similar bonds.\nThings to remember:\nMarkets can immediately revalue bonds and adjust their YTMs in response to new information. Credit ratings change only after a formal process,\nincluding revaluation of creditworthiness. Consequently, credit rating changes tend to lag the market in recognizing changes in credit quality.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 15, "q": "The best reason to avoid overreliance on credit ratings is that ratings:", "opts": ["tend to be static.", "usually lead market prices.", "do not capture all types of risk."], "ans": "C", "expl": "Credit rating agencies\nAdvantages Disadvantages\nLaws and regulations often require Potential conflicts of interest\nbonds to be rated by rating Market prices are affected by changes in credit\nagencies. risk faster than rating agencies can change their\nRatings are often based on material ratings.\nnonpublic information. Contingent risks (eg, legal, business risks) may\nBoth issuers and specific bonds are not be reflected in ratings.\nrated. Agencies make mistakes.\nRatings allow easy comparison\nacross bonds and issuers.\nMajor rating agencies provide credit ratings that bond investors perceive as reliable measures of risk for a bond issuer or issuance. However,\ninvestors should avoid relying excessively on credit ratings since they have several limitations.\nRating agencies' credit analyses capture a variety of risks that impact the issuer, but several types of risk (eg, litigation, environmental) are more\ndifficult to anticipate or quantify. These risks often are not completely captured in credit ratings. Investors should not assume that ratings\nfully and accurately reflect all risks.\n(Choice A) Ratings may update more slowly than market prices, but they tend to be updated regularly. A bond's ratings can migrate considerably\nfrom issuance to maturity. Investors should not assume ratings will remain static (ie, unchanged).\n(Choice B) Circumstances that affect bond valuations will be reflected quickly in a bond's market price. Ratings are updated less frequently than\nmarket prices; therefore, ratings tend to lag (rather than lead) the market's view on a bond's credit risk.\nThings to remember:\nBond investors view credit ratings as an accurate representation of an issuer's credit risk; however, ratings have limitations. For example, they do\nnot capture risks that are difficult to quantify; tend to lag, not lead, the market; and can change considerably between issuance and maturity.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 16, "q": "If a company issued a senior subordinated bond with a B2 rating, which of the following is most likely to be its issuer rating?", "opts": ["Ba3", "B2", "B3"], "ans": "A", "expl": "Rating agencies consider priority of claims, along with other criteria, when rating borrowers' bond issues. Ratings on senior unsecured\nbonds reflect the issuer's creditworthiness, so they generally have the same rating as the bond issuer. Other issues are typically subordinated\nand their ratings are lower, reflecting their lower priority.\nRating agencies use notching to set issue ratings. The issuer rating is the starting point, and the bond ratings are \"notched\" (ie, adjusted)\nbased on where each issue ranks in the priority of claims. Lower-rated issuers have a greater default risk, so agencies apply larger adjustments\nto reflect the higher risk in their subordinated issues.\nIn this question, the subordinated bond has a B2 rating. Due to priority of claim, the rating agency would have adjusted down from the rating of\nthe senior unsecured debt to arrive at this rating. Therefore, the issuer rating is most likely higher. Therefore, the issuer rating would be Ba3.\n(Choice B) B2 is the same rating as the subordinated debt, but the issuer rating is most likely higher in this case.\n(Choice C) B3 is lower than the current rating for the subordinated debt. The issuer rating is typically rated higher, not lower, than subordinated\ndebt.\nThings to remember:\nRating agencies use a process called notching to set issue ratings. This relies on using issuer ratings as a starting point and adjusting based on\npriority of claims to rate bonds. The adjustment varies according to the issuer's creditworthiness, with larger adjustments typically applied to the\nsubordinated debt of lower-quality issuers.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}, {"n": 17, "q": "The risk that a bond's credit rating might decline is best described as:", "opts": ["credit spread risk.", "credit duration risk.", "credit migration risk."], "ans": "C", "expl": "Credit ratings\nStandard & Poor's Moody's\nAAA Aaa\nAA Aa\nInvestment grade A A\nBBB Baa\nBB Ba\nB B\nCCC Caa\nBelow investment grade CC Ca\nC C\nD D\nCredit ratings reflect both the probability of default and the severity of loss in case of default. The lower the credit rating, the greater the\nexpected loss if default occurs. Credit migration risk describes the risk associated with a bond's credit rating being lowered.\nBond investors are very sensitive to credit migration risk since losses due to declines in creditworthiness can be substantial. Although market\nvalues typically move in advance of rating changes, yield increases due to declines in credit quality can be tens or hundreds of basis points.\n(Choice A) Credit spreads are the portion of the corporate yield spread above benchmark government bonds that reflect the greater credit risk of\ncorporate securities. Credit spreads widen as markets perceive worsening creditworthiness, but credit spread risk is not used to describe the risk\nof a credit rating downgrade.\n(Choice B) Credit duration can be used to estimate the impact on a bond's price due to a change in its credit spread. However, credit duration is\nnot used to describe the risk of a credit rating downgrade.\nThings to remember:\nCredit ratings reflect both the probability of default and the severity of loss in case of default. The lower the credit rating, the greater the expected\nloss if default occurs. Credit migration risk describes the risk associated with a bond's credit rating being lowered.\nDescribe credit risk and its components, probability of default and loss given default.", "qhtml": null}, {"n": 18, "q": "All else being equal, if an issuer has less publicly traded debt outstanding than other comparable companies, then most likely the company's bonds will have:", "opts": ["more interest rate risk.", "less market liquidity risk.", "a greater market liquidity premium."], "ans": "C", "expl": "Credit-related risks\nType of risk Attributed to\nDowngrade risk (credit migration risk) Drop in issuer's creditworthiness\nLower-quality bonds\nMarket liquidity risk Smaller size of the issuer (ie, issuer has less publicly traded\ndebt outstanding)\nCredit-related risks (eg, downgrade risk, market liquidity risk) increase yield spreads and decrease bond prices. Downgrade risk refers to the\nworsening of the issuer's creditworthiness. Market liquidity risk refers to potential discrepancies between a bond's actual transaction (buy/sell)\nprice and the observed market price.\nMarket liquidity risk is impacted by the issuer's amount of publicly traded debt outstanding (issuer size) and credit quality. In general, lower-quality\nbonds and smaller issuer size lead to less frequent trading, and thus greater market liquidity risk (Choice B). Investors demand a higher liquidity\npremium, which results in a higher yield and lower price.\n(Choice A) Interest rate risk is tied to general interest rate changes in the macroeconomy, not to credit risk specific to an issuer.\nThings to remember:\nIn general, lower-quality bonds and smaller issuer size lead to less frequent trading, and thus greater market liquidity risk. Market liquidity risk\nrefers to potential discrepancies between a bond's actual transaction (buy/sell) price and the observed market price.\nDescribe credit risk and its components, probability of default and loss given default.", "qhtml": null}, {"n": 19, "q": "Credit spreads are most likely to widen if:", "opts": ["equity markets are declining.", "the economy is strengthening.", "corporate bond issuance is declining."], "ans": "A", "expl": "Corporate bonds trade at higher YTMs than government bonds of the same maturity, reflecting the greater risk of corporate securities. The\ndifference in yields, the yield spread, has a credit risk component (ie, credit spread) and a liquidity risk component (ie, liquidity premium). Credit\nspreads widen when investors perceive that corporate bonds have become relatively riskier compared with government securities.\nDeclining equity values result in a general increase investor risk aversion. Persistent drops in equity values usually precede weakening economic\nconditions, which typically results in worsening credit conditions. This set of factors causes investors to reduce their holdings of corporate bonds\nand hold larger amounts of default risk-free government debt. The result is a widening of credit spreads.\n(Choice B) Strengthening economies usually result in increased operating income, reducing investor concerns about credit risk. Credit spreads\nnarrow.\n(Choice C) Holding demand constant, reduced supply (ie. declining issuance) generally results in higher prices. Higher bond prices result in\nlower yields and narrower credit spreads.\nThings to remember:\nCredit spreads widen when investors perceive increased risk exposure in holding corporate bonds in comparison to default risk-free government\nbonds. Declining equity markets often precede or coincide with a worsening of several factors that heighten investor concerns about risk, leading\nto wider credit spreads.\nDescribe credit risk and its components, probability of default and loss given default.", "qhtml": null}, {"n": 20, "q": "Bond market price adjustments reflecting a company's deteriorating credit quality are most likely to:", "opts": ["lag credit rating downgrades.", "coincide with credit rating downgrades.", "precede credit rating downgrades."], "ans": "C", "expl": "Markets can reprice assets continuously in response to new information. Large numbers of bond traders and portfolio managers constantly\nreassess the value of publicly traded bonds. New information indicating an issuer's deteriorating credit quality causes many investment\nprofessionals to sell immediately to avoid larger losses in the long run (or to profit from short selling when possible). These actions result in bond\nprices adjusting almost immediately.\nCredit ratings are the considered opinions of rating agencies. A credit rating team contains a handful of analysts. They must take time to gather\nand analyze the data before presenting a recommendation to a rating committee. Ratings can be changed only after completing a formal\nprocess. The consequence is that market price changes almost always precede formal announcements of credit rating changes.\nThings to remember:\nMarkets can reprice assets immediately in response to new information. Credit ratings can change only after a formal process that entails a\nreanalysis of a company's creditworthiness. Consequently, market price changes almost always precede formal announcements of credit rating\nchanges.\nDescribe the uses of ratings from credit rating agencies and their limitations.", "qhtml": null}];
+const CFG = {"title": "Wiley · Credit Risk", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Fixed Income · 20 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "An analyst owns a bond portfolio made up of the following two bonds: Bond A Bond B Par value (SAR) 30,000,000 50,000,000 Yield-to-maturity (%) 6.26 9.06 Market value (SAR) 29,300,000 25,400,000 Macaulay duration 2.7 19.2 The analyst uses the following assumptions: There is no accrued interest. Market values are full prices. Coupons are paid semiannually. YTMs are stated on a semiannual bond basis. Macaulay durations are annualized. Calculated using the most common method, the average annual portfolio modified duration is closest to: ", "opts": ["9.93", "10.36", "12.46"], "ans": "A", "expl": "Two methods of calculating bond portfolio duration\nMethod Description Limitation Commonly used\nWeighted average of modified Assumes the yield curve shifts Less accurate but more practical\ndurations of each bond in the are parallel Yes\nportfolio\nWeighted average time to Treats entire bond portfolio as a Less practical but more accurate\nreceipt of aggregate portfolio single bond No\ncash flows\nPortfolio duration can be used as a linear estimate of interest rate risk (ie, the change in the market value of a bond portfolio based on a change in\nyields). There are two methods to calculate portfolio duration (shown above). In practice, the average of the modified durations of each bond\nin the portfolio, weighted by the market value of each bond, is used to approximate the bond portfolio duration using the following equation:\nIn this scenario, since the Macaulay duration of each bond is given, first calculate the modified durations:\nThe total market value of the portfolio is 54,700,000 (= 29,300,000 + 25,400,000), so:\nThe main drawback of this method is that the duration estimate obtained assumes that yields at different times to maturity along the yield curve all\nchange by the same amount, which rarely occurs in practice. Therefore, this measure of bond portfolio duration is only an estimate of the actual\nbond portfolio duration.\n(Choice B) 10.36 is the result of incorrectly using the Macaulay duration instead of the modified duration in the formula for the portfolio modified\nduration.\n(Choice C) 12.46 is the result of incorrectly weighting by the par value of each bond, not their market value.\nThings to remember:\nThe most common method to estimate the duration of a bond portfolio is to calculate the weighted average of the modified durations of each bond\nin the portfolio. This method approximates the more accurate (but less common) method of treating the entire bond portfolio as a single bond with\nthe cash flows of the bond portfolio.\nCalculate portfolio duration and convexity and explain the limitations of these measures.", "qhtml": null}, {"n": 2, "q": "A noncallable bond's market value decreases by $4,832 when its yield changes by 0.15%. The price change is due only to the effects of duration and convexity. If the convexity adjustment is $191, then the bond's money duration is closest to:", "opts": ["−$3,348,666.67", "$3,221,333.19", "$3,348,666.67"], "ans": "C", "expl": "Money duration and money convexity can be used to estimate a change in the price of a bond in currency terms based on a change in its yield-to-\nmaturity (YTM). If the bond is noncallable, then the relationship between YTM and price is represented by the convex curve above. The bond's\nprice change due only to its duration is the linear approximation above.\nTo estimate the change in the bond's price due to both money duration and money convexity, combine the two effects as follows:\nPrice change estimate: money duration and money convexity\nIn this question, the price decreases, so the yield increases. Substitute the price change, yield change, and convexity adjustment into the\nequation and rearrange to solve for the money duration:\n(Choice A) −$3,348,666.67 results from leaving out the negative sign before the (MoneyDur × ∆Yield) term in the formula for price change. The\nnegative sign before this term reflects the fact that although money duration is stated as a positive number, its effect on the bond's price, when the\nyield increases, is negative.\n(Choice B) $3,221,333.19 results from substituting 191 into the formula as the bond's money convexity. However, 191 is the entire convexity\neffect: 191 = [1/2 × MoneyCon × (∆Yield)2].\nThings to remember:\nMoney duration and money convexity can be used to estimate a change in the price of a bond in currency terms based on a change in its yield-to-\nmaturity.\nCalculate portfolio duration and convexity and explain the limitations of these measures.", "qhtml": null}, {"n": 3, "q": "A bond portfolio is made up of the following three bonds: Bond X Bond Y Bond Z Price (EUR) 55.00 92.50 98.00 Market value (EUR) 4,950,000 9,250,000 4,900,000 Modified duration 10.7 6.2 4.7 Assuming annual coupon payments and no accrued interest, the portfolio's modified duration is closest to:", "opts": ["6.61", "6.98", "7.58"], "ans": "B", "expl": "Two methods of calculating bond portfolio duration\nMethod Description Limitation Commonly used\nWeighted average of modified Assumes the yield curve shifts Less accurate but more practical\ndurations of each bond in the are parallel Yes\nportfolio\nWeighted average time to Treats entire bond portfolio as a Less practical but more accurate\nreceipt of aggregate portfolio single bond No\ncash flows\nPortfolio duration can be used as a linear estimate of interest rate risk (ie, the change in the market value of a bond portfolio based on a change in\nyields). There are two ways to calculate portfolio duration, as shown. In practice, the average of the modified durations of each bond in the\nportfolio, weighted by the market value of each bond, is used to approximate the bond portfolio duration, using the following equation:\nIn this scenario, the modified duration of each bond is given. The total market value of the portfolio is: 4,950,000 + 9,250,000 + 4,900,000 =\n19,100,000. Substitute into the portfolio duration formula:\n(Choice A) 6.61 is the result of weighting the modified duration of each bond by its price. The modified duration of each bond is weighted by its\nmarket value in the portfolio, not its price.\n(Choice C) 7.58 is the result of weighting the modified duration of each bond by the par value of each bond position.\nThings to remember:\nThe most common method of estimating the duration of a bond portfolio is to calculate the weighted average of modified durations of each bond in\nthe portfolio. This method an approximation of the more accurate but less used method of treating the portfolio as a single bond with the cash\nflows of the entire portfolio.\nCalculate portfolio duration and convexity and explain the limitations of these measures.", "qhtml": null}, {"n": 4, "q": "Portfolio duration is usually calculated as the weighted average duration of each portfolio security. A weakness of portfolio duration is that it assumes yield curves:", "opts": ["are always flat.", "make only parallel shifts.", "are usually upward sloping."], "ans": "B", "expl": "Duration is a measure of interest rate risk for bond portfolios. Portfolio duration is an accurate measure of risk only when all bond yields\nchange in the same direction and by the same number of basis points (ie, parallel shifts). Even when changing in the same direction, the yields of\ndifferent bonds will not change by the same amount. It is even possible for yields on different bonds to move in opposite directions.\nThe implicit assumption that yield curves make only parallel shifts is not consistent with the way that market yields change. This assumption\nundermines the usefulness of portfolio duration as a measure of portfolio risk since it can be a misleading indicator of the relative interest rate risk\nof different bond portfolios.\n(Choice A) Portfolio duration makes no assumption about the shape of the yield curve.\n(Choice C) Portfolio duration makes no assumption about the slope of the yield curve.\nThings to remember:\nPortfolio duration implicitly assumes all portfolio bond yields change in the same direction by the same number of basis points (ie, yield curves\nmake parallel shifts). If portfolio bond yields move by different amounts or in opposite directions (ie, nonparallel yield curve shifts), duration\nprovides inaccurate assessments of portfolio risks.\nCalculate portfolio duration and convexity and explain the limitations of these measures.", "qhtml": null}, {"n": 5, "q": "If the yield to maturity of a noncallable bond changes, then compared with the actual market price of the bond, duration-based estimates of bond value most likely: ", "opts": ["underestimate the market price if yield increases or decreases.", "overestimate the market price if yield increases and underestimate it if yield decreases.", "underestimate the market price if yield increases and overestimate it if yield decreases."], "ans": "A", "expl": "Given a forecasted change in a noncallable bond's yield, the bond's price can be estimated using duration and convexity. The estimated price\nbased on duration alone is always less than the bond's actual market price since duration assumes that bond price sensitivity is constant. (In\nthe image above, the constant slope of the blue tangent lines represents duration). So, estimating bond value based on duration alone and\nignoring convexity underestimates bond value.\nThe blue and green functions in both graphs illustrate the relationship between such estimated and actual prices, respectively. The two functions\ntouch at only the single point Y , which implies no change in yield. At any other yield, the estimated price is less than the actual price.\n0\nIn fact, price sensitivity changes as yields change, as indicated by the curvature (ie, convexity) of the actual price/yield (green) function in the\nimage.\nThe convexity of noncallable bonds is always positive, which means that:\nAs yields rise, prices become less sensitive to yield changes (ie, prices decline more slowly), so duration alone overestimates the size of\nprice declines and the duration-estimated price < actual price.\nAs yields fall, prices become more sensitive to yield changes (ie, prices increase more rapidly), so duration alone underestimates the size of\nprice increases and the duration-estimated price < actual price.\nThings to remember:\nDuration-based estimates do not account for the impact of convexity. As a result, estimated prices based solely on a bond's duration will be below\nactual bond prices after any change in yield. For noncallable bonds, duration overestimates price declines when yields rise and underestimates\nprice increases when yields fall.\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 6, "q": "A fixed-rate corporate bond's flat price is 99.50 and its annual modified duration is 3.5. Assuming the benchmark yield does not change, if the bond's credit spread, a component of yield spread, narrows by 0.22%, its new price is closest to:", "opts": ["98.73", "99.72", "100.27"], "ans": "C", "expl": "The yield spread is the difference between the yields of corporate bonds and benchmark government bonds of the same maturity; the difference is\ndue to greater credit and liquidity risk of corporate bonds. Changes in the market's pricing of these risks cause the yield spread to change over\ntime. Since bond prices and yields move in opposite directions:\nnarrowing spreads, indicating lower yields, result in higher bond prices, and\nwidening spreads, indicating higher yields, result in lower bond prices.\nIn this case, the credit spread narrowed, indicating a lower credit risk and resulting in a lower yield and a higher price. Modified duration can\nbe used to estimate the impact of a change in yield spreads on a bond's price.\nTo estimate the bond's new price, first use its annual modified duration and the change in the yield spread (as given) to find the percentage\nchange in price. Then use that percentage change to calculate the new price:\n(Choice A) 98.73 results from incorrectly assuming the yield increased (rather than decreased) by 0.22%, causing the bond's price to decline.\nThe minus sign in the formula above accounts for the inverse relationship between the yield spread and the price.\n(Choice B) 99.72 results from mistaking the yield change for a price change.\nThings to remember:\nCorporate bonds have yield spreads that indicate credit risk and liquidity risk. If a bond's spread narrows (widens), resulting in a lower (higher)\nYTM, its price will increase (decrease). The price change can be estimated using the bond's modified duration and the change in spread.\nCalculate the percentage price change of a bond for a specified change in yield, given the bond’s duration and convexity.", "qhtml": null}, {"n": 7, "q": "A noncallable, 10-year, 7% annual coupon bond is trading at a 6% yield-to-maturity. The bond has an annual modified duration of 7.180 and an annual convexity of 67.300. If the bond's yield is expected to decrease to 5.50%, the expected price change is closest to:", "opts": ["3.51%", "3.67%", "3.76%"], "ans": "B", "expl": "The price impact of a change in a bond's yield-to-maturity can be estimated using duration and convexity. Estimates based on duration\ncapture most of the price change but fail to reflect the change in price sensitivity as yield changes. Adjusting for a bond's convexity greatly\nimproves the accuracy of price change estimates.\nThe impact of convexity is always positive for noncallable bonds. As yields fall, prices become more sensitive to yield changes (ie, bonds\nappreciate more rapidly). As yields rise, prices become less sensitive to yield changes (ie, prices decline more slowly). The convexity impact is\nadded to duration-based estimates of price change when prices are rising. When prices are falling, the decline is reduced by the convexity impact.\n(Choice A) 3.51% results from subtracting the convexity impact from the percentage price increase based on duration.\n(Choice C) 3.76% results from failing to square the yield change and then mistakenly adjusting the decimal point two columns to the right in the\ncalculation of the convexity impact.\nThings to remember:\nBond price changes depend on their sensitivity (duration) at current market rates and how sensitivity changes (convexity) as yields change. For\nnoncallable bonds, the convexity impact is always positive. Convexity is added to duration estimates of appreciation when rates decline and\nreduces estimated declines when rates increase.\nCalculate the percentage price change of a bond for a specified change in yield, given the bond’s duration and convexity.", "qhtml": null}, {"n": 8, "q": "An analyst estimates the following for a noncallable bond with a price of £90.16: Bond price change based on modified duration 7.68% Annual convexity 167.85 If the bond's yield declines by 100 basis points, the convexity-adjusted estimate of the bond's new price (in £) is closest to:", "opts": ["90.99", "97.84", "98.68"], "ans": "B", "expl": "Annual convexity and annual modified duration can be used to estimate a percentage change in a bond's price based on a change in its yield. If\nthe bond is noncallable, then the relationship between YTM and price is represented by the convex curve above, which includes the effect of both\nduration and convexity. The bond's price change based on its duration is a linear approximation, represented by the tangent line in the graph\nabove.\nTo estimate the change in the bond's price due to both annual modified duration and annual convexity, sum the two effects as follows:\nIn this scenario, substitute as follows to obtain the estimated percentage change in price:\n%∆PVFull = 0.0768 + (1/2)(167.85)(−0.01)2\n= 0.0768 + 0.0083925\n= 0.08519\nSince the yield is decreasing, the price is increasing. The convexity-adjusted estimate of the increase in the bond's price can be used to estimate\nthe bond's new price:\nPV × (1 + %∆PVFull) = New price\n0\n90.16 × (1 + 0.08519) = 97.8410\nThe price resulting from this method is only an estimate. The bond's actual new price will be the present value of its promised future cash flows\ndiscounted by its YTM.\nCalculate the percentage price change of a bond for a specified change in yield, given the bond’s duration and convexity.\nCopyright©UWorld CopyrightCFAInstitute Allrightsreserved\n9.An analyst gathers the following information on a noncallable, €1,000,000 par value bond that pays coupons annually:\nFull price of the bond €974,710\nMoney duration €9,084,000\nConvexity adjustment €3,776\nTime-to-maturity 12 years\nYield-to-maturity 5.9%\nAnnual coupon rate 5.6%\nIf the bond's YTM declined to 4.9%, the estimated price change based only on duration is €90,840. Given that 100 basis point decline in the\nbond's yield, the difference between the convexity-adjusted estimate of the bond's new price and its actual new price (in €) is closest to:\nA. 3,156\nB. 6,381\n\nC. 6,932\nExplanation\nMoney convexity and money duration can be used to estimate a bond's currency price change due to a change in its YTM. The relationship\nbetween the price and YTM for noncallable bonds is represented by a convex curve in the image above. The change in a bond's price estimated\nusing only duration is a linear approximation, as reflected in the line tangent to the price/yield curve in the image.\nAccurate estimates of a bond's price change in currency units requires combining the effects of money duration and money convexity as\nfollows:\nThe convexity-adjusted price change can be determined by substituting values from above as follows:\nThe bond's current price is €974,710, so the convexity-adjusted estimate of the bond's new price is 974,710 + 94,616 = €1,069,326.\nThe present value is €1,062,394, as shown in the accompanying calculator strokes. The difference between the convexity-adjusted estimate and\nthe bond's actual new price as the present value of its promised future cash flows is:\n1,069,326 − 1,062,394 = 6,932\nCalculate and interpret convexity and describe the convexity adjustment LOS\n10.An analyst reviewing the change in a bond's price after its yield decreased has compiled the following data:\nBased only on this data, the convexity adjustment is closest to:\n\nA. 2.38%\nB. 3.78%\nC. 5.68%\nExplanation\nAnalysts often want to estimate the percentage change in a bond's price based on a change in its YTM, and vice versa. Duration (the blue line\nabove) approximates the change in price. Including the effect of convexity (ie, the convexity adjustment) will improve the estimate. The actual\nrelationship between a bond's price and its yield is represented graphically by a convex curve (the green curve above). Therefore, estimating a\nbond price involves beginning with the percentage change in price based on duration and then adding the convexity adjustment.\nIn this scenario, the price-change information and the change in yield are known. If the annual modified duration were also known, one could\nsolve for the convexity adjustment using this approach. However, since the annual modified duration is not known, the convexity adjustment can\nbe calculated by first finding an approximate convexity:\nThen substitute the approximate convexity for annual convexity to obtain the convexity adjustment:\n(Choice B) 3.78% is the result of reversing the original bond price and the bond price when yield is increased, in the formula for approximate\nconvexity.\n(Choice C) 5.68% is the total percentage increase in price for the given change in yield. This amount includes both the change due to duration\nand the convexity adjustment.\nThings to remember:\nThe convexity adjustment can be estimated as (1/2 × AnnCon × (ΔYield)2).\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 9, "q": "An analyst gathers the following information on a noncallable, €1,000,000 par value bond that pays coupons annually: Full price of the bond €974,710 Money duration €9,084,000 Convexity adjustment €3,776 Time-to-maturity 12 years Yield-to-maturity 5.9% Annual coupon rate 5.6% If the bond's YTM declined to 4.9%, the estimated price change based only on duration is €90,840. Given that 100 basis point decline in the bond's yield, the difference between the convexity-adjusted estimate of the bond's new price and its actual new price (in €) is closest to:", "opts": ["3,156", "6,381", "6,932"], "ans": "C", "expl": "Money convexity and money duration can be used to estimate a bond's currency price change due to a change in its YTM. The relationship\nbetween the price and YTM for noncallable bonds is represented by a convex curve in the image above. The change in a bond's price estimated\nusing only duration is a linear approximation, as reflected in the line tangent to the price/yield curve in the image.\nAccurate estimates of a bond's price change in currency units requires combining the effects of money duration and money convexity as\nfollows:\nThe convexity-adjusted price change can be determined by substituting values from above as follows:\nThe bond's current price is €974,710, so the convexity-adjusted estimate of the bond's new price is 974,710 + 94,616 = €1,069,326.\nThe present value is €1,062,394, as shown in the accompanying calculator strokes. The difference between the convexity-adjusted estimate and\nthe bond's actual new price as the present value of its promised future cash flows is:\n1,069,326 − 1,062,394 = 6,932\nCalculate and interpret convexity and describe the convexity adjustment LOS\n10.An analyst reviewing the change in a bond's price after its yield decreased has compiled the following data:\nBased only on this data, the convexity adjustment is closest to:\n\nA. 2.38%\nB. 3.78%\nC. 5.68%\nExplanation\nAnalysts often want to estimate the percentage change in a bond's price based on a change in its YTM, and vice versa. Duration (the blue line\nabove) approximates the change in price. Including the effect of convexity (ie, the convexity adjustment) will improve the estimate. The actual\nrelationship between a bond's price and its yield is represented graphically by a convex curve (the green curve above). Therefore, estimating a\nbond price involves beginning with the percentage change in price based on duration and then adding the convexity adjustment.\nIn this scenario, the price-change information and the change in yield are known. If the annual modified duration were also known, one could\nsolve for the convexity adjustment using this approach. However, since the annual modified duration is not known, the convexity adjustment can\nbe calculated by first finding an approximate convexity:\nThen substitute the approximate convexity for annual convexity to obtain the convexity adjustment:\n(Choice B) 3.78% is the result of reversing the original bond price and the bond price when yield is increased, in the formula for approximate\nconvexity.\n(Choice C) 5.68% is the total percentage increase in price for the given change in yield. This amount includes both the change due to duration\nand the convexity adjustment.\nThings to remember:\nThe convexity adjustment can be estimated as (1/2 × AnnCon × (ΔYield)2).\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 10, "q": "An analyst reviewing the change in a bond's price after its yield decreased has compiled the following data: Based only on this data, the convexity adjustment is closest to: ", "opts": ["2.38%", "3.78%", "5.68%"], "ans": "A", "expl": "Analysts often want to estimate the percentage change in a bond's price based on a change in its YTM, and vice versa. Duration (the blue line\nabove) approximates the change in price. Including the effect of convexity (ie, the convexity adjustment) will improve the estimate. The actual\nrelationship between a bond's price and its yield is represented graphically by a convex curve (the green curve above). Therefore, estimating a\nbond price involves beginning with the percentage change in price based on duration and then adding the convexity adjustment.\nIn this scenario, the price-change information and the change in yield are known. If the annual modified duration were also known, one could\nsolve for the convexity adjustment using this approach. However, since the annual modified duration is not known, the convexity adjustment can\nbe calculated by first finding an approximate convexity:\nThen substitute the approximate convexity for annual convexity to obtain the convexity adjustment:\n(Choice B) 3.78% is the result of reversing the original bond price and the bond price when yield is increased, in the formula for approximate\nconvexity.\n(Choice C) 5.68% is the total percentage increase in price for the given change in yield. This amount includes both the change due to duration\nand the convexity adjustment.\nThings to remember:\nThe convexity adjustment can be estimated as (1/2 × AnnCon × (ΔYield)2).\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 11, "q": "A noncallable bond has a 6% YTM based on annual compounding. The bond has an annual modified duration of 18.868 and an annual convexity of 372.027. If the bond's yield is expected to increase to 6.20%, the expected price change is closest to:", "opts": ["−3.85%", "−3.70%", "−3.33%"], "ans": "B", "expl": "The price impact of a change in a bond's YTM can be estimated using duration and convexity. Estimates based on duration capture most of\nthe price change but fail to reflect the change in price sensitivity as yield changes. Adjusting for a bond's convexity greatly improves the accuracy\nof price change estimates.\nThe impact of convexity is always positive for noncallable bonds. As yields fall, prices become more sensitive to yield changes (ie, bonds\nappreciate more rapidly). As yields rise, prices become less sensitive to yield changes (ie, prices decline more slowly). The convexity impact is\nadded to duration-based estimates of price change when prices are rising; price declines are reduced by the convexity impact.\n(Choice A) −3.85% results from summing the convexity impact with the percentage price decline based on duration.\n(Choice C) −3.33% results from failing to square the yield change and then not properly adjusting the decimal point when calculating the\nconvexity impact.\nThings to remember:\nBond price changes depend on their sensitivity (ie, duration) at current market rates and how sensitivity changes (ie, convexity) as yields change.\nFor noncallable bonds, the convexity impact is always positive. Convexity is added to duration estimates of appreciation when rates decline;\nconvexity reduces estimated losses when rates increase.\nCalculate the percentage price change of a bond for a specified change in yield, given the bond’s duration and convexity.", "qhtml": null}, {"n": 12, "q": "A government agency bond was issued at par several years ago and has the following characteristics today: Time to maturity 10 years Coupon rate 5% Yield to maturity 3% Callable at par 1 year from today If interest rates continue to fall over the next year, the price of the callable bond is most likely affected by:", "opts": ["positive convexity.", "negative convexity.", "key rate duration risk."], "ans": "B", "expl": "A linear estimate of a bond's price change due to duration (blue line) can be made more precise by adding the effect of convexity. Convexity is a\nmeasure of the curvature in the price-yield relationship of a bond. Otherwise identical callable and noncallable bond prices behave similarly\nwhen interest rates rise (green curve), but their prices and durations diverge as yields fall significantly below the bond's coupon rate due to the\ncallable bond's embedded call option.\nThis embedded option gives the issuer the right to call (ie, purchase) the bond prior to maturity at a predetermined price. As the market interest\nrate falls further below the bond's coupon, the probability that the bond will be called generally increases. As a result, no matter how low rates fall,\na callable bond's appreciation potential is limited due to the impending call. This effect is known as negative convexity and is reflected by the\nflattening slope (red curve) of the callable bond's price-yield curve.\n(Choice A) The price-yield curve for a noncallable bond has positive convexity characteristics.\n(Choice C) Key rate duration assesses bond price changes based on changes to only a portion of the benchmark yield curve (eg, 8–10 years).\nThis bond's call option is already deep in the money since the bond has a 3% YTM and a 5% coupon. As interest rates continue to fall, the bond is\nalmost certain to be called as soon as the issuer is allowed to do so. Therefore, this bond is effectively priced as a 1-year bond and not subject to\nyield curve shaping (ie, key rate duration) risk.\nThings to remember:\nNegative convexity is reflected by the flattening slope of the callable bond price/yield curve as yields fall below the coupon rate. This effect is due\nto the embedded call option's limiting the bond's upside price potential.\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 13, "q": "A 20-year zero-coupon bond is currently priced at 31.1805 and its yield-to-maturity is 6% based on annual compounding. If the yield decreases to 5.90%, the price is expected to increase to 31.7747. If the yield increases to 6.10%, the price is expected to fall to 30.5979. The security's approximate convexity is closest to:", "opts": ["18.869", "186.013", "372.027"], "ans": "C", "expl": "Approximate convexity captures most of the actual price impact of a yield change not reflected in estimates of price change based only on\nduration. Duration is based on a bond's price sensitivity to a yield change at current market value and assumes price sensitivity is constant as\nyields change. Duration is illustrated by the blue tangency line in the following exhibit.\nConvexity measures how a bond's price sensitivity changes as its yield changes. Duration reflects the slope of the price/yield function (ie, a\nrate of change) at the initial yield. Convexity, which is the curvature of the price-yield function, measures the rate of change of a bond's duration;\nconvexity is a second-order effect.\nThings to remember:\nApproximate convexity captures the price impact of yield changes not reflected in estimates based on duration. Duration assumes a linear\nrelationship between price changes and yield changes. Convexity measures how a bond's duration changes as the yield changes (ie, the\ncurvature of the price/yield function, a second-order effect).\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 14, "q": "A noncallable bond with a market value of EUR 712,862 has an annual modified duration of 4.2 and a money convexity of EUR 245,000,000. If the bond's YTM decreases by 20 basis points, then based on only this information and assuming no change in credit risk, the bond's new price (in EUR) is closest to:", "opts": ["707,364", "719,340", "719,830"], "ans": "B", "expl": "A bond's price change based on a change in the position's YTM can be estimated using duration and convexity. To estimate\nthe percentage price change, use annual modified duration (AnnModDur) and annual convexity (AnnCon)\nthe money amount of price change, use money duration (MoneyDur) and money convexity (MoneyCon), where\nMoneyDur = AnnModDur × PVFull\nMoneyCon = AnnCon × PVFull\nIn this scenario, money duration is:\nSince money convexity is given as 245,000,000, substitute values to calculate the change in price:\nThus, the estimated new price of the bond is closest to 712,862 + 6,478 = 719,340.\n(Choice A) 707,364 results from treating the yield change as positive and estimating a price decrease. The yield change in this scenario is\nnegative.\n(Choice C) 719,830 results from failing to multiply by 1/2 within the convexity adjustment term in the formula for the price change of the bond.\nThings to remember:\nTo estimate the money amount of a bond's price change, begin with the price change based on money duration and then adjust for money\nconvexity: (−MoneyDur × ΔYield) + [1/2 × MoneyCon × (ΔYield)2]. Money duration is the annual modified duration multiplied by the full price\n(AnnModDur × PVFull) and money convexity is the annual convexity multiplied by the full price (AnnCon × PVFull).\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 15, "q": "An option pricing model is used to calculate the following information about a callable bond: The bond's convexity is closest to:", "opts": ["−8,493.63", "−1,391.84", "−1,022.58"], "ans": "B", "expl": "A bond's price changes can be measured as a function of changes in the bond's YTM or shifts in a benchmark yield curve. Approximate convexity\n(which measures yield convexity) is the appropriate convexity measure for price changes that result from changes in a bond's YTM. Effective\nconvexity (which measures curve convexity) is the appropriate convexity measure for changes in a bond's price based on shifts in a government\nbenchmark yield curve.\nCallable bonds have uncertain future cash flows due to their embedded option, which gives issuers the ability to call the bonds before maturity,\nending cash flows to investors. Thus, a callable bond's internal rate of return is not consistent with its YTM. As a result, the duration and convexity\nof a callable bond cannot be reliably determined by changes in its YTM. Therefore, effective convexity is used instead of approximate convexity\nfor callable bonds.\nIn this scenario, since the bond is callable, effective convexity is appropriate. Substitute the data for the bond price and benchmark yield\nchanges to calculate:\n(Choice A) −8,493.63 is the result of reversing the initial price and the price if the benchmark yield decreases in the calculation for effective\nconvexity.\n(Choice C) −1,022.58 is the result of using the bond's YTM change in the denominator instead of the shift in the benchmark yield curve and\ncalculating approximate convexity (which is not the appropriate convexity measure for a callable bond).\nThings to remember:\nApproximate convexity (which measures yield convexity) is the appropriate convexity measure for price changes that result from changes in a\nbond's YTM. Effective convexity (which measures curve convexity) is the appropriate convexity measure for changes in a bond's price based on\nshifts in a government benchmark yield curve.\nCalculate and interpret convexity and describe the convexity adjustment.\n16.An analyst estimates a bond portfolio's duration using the weighted average of the modified durations of the bonds in the portfolio. A limitation\nof this approach is that it:\nA. requires calculating the portfolio's cash flow yield.\n B. assumes all rates change by the same amount in the same direction.\nC. is not as practical as the most commonly used portfolio duration calculation method.\nExplanation\nTwo methods of calculating bond portfolio duration\nMethod Description Limitation Commonly used\nWeighted average of modified Assumes the yield curve shifts Less accurate but more practical\ndurations of each bond in the are parallel Yes\nportfolio\nWeighted average time to Treats entire bond portfolio as a Less practical but more accurate\nreceipt of aggregate portfolio single bond No\ncash flows\nPortfolio duration can be used as a linear estimate of interest rate risk (ie, change in the market value of a bond portfolio based on a change in\nyields). There are two ways to calculate portfolio duration, shown in the image above. In practice, the weighted average of the modified durations\nof the bonds in the portfolio is commonly used to approximate the bond portfolio's duration, using the following equation:\nA limitation of this method, which is the most commonly used method of calculating a bond portfolio's duration, is that it implicitly assumes\nthat all rates change by the same amount in the same direction. Since this rarely occurs in practice, the commonly used method is less\naccurate than the theoretically correct method.\nHowever, the theoretically correct method is not practical for common use since:\ncash flow yield is not commonly calculated or used to express interest rate risk for bond portfolios;\nchanges in cash flow yields for bond portfolios are not necessarily equal to YTM changes; and\nfuture cash flows of a bond are uncertain for bonds with embedded options.\n(Choice A) The method of calculating bond portfolio duration as the weighted average time to receipt of the portfolio's aggregate cash flows\nrequires calculating the portfolio's cash flow yield.\n(Choice C) The method of using the weighted average of bond durations is in fact more practical than the theoretically correct method and as a\nresult is the most commonly used method.\nThings to remember:\nBond portfolio duration is a linear estimate of interest rate risk and can be estimated as the weighted average of the bonds' modified durations. A\nlimitation of this approach is that it assumes that all rates change by the same amount in the same direction, which rarely occurs. However, this\nmethod can be used for bonds with embedded options (eg, callable bonds) and does not require calculating the portfolio's cash flow yield.\nCalculate portfolio duration and convexity and explain the limitations of these measures.", "qhtml": null}, {"n": 16, "q": "An analyst estimates a bond portfolio's duration using the weighted average of the modified durations of the bonds in the portfolio. A limitation of this approach is that it:", "opts": ["requires calculating the portfolio's cash flow yield.", "assumes all rates change by the same amount in the same direction.", "is not as practical as the most commonly used portfolio duration calculation method."], "ans": "B", "expl": "Two methods of calculating bond portfolio duration\nMethod Description Limitation Commonly used\nWeighted average of modified Assumes the yield curve shifts Less accurate but more practical\ndurations of each bond in the are parallel Yes\nportfolio\nWeighted average time to Treats entire bond portfolio as a Less practical but more accurate\nreceipt of aggregate portfolio single bond No\ncash flows\nPortfolio duration can be used as a linear estimate of interest rate risk (ie, change in the market value of a bond portfolio based on a change in\nyields). There are two ways to calculate portfolio duration, shown in the image above. In practice, the weighted average of the modified durations\nof the bonds in the portfolio is commonly used to approximate the bond portfolio's duration, using the following equation:\nA limitation of this method, which is the most commonly used method of calculating a bond portfolio's duration, is that it implicitly assumes\nthat all rates change by the same amount in the same direction. Since this rarely occurs in practice, the commonly used method is less\naccurate than the theoretically correct method.\nHowever, the theoretically correct method is not practical for common use since:\ncash flow yield is not commonly calculated or used to express interest rate risk for bond portfolios;\nchanges in cash flow yields for bond portfolios are not necessarily equal to YTM changes; and\nfuture cash flows of a bond are uncertain for bonds with embedded options.\n(Choice A) The method of calculating bond portfolio duration as the weighted average time to receipt of the portfolio's aggregate cash flows\nrequires calculating the portfolio's cash flow yield.\n(Choice C) The method of using the weighted average of bond durations is in fact more practical than the theoretically correct method and as a\nresult is the most commonly used method.\nThings to remember:\nBond portfolio duration is a linear estimate of interest rate risk and can be estimated as the weighted average of the bonds' modified durations. A\nlimitation of this approach is that it assumes that all rates change by the same amount in the same direction, which rarely occurs. However, this\nmethod can be used for bonds with embedded options (eg, callable bonds) and does not require calculating the portfolio's cash flow yield.\nCalculate portfolio duration and convexity and explain the limitations of these measures.", "qhtml": null}, {"n": 17, "q": "A bond portfolio contains the following three bonds: Bond X Bond Y Bond Z Type Noncallable Noncallable Callable Par value (SAR) 18,000,000 20,000,000 15,000,000 Market value (SAR) 9,800,000 20,200,000 14,900,000 Modified duration 12.1 8.6 3.0 Effective duration 11.9 8.3 3.9 Assuming annual coupon payments and no accrued interest, the bond portfolio's duration is closest to:", "opts": ["7.5", "7.8", "8.5"], "ans": "B", "expl": "Two methods of calculating bond portfolio duration\nMethod Description Limitation Commonly used\nWeighted average of modified Assumes the yield curve shifts Less accurate but more practical\ndurations of each bond in the are parallel Yes\nportfolio\nWeighted average time to Treats entire bond portfolio as a Less practical but more accurate\nreceipt of aggregate portfolio single bond No\ncash flows\nPortfolio duration can be used as a linear estimate of interest rate risk (ie, the change in the market value of a bond portfolio based on a change\nin yields). There are two ways to calculate portfolio duration, as shown in the table above. In practice, the average of the modified durations of\neach bond in the portfolio, weighted by the market value of each bond, is used to approximate the bond portfolio duration with the following\nequation:\nA benefit of this approach is that it can be used for portfolios containing bonds both with and without embedded options. If a portfolio contains\nbonds with embedded options, the bond's effective duration is more appropriately used instead of its modified duration in the weighted average\nto estimate the bond portfolio's duration.\nThe market value of the portfolio is 9,800,000 + 20,200,000 + 14,900,000 = 44,900,000, so:\nThings to remember:\nThe average of the durations of each bond in the portfolio weighted by their market values is the method most commonly used to estimate a bond\nportfolio's duration. A benefit to this approach is that if a portfolio contains bonds with embedded options, the bond's effective duration is most\nappropriately used instead of its modified duration to calculate the weighted average.\nCalculate portfolio duration and convexity and explain the limitations of these measures.", "qhtml": null}, {"n": 18, "q": "An investment portfolio consists of the following two bonds: Bond A Bond B Par value (GBP) 10,000,000 20,000,000 Market value (GBP) 9,920,000 13,200,000 Modified duration 2.1 8.4 The bonds pay coupons annually and are trading flat (ie, the market price is equal to the full price). If each bond's YTM declines by 10 basis points, the portfolio's estimated value, based only on portfolio duration, is closest to:", "opts": ["GBP22,988,288", "GBP23,251,712", "GBP23,265,656"], "ans": "B", "expl": "Duration can be used to measure the interest rate risk of bond portfolios. The impact of interest rate changes on a bond portfolio's value is\nestimated by multiplying portfolio duration by a change in market yields. The most common way to estimate bond portfolio duration is as a\nweighted average of the modified durations of the bonds in the portfolio:\nThis method implicitly assumes that any change in yield will be the same for every bond in the portfolio, regardless of its time to maturity: a parallel\nshift in the yield curve.\nIn this scenario, the portfolio's market value is 23,120,000, or 9,920,000 + 13,200,000. The annual portfolio duration is calculated as follows:\nA decrease in yields results in an increase in bond prices. The percentage change in the portfolio's value for a 10-basis-point downward shift in\nthe yield curve is:\nThe portfolio's estimated new market value is 23,120,000 × (1 + 0.0056969) ≈ 23,251,712.\n(Choice A) GBP 22,988,288 results from omitting the negative sign in the formula for the percentage change in the full bond price. This results in\na new bond portfolio market value that is less than the original value. A decrease in yields should result in an increase in bond prices.\n(Choice C) GBP 23,265,656 results from incorrectly calculating the portfolio modified duration by weighting by the par value of each bond.\nPortfolio duration is estimated by weighting each bond's modified duration by its market value.\nThings to remember:\nA bond portfolio's duration is the market-value-weighted average of the modified durations of the bonds in the portfolio. The estimated percentage\nchange in a portfolio's market value is its modified duration multiplied by the change in yields. This percentage change can then be used to\nestimate the bond's new value, with a decrease (increase) in yield resulting in an increase (decrease) in price.\nCalculate portfolio duration and convexity and explain the limitations of these measures.", "qhtml": null}, {"n": 19, "q": "For otherwise identical callable and noncallable coupon bonds, effective convexities are most likely to differ to the greatest degree when the:", "opts": ["benchmark yield curve is very low.", "benchmark yield curve is very high.", "value of embedded call options is very low."], "ans": "A", "expl": "Effective duration and convexity measure the sensitivity of bond values to a shift in the benchmark yield curve. Duration captures bond price\nsensitivity to changes in interest rates, as reflected in the slope of the value functions in the image. Convexity reflects how price sensitivity\nchanges as interest rates change, which is shown in the curvature of the value functions.\nWhen interest rates on the benchmark yield curve are very high, the curvatures of value functions for otherwise identical noncallable and\ncallable bonds are similar. The prices for both types of bonds become less sensitive to interest rate changes the more rates increase (ie, positive\nconvexity). In addition, the embedded option value (ie, vertical distance between the functions) is small, indicating a low probability of the callable\nbonds being called (Choices B and C).\nWhen the benchmark yield curve is very low, the convexities of noncallable and callable bonds differ. Noncallable bond prices become\nincreasingly sensitive to rate changes as yields decrease (ie, positive convexity). However, low yields result in a greater likelihood of a callable\nbond being called, which increases the value of the bond's embedded option. Since the issuer is more likely to call the bond, its price becomes\nless sensitive to declines in interest rates (ie, negative convexity).\nThings to remember:\nWhen the benchmark yield curve is very high, embedded call options have little value, so the effective convexities of otherwise identical\nnoncallable and callable bonds are similar. When the benchmark yield curve is very low, embedded call options are more valuable, resulting in a\ndivergence between the convexities of the two bond types.\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 20, "q": "A noncallable bond has a money duration of €7,812,000. If the bond's YTM decreases by 30 basis points, then the bond's price increase is estimated to be €23,600. If this estimate includes the effects of both money duration and money convexity, the bond's money convexity (in €) is closest to:", "opts": ["164", "109,333", "36,444,444"], "ans": "C", "expl": "Money convexity and money duration can be used to estimate a bond's price change (in currency) due to a change in its YTM. The relationship\nbetween the price and YTM for noncallable bonds is represented by a convex curve in the image above.\nSince a bond's duration measures its price sensitivity only at its current YTM, duration-based estimates are only a linear approximation of price\nchange, as reflected in the line tangent to the price/yield curve in the image. Accurate estimates of a bond's currency price change require\ncombining the effects of money duration and money convexity:\nIn this scenario, the money duration, YTM change, and estimated price change are given. Substitute as follows to estimate the money convexity:\n(Choice A) €164 results from solving for the convexity adjustment, not the money convexity. The convexity adjustment is the price change due to\nconvexity and is equal to [1/2 × MoneyCon × (∆Yield)2]. This question asks for the money convexity, not the convexity adjustment.\n(Choice B) €109,333 results from failing to square the yield in the convexity adjustment term of the formula.\nThings to remember:\nMoney convexity and money duration can be used to estimate the change in a bond's price (in currency). A bond's money duration provides a\nlinear approximation of price change. Given an estimate of the full price change for a specified YTM change and the price change due to duration,\na bond's money convexity can be calculated.\nCalculate and interpret convexity and describe the convexity adjustment.\n21.A bond position with a market value of EUR 810,992 has a money duration of EUR 4,460,456 and an annual modified duration of 5.5. A\ndecrease of 50 basis points in the bond position's YTM results in a new market value of EUR 833,861. Based on only this information and\nassuming no change in credit risk, the bond position's money convexity (in EUR) is closest to:\nA. −226,688\nB. 56\n C. 45,337,600\nExplanation\nA change in the price (in currency terms) of a bond based on a change in its YTM can be estimated using money duration and money convexity.\nThe relationship between a bond's price and its YTM is represented graphically by a convex curve (green curve above). However, when the\nchange in a bond's price is estimated using only duration, the result is a linear approximation of the price change (blue line above). Therefore,\nestimating a bond position's price change in currency terms involves beginning with the price change based on money duration and then\nadjusting for the effect of convexity (ie, the convexity adjustment in currency terms).\nIf the price change (in currency), yield change, and money duration are known, the money convexity can be estimated as follows:\nIn this scenario, in currency terms, the approximate change in the bond position's price due only to convexity is [1/2 × 45,337,600 × (0.005)2] =\n566.72.\n(Choice A) −226,688 is the result of failing to use the square of the yield within the expression for convexity adjustment in the formula above.\nNegative convexity is normally only associated with a callable bond.\n(Choice B) 56 is the bond position's approximate convexity, not its money convexity. Annual modified duration may be used along with the\napproximate convexity to directly calculate the percentage change in a bond position's price.\nThings to remember:\nTo estimate a bond position's price change in currency terms, the price change based on money duration (−MoneyDur × ΔYield) is added to the\nconvexity adjustment. The convexity adjustment in currency terms is equal to [1/2 × MoneyCon × (ΔYield)2].\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 21, "q": "A bond position with a market value of EUR 810,992 has a money duration of EUR 4,460,456 and an annual modified duration of 5.5. A decrease of 50 basis points in the bond position's YTM results in a new market value of EUR 833,861. Based on only this information and assuming no change in credit risk, the bond position's money convexity (in EUR) is closest to:", "opts": ["−226,688", "56", "45,337,600"], "ans": "C", "expl": "A change in the price (in currency terms) of a bond based on a change in its YTM can be estimated using money duration and money convexity.\nThe relationship between a bond's price and its YTM is represented graphically by a convex curve (green curve above). However, when the\nchange in a bond's price is estimated using only duration, the result is a linear approximation of the price change (blue line above). Therefore,\nestimating a bond position's price change in currency terms involves beginning with the price change based on money duration and then\nadjusting for the effect of convexity (ie, the convexity adjustment in currency terms).\nIf the price change (in currency), yield change, and money duration are known, the money convexity can be estimated as follows:\nIn this scenario, in currency terms, the approximate change in the bond position's price due only to convexity is [1/2 × 45,337,600 × (0.005)2] =\n566.72.\n(Choice A) −226,688 is the result of failing to use the square of the yield within the expression for convexity adjustment in the formula above.\nNegative convexity is normally only associated with a callable bond.\n(Choice B) 56 is the bond position's approximate convexity, not its money convexity. Annual modified duration may be used along with the\napproximate convexity to directly calculate the percentage change in a bond position's price.\nThings to remember:\nTo estimate a bond position's price change in currency terms, the price change based on money duration (−MoneyDur × ΔYield) is added to the\nconvexity adjustment. The convexity adjustment in currency terms is equal to [1/2 × MoneyCon × (ΔYield)2].\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 22, "q": "As a measure of interest rate risk, effective convexity differs from approximate convexity in that effective convexity:", "opts": ["is based on a shift in a benchmark yield curve.", "is a closer estimate of a bond's price than approximate convexity.", "accounts for the curvature in the relationship between a bond's price and its YTM."], "ans": "A", "expl": "A bond's price change based on a change in yield can be estimated using duration and convexity. Taken together, they are used to estimate a\nbond's price change for a given interest rate change. Interest rate changes can be represented as changes in the bond's yield-to-maturity (YTM)\nor shifts in a benchmark yield curve.\nApproximate convexity, which measures price changes with respect to changes in a bond's YTM, is appropriate for use with bonds without\nembedded options. For bonds with embedded options (eg, callable bonds), the bond's price changes depend on its YTM and the general level of\ninterest rates, which affect the probability that the bond will be called.\nAs a result, price changes of bonds with embedded options are estimated using the benchmark yield curve instead of the bond's YTM. Therefore,\nfor bonds with embedded options, effective convexity, which measures bond price changes based on shifts in a benchmark yield curve, is\nused instead of approximate convexity.\n(Choice B) Both effective and approximate convexity improve on estimates that use only duration, which is a linear estimate of a change in a\nbond's price. Convexity accounts for the effect of the curvature in the price-yield relationship.\n(Choice C) Approximate convexity accounts for the curvature in the relationship between a bond's price and changes to its YTM, not shifts in the\nbenchmark yield curve.\nThings to remember:\nFor bonds with embedded options, price changes depend on yield-to-maturity (YTM) and changes in the benchmark yield curve. Therefore,\neffective convexity, which measures bond price changes based on shifts in a benchmark yield curve, is used instead of approximate convexity for\nbonds with embedded options.\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 23, "q": "The price of a noncallable bond increases by 3.70% when its annual YTM decreases by 0.50%. If the bond's Macaulay duration is 6.51 and its annual modified duration is 6.20, the convexity adjustment is closest to:", "opts": ["0.45%", "0.60%", "3.10%"], "ans": "B", "expl": "Analysts often want to estimate the percentage change in price of a bond based on a change in its YTM, and vice versa. The actual relationship\nbetween a bond's price and its yield is represented graphically by a convex curve (the green curve above). However, the change in a bond's price,\nif estimated using only duration, is a linear relationship (the blue line above). Therefore, estimating a bond price involves beginning with the\npercentage change in price based on duration and then adjusting for the effect of convexity (ie, the convexity adjustment).\nIf the percentage price change, yield change, and annual modified duration are known, the convexity adjustment can be estimated as follows:\nTherefore, in this scenario, the approximate percentage change in the bond's price due only to the convexity adjustment is 0.60%. However, it\nshould be noted that since the curvature of the green line is not constant, the convexity adjustment approximates only the effect of actual\nconvexity. The combined effect of duration and the convexity adjustment is also only an estimate, although it is a much more accurate estimate\nthan the effect of duration alone.\n(Choice A) 0.45% is the result of solving for the convexity adjustment using the Macaulay duration. The relationship in this scenario involves the\nannual modified duration, not the Macaulay duration.\n(Choice C) 3.10% is the percentage change in the bond's price based only on duration and excluding the effect of convexity.\nThings to remember:\nThe percentage change in the price of a bond based on a change in its YTM can be estimated by adding together the change based on annual\nmodified duration (−AnnModDur × ΔYield) and the convexity adjustment (1/2 × AnnCon× [ΔYield]2).\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 24, "q": "A noncallable bond has an annual modified duration of 9.12. If the bond's yield decreases by 0.18% and its convexity adjustment is 0.21%, then the bond's percentage change in price is closest to:", "opts": ["−1.43%", "1.85%", "3.74%"], "ans": "B", "expl": "When a noncallable bond's yield changes, one way to estimate its price change is to add together the price change due to duration and the price\nchange due to convexity. The price change due to duration is a linear approximation. The convexity adjustment, which is always positive for\nnoncallable bonds, is added to the percentage price change due to duration to obtain an estimate of the bond's percentage price change.\nThis scenario gives the bond's annual modified duration, yield change, and convexity adjustment. To calculate the percentage price change of the\nbond, substitute the data as follows:\n%∆PVFull = (−9.12 × −0.0018) + 0.0021\n= 0.016416 + 0.0021\n= 0.018516\n≈ 1.85%\nThe sum is only an estimate. The actual new price of the bond will be the present value of its promised future cash flows based on the new YTM.\n(Choice A) −1.43% results from mistakenly assuming that the change in yield is positive.\n(Choice C) 3.74% results from substituting 0.021 for the convexity adjustment instead of 0.0021.\nThings to remember:\nOne way to estimate the price change of a noncallable bond due to a change in its yield is to add the price change due to duration and the price\nchange due to convexity. The price change due to duration, a linear approximation, is added to the convexity adjustment to obtain an estimate\nbased on both measures.\nCalculate the percentage price change of a bond for a specified change in yield, given the bond’s duration and convexity.", "qhtml": null}, {"n": 25, "q": "An analyst compiles the following information about a noncallable bond: Selected Bond Data Bond's initial price 90.34 Bond's price after yield increase 90.17 Bond's price after yield decrease 90.57 Benchmark yield curve shift 18 bps Bond's YTM decrease 20 bps The bond's convexity is closest to: ", "opts": ["166", "205", "1,580"], "ans": "A", "expl": "A bond's interest rate risk is its change in price for a given change in either the bond's YTM (for a bond without embedded options), or\nbenchmark yield (for a bond with embedded options). Duration is the primary metric that estimates the interest rate risk. It is fairly accurate for\nsmall changes in interest rates but is less accurate for larger changes. Convexity is an additional measure that, when added to the duration\nmeasure, results in a more accurate estimate of the price change.\nThere are two types of duration/convexity measures:\nFor bonds without embedded options, use modified duration and approximate convexity.\nFor bonds with embedded options, use effective duration and effective convexity\nThe bond in this question is noncallable, so approximate convexity is the appropriate convexity metric:\nThings to remember:\nA bond's interest rate risk can be assessed by measuring changes in its price relative to changes in its YTM or relative to shifts in a benchmark\nyield curve. Duration is the primary metric to estimate a bond's price for a given change. Convexity is an additional measure that, when added to\nduration, provides a better estimate of the price. For bonds without embedded options, modified duration and approximate convexity should be\nused.\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 26, "q": "An analyst obtains the following information on a portfolio of three bonds: Each bond is a fixed-rate bond paying annual coupons, there is no accrued interest, and prices are per 100 of par value. The modified duration of the portfolio is closest to:", "opts": ["6.45", "6.65", "7.22"], "ans": "B", "expl": "The modified duration of a portfolio is the weighted average duration of the portfolio bonds. The weight of each duration is the market value\nof that bond as a percent of the market value of the portfolio. First, determine the market value of each bond (% of par price × par value), then\nsum the value of all the bonds to find the market value of the portfolio.\nNext, calculate the weight of each bond in the portfolio, dividing the individual bond values by the portfolio value. Multiply the weight of each bond\nby that bond's modified duration to find the amount of duration being contributed by the individual bonds. Sum the duration contributions of all the\nbonds to find the portfolio duration.\n(Choice A) 6.45 results from weighting the bond durations by par value rather than by market value.\n(Choice C) 7.22 results from assuming equal weights for all the bonds in the portfolio.\nThings to remember:\nA portfolio's modified duration is the weighted average of the durations of the bonds in the portfolio. Obtain the weights by solving for the market\nvalue of each bond as a percent of the market value of the portfolio. Multiply the weight of each bond by its duration, then sum the value-weighted\nduration for all portfolio bonds.\nCalculate portfolio duration and convexity and explain the limitations of these measures.", "qhtml": null}, {"n": 27, "q": "For otherwise identical fixed-coupon bonds, the greatest difference between the effective convexity of a callable bond and approximate convexity of a noncallable bond most likely occurs when the benchmarks bond's yield is: ", "opts": ["significantly lower than the bonds' coupon rates.", "approximately equal to the bonds' coupon rates.", "significantly higher than the bonds' coupon rates."], "ans": "A", "expl": "Convexity measures how bond price sensitivity (ie, duration) changes as yields change. When market yields rise (and continue to rise) above\ntheir coupon rates, the prices of callable and noncallable bonds tend to react the same way. Both approximate and effective convexity are\npositive, and their values are converging. However, as market yields decline further below coupon rates, the price behavior of callable and\nnoncallable bonds diverges due to their increasingly different convexities (Choices B and C).\nCallable and noncallable bonds have the same scheduled cash flows to maturity. However, the callable bonds' cash flows are uncertain due to the\nembedded call. Any difference in price performance is driven by the embedded option and the likelihood of the bond getting called.\nAt yields below the callable bond's coupon rate, the bond is likely to be called at the earliest opportunity. That limits the potential for appreciation,\nso callable bond prices become less sensitive to further declines in market yields (ie, negative convexity). On the other hand, noncallable bond\nprices become more sensitive the further benchmark yields decline (ie, positive convexity). The difference in convexities results in very different\nprice performance as yields decline.\nThings to remember:\nOtherwise identical callable and noncallable bonds exhibit similar price behavior, and have similar convexities, at benchmark yields significantly\nabove the bonds' coupon rates. At yields well below its coupon rate, the callable bond is likely to be retired early, limiting its potential for\nappreciation. This results in a large divergence in price performance of callable and noncallable bonds at yields below their coupon rates, which\nreflects the differing convexities.\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}, {"n": 28, "q": "A noncallable bond has an annual modified duration of 8.12 and annual approximate convexity of 317. If the bond's yield increases by 0.9%, then the expected price change is closest to:", "opts": ["−7.31%", "−6.02%", "8.59%"], "ans": "B", "expl": "Duration is a linear estimate of the change in a bond's price when its YTM changes. In the diagram shown below, the straight line represents\nthe price change estimated from the bond's duration. For small changes in YTM, duration closely estimates the actual change in price, but the\nestimate is less accurate for larger changes.\nApproximate convexity, a measure of yield convexity, is used to calculate the convexity adjustment. When added to the estimate based on\nduration, the convexity adjustment provides a closer estimate to the actual price change since it accounts for the curvature of the price-yield for\nchanges in YTM. In the diagram below, the estimate based on duration and convexity is represented by the curve above the straight duration line.\nIn this scenario, substitute as follows to obtain the percentage price change:\nFor noncallable bonds, duration always results in an estimated price that is lower than the actual price for a given change in YTM. Adding the\nconvexity adjustment to the duration estimate brings the estimated price change much closer to the actual price change for a given change in YTM\nthan just using duration alone.\n(Choice A) −7.31% is the decrease in price that results from considering only the effect of duration, rather than the combined impact of duration\nplus convexity.\n(Choice C) The bond yield in this scenario increases, so the price would decrease, not increase. 8.59% represents a percentage increase in\nprice that results from failing to account for the negative sign before AnnModDur in the formula given above.\nThings to remember:\nDuration is a linear estimate of the change in a bond's price due to a change in yield. Approximate convexity is used to calculate the convexity\nadjustment, which is the additional amount the price changes due to the curvature in the relationship between price and YTM.\nCalculate the percentage price change of a bond for a specified change in yield, given the bond’s duration and convexity.\n29. If a noncallable bond has an annual modified duration of 9.718 and an annual convexity of 167.574, the estimated percentage price increase if\nits YTM declines by 50 basis points is closest to:\nA. 4.65%\nB. 4.86%\n\nC. 5.07%\nExplanation\nDuration and convexity can be used to estimate percentage changes in bond prices. Modified duration measures the change in a bond's price for\na given change in its YTM, and convexity measures the change in the bond's price sensitivity.\nDuration-based estimates of price change reflect the inverse relationship between bond prices and yields. To capture the direction of price\nsensitivity changes, the price impact of convexity should be:\nadded to the percentage price change due to duration when YTM declines and\nsubtracted from the percentage price change due to duration when YTM increases.\n(Choice A) 4.65% results from mistakenly subtracting the convexity impact of the price change estimated from the bond's modified duration rather\nthan adding it. Convexity reduces bond price declines when interest rates rise, but increases price appreciation when a bond's YTM decreases.\n(Choice B) 4.86% is the estimated price change due to the bond's modified duration, but it fails to account for the bond's convexity.\nThings to remember:\nDuration and convexity can be used to estimate the percentage change in a bond's price for a given change in its YTM. For noncallable bonds,\nprice change estimates based on duration are adjusted by adding the convexity effect when the YTM declines and subtracting the convexity effect\nwhen the YTM increases.\nCalculate the percentage price change of a bond for a specified change in yield, given the bond’s duration and convexity.", "qhtml": null}, {"n": 29, "q": "If a noncallable bond has an annual modified duration of 9.718 and an annual convexity of 167.574, the estimated percentage price increase if its YTM declines by 50 basis points is closest to:", "opts": ["4.65%", "4.86%", "5.07%"], "ans": "C", "expl": "Duration and convexity can be used to estimate percentage changes in bond prices. Modified duration measures the change in a bond's price for\na given change in its YTM, and convexity measures the change in the bond's price sensitivity.\nDuration-based estimates of price change reflect the inverse relationship between bond prices and yields. To capture the direction of price\nsensitivity changes, the price impact of convexity should be:\nadded to the percentage price change due to duration when YTM declines and\nsubtracted from the percentage price change due to duration when YTM increases.\n(Choice A) 4.65% results from mistakenly subtracting the convexity impact of the price change estimated from the bond's modified duration rather\nthan adding it. Convexity reduces bond price declines when interest rates rise, but increases price appreciation when a bond's YTM decreases.\n(Choice B) 4.86% is the estimated price change due to the bond's modified duration, but it fails to account for the bond's convexity.\nThings to remember:\nDuration and convexity can be used to estimate the percentage change in a bond's price for a given change in its YTM. For noncallable bonds,\nprice change estimates based on duration are adjusted by adding the convexity effect when the YTM declines and subtracting the convexity effect\nwhen the YTM increases.\nCalculate the percentage price change of a bond for a specified change in yield, given the bond’s duration and convexity.", "qhtml": null}, {"n": 30, "q": "An option pricing model is used to determine the following information about a callable bond: Selected Bond Data Bond's initial price 107.21 Bond's price after yield increase 104.66 Bond's price after yield decrease 107.83 Effective convexity −89.90 Approximate convexity −65.47 Based on only this information, the implied shift (in basis points) in the benchmark yield is closest to: ", "opts": ["142", "166", "181"], "ans": "A", "expl": "A bond's price changes can be measured as a function of changes in the bond's YTM or shifts in a benchmark yield curve. Approximate convexity\n(a measure of yield convexity) is the appropriate convexity measure for price changes resulting from changes to a bond's YTM. Effective\nconvexity (a measure of curve convexity) is the appropriate convexity measure for price changes resulting from shifts in a benchmark yield curve.\nThe future cash flows of callable bonds are uncertain due to the embedded option that gives issuers the ability to call the bonds before maturity,\nending cash flows to investors. This means that a callable bond's internal rate of return is not consistent with its YTM, and changes in the YTM\ncannot reliably indicate the bond's duration and convexity. Therefore, effective convexity, not approximate convexity, is used for callable bonds.\nIn this scenario, the bond is callable, so effective convexity is appropriate. Substitute the bond price and the effective convexity data to\ncalculate the implied shift in the benchmark yield:\nCalculate and interpret convexity and describe the convexity adjustment.", "qhtml": null}];
+const CFG = {"title": "Wiley · Yield-Based Bond Convexity and Portfolio Properties", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Fixed Income · 30 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

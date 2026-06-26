@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Decentralized finance (DeFi) is most likely explored in order to:", "opts": ["reform financial regulations.", "function as a medium of exchange.", "deleverage investment risk in digital assets."], "ans": "B", "expl": "Decentralized finance (DeFi) has emerged to meet the demand for decentralized financial applications (dApps), which allow financial\ntransactions to occur without a central system. dApps manage financial tasks on the blockchain, such as serving as a medium of exchange, a\nstore of value, a way to tokenize underlying assets, and a means to record ownership and transfer of digital assets. They also allow for the\ncreation of decentralized financial products and services covering lending, trading, investment, settlement, payments, and transfers.\n(Choice A) DeFi is not intended to reform financial regulations. Instead, it has emerged due to the need for decentralized financial applications\nthat handle financial tasks on the blockchain.\n(Choice C) While DeFi offers certain technological advantages over the traditional finance system, such as saving time and reducing risk in\nsettlements and asset transfers, it has not reached its full potential yet. Up to this point, DeFi applications have primarily been used for investors\nseeking leverage in their investments and speculating with digital assets.\nThings to remember:\nDecentralized finance (DeFi) has emerged to meet the demand for decentralized financial applications, which allow financial transactions to occur\nwithout a central system. These applications manage financial tasks on the blockchain, such as serving as a medium of exchange, a store of\nvalue, a way to tokenize underlying assets, and an immutable record of ownership and transfer. While DeFi presents certain technological\nadvantages over the traditional finance system, it has not yet reached full development.\nDescribe investment forms and vehicles used in digital asset investments", "qhtml": null}, {"n": 2, "q": "Which of the following consensus protocols most likely requires solving puzzles using large amounts of computing power?", "opts": ["Tokenization", "Proof of work", "Proof of stake"], "ans": "B", "expl": "Consensus protocols: proof of work and proof of stake\nProof of work Proof of stake\nValidation Miners validate transactions by solving algorithm puzzles \"Stakers\" guarantee transactions\nPledged stake of holdings in\nValidation requirements Massive amounts of computing power\nblockchain\nProtection from Computing power requirements protect against third-party\n\"Stakers\" protect access\nmanipulation manipulation\nBlockchains are digital ledgers where transaction information is recorded in a series of linked \"blocks\" using a consensus protocol to verify and\nlink the blocks and thus establish an unchangeable \"truth.\" Two primary types of consensus protocols are the proof of work (PoW) and proof of\nstake (PoS) mechanisms.\nPoW protocols require crypto miners to solve complex cryptographic puzzles, a process that consumes large amounts of computing power to\nearn cryptocurrency as a reward. The large expenditure of time, computing power, and energy is intended to make the cost of fraud greater than\nits potential rewards.\nPoS protocols have individual validators pledge or lock up some of their holdings as a \"stake\" to earn the opportunity to validate and guarantee the\naccuracy of newly added information (Choice C). The \"stakers\" are assumed to control and protect the blockchain.\n(Choice A) Tokenization is the process of validating ownership rights to a portion of a blockchain or a distributed ledger. It is one of the\napplications of distributed ledger technology (DLT) to the financial services and investment management industry.\nThings to remember:\nProof of work is one of the primary types of blockchain consensus protocols; it requires large amounts of computing power, which makes the cost\nof fraud greater than its potential rewards. Proof of stake protocols require validators to pledge holdings and then guarantee the accuracy of newly\nadded information, thereby protecting the integrity of the blockchain.\nDescribe investment forms and vehicles used in digital asset investments", "qhtml": null}, {"n": 3, "q": "Digital assets most likely derive value from which of the following?", "opts": ["Liquidity", "Asset appreciation", "Expected cash flows"], "ans": "B", "expl": "Digital vs. traditional assets\nDigital assets Traditional financial assets\nSupply and demand\nSupply and demand\nBasis for inherent Potential to transfer value in future; asset\nPotential to transfer value in future;\nvalue appreciation\nasset appreciation\nExpected future cash flows\nRecords kept in decentralized digital\nledgers enabled by cryptography and Records kept in private ledgers maintained\nValidating transactions\nenhanced algorithms in permissioned by central intermediaries\nor permissionless networks\nMedium of exchange Cryptocurrencies Fiat currency\nLegal and regulatory Ambiguous and evolving regulatory framework with\nWell-defined regulation across jurisdictions\nprotection inconsistencies across jurisdictions\nTraditional financial assets (eg, stocks, bonds) have fundamental values that are primarily determined by expected future cash flows. This\nfundamental value theoretically serves as a basis for an asset's price.\nUnlike traditional investments, digital assets (eg, cryptocurrencies, tokens) have no fundamental values since they are not expected to generate\nfuture cash flows (Choice C). Instead, digital assets derive their values purely from the market's expectations of future price appreciation\nand the potential to realize gains in the future.\n(Choice A) Given their very limited acceptance in conventional financial markets, digital assets are relatively illiquid; thus, liquidity is not a source\nof their value.\nThings to remember:\nThe value of digital assets is primarily determined by their potential for price appreciation and future realized gains. They have no fundamental\nvalue since they do not generate expected cash flows. Given their limited acceptance in traditional financial markets, they are relatively illiquid, so\nliquidity is not a source of their value.\nAnalyze sources of risk, return, and diversification among digital asset investments", "qhtml": null}, {"n": 4, "q": "Which one of the following factors is least likely to influence the prices or returns of most cryptocurrencies?", "opts": ["Limited supply", "Underlying cash flows", "Potential to transfer value in the future"], "ans": "B", "expl": "Most cryptocurrencies derive their values primarily from the price appreciation of the assets themselves, without any underlying cash flows.\nUnlike traditional financial assets, they do not possess inherent value tied to underlying assets or the potential for generating cash flows through\ninterest and dividends (ie, they lack a fundamental value).\nInstead, their prices or returns are primarily determined by the expectation of asset appreciation due to perceived scarcity resulting from limitations\non the total currency supply (Choice A). In addition, their prices or returns are influenced by the potential to transfer value in the future, facilitated\nby unique features in the underlying algorithms that enable specific types of financial transactions (Choice C). Other factors influencing the prices\nor returns of cryptocurrencies are market adoption, network effects, technological advancements, regulatory developments, speculation, and the\noverall appetite for market risk.\nThings to remember:\nThe value of most cryptocurrencies comes mainly from asset price appreciation, without any underlying cash flows. Factors such as scarcity,\npotential for future value transfer, market adoption, network effects, technology advancements, regulations, speculation, and overall market risk\nappetite influence cryptocurrency prices and returns.\nAnalyze sources of risk, return, and diversification among digital asset investments", "qhtml": null}, {"n": 5, "q": "Which of the following statements regarding the regulation of digital assets is correct?", "opts": ["Use of digital assets is legal in every country.", "Price manipulation and fraud may be unregulated on digital exchanges.", "Digital assets are globally considered commodities for regulatory purposes."], "ans": "B", "expl": "Regulation of digital assets compared with traditional financial assets\nDigital assets Traditional financial assets\nClarity Ambiguous and still being developed Clear and well-defined rules\nInconsistent across regulatory bodies:\nAsset class categorization US classifies as commodities Consistent asset classification\nOthers classify as nonfinancial assets\nLegality of market behaviors Legality may vary across accepted guidelines Legality standardized across jurisdictions\nTraditional financial assets, such as stocks and bonds, are clearly defined and regulated under well-established legal frameworks across\njurisdictions. A robust regulatory framework protects capital market integrity and safeguards investors from illegal activities such as price\nmanipulation and fraud.\nIn contrast, the regulatory framework for digital assets poses significant challenges for investors. As digital assets are a relatively new asset\nclass, regulation is still underdeveloped and inconsistent across regulatory bodies. This lack of an established framework leads to poor legal\nguidelines. Thus, certain activities that are illegal on traditional asset exchanges, such as price manipulation and fraud, may be legal on digital\nexchanges.\n(Choice A) The use of digital assets is illegal in some countries, where legal and regulatory standards vary widely.\n(Choice C) US regulatory bodies treat cryptocurrencies as commodities, whereas some other regulatory bodies treat cryptocurrencies as\nnonfinancial assets.\nThings to remember:\nA robust legal and regulatory framework exists around traditional financial assets to protect investors from illegal activities such as price\nmanipulation and fraud. In contrast, a weak regulatory framework exists around digital assets; fraud and price manipulation may be unregulated\non digital exchanges.\nExplain investment features of digital assets and contrast them with other asset classes", "qhtml": null}, {"n": 6, "q": "Which of the following is least likely to be a difference between digital assets and traditional financial assets? Digital assets:", "opts": ["are recorded on a decentralized digital ledger.", "do not have an intrinsic value based on expected cash flows.", "trade under widely accepted and well-known rules and regulations."], "ans": "C", "expl": "Digital assets vs. traditional financial assets\nDigital Traditional\nIntrinsic value None Based on future cash flows\nDecentralized Private ledgers\nValidation of transactions\nRecorded on distributed ledgers Recorded by intermediaries\nLimited for direct exchanges Indirect medium of exchange\nMediums of exchange\nFocus is commercial viability Easily convertible to fiat currencies\nUnregulated\nEstablished and proven standards\nLegal and regulatory Limited legal protection\nWell-defined globally\nIllegal in some countries\nDigital assets differ from traditional financial assets in several important ways. One difference is that regulations for digital assets are not well-\nestablished, resulting in unclear and conflicting guidelines. Digital exchanges often operate without sufficient supervision or legal protections,\nexposing individuals to potential price manipulation and fraudulent activities.\nAlso, the ownership and exchange of digital assets are typically recorded in a decentralized digital ledger, such as a blockchain, using\ncryptography and advanced algorithms (Choice A). In contrast, traditional financial assets are documented in private ledgers controlled and\nprotected by a central intermediary. In the United States, for example, equity shares are registered with the Securities and Exchange Commission.\nUnlike traditional financial assets, the majority of digital assets lack intrinsic value as they have no expected cash flows or underlying asset value.\nInstead, their pricing is mainly driven by expected asset appreciation, which in turn is driven by perceived scarcity and the continued ability to\ntransfer value (Choice B).\nThings to remember:\nRegulations for digital assets are less established compared with traditional financial assets, leading to unclear and conflicting guidelines. Digital\nassets also differ from traditional financial assets as they are recorded on a decentralized digital ledger, and these assets lack intrinsic value since\nthey do not generate expected cash flows.\nExplain investment features of digital assets and contrast them with other asset classes", "qhtml": null}, {"n": 7, "q": "The advantage of a company raising funds through an initial coin offering (ICO) instead of an initial public offering (IPO) is most likely that an ICO:", "opts": ["follows a regulated process.", "requires lower issuance costs.", "provides voting rights to investors."], "ans": "B", "expl": "Differences between initial public offering (IPO) and initial coin offering (ICO)\nIPO ICO\nOffering process Regulated Unregulated\nIssuance costs Higher Lower\nPreparation time frame Longer Shorter\nShareholder voting rights Available Not available\nAn initial coin offering (ICO) is a process through which a company sells a new cryptocurrency to raise funds, with investors receiving\ncryptocurrency in exchange for their investment. On the other hand, an initial public offering (IPO) refers to the process of offering shares of a\nprivate corporation to the public through a new stock issuance.\nAn ICO involves lower issuance expenses compared with an IPO. Since an ICO involves the sale of a cryptocurrency, not a security, it is not\nsubject to the formal registration requirements of an IPO. Therefore, the ICO does not require the legal, accounting, marketing, and underwriting\nfees that IPOs require.\n(Choice A) ICOs are largely unregulated, with no specific regulations and requirements in place. In contrast, the IPO process involves the\npreparation and filing of various documents, such as underwriting agreements, legal and financial disclosures, and corporate governance\ndocuments.\n(Choice C) A company that raises funds through an ICO typically does not provide voting rights to investors since an ICO is the sale of a\ncryptocurrency rather than a security. Investors receive new cryptocurrency tokens that may be used for the issuing company's product or service.\nThings to remember:\nAn initial coin offering (ICO) is the cryptocurrency version of an initial public offering (IPO). Compared with the IPO process, however, ICOs\ngenerally involve lower issuance expenses when raising funds. ICOs are largely unregulated, with no specific regulations in place. Typically, ICOs\ndo not provide voting rights as they entail the sale of a cryptocurrency rather than a security.\nDescribe financial applications of distributed ledger technology", "qhtml": null}, {"n": 8, "q": "Of the following, the most likely benefit of using distributed ledger technology (DLT) to record financial transactions is that DLT:", "opts": ["is operationally secure.", "provides greater transparency.", "requires only small amounts of energy to verify transaction activity."], "ans": "B", "expl": "Advantages and disadvantages of distributed ledger technology\nAdvantages Disadvantages\nEnhanced precision and security in record keeping Technology not fully secured\nGreater transparency in record keeping Greater likelihood of security\nFaster exchange of ownership breaches\nFacilitates peer-to-peer interaction Massive energy consumption\nDistributed ledger technology (DLT) creates a shared electronic database where transactions are recorded, tracked, and shared in a\ndistributed ledger (D5898). These transactions can involve the creation, transfer, or recording of digital asset ownership.\nDLT offers the advantage of greater transparency in record keeping since all participants have access to the entire digital record. Even user\nnodes that are not part of the consensus protocols, and thus cannot validate or accept transactions, can access the ledger containing all records.\nHowever, DLT also has disadvantages. For instance, the technology is not fully secured, so there is an increased likelihood of privacy and data\nprotection breaches (Choice A). Moreover, the computational processes involved in DLT often demand substantial energy consumption to\nvalidate transaction activity (Choice C).\nThings to remember:\nDistributed ledger technology (DLT) provides the benefit of enhanced transparency in record keeping since even users who cannot validate and\naccept transactions have access to the complete database. However, DLT is not completely secure. Disadvantages include the increased\nlikelihood of security breaches and the substantial amount of computational energy required.\nDescribe financial applications of distributed ledger technology", "qhtml": null}, {"n": 9, "q": "Cryptocurrencies most likely:", "opts": ["are easily converted into fiat currencies.", "do not have a fundamental inherent value.", "are regularly used as a direct medium of exchange."], "ans": "B", "expl": "Uses as a medium of exchange\nCryptocurrencies Traditional financial assets (eg, stocks, bonds)\nGenerally not accepted as legal tender; stiff restrictions Generally not used as direct medium of exchange, but easily\nor outright ban in some countries exchanged into fiat currencies\nCryptocurrencies do not have a fundamental value. Their price results primarily from expected price appreciation due to perceived scarcity and\nthe potential to transfer value in the future.\nThere is limited acceptance of cryptocurrency as a traditional medium of exchange in the mainstream financial system. Although\ncryptocurrencies are used to pay for certain goods and services and as investments, they are not legal tender in most jurisdictions. The use of\ncryptocurrency for payment and investment purposes is restricted in multiple countries; other countries have banned it outright.\n(Choice A) Cryptocurrencies can be converted into fiat currency; however, this typically necessitates the use of a third-party platform (eg, an app\nthat creates a secure \"wallet\") linked directly to an individual's bank account. These platforms usually charge fees, have withdrawal limits, and\nimpose a delay in releasing cash, so the conversion is not an easy process.\n(Choice C) Cryptocurrencies are not regularly used as a medium of exchange. It is possible with Bitcoin, but only in certain circumstances such\nas online transactions in which counterparties use the Web3 ecosystem.\nThings to remember:\nCryptocurrencies do not have a fundamental value. Their price results primarily from expected price appreciation due to perceived scarcity and\nthe potential to transfer value in the future. Cryptocurrency is typically not useful as a medium of exchange since it requires a specialized trading\nplatform with associated fees and restrictions. In addition, some countries have outright bans on the use of cryptocurrencies.\nExplain investment features of digital assets and contrast them with other asset classes", "qhtml": null}, {"n": 10, "q": "Stablecoins least likely:", "opts": ["are collateralized by a basket of assets.", "are launched for entertainment purposes.", "maintain their value through algorithmic formulas."], "ans": "B", "expl": "Main features of stablecoins\nStable value through asset reserves or algorithmic formulas\nFewer issues with cryptocurrency transactions\nFacilitation of settlement\nSimplification of cross-border trading, investing, and payments\nMeme coins are cryptocurrencies that often stem from humorous ideas and are typically introduced for entertainment purposes. In contrast,\nstablecoins are cryptocurrencies created to keep a steady value by pegging their worth to another asset.\nStablecoins are collateralized by a reserve of another asset, such as a currency, commodity, or financial instrument (Choice A). The reserve\nprotects investors from price volatility often observed in other cryptocurrencies like Bitcoin, as well as potential issues with cryptocurrency\ntransactions, such as network congestion and insufficient fees.\nSome stablecoins, known as \"smart stablecoins\" or \"algorithmic stablecoins,\" aim to achieve price stability through algorithmic formulas that\ncontrol their supply relative to another asset, instead of depending on physical reserves of that asset (Choice C).\nThings to remember:\nStablecoins are cryptocurrencies pegged to the value of another asset and collateralized by a reserve of this asset, such as a currency,\ncommodity, or financial instrument. Some stablecoins aim to achieve price stability through algorithmic formulas that control their supply. In\ncontrast, meme coins are cryptocurrencies that often stem from humorous ideas and are typically introduced for entertainment purposes.\nExplain investment features of digital assets and contrast them with other asset classes", "qhtml": null}, {"n": 11, "q": "Which of the following is least likely to be a source of risk for a cryptocurrency? The cryptocurrency is:", "opts": ["created on a permissionless network.", "recorded in a decentralized distributed ledger.", "valued based on expected future earnings and/or cash flows."], "ans": "C", "expl": "Sources of risk and return for cryptocurrencies\nSources of risk Sources of return\nNo fundamental value Market adoption\nDecentralized digital ledger Network effects\nPermissionless networks Technological advancement\nLess usage as direct medium of exchange Regulatory development\nAmbiguous, evolving framework Speculation\nUnregulated with minimum legal protections General market risk appetite\nCryptocurrency lacks fundamental value, having no expected future earnings and/or cash flows. Therefore, cryptocurrencies' value is based\non asset appreciation and the ability to transfer value in the future. This has led to volatile price fluctuations and uncertainties in their markets.\nOther sources of risk for cryptocurrencies include the use of distributed ledger technology (DLT). Cryptocurrency is logged in a decentralized\ndistributed ledger, which does not provide complete security, leaving room for potential privacy breaches and data protection concerns (Choice\nB). DLT offers several advantages, such as improved precision, transparency, and security in maintaining records, as well as faster ownership\ntransfers and peer-to-peer interactions.\nDLT can be a permissionless or permissioned network. Permissionless networks are open to all users for transactions and lack centralized\nauthority for transaction validation. Decentralized exchanges are hard to regulate, enabling potential illegal activity, which is another source of risk\nfor cryptocurrencies (Choice A).\nThings to remember:\nOne source of risk for cryptocurrencies is that they have no intrinsic value as they lack anticipated future earnings and cash flows; their value\ndepends on asset appreciation and the capacity to transfer value in the future. Also, they depend on distributed ledger technology, which is open\nto security breaches and illegal activity.\nDescribe investment forms and vehicles used in digital asset investments", "qhtml": null}, {"n": 12, "q": "Permissionless networks most likely support cryptocurrency investors by creating:", "opts": ["decentralization.", "faster speed of transaction validation.", "cost-effectiveness of transaction validation."], "ans": "A", "expl": "Differences between permissioned and permissionless networks\nPermissioned Permissionless\nSpeed of transaction validation Faster Slower\nCost-effectiveness of transaction validation More Less\nGovernance Centralized Decentralized\nDegree of decentralization Partial Total\nAccess Limited membership Unlimited membership\nDigital ledger technology, which employs cryptography and algorithms, can be maintained on a permissioned or permissionless network. A\npermissionless network is open to any user to engage in transactions and to maintain the network. With many participants storing a copy of\nthe same single distributed ledger, the network is decentralized, so no one user can cause the network to fail. Bitcoin creation is a well-known\nexample of a permissionless network.\nIn contrast, a permissioned network requires approval to join and to participate in various activities and thus is typically accessed by a limited\nnumber of authorized individuals. Such networks are generally used for enterprise purposes, enabling private entities to manage their data and\noperations.\n(Choice B) A permissionless network operates without any centralized authority for transaction validation and thus requires a larger number of\nmembers to reach consensus to validate transactions. As a result, processing speed is slower, which decreases network speed and scalability.\n(Choice C) Validating transactions on a permissionless network requires the work of many members, which consumes large amounts of\nprocessing power, making this type of network less cost-effective than permissioned blockchains.\nThings to remember:\nA permissionless network is completely decentralized and thus does not require a central intermediary for transaction validation. It requires a\nlarge number of members to reach consensus on validating transactions, which slows processing speed, and it consumes more computer\nprocessing power, which decreases cost-effectiveness.\nDescribe financial applications of distributed ledger technology", "qhtml": null}, {"n": 13, "q": "Digital assets most likely derive value from which of the following?", "opts": ["Liquidity", "Asset appreciation", "Expected cash flows"], "ans": "B", "expl": "Digital vs. traditional assets\nDigital assets Traditional financial assets\nSupply and demand\nSupply and demand\nBasis for inherent Potential to transfer value in future; asset\nPotential to transfer value in future;\nvalue appreciation\nasset appreciation\nExpected future cash flows\nRecords kept in decentralized digital\nledgers enabled by cryptography and Records kept in private ledgers maintained\nValidating transactions\nenhanced algorithms in permissioned by central intermediaries\nor permissionless networks\nMedium of exchange Cryptocurrencies Fiat currency\nLegal and regulatory Ambiguous and evolving regulatory framework with\nWell-defined regulation across jurisdictions\nprotection inconsistencies across jurisdictions\nTraditional financial assets (eg, stocks, bonds) have fundamental values that are primarily determined by expected future cash flows. This\nfundamental value theoretically serves as a basis for an asset's price.\nUnlike traditional investments, digital assets (eg, cryptocurrencies, tokens) have no fundamental values since they are not expected to generate\nfuture cash flows (Choice C). Instead, digital assets derive their values purely from the market's expectations of future price appreciation\nand the potential to realize gains in the future.\n(Choice A) Given their very limited acceptance in conventional financial markets, digital assets are relatively illiquid; thus, liquidity is not a source\nof their value.\nThings to remember:\nThe value of digital assets is primarily determined by their potential for price appreciation and future realized gains. They have no fundamental\nvalue since they do not generate expected cash flows. Given their limited acceptance in traditional financial markets, they are relatively illiquid, so\nliquidity is not a source of their value.\nExplain investment features of digital assets and contrast them with other asset classes", "qhtml": null}, {"n": 14, "q": "An investment in Bitcoin futures would most appropriately be characterized as a(n):", "opts": ["direct digital investment.", "indirect digital investment.", "digital form of investment for nondigital assets."], "ans": "B", "expl": "Direct vs. indirect digital investments\nDigital forms of investments\nDirect Indirect\nfor nondigital assets\nCoins ✓\nFutures ✓\nETFs ✓\nHedge funds ✓\nEquities ✓\nAsset-backed tokens ✓\nInvestments in cryptocurrencies can be direct or indirect. Direct investments are made on digital exchanges and recorded directly in the\nblockchain (Choice A).\nIndirect digital investments are made through conventional securities (eg, equities, ETFs, hedge funds) invested in digital exchanges or\nblockchain-related assets, or they can be derivatives (eg, futures contracts) with cryptocurrencies as the underlying reference asset. Therefore,\nbuying Bitcoin futures rather than the cryptocurrency itself is an indirect digital investment.\nIn the US, Bitcoin futures trade through the Chicago Mercantile Exchange (CME), which tracks the spot price of Bitcoin via an internal reference\nrate. Bitcoin futures are typically cash settled, and no Bitcoin changes hands.\n(Choice C) When a digital security's value is derived from a nondigital asset (eg, a traditional financial asset), it is considered direct ownership of\nthe nondigital asset. For example, asset-backed tokens represent digital claims on physical or financial assets collateralized by the underlying\nasset.\nThings to remember:\nIndirect digital investments are made through conventional securities invested in digital exchanges or blockchain-related assets, or they can be\nderivatives with blockchain-related assets as the underlying. Direct digital investments involve purchasing cryptocurrency on a digital exchange\nand are recorded in the blockchain.\nDescribe investment forms and vehicles used in digital asset investments", "qhtml": null}];
+const CFG = {"title": "Wiley · Introduction to Digital Assets", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Alternative Investments · 14 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "An investor with a 5-year investment horizon observes the following annual compound spot rates: Tenor Spot Rate 1-year 2.50% 2-year 2.90% 3-year 3.20% 4-year 3.40% 5-year 3.50% Given the observed spot rates, the 3y2y implied forward rate is closest to:", "opts": ["3.55%", "3.90%", "3.95%"], "ans": "C", "expl": "Implied forward rates (IFRs), also known as forward yields, are future period interest rates that reflect the difference between spot rates of\ndifferent tenors (ie, maturities). Spot rates are the YTMs on zero-coupon bonds. The IFR for the period between two spot rates of different\nmaturities is a reinvestment rate that results in two strategies, each having an investment horizon equal to the longer-maturity spot rate, earning\nthe same rate of return.\nIn this question, given the stipulated investment horizon and spot rates, the two strategies are:\nInvest at the 3-year spot rate and then, at the end of 3 years, reinvest the maturity value at a rate equal to today's 3y2y IFR (ie, the 2-year\nrate starting 3 years in the future).\nInvest at the 5-year spot rate and hold for 5 years.\nSince IFRs are reinvestment rates that result in two strategies earning equal rates of return, forward rates are referred to as breakeven\nreinvestment rates.\nThe 3y2y IFR (ie, the 2-year forward rate starting 3 years in the future, or IFR ) is calculated as 3.95%:\n3,5 − 3\n(Choice A) 3.55% is the 1y2y IFR (ie, 2-year forward rate starting 1 year in the future).\n(Choice B) 3.90% is the 2y3y IFR (ie, 3-year forward rate starting 2 years in the future).\nThings to remember:\nAn implied forward rate (IFR) is a future period interest rate that reflects the difference between two spot rates of different tenors (ie, maturities).\nSince IFRs are reinvestment rates that result in two strategies earning equal rates of return, forward rates are referred to as breakeven\nreinvestment rates.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates.", "qhtml": null}, {"n": 2, "q": "The forward curve consists of the following rates, which are stated on a semiannual basis: Based on this information, the implied three-year spot rate is closest to:", "opts": ["7.56%", "7.72%", "9.78%"], "ans": "B", "expl": "The forward curve, also called the forward yield curve, refers to the forward rates for different maturities. The forward rates are derived from\ntoday's spot rates for different maturities. The general formula for calculating a forward rate is given as:\nThe 0y1y forward rate is the one-year forward rate that begins at time 0 (ie, today), so it is also the one-year spot rate. This means that the\nforward rates can be used to derive an implied spot rate.\nThis question requires the 0y1y, 1y1y, and 2y1y forward rates to generate the implied three-year spot rate. Since the forward rates are stated on a\nsemiannual basis, each rate must be divided by two and compounded twice (ie, squared) to produce an accurate response. The calculations that\nproduce an implied 3-year spot rate of approximately 7.72% are shown below:\nThings to remember:\nThe forward curve consists of implied forward rates across different maturities. The forward rates can be derived from known spot rates.\nHowever, if the forward rates are known, they can be used to derive the spot rates for different maturities.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates LOS\n3.An analyst gathers the following information on spot rates:\nMaturity Spot Rate\n0.5 year 1.50%\n1.0 year 1.90%\n1.5 years 2.20%\n2.0 years 2.40%\nBased on this information, the price of a two-year 3% coupon bond that pays interest semiannually is closest to:\nA. 96.64\nB. 101.16\n\nC. 101.18\nExplanation\nFixed-rate bonds pay coupons at the end of each period and return the par value with the final coupon payment; a bond's price can be estimated\nas the sum of the present value of each cash flow. Zero-coupon bonds make only a single payment at maturity, so a coupon bond can be priced\nas if it were a series of zero-coupon bonds with par values equal to the coupon bond's cash flows and maturities matching the payment of those\ncash flows.\nSpot rates are the YTM on zero-coupon bonds, so the rates provided here can be used to calculate the present values of each of the coupon\nbond's cash flows. For this scenario:\nEach periodic coupon payment is 0.03 × 100 ÷ 2 = 1.50.\nThe stated (ie, annual) spot rates are converted to periodic (semiannual) equivalent rates by dividing by the bond's periodicity (2).\n(Choice A) 96.64 results from discounting each cash flow by 1 plus the stated spot rate, therefore failing to convert the annual rates to their\nsemiannual equivalent.\n(Choice B) 101.16 results from discounting each cash flow by the semiannual equivalent of the two-year spot rate (1.2%).\nThings to remember:\nA coupon bond can be priced as if it were a series of zero-coupon bonds with par values equal to the coupon bond's cash flows and maturities\nmatching the payment of those cash flows. The individual cash flows are discounted by the YTM of a zero-coupon bond (ie, spot rate). The spot\nrate must be converted to a periodic equivalent rate for bonds with a periodicity greater than 1.\nDefine spot rates and the spot curve, and calculate the price of a bond using spot rates.", "qhtml": null}, {"n": 3, "q": "An analyst gathers the following information on spot rates: Maturity Spot Rate 0.5 year 1.50% 1.0 year 1.90% 1.5 years 2.20% 2.0 years 2.40% Based on this information, the price of a two-year 3% coupon bond that pays interest semiannually is closest to:", "opts": ["96.64", "101.16", "101.18"], "ans": "C", "expl": "Fixed-rate bonds pay coupons at the end of each period and return the par value with the final coupon payment; a bond's price can be estimated\nas the sum of the present value of each cash flow. Zero-coupon bonds make only a single payment at maturity, so a coupon bond can be priced\nas if it were a series of zero-coupon bonds with par values equal to the coupon bond's cash flows and maturities matching the payment of those\ncash flows.\nSpot rates are the YTM on zero-coupon bonds, so the rates provided here can be used to calculate the present values of each of the coupon\nbond's cash flows. For this scenario:\nEach periodic coupon payment is 0.03 × 100 ÷ 2 = 1.50.\nThe stated (ie, annual) spot rates are converted to periodic (semiannual) equivalent rates by dividing by the bond's periodicity (2).\n(Choice A) 96.64 results from discounting each cash flow by 1 plus the stated spot rate, therefore failing to convert the annual rates to their\nsemiannual equivalent.\n(Choice B) 101.16 results from discounting each cash flow by the semiannual equivalent of the two-year spot rate (1.2%).\nThings to remember:\nA coupon bond can be priced as if it were a series of zero-coupon bonds with par values equal to the coupon bond's cash flows and maturities\nmatching the payment of those cash flows. The individual cash flows are discounted by the YTM of a zero-coupon bond (ie, spot rate). The spot\nrate must be converted to a periodic equivalent rate for bonds with a periodicity greater than 1.\nDefine spot rates and the spot curve, and calculate the price of a bond using spot rates.", "qhtml": null}, {"n": 4, "q": "An analyst has compiled the following data points from a forward curve: Period Forward Rate (%) 0y1y 0.90 1y1y 1.35 2y1y 2.89 3y1y 3.42 Based on these rates, the price of a 3-year bond with 2.5% annual coupon is closest to: ", "opts": ["102.34", "104.01", "104.57"], "ans": "A", "expl": "The present value of a bond is equal to the sum of the bond's discounted cash flows. The discounting calculation usually relies on spot rates.\nHowever, the bond's value also can be calculated using the forward curve, in which each cash flow is discounted using the combination of\nforward rates that is equivalent to the appropriate spot rate.\nForward rates and spot rates are related and each can be derived from the other (as shown in the image above). However, solving for spot rates\nis not required to calculate a bond's value. Instead, the forward rates can be applied directly to solve the discount rates at each cash flow and,\nsubsequently, the present value.\nIn this scenario, since each coupon is 2.50 (100 × 0.025):\n(Choice B) 104.01 is the bond's price if 1y1y (not 0y1y) is used as the starting point of the discounting calculations.\n(Choice C) 104.57 is the bond's price if each forward rate is applied individually to each cash flow, as if they were spot rates.\nThings to remember:\nThe present value of a bond is equal to the sum of the bond's discounted cash flows. Each cash flow can be discounted using the combination of\nforward rates that is equivalent to the appropriate spot rate.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates.", "qhtml": null}, {"n": 5, "q": "A feature of spot curves is that bond yields-to-maturity most likely assume that bonds are:", "opts": ["priced at par.", "coupon bonds.", "free of default risk."], "ans": "C", "expl": "Different yield curves\nYield curve Underlying Yields\nSpot curve YTMs on zero-coupon bonds\nPar curve YTMs if the bonds are priced at par\nYTM are implied forward rates that link shorter-term, zero-\nForward curve\ncoupon bond yields to longer-term, zero-coupon yields\nYield curves are ideally constructed using bonds with the same characteristics, such as maturity, coupon rate and frequency, credit risk,\nliquidity, tax status, etc. It is unlikely that bonds fitting all these criteria will be readily available, so the most practical solution is to create a spot\ncurve using a series of government zero-coupon bonds with various maturities.\nThis is the preferred solution since these bonds have many common features: the same issuer, liquidity, and tax status. Since they are\ngovernment bonds, they are assumed to have no default risk and as zero-coupon bonds, they have no reinvestment risk.\nNote that bonds issued by any government always have some risk of default and that some sovereign issuers are riskier than others, but it is\ngenerally assumed that bonds issued by governments of certain nations are effectively free of default risk.\n(Choice A) A par curve is designed so that the bonds represented by the YTMs at every point of the curve are priced at par. This assumption\ndoes not apply to spot curves.\n(Choice B) A spot curve is compiled using YTMs of zero-coupon government bonds.\nThings to remember:\nA spot curve is derived from the YTMs of a series of zero-coupon government bonds, which do not bear default or reinvestment risk. Unlike par\ncurves, spot curves do not make any assumption about bond price.\nCompare the spot curve, par curve, and forward curve.", "qhtml": null}, {"n": 6, "q": "A benchmark government yield curve is most likely obtained from:", "opts": ["interpolation.", "the par curve.", "the spot curve."], "ans": "A", "expl": "Yield curves display the term structure of interest rates by graphing the relationship between maturities and bond yields. Government bonds form\nthe basis of most yield curves, the most fundamental of which is the yield curve on coupon bonds (ie, the coupon curve).\nMany governments regularly issue bonds in select maturities such as 2, 3, 5, 7, 10, and 30 years, and these bonds form the backbone of the\n\"benchmark\" coupon curve. As government coupon curves are constructed using only the most recently issued and actively traded bonds as\nbenchmarks, the remainder of the curve is constructed using interpolation (ie, estimated values) to connect these points.\n(Choices B and C) The spot curve is constructed from a series of government zero-coupon bonds of different maturities. A par curve is\nconstructed from a spot curve and represents the coupon rate for a given maturity such that the bond would trade at par when each coupon\npayment is discounted by the appropriate term spot rate. Spot and/or par curves are not used to construct a benchmark coupon curve.\nThings to remember:\nYield curves on government coupon bonds are constructed using only the most recently issued and actively traded benchmark bonds. The\nremainder of the curve is constructed using interpolation to connect these points.\nCompare the spot curve, par curve, and forward curve.", "qhtml": null}, {"n": 7, "q": "An investor wants to price a two-year, 6% annual coupon bond. Spot rates are 5% for zero-coupon, one-year bonds of similar credit quality and 7% for similar, zero-coupon, two-year bonds. Based on this information, the price of the bond per 100 of par value is closest to:", "opts": ["implied spot rate of a two-year zero-coupon bond in one year.", "required rate of return to invest in the three-year zero-coupon bond.", "breakeven reinvestment rate on a one-year zero-coupon bond in two years."], "ans": "C", "expl": "The implied forward rate (or just \"forward rate\") is an interest rate derived from the current zero-coupon bond term structure (ie, spot curve).\nArbitrage-free pricing enforces the consistency of forward rates with spot rate differences. A forward rate can be interpreted as the incremental\nreturn required for extending the time-to-maturity by an additional period.\nFor example, in this scenario an investor would be indifferent to investing in a three-year zero-coupon bond at 2.15% or investing in a two-year\nzero-coupon bond at 1.85% and then, two years from now, in a one-year zero-coupon bond at 2.75% (ie, the \"2y1y\" forward rate), since both result\nin the same return in three years.\nThe implied forward rate is the breakeven reinvestment rate required to make the two transactions equivalent. If an investor believes that the\none-year rate two years in the future will be lower than the breakeven rate of 2.75%, the investor is better off buying the three-year zero-coupon\nbond today.\n(Choice A) The implied spot rate of a two-year zero-coupon bond in one year is quoted as 1y2y, not 2y1y.\n(Choice B) The rate of return of the three-year zero-coupon bond is known (ie, 2.15%); it is the return of the one-year zero-coupon bond in two\nyears that is uncertain. The implied forward rate is the required rate of return for the investor to be indifferent to the two transactions.\nThings to remember:\nThe implied forward rate is an interest rate derived from the current zero-coupon bond term structure. It is the breakeven reinvestment rate that is\nrequired to make a series of zero-coupon bond transactions economically equivalent.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates.", "qhtml": null}, {"n": 8, "q": "An investor is considering a three-year investment and has calculated a \"2y1y\" forward rate of 2.75%. If a two-year zero-coupon bond's YTM is 1.85% and a three-year zero-coupon bond's YTM is 2.15%, the forward rate is best described as the:", "opts": ["implied spot rate of a two-year zero-coupon bond in one year.", "required rate of return to invest in the three-year zero-coupon bond.", "breakeven reinvestment rate on a one-year zero-coupon bond in two years."], "ans": "C", "expl": "The implied forward rate (or just \"forward rate\") is an interest rate derived from the current zero-coupon bond term structure (ie, spot curve).\nArbitrage-free pricing enforces the consistency of forward rates with spot rate differences. A forward rate can be interpreted as the incremental\nreturn required for extending the time-to-maturity by an additional period.\nFor example, in this scenario an investor would be indifferent to investing in a three-year zero-coupon bond at 2.15% or investing in a two-year\nzero-coupon bond at 1.85% and then, two years from now, in a one-year zero-coupon bond at 2.75% (ie, the \"2y1y\" forward rate), since both result\nin the same return in three years.\nThe implied forward rate is the breakeven reinvestment rate required to make the two transactions equivalent. If an investor believes that the\none-year rate two years in the future will be lower than the breakeven rate of 2.75%, the investor is better off buying the three-year zero-coupon\nbond today.\n(Choice A) The implied spot rate of a two-year zero-coupon bond in one year is quoted as 1y2y, not 2y1y.\n(Choice B) The rate of return of the three-year zero-coupon bond is known (ie, 2.15%); it is the return of the one-year zero-coupon bond in two\nyears that is uncertain. The implied forward rate is the required rate of return for the investor to be indifferent to the two transactions.\nThings to remember:\nThe implied forward rate is an interest rate derived from the current zero-coupon bond term structure. It is the breakeven reinvestment rate that is\nrequired to make a series of zero-coupon bond transactions economically equivalent.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates.", "qhtml": null}, {"n": 9, "q": "Theoretically, all bonds on a par curve are least likely to have the same:", "opts": ["liquidity.", "maturity.", "credit risk."], "ans": "B", "expl": "Yield curves display the term structure of interest rates, which graphs the relationship between times-to-maturity and bond yields. In theory, the\nyields are derived from bonds with the same currency, credit risk, liquidity, and tax status (Choices A and C). Furthermore, the annual yields are\nexpressed using the same periodicity.\nThere are three different types of yield curves discussed in CFA Institute's curriculum:\nDifferent yield curves\nYield curve Underlying Yields\nSpot curve YTMs on zero-coupon bonds\nPar curve YTMs if the bonds are priced at par\nYTM are implied forward rates that link shorter-term, zero-\nForward curve\ncoupon bond yields to longer-term, zero-coupon yields\nThe YTMs on the par curve are the discount rates, assuming that the prices of the bonds are equal their par values (ie, face values).\nThings to remember:\nYields on a yield curve are derived from bonds with the same currency, credit risk, liquidity, and tax status. The curriculum describes three types of\nyield curves: spot, par, and forward. The YTMs on the par curve are the discount rates that price the bonds equal to their par values.\nCompare the spot curve, par curve, and forward curve.", "qhtml": null}, {"n": 10, "q": "Which of the following is most likely a valid assumption in constructing a par yield curve?", "opts": ["A par yield curve mainly uses bonds that are priced at par.", "All cash flows from a bond are discounted at the same rate.", "Each bond uses the same periodicity regardless of maturity."], "ans": "C", "expl": "A par curve is constructed from a spot curve. Both curves discount cash flows by the spot rate for each period that the cash flow occurs;\ntherefore, the discounting rates for both curves assume the same periodicity across all maturities.\nThe main difference between the par and spot curves is that the present values of bonds included in a spot curve can differ from their par values.\nThe par curve assumes that each bond's present value always equals its par value. This assumption allows yields for different maturities to be\ncompared directly.\nThe par yield is the assumed coupon rate that makes the present value equal to the par value when discounting the cash flows using the spot\nrates, as shown by the formula below:\nAs the table above demonstrates, the difference between the yield measures is not significant, being as small as one or two basis points in some\ncases.\n(Choice A) The par curve is derived from adjusting a bond's payments so that the present value is equal to the par value, but the actual market\nprice can be any value.\n(Choice B) Each cash flow is discounted at the spot rate for the period when the cash flow occurs. Since spot rates can be (and usually are)\ndifferent for each maturity, cash flows are discounted at different rates.\nThings to remember:\nA par curve is constructed from a spot curve. The total present value of all payments, discounted at each payment's spot rate, is equal to the\nbond's par value. One assumption of a par curve is that the periodicity for each spot rate is the same for all maturities.\nCompare the spot curve, par curve, and forward curve.", "qhtml": null}, {"n": 11, "q": "An analyst has gathered the following forward rates: Period Forward Rate 0y,1y 2.23% 1y,1y 2.49% 2y,1y 2.61% If the rates are based on a periodicity of one, the implied two-year spot rate is closest to: ", "opts": ["2.36%", "2.44%", "2.75%"], "ans": "A", "expl": "A spot rate is the YTM on a zero-coupon bond. A forward rate is a future period interest rate that reflects the differences between spot rates of\ndifferent maturities. Arbitrage-free pricing ensures that two investment strategies of equivalent risk covering the same time horizon earn the same\nreturn. Therefore, a spot rate for a given term must be consistent with a series of forward rates over the same horizon, and that series of\nforward rates can be used to find the implied spot rate for that term.\nFor this scenario, the two investment strategies reflecting the series of forward rates are:\nBuy a two-year zero-coupon bond and hold to maturity\nBuy a one-year zero-coupon bond and hold to maturity, then reinvest the proceeds in another one-year zero-coupon bond\nThese two strategies are illustrated on a timeline:\nThe implied two-year spot rate can be computed using the given equation:\nNote the forward rate notation used: The second numeral denotes the term of the forward rate, and the first numeral denotes its starting point. For\nexample, \"2y,1y\" should be read as a one-year rate beginning 2 years from today.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates. LOS\n12.A Treasury bond with a 5% annual coupon and 4 years remaining to maturity is currently priced at 106 per 100 of par value. An investor plans\nto create an arbitrage profit by replicating this bond with zero-coupon strips using the spot rates shown in the image below:\nIgnoring transaction costs, the potential profit from the arbitrage transaction is closest to:\nA. 0\nB. 0.31\n C. 0.42\nExplanation\nAccording to the arbitrage-free valuation approach, a fixed-rate coupon Treasury bond can be replicated from a series of zero-coupon bonds\nwith the same pattern of cash flows. The no-arbitrage value (ie, price) of the replicated bond equals the sum of the face values of each zero-\ncoupon bond discounted by a corresponding spot rate. If the fixed-rate bond's market price is not its arbitrage-free price, then arbitrage is\npossible.\nIn this scenario, the fixed-rate Treasury bond's market price is 106, which is below the arbitrage-free price of 106.42. An investor can purchase the\nTreasury bond for 106 and short sell the package of zero-coupon strips that replicate the mispriced bond's cash flows for 106.42, generating a\nprofit of 0.42.\n(Choice A) There is a profit of 0.42 from this transaction. There would be no arbitrage profit possible only if the fixed-rate bond's market price is\nequal to the price of the replicated bond, that is, its arbitrage-free price.\n(Choice B) 0.31 results from dividing each spot rate by 2 and then annualizing it. Since the quoted spot rates are annual rates, they should not\nbe treated like semiannual rates.\nThings to remember:\nAccording to the arbitrage-free valuation approach, a fixed-rate coupon Treasury bond can be replicated from a series of zero-coupon bonds with\nthe same pattern of cash flows. If the fixed-rate bond's market price is not its arbitrage-free price, then arbitrage is possible. Ignoring transaction\ncosts, the arbitrage profit equals the absolute difference between the price of the fixed-rate bond and the present value of the series of zero-\ncoupon bonds.\nDefine spot rates and the spot curve, and calculate the price of a bond using spot rates.", "qhtml": null}, {"n": 12, "q": "A Treasury bond with a 5% annual coupon and 4 years remaining to maturity is currently priced at 106 per 100 of par value. An investor plans to create an arbitrage profit by replicating this bond with zero-coupon strips using the spot rates shown in the image below: Ignoring transaction costs, the potential profit from the arbitrage transaction is closest to:", "opts": ["0", "0.31", "0.42"], "ans": "C", "expl": "According to the arbitrage-free valuation approach, a fixed-rate coupon Treasury bond can be replicated from a series of zero-coupon bonds\nwith the same pattern of cash flows. The no-arbitrage value (ie, price) of the replicated bond equals the sum of the face values of each zero-\ncoupon bond discounted by a corresponding spot rate. If the fixed-rate bond's market price is not its arbitrage-free price, then arbitrage is\npossible.\nIn this scenario, the fixed-rate Treasury bond's market price is 106, which is below the arbitrage-free price of 106.42. An investor can purchase the\nTreasury bond for 106 and short sell the package of zero-coupon strips that replicate the mispriced bond's cash flows for 106.42, generating a\nprofit of 0.42.\n(Choice A) There is a profit of 0.42 from this transaction. There would be no arbitrage profit possible only if the fixed-rate bond's market price is\nequal to the price of the replicated bond, that is, its arbitrage-free price.\n(Choice B) 0.31 results from dividing each spot rate by 2 and then annualizing it. Since the quoted spot rates are annual rates, they should not\nbe treated like semiannual rates.\nThings to remember:\nAccording to the arbitrage-free valuation approach, a fixed-rate coupon Treasury bond can be replicated from a series of zero-coupon bonds with\nthe same pattern of cash flows. If the fixed-rate bond's market price is not its arbitrage-free price, then arbitrage is possible. Ignoring transaction\ncosts, the arbitrage profit equals the absolute difference between the price of the fixed-rate bond and the present value of the series of zero-\ncoupon bonds.\nDefine spot rates and the spot curve, and calculate the price of a bond using spot rates.", "qhtml": null}, {"n": 13, "q": "An investor replicates a 4-year, 2% annual coupon-paying Treasury bond with 100 par value by combining zero-coupon bonds with the following spot rates: The YTM on the bond is closest to:", "opts": ["3.00%", "3.94%", "4.43%"], "ans": "B", "expl": "A fixed-rate coupon Treasury bond can be replicated from a series of zero-coupon bonds (strips) with the same pattern of cash flows. The\nprice of the fixed-rate bond should equal the sum of the face values of the individual strips discounted by their corresponding spot rates (ie, the\nmarket discount rate for zero-coupon bonds). This is known as the arbitrage-free valuation approach since the same price applies to both\ninstruments; otherwise, arbitrage opportunities will be present.\nThe YTM is the rate that discounts a bond's future cash flows to its current price. To calculate the YTM (r) of a fixed-rate bond, first calculate the\nbond's present value (ie, price) using the cash flows of the zero-coupon strips, and then input the present value and other parameters (ie, maturity,\ncoupons, par value) on the calculator to solve for r.\n(Choice A) 3.00% results from incorrectly using 8 (ie, assuming semiannual periods) for the number of periods.\n(Choice C) 4.43% results from failing to include the last coupon payment of 20 in period 4's cash flow when computing the bond's present value.\nThings to remember:\nA fixed-rate coupon Treasury bond can be replicated from a series of zero-coupon bonds (strips) with the same pattern of cash flows. To calculate\nthe YTM (r) of a fixed-rate bond, first calculate the bond's present value (ie, price) by discounting the series of zero-coupon strips at corresponding\nspot rates, and then input the present value and other parameters (ie, maturity, coupons, par value) on the calculator to solve for r.\nDefine spot rates and the spot curve, and calculate the price of a bond using spot rates.", "qhtml": null}, {"n": 14, "q": "The following table shows the spot rates for Years 1 through 4: If the rates are stated on an annual basis, the 2y1y implied forward rate is closest to:", "opts": ["4.25%", "4.60%", "4.95%"], "ans": "C", "expl": "One assumption underlying a bond's total return is that the investor reinvests all cash flows. The reinvestment rate that an investor expects to\nreceive today is the implied forward rate. It can be derived if the spot rates are known for each period that the investor plans to hold the bond.\nAn investor with a three-year horizon can invest in a three-year, zero-coupon bond with a guaranteed annual return of 4.15% based on today's\nthree-year spot rate; this is the first strategy shown in the diagram below. Alternatively, the investor can replicate a three-year, zero-coupon bond\nby investing in any of the other following strategies:\nSince the spot rates for each period are known today, the implied forward rate for any of the alternative strategies must be the rate that makes the\ninvestor indifferent to choosing between that strategy and the three-year bond. In addition, the \"no arbitrage\" rule forces each strategy's implied\nforward rate(s) to be such that the total three-year return for all strategies is identical.\nThis question asks for the 2y1y implied forward rate. The second number refers to how long the rate is in effect, and the first number refers to\nwhen the rate begins; therefore, 2y1y is a one-year rate that will take effect two years from now. The 2y1y rate is calculated as follows:\nInvesting in a two-year, zero-coupon bond discounted annually at 3.75% and, when it matures, reinvesting the proceeds in a one-year, zero-\ncoupon bond at 'today's implied 2y1y rate of 4.95% produces the same overall return as a three-year bond with a 4.15% annual discount rate.\n(Choice A) 4.25% is the 1y1y implied forward rate.\n(Choice B) 4.60% is the 1y2y implied forward rate.\nThings to remember:\nAn implied forward rate is the reinvestment rate that an investor expects to receive today for a specified future period. It bridges the returns from\nzero-coupon bonds of different maturities and can be derived from known spot rates.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates.", "qhtml": null}, {"n": 15, "q": "The following table shows a series of annual spot rates: Maturity (years) Spot Rate (%) 1 1.05 2 2.33 3 2.90 The 1-year rate available in 2 years is closest to:", "opts": ["3.47%", "4.05%", "6.04%"], "ans": "B", "expl": "A forward rate for a period can be derived by using:\nthe forward rates from prior periods or\ntwo spot rates from a spot curve (ie, series of spot rates).\nA forward rate can be interpreted as a marginal return that would make investors extend their horizons by one period (eg, 1 year). In this\ninstance, the return on a 3-year bond is equivalent to the return on a 2-year bond plus the marginal return of extending the bond for 1 year.\nThat marginal return is a 1-year rate available in 2 years (ie, 2y1y) and can be calculated using 2-year and 3-year spot rates.\nThe rate given as 2y1y is solved as follows:\nExpressed as a percentage, 2y1y is 4.05%.\n(Choice A) 3.47% results from using the correct spot rates but applying exponents of 1 and 2.\n(Choice C) 6.04% results from using the 1-year and 2-year spot rates.\nThings to remember:\nA forward rate for a period can be derived by calculating the forward rates for prior periods or by using two spot rates from a spot curve. The\nforward rate represents the added marginal return that would make investors extend their horizons to a later maturity.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates.", "qhtml": null}, {"n": 16, "q": "The forward curve is constructed from the implied forward rates shown below. The rates are stated on an annual basis: The price per 100 par value of a three-year, 4% annual-pay bond is closest to:", "opts": ["102.11", "103.38", "105.64"], "ans": "C", "expl": "A bond's present value is calculated by discounting each of the bond's cash flows at the spot rate in effect when the cash flow occurs. Spot rates\nare not given in this question, but they can be derived as a geometric average of the forward rates. For example, today's two-year spot rate is\ncalculated as:\nThe two-year spot rate in this question is approximately 1.67%, so the present value of the second year's coupon is calculated by discounting it by\n(1 + 0.0167)2 (1 + 0.012)1 × (1 + 0.0215)1 = (1 + 0.0167)2\n. However, since , the present value is the same when discounting the\ncoupon by the product of the two forward rates:\nThe present value of each of the bond's cash flows using this method is demonstrated below:\n(Choice A) 102.11 is the present value when all cash flows are incorrectly discounted by the 3y1y rate of 3.25%. 3.25% is the one-year forward\nrate that begins in three years. It is not a spot rate.\n(Choice B) 103.38 is the sum of all present values calculated by treating each forward rate as though it were a spot rate and discounting each\ncash flow.\nThings to remember:\nCalculating a bond's present value is normally accomplished from discounting each of its cash flows by the applicable spot rate. However, when\nthe forward rates are given, they can be used as the discounting factors. The bond's present value is identical in either case.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates.\n17.The risk-free yields for a spot curve constructed from government debt instruments most likely refer to the absence of:\n A. credit risk.\nB. liquidity risk.\nC. inflation risk.\nExplanation\nA yield curve allows comparisons between yields of bonds over different maturities (ie, term structure of interest rates). Most yield curves are\nbased on government bonds, which have no risk of defaulting on principal or coupon payments. However, government bonds have different\ncoupon rates for different maturities, so each maturity reflects some degree of reinvestment risk. This risk can prevent accurate analysis of the\nterm structure.\nThe spot curve is the government bond yield curve constructed from a series of government zero-coupon bonds of different maturities. Zero-\ncoupon bonds do not pay periodic interest, so they have no reinvestment risk since there is nothing to reinvest until maturity. Although the spot\ncurve reflects the absence of both credit and reinvestment risks, it addresses neither liquidity risk nor inflation risk.\n(Choice B) The demand for government bonds is not the same for all maturities. Bonds for which there is low demand can exhibit lack of liquidity,\nposing liquidity risk. This would manifest as a higher spread between the bid and ask prices that dealers quote for the bonds.\n(Choice C) Most government bonds do not adjust their coupon rates or principal to keep pace with inflation, so government bond yields do not\naccount for inflation risk.\nThings to remember:\nA yield curve that is equivalent to a series of government bonds of different maturities eliminates default risk, so the yields are known as the \"risk-\nfree\" rates. A spot curve refines a yield curve by removing reinvestment risk, but government bonds can still contain liquidity and inflation risks.\nCompare the spot curve, par curve, and forward curve.", "qhtml": null}, {"n": 17, "q": "The risk-free yields for a spot curve constructed from government debt instruments most likely refer to the absence of:", "opts": ["credit risk.", "liquidity risk.", "inflation risk."], "ans": "A", "expl": "A yield curve allows comparisons between yields of bonds over different maturities (ie, term structure of interest rates). Most yield curves are\nbased on government bonds, which have no risk of defaulting on principal or coupon payments. However, government bonds have different\ncoupon rates for different maturities, so each maturity reflects some degree of reinvestment risk. This risk can prevent accurate analysis of the\nterm structure.\nThe spot curve is the government bond yield curve constructed from a series of government zero-coupon bonds of different maturities. Zero-\ncoupon bonds do not pay periodic interest, so they have no reinvestment risk since there is nothing to reinvest until maturity. Although the spot\ncurve reflects the absence of both credit and reinvestment risks, it addresses neither liquidity risk nor inflation risk.\n(Choice B) The demand for government bonds is not the same for all maturities. Bonds for which there is low demand can exhibit lack of liquidity,\nposing liquidity risk. This would manifest as a higher spread between the bid and ask prices that dealers quote for the bonds.\n(Choice C) Most government bonds do not adjust their coupon rates or principal to keep pace with inflation, so government bond yields do not\naccount for inflation risk.\nThings to remember:\nA yield curve that is equivalent to a series of government bonds of different maturities eliminates default risk, so the yields are known as the \"risk-\nfree\" rates. A spot curve refines a yield curve by removing reinvestment risk, but government bonds can still contain liquidity and inflation risks.\nCompare the spot curve, par curve, and forward curve.", "qhtml": null}, {"n": 18, "q": "An analyst has gathered the following information on zero-coupon government bond yields: Maturity Spot Rate 1 year 2.42% 2 years 3.05% 3 years 3.48% 4 years 3.65% If the rates are based on a periodicity of 1, the one-year forward rate 2 years in the future (2y1y) is closest to:", "opts": ["3.72%", "4.16%", "4.35%"], "ans": "C", "expl": "A forward rate (or implied forward rate [IFR]) is a future period interest rate. Forward rates are not expectations of future spot rates; instead, they\nare future interest rates that reflect the difference between spot rates of different maturities (ie, tenors), based on the assumption that\ninvestment strategies covering the same time horizon and carrying equivalent risk should have the same return. In effect, forward rates are the\nbreakeven reinvestment rates that produce that result. Arbitrage-free pricing enforces the consistency of forward rates with spot rate differences.\nIn this scenario, equal amounts invested in a strategy today should have the same future value at the end of 3 years. To answer this question, two\ninvestment strategies can be compared as follows:\nBuy a three-year zero-coupon bond and hold it to maturity (ie, right side of the first equation above).\nBuy a two-year zero-coupon bond and hold it to maturity; at maturity, reinvest the proceeds in a one-year zero-coupon bond (ie, left side of\nthe first equation above).\nThese two strategies are illustrated on the following timeline:\nThe IFR for the one-year forward rate starting 2 years in the future (IFR ) is calculated as follows:\n2,3−2\n(Choice A) 3.72% results from incorrectly calculating the IFR as [(1 + Three-year spot rate)3 − 1] / 2.\n(Choice B) 4.16% is the one-year forward rate starting 3 years in the future.\nThings to remember:\nA forward rate is a future period interest rate that reflects the difference between spot rates of different tenors. In effect, forward rates are\nbreakeven reinvestment rates that result in two investment strategies of equivalent risk, covering the same time horizon and earning the same\nreturn.\nDefine par and forward rates, and calculate par rates, forward rates from spot rates, spot rates from forward rates, and the price of a bond using\nforward rates.", "qhtml": null}];
+const CFG = {"title": "Wiley · The Term Structure of Interest Rates Spot, Par, and Forward Curves", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Fixed Income · 18 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

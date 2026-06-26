@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Which of the following types of preferred stock is least likely to share in a company's operating performance?", "opts": ["Cumulative", "Convertible", "Participating"], "ans": "A", "expl": "Types of preference shares (preferred stock)\nCumulative Accrues for past dividends that are unpaid\nNoncumulative Does not accrue dividends that are undeclared and unpaid in past periods\nParticipating Allows for additional dividend payments if company profits exceed a certain threshold\nNonparticipating Fixed dividend; no additional payments based on company performance\nConvertible Can convert into a specified number of common shares\nCallable Allows issuer to buy back shares from investors for a specified price\nPutable Allows investors to sell shares back to issuer for a specified price\nCommon shareholders may participate in a company's operating performance by sharing in its increasing (decreasing) profits, either through:\nincreasing (decreasing) dividend payouts or\ncapital gains (losses) in the company's (and stock's) value.\nIn contrast, preferred shareholders normally do not participate directly in the company's operating performance since the preferred dividend\nis fixed at issuance, which in effect fixes the shares' value (based on discounted cash flows). Types of preferred shares include cumulative,\nconvertible, and participating.\nFor cumulative preferred shares, unpaid dividends accumulate and eventually must be paid. When the omitted dividends are paid, the \"catch-\nup\" payment(s) may be larger than the usual periodic payment based on the stated fixed rate. However, there is no change to the rate itself,\nwhich is fixed at issuance, so cumulative preferred shareholders do not share in the company's operating performance.\n(Choice B) Convertible preferred shares are convertible to the company's common shares. If the value of the common shares increases\n(decreases), based on company performance, the value of the preferred shares will also increase (decrease) as the option to convert to common\nshares becomes more (less) valuable. In that way, holders of convertible preferred shares also share in the company's performance.\n(Choice C) Participating preferred shares pay dividends that exceed the stated rate if the company's profits surpass levels specified at issuance,\nallowing shareholders to share in the company's operating performance.\nThings to remember:\nUnlike common shareholders, preferred shareholders normally do not participate directly in a company's operating performance since the\npreferred dividend (and thus share value) is fixed at issuance. Convertible and participating preferred stockholders share in a company's\noperating performance through the possibility of converting to common shares or through expanded dividends.\nDescribe market efficiency and related concepts, including their importance to investment practitioners", "qhtml": null}, {"n": 2, "q": "A stock exchange opens in a country that previously had only over-the-counter equity trading. All else being equal, stock market efficiency will most likely: ", "opts": ["increase.", "decrease.", "remain the same."], "ans": "A", "expl": "Factors that increase\nmarket efficiency\nFair and orderly markets\nLow cost of information gathering\nCompany financial disclosure\nInvestment by foreigners permitted\nArbitrage and short selling\nLow transaction costs\nAvailability of daily market data\nExistence and prevalence of exchanges\nLarge number of analysts and investors\nIn an efficient market, information is reflected quickly in asset prices. Factors that increase participants' speed and ease of access to information\nfacilitate faster price adjustments and increase market efficiency.\nIn over-the-counter (OTC) markets, dealers negotiate trades among themselves, and other market participants may not be informed of details.\nSome dealers may choose to withdraw from trading altogether. These factors may limit data availability, increasing information cost and\ndecreasing market efficiency (Choice B).\nMajor exchanges, having many investors and listed companies, also have greater analyst coverage than OTC markets. Trade data is\nimmediately reported and easily obtained. Adding an exchange to a market increases trading volume and lowers information cost. These\nchanges cause market efficiency to rise (Choice C). OTC markets are not exchanges.\nThings to remember:\nExchanges create greater market efficiency than over-the-counter markets. Efficient markets imply information quickly reflected in asset prices.\nData availability, the presence of many analysts and investors, low information-gathering cost, and exchanges tend to increase market efficiency.\nExplain factors that affect a market’s efficiency", "qhtml": null}, {"n": 3, "q": "The semi-strong form of the efficient market hypothesis assumes that security prices fully reflect:", "opts": ["only publicly available information.", "both public and private information.", "only historical price and volume information."], "ans": "A", "expl": "Market efficiency is determined based on how quickly and completely information is reflected in asset prices. The efficient market hypothesis\ndefines three forms of market efficiency:\nThe weak form assumes that asset prices reflect only historical market data (eg, price and volume data) (Choice C).\nThe semi-strong form assumes that asset prices reflect all historical market data plus all publicly available information (eg, financial\ndata). New public information is quickly assimilated into prices.\nThe strong form assumes that asset prices reflect all of the information assumed by the weak and semi-strong forms. In addition, it\nassumes that prices reflect material, nonpublic information (eg, information known to management or other insiders) (Choice B).\nIn a semi-strong market, it is difficult, if not impossible, for investors to consistently achieve abnormal returns without nonpublic information.\nThings to remember:\nMarket efficiency is determined based on how quickly and completely information is reflected in asset prices. The efficient market hypothesis\ndefines three forms of market efficiency: weak, semi-strong, and strong. The semi-strong form assumes that stock prices reflect all publicly\navailable information.\nContrast weak-form, semi-strong-form, and strong-form market efficiency", "qhtml": null}, {"n": 4, "q": "An investor pursues a strategy of: selling stocks whose total return over the past 3 years has outperformed the market and buying stocks whose total return has underperformed the market over the same period. This investor is most likely attempting to earn abnormal returns based which of the following market anomalies?", "opts": ["Value effect", "Earnings surprise", "Overreaction effect"], "ans": "C", "expl": "The overreaction effect is a type of momentum market anomaly. The premise of this anomaly is that investors overreact to the release of\nunexpected public information and that abnormal returns can be earned by a strategy contrary to the overreaction.\nFor example, investors may form a consensus about a company's expected earnings per share (EPS). However, if EPS is lower than expected,\nthe investors are likely to sell the stock and to buy it when EPS is higher than expected (ie, earnings surprise anomaly) (Choice B). Investing\nstrategies based on earnings surprises tend to be short term and trend following.\nThe overreaction effect occurs because investors tend to overreact to unexpected news, not only selling (or buying) stock with disappointing (or\nencouraging) earnings but also overselling (or overbuying) it.\nIn response, an investor could buy the stock that reported lower-than-expected EPS, which is now oversold and underpriced, and sell the stock of\nthe company that reported higher-than-expected EPS, which is now overbought and overpriced. This contrarian strategy, whereby investors buy\nstocks that have underperformed over a 3- to 5-year period and sell stocks that have outperformed during the same period, assumes the\nperformance is based on investor overreactions.\n(Choice A) The value effect anomaly refers to the concept that value stocks (eg, those with below-average P/E ratios and above-average\ndividend yields) outperform growth stocks over a long period. It is unrelated to investor reactions to unexpected information.\nThings to remember:\nThe overreaction effect is a market anomaly characterized by investor overreaction to the release of unexpected public information. The strategy\nin response is to buy stocks that have underperformed the market and sell stocks that have outperformed the market.\nDescribe market anomalies", "qhtml": null}, {"n": 5, "q": "If securities markets are semi-strong-form efficient, this most likely implies that:", "opts": ["they are not weak-form efficient.", "passive management will outperform active management.", "passive managers can beat the market on a consistent basis."], "ans": "B", "expl": "The efficient market hypothesis (EMH) sets forth three forms of market efficiency: weak, semi-strong, and strong. Under semi-strong-form EMH,\nall publicly available information is reflected in asset market prices. Empirical evidence suggests that developed financial markets are semi-\nstrong-form efficient. Since regulations prevent the use of nonpublic information that would influence stock prices, markets are not strong-form\nefficient.\nActive portfolio management normally uses fundamental analysis as the basis for decisions to buy or sell securities. However, semi-strong-form\nEMH implies active portfolio management would be futile since asset prices already reflect all publicly available information.\nActive portfolio management incurs higher transaction and information acquisition costs than passive management, which instead seeks to\nemulate the performance of an index. As a result, the semi-strong-form EMH implies that passive management will, on average, outperform\nactive portfolio management.\n(Choice A) If a market is semi-strong-form efficient, all publicly available information is reflected in prices, including historical market data. Thus,\nall markets that are semi-strong-form efficient are also said to be weak-form efficient.\n(Choice C) The implication of semi-strong-form efficiency for actual markets is that active portfolio managers cannot beat the market on a\nconsistent basis. Passive managers generally try to replicate market index returns, not beat them. This answer is not an implication of semi-\nstrong-form EMH.\nThings to remember:\nUnder the semi-strong-form efficient market hypothesis (EMH), all publicly available information is reflected in asset market prices. Active\nmanagement incurs higher transaction and information gathering costs than passive management. Semi-strong-form EMH implies that passive\nportfolio management will, on average, outperform active portfolio management.\nExplain the implications of each form of market efficiency for fundamental analysis, technical analysis, and the choice between active and passive\nportfolio management", "qhtml": null}, {"n": 6, "q": "A novice investor experienced poor returns with two small-cap stocks of companies that eventually went bankrupt. Recently, an investment professional recommended a new small-cap stock backed by strong financial results and growth projections. The investor immediately dismissed the recommendation, stating, \"Not another small-cap stock—it's going to make me lose money again!\" The investor's behavioral bias is best described as:", "opts": ["survivorship.", "mental accounting.", "representativeness."], "ans": "C", "expl": "Common behavioral finance biases\nLoss aversion Disliking losses more than one appreciates gains of equal magnitude\nMental accounting Separating wealth into different mental buckets with different risk and return expectations\nOverconfidence Being overconfident in one's ability to estimate prices and select stocks\nHerding Following and mimicking the decisions of the masses\nMaking oversimplified assessments on new information based on conclusions drawn from past experiences (eg,\nRepresentativeness\nstereotypes)\nConservatism Reluctance to accept new information and clinging to past views\nFocusing on issues in isolation instead of considering the broader context in conjunction with other interrelated\nNarrow framing\nfactors\nBehavioral finance is the study of how behavioral biases often lead to irrational decision making. In this question, the investor exhibits the bias of\nrepresentativeness, which is characterized by making overly simplified associations based on past experiences. Due to poor past returns on\ntwo small-cap stocks, the investor believes that small-cap stocks represent poor investment choices.\nWith investing, representativeness may lead to irrational decisions. Investors may apply quick judgments based on past associations instead of\nanalyzing information according to the proper context.\n(Choice A) Survivorship is a statistical sampling bias, not a behavioral bias. This bias stems from excluding the performance of failed companies\nin the calculation of fund returns. Survivorship often leads to overinflated reported fund performance.\n(Choice B) Mental accounting refers to separating wealth into different mental buckets with different goals. There is no indication that the\ninvestor is separating wealth into different buckets in this question.\nThings to remember:\nRepresentativeness is characterized by making overly simplistic associations based on past experience instead of analyzing situations according\nto the proper context.\nDescribe behavioral finance and its potential relevance to understanding market anomalies", "qhtml": null}, {"n": 7, "q": "Which of the following market anomalies is inconsistent with semi-strong form market efficiency?", "opts": ["Initial public offering", "Earnings surprise effect", "Closed-end fund discount"], "ans": "B", "expl": "The theory of semi-strong form market efficiency holds that market prices contain all publicly available information. One consequence of this\ntheory is that investors cannot achieve abnormal returns without using material, nonpublic information. Market anomalies are persistent market\nevents that are inconsistent with semi-strong form efficiency, that is, price changes that cannot be explained by available or newly released\npublic information.\nThe earnings surprise anomaly is due to the lack of a complete and immediate price adjustment to unexpected news from an earnings report.\nSince there is a lag between the release of the earnings report (which becomes public information) and the subsequent price adjustment, it is\npossible to generate abnormal returns for a short time. This is inconsistent with semi-strong form market efficiency.\n(Choice A) The initial public offering (IPO) anomaly indicates that, on average, investors purchasing shares through an IPO may be able to earn\nshort-term abnormal profits. IPOs are frequently underpriced, allowing investors to earn abnormal returns; however, market prices adjust quickly,\nsupporting semi-strong market efficiency.\n(Choice C) A closed-end fund discount is the persistent 4–10% discount to net asset value (NAV) observed in these funds' prices. The discount\ndoes not result in abnormal returns due to transaction costs, liquidity, and the potential for NAV miscalculations.\nThings to remember:\nA market anomaly is a market event that is inconsistent with efficient market theory. The earnings surprise anomaly is inconsistent with semi-\nstrong form market efficiency theory due to the short lag between the release of public information and the subsequent price adjustment.\nDescribe market anomalies", "qhtml": null}, {"n": 8, "q": "An investor holds a company's stock, believing its price will increase based on forecasts produced by a proprietary model. Following the latest earnings release, the investor updates the model and believes that the stock is overvalued and the price will decrease. However, the stock rises following earnings. Seeing this, the investor decides to hold the stock. The investor's behavior is best described as:", "opts": ["herding.", "loss aversion.", "conservatism."], "ans": "A", "expl": "Common behavioral finance biases\nPsychological impact of gains and losses is asymmetric\nLoss aversion Associated with market overreaction\nFear of continued losses compels investors to sell\nInvestors create separate psychological \"buckets\"\nMental accounting\nInvestors think and act differently within these buckets\nInvestors overestimate their own research, analysis, and stock\nOverconfidence selection abilities\nPrevalent with high-growth stocks\nBuying and selling decisions are based primarily on following the\nHerding crowd\nClustering behavior, not necessarily based on information\nBehavioral finance attempts to explain investment decision making by studying investors' behaviors. In part, it involves understanding various\nbiases that cause investors to act irrationally, which can lead to pricing anomalies. The herding bias suggests that investors may irrationally\nignore their own analysis and instead trade on the same side of the market and/or securities as other investors. This can lead to either\noverreaction or under-reaction in the market.\nIn this scenario, the investor exhibits the herding bias. Based on research, the investor begins to believe that an invested stock is overvalued and\nits price will decrease, and so intends to sell the stock. However, the investor instead decides to hold the stock after seeing that other investors\nare buying or holding it.\n(Choice B) Loss aversion refers to investors' tendencies to dislike losses more than they like gains of equal magnitude. Since this investor\nbelieves the stock is overvalued, loss aversion would most likely drive the investor to sell the stock.\n(Choice C) Conservatism refers to investors' tendencies to delay updating their views and forecasts based on new information and instead\nmaintain prior views and forecasts. This investor updated the proprietary model with new information, an action that does not exhibit\nconservatism.\nThings to remember:\nBehavioral finance studies how investors behave to better understand their decision making, including biases that cause them to act irrationally.\nThe herding bias suggests that investors may irrationally ignore their own analysis and instead trade on the same side of the market and/or\nsecurities as other investors.\nDescribe behavioral finance and its potential relevance to understanding market anomalies", "qhtml": null}, {"n": 9, "q": "Which of the following is most likely to decrease market efficiency?", "opts": ["Limiting arbitrage", "Enforcing fair markets", "Permitting foreign investment"], "ans": "A", "expl": "Factors that increase\nmarket efficiency\nFair and orderly markets\nLow cost of information gathering\nCompany financial disclosure\nInvestment by foreigners permitted\nArbitrage and short selling\nLow transaction costs\nAvailability of daily market data\nExistence and prevalence of exchanges\nLarge number of analysts and investors\nIn an efficient market, new information is reflected quickly in asset prices. Factors that are likely to increase market efficiency increase the speed\nat which participants receive new information, allow more rapid valuation and trading, and facilitate rapid price adjustments. Therefore arbitrage,\nwhich tends to increase the speed that prices adjust to new information, ensures market efficiency.\nArbitrage is the riskless, simultaneous buying and selling of the same or equivalent instruments in one or more markets to exploit mispricing. As\narbitrage occurs, prices of equivalent financial instruments move toward the same price. The speed at which this occurs depends on arbitrage in\nthe market, so if arbitrage is constrained, market efficiency is reduced.\n(Choice B) In fair and orderly markets, a greater number of participants have access to information used to perform valuations and make trades.\nMore trading means asset prices adjust to new information more quickly. As a result, promoting fair and orderly markets tends to increase, not\ndecrease, market efficiency.\n(Choice C) If the number of investors is restricted, there will be less trading. Therefore, if the number of investors—or the number of a certain\ntype of investors (eg, foreigners)—is limited, market efficiency will decrease. Inversely, permitting foreign investment (ie, allowing a greater\nnumber of investors) is likely to increase market efficiency.\nThings to remember:\nAn efficient market is one in which new information is reflected quickly in asset prices. Arbitrage facilitates rapid price adjustments that increase\nmarket efficiency. Enforcing fair and orderly markets, having many analysts and investors, and permitting investment by foreigners are factors that\ntend to increase market efficiency.\nExplain factors that affect a market’s efficiency", "qhtml": null}, {"n": 10, "q": "The semi-strong efficient market hypothesis implies abnormal returns may be consistently achieved by acting on:", "opts": ["inside information.", "publicly available information.", "nonmaterial nonpublic information."], "ans": "A", "expl": "The efficient market hypothesis (EMH) specifies three forms of market efficiency: weak, semi-strong, and strong. Under the weak-form efficient\nmarket hypothesis, only historical market data is reflected in prices. Under the semi-strong form, all publicly available information is reflected\nin prices, including both historical market data and other sources of publicly available information (eg, companies' financial statements). Strong-\nform EMH states that all information, public and private, is reflected in prices.\nInside information is another name for material nonpublic information. Semi-strong EMH holds that all public information is included in prices.\nHowever, because material, nonpublic information is not reflected in prices under this form, trading on it may in fact produce consistent, abnormal\nreturns. Trading on such information is illegal in most countries.\n(Choice B) If all publicly available information is reflected in prices, then it is not possible for an investor to benefit from a change in price due to\nthe new public information. According to semi-strong EMH, earning consistent, abnormal returns based on publicly available information is not\npossible.\n(Choice C) The semi-strong EMH does not imply anything about nonmaterial nonpublic information. In addition, nonmaterial information is\ndefined as information that does not affect asset prices, so acting on nonmaterial information would not benefit an investor because it would not\nchange an asset's price.\nThings to remember:\nThe efficient market hypothesis (EMH) specifies three forms of market efficiency: weak, semi-strong, and strong. Semi-strong EMH holds that\nconsistently earning abnormal returns based on publicly available information is not possible since asset prices in the market already reflect the\ninformation.\nContrast weak-form, semi-strong-form, and strong-form market efficiency", "qhtml": null}, {"n": 11, "q": "An analyst forecasts current year EPS of $0.21 for an equipment manufacturing company. During the middle of the year, the company announces that it is experiencing unforeseen supply chain issues that will severely reduce its earnings. The analyst re-issues the original EPS forecast of $0.21, citing that the company always had strong fundamentals. This behavior is best explained as:", "opts": ["conservatism.", "loss aversion.", "mental accounting."], "ans": "A", "expl": "Common behavioral finance biases\nLoss aversion Disliking losses more than one appreciates gains of equal magnitude\nMental accounting Separating wealth into different mental buckets with different risk and return expectations\nOverconfidence Being overconfident in one's ability to estimate prices and select stocks\nHerding Following and mimicking the decisions of the masses\nMaking oversimplified assessments on new information based on conclusions drawn from past experiences (eg,\nRepresentativeness\nstereotypes)\nConservatism Reluctance to accept new information and clinging to past views\nFocusing on issues in isolation instead of considering the broader context in conjunction with other interrelated\nNarrow framing\nfactors\nBehavioral finance is the area of study that examines how behavioral biases influence investment decisions. Often, biases lead to irrational\ndecision-making. Conservatism bias occurs when individuals are reluctant to accept new information and instead adhere strictly to past\ninformation. In this scenario, the analyst refuses to revise the previous EPS forecast of $0.21 despite receiving updated information on supply\nchain disruptions that will decrease earnings.\n(Choice B) Loss aversion refers to investors' tendency to dislike losses more than they like gains of equal magnitude.\n(Choice C) Mental accounting refers to investors separating wealth into different mental buckets to fulfill different goals.\nThings to remember:\nConservatism bias occurs when investors are reluctant to accept new information and instead adhere strictly to past information.\nDescribe behavioral finance and its potential relevance to understanding market anomalies", "qhtml": null}, {"n": 12, "q": "An investor observes that a portfolio manager with a proven record of profitable investing has reduced its holdings in a stock that the investor currently owns and for which the investor has a large unrealized gain. Many other investors sold the stock after the portfolio manager's sales. The investor believes that the stock's long-term prospects are still good but decides to sell the stock anyway. The investor's behavior is most likely the result of:", "opts": ["herding.", "risk aversion.", "information cascades."], "ans": "C", "expl": "Information cascades\nMostly associated with overreaction\nPremised on actions by informed participants that\ninfluence others' decisions\nGreater when information about a company is poor\nCan enhance market rationality when others imitate the\npreceding actions of knowledgeable participants\nBehavioral finance examines investor psychology to explain why and how investors do not always act rationally. Herding and information\ncascades are behavioral theories that explore why investors often imitate other investors. Both theories are characterized by investors trading on\nthe same side of the market and/or in the same securities, as well as investors ignoring their own beliefs to act in concert with others.\nWhile information cascades are premised on the initial actions of knowledgeable (ie, informed) participants, herding is not necessarily based on\ninformation. In an information cascade, the actions of informed participants influence the decisions of subsequent actors.\nIn this scenario, the investor's decision to sell is based on the prior action of a portfolio manager perceived to be more knowledgeable, despite the\ninvestor's belief in the stock's long-term prospects. The decision is also based on the imitating actions of others prior to the investor's decision.\nThese actions are more consistent with information cascades than with herding (Choice A).\n(Choice B) Risk aversion describes investors wanting higher expected returns to compensate for assuming more risk. Nothing in this question\naddresses the riskiness of the stock that the investor sells.\nThings to remember:\nBehavioral finance attempts to explain how and why investors do not always act rationally. Herding and information cascades are similar in that\ninvestors trade on the same side of the market and/or in the same securities. However, information cascades presume that the initial actions of\nknowledgeable participants influence the actions of others. Herding may or may not be based on information.\nDescribe behavioral finance and its potential relevance to understanding market anomalies", "qhtml": null}, {"n": 13, "q": "A high-growth stock soars 300% over a two-year period. After conducting due diligence, an investor buys the stock, which subsequently underperforms the market by 40% over a short period of time. The investor believes the market is pricing the stock irrationally and continues to hold it. Based on the information provided, which of the following biases is best exemplified by the investor's behavior?", "opts": ["Risk aversion", "Overconfidence", "Mental accounting"], "ans": "B", "expl": "Behavioral finance is based on the idea that mental biases cause individuals to make recurring suboptimal investing decisions, which lead to\nobserved pricing anomalies. Overconfidence bias is rooted in the idea that investors overestimate their own research, analytical, and\nselection abilities.\nIn this scenario, the investor is confident of a company's valuation and investment prospects and emotionally invested in an outcome that confirms\nthe original analysis. When confronted with new facts (ie, substantial stock price decline) that undermine this confidence, the investor dismisses\nthe new facts as market irrationality.\nHigh-growth stocks can encourage overconfidence bias since investors may become overly optimistic regarding a company's long-term\nprospects. As collective overconfidence peaks, investors often have difficulty believing the stock is overvalued.\n(Choice A) Risk aversion is not a specific behavioral finance bias; rather, it is an investor's general tendency to prefer less risk and require higher\nexpected returns to take on additional risk.\n(Choice C) Mental accounting is observed when investors segregate different investments into separate mental \"accounts,\" and treat them\ndifferently as a result.\nThings to remember:\nOverconfidence bias is rooted in the idea that investors overestimate their own research and stock selection abilities and is most common with\nhigh-growth stocks.\nDescribe behavioral finance and its potential relevance to understanding market anomalies", "qhtml": null}, {"n": 14, "q": "Unlike weak and semi-strong forms of the efficient market hypothesis, the strong form most likely holds that asset prices reflect information from:", "opts": ["historical market data.", "company financial reports.", "material nonpublic information."], "ans": "C", "expl": "The efficient market hypothesis (EMH) sets forth three forms of market efficiency: weak, semi-strong, and strong. Under weak-form EMH, only\nhistorical market data is reflected in prices. The semi-strong form of EMH extends that data reflection in prices to include all publicly available\ninformation. Under the strong-form EMH, all public and private information is reflected in market prices.\nSince all public and private information is accounted for in market prices, it is impossible to consistently earn abnormal returns if strong-form EMH\napplies. Abnormal returns are the portion of an asset's return that is not explained by the return of the market. If markets are strong-form efficient,\nthen they are also efficient in the semi-strong and weak forms. Likewise, if a market is efficient in the semi-strong form, then it is also weak-form\nefficient.\n(Choice A) All three forms (ie, weak, semi-strong, and strong) hold that historical market data is reflected in prices, so this statement is not unique\nto strong-form EMH.\n(Choice B) Under strong-form EMH, all public and private information is reflected in prices. This includes company financial reports. However,\nthis is also true under semi-strong-form EMH.\nThings to remember:\nUnder the strong form of efficient market hypothesis (EMH), all public and private information is reflected in market prices. If strong-form EMH\nholds, then it is not possible to obtain an abnormal return using either public or private information.\nContrast weak-form, semi-strong-form, and strong-form market efficiency", "qhtml": null}, {"n": 15, "q": "Which of the following best describes an asset's intrinsic value? Intrinsic value is:", "opts": ["lower than its market value for an undervalued asset.", "the price for which market participants can buy or sell the asset.", "generally accepted as accurately reflected by market value in an efficient market."], "ans": "C", "expl": "An asset's intrinsic value is the true value it would be given by market participants if they had complete information on and understanding of\nthe asset. An asset's market value is the price that market participants can readily purchase or sell it for. (Choice B).\nIn an efficient market, all new relevant information about an asset's intrinsic value is reflected quickly and rationally in its market value. If\ninvestors believe that a market is efficient, they will generally accept that an asset's market value correctly reflects its intrinsic value since all past\nand present information has been processed.\nIn practice, an asset's intrinsic value cannot be known for certain, so analysts and investors must develop their own estimates to find assets with\nmarket values that differ from the estimated intrinsic values.\n(Choice A) If the intrinsic value of an asset is higher than its market value, the asset can be purchased at a lower price than its true worth, in\nwhich case the asset is undervalued by the market.\nThings to remember:\nAn asset's intrinsic value is the true value it would be given by market participants if they had complete understanding of and information on the\nasset. An asset's market value is the price for which market participants currently buy and sell it. In an efficient market, all new information about\nan asset is reflected quickly and rationally in its market value, and investors generally accept that the asset's market value reflects its intrinsic\nvalue.\nContrast market value and intrinsic value", "qhtml": null}, {"n": 16, "q": "In security markets that are semi-strong-form efficient, passive investment strategies will most likely:", "opts": ["outperform active strategies.", "underperform active strategies.", "perform the same as active strategies."], "ans": "A", "expl": "Passive investment strategies attempt to match the returns on a benchmark index by holding all index securities or using statistical techniques\nto replicate index returns. Active investment strategies attempt to outperform a benchmark index by overweighting and underweighting index\nsecurities or by holding securities that are not in the index. Active strategies typically create more fees and expenses for the investor than\npassive strategies.\nSecurity prices in semi-strong-form efficient markets reflect all publicly available information. When this information is accurate, on average,\nsecurities trade at prices that match or are close to their intrinsic value. Based on net returns, when securities trade at intrinsic value, active\nstrategies should underperform the market due to their fees and expenses. Passive strategies outperform active strategies by avoiding those\ncosts in semi-strong-form efficient markets (Choices B and C).\nThings to remember:\nPassive investment strategies attempt to replicate returns on a benchmark index. In semi-strong-form efficient markets, prices reflect all publicly\navailable information and securities trade at levels that match or are close to their intrinsic value. Active strategies that buy and sell securities at\nintrinsic value will underperform the market due to the costs of this type of investing. Thus, passive strategies outperform active strategies if\nmarkets are semi-strong-form efficient.\nDescribe market efficiency and related concepts, including their importance to investment practitioners", "qhtml": null}, {"n": 17, "q": "Which of the following market anomalies is inconsistent with semi-strong form market efficiency?", "opts": ["The value effect", "The January effect", "Closed-end fund discount"], "ans": "A", "expl": "A market anomaly is a recurring market inefficiency that is inconsistent with efficient market theory. Semi-strong form market efficiency\ntheorizes that market prices contain all publicly available information. There are two well-known market anomalies that use publicly available\ninformation to generate abnormal returns and therefore contradict semi-strong form market efficiency: the value effect and earnings surprise.\nThe value effect is the outperformance of value stocks versus growth stocks over long periods of time. Value stocks are defined as\nhaving relatively low valuations (eg, price-to-earnings, price-to-book), or as stocks with relatively high dividend yields.\nThe earnings surprise anomaly is the lack of a complete and immediate price adjustment to the unexpected portion of reported earnings.\n(Choice B) The January effect is market outperformance during the first few trading days of the year. Recent evidence implies that many time-\nseries anomalies such as the January effect are not persistent and have largely been arbitraged away. If these anomalies exist, they appear\ninconsistently and are likely driven by seasonal factors such as tax-loss selling or window dressing, which both conclude by December 31.\n(Choice C) The closed-end fund discount is the persistent 4–10% discount to net asset value (NAV) observed in the trading of these funds. The\nefficacy of this anomaly is debated since transaction costs, liquidity, and the potential for NAV miscalculations make it unlikely that the discount\ncould be fully exploited.\nThings to remember:\nA market anomaly is a recurring market inefficiency that is inconsistent with efficient market theory. The value effect and earnings surprise are\ninconsistent with semi-strong form market efficiency theory.\nDescribe market anomalies", "qhtml": null}, {"n": 18, "q": "An overvalued asset most likely indicates that the asset's intrinsic value is less than its:", "opts": ["fair value.", "market value.", "present value of expected future cash flows."], "ans": "B", "expl": "An asset is overvalued when its intrinsic value is less than its market value. An asset's intrinsic value is its estimated fair value based on equity\nvaluation models. Market value is the price at which an asset can be traded in a public market. Intrinsic value and market value can differ in\nmarkets that are not fully efficient.\n(Choice A) An asset's intrinsic value cannot be less than its fair value since the values are the same.\n(Choice C) An asset's intrinsic value cannot be less than the present value of its expected future cash flows since the present value is an\nestimate.\nThings to remember:\nWhen an asset's intrinsic value is less than its market value, the asset is overvalued. This can occur in markets that are not fully efficient.\nContrast market value and intrinsic value", "qhtml": null}, {"n": 19, "q": "A market that is informationally efficient is most likely one where security prices:", "opts": ["accurately predict new information.", "reflect all public and private information.", "react quickly and rationally to new information."], "ans": "C", "expl": "Markets are informationally efficient if security prices adjust rapidly and rationally to the release of new information. Informational efficiency\nis fostered when information is widely available at low cost and there are numerous market participants adjusting their expectations of risk and\nreturn as new information is released.\nCFA Institute curriculum defines new information as the \"surprise\" or \"unexpected\" component of newly released information. For example, an\nearnings report in line with expected earnings is not considered new information. In an informationally efficient market, prices adjust only when\ninformation releases contain a surprise (ie, new information), such as when reported earnings fall short of expectations.\n(Choice A) Security prices cannot accurately anticipate new information, since new information is defined as being unexpected, that is,\ninformation that could not have been expected or anticipated.\n(Choice B) Since most markets restrict trading on the basis of nonpublic (ie, private) information, informational efficiency is indicated by prices'\nreaction to newly public information; it does not depend on security prices reflecting private information.\nThings to remember:\nMarkets are informationally efficient if security prices adjust rapidly and rationally to the release of unexpected information. Informational efficiency\nis fostered when information is widely available at low cost and there are numerous market participants adjusting their expectations of risk and\nreturn as unexpected information is released.\nDescribe market efficiency and related concepts, including their importance to investment practitioners", "qhtml": null}, {"n": 20, "q": "If a country's security markets are semi-strong form efficient, an investor would most likely be able to generate abnormal returns using:", "opts": ["only technical analysis.", "only fundamental analysis.", "neither technical nor fundamental analysis."], "ans": "C", "expl": "The efficient market hypothesis (EMH) stipulates that markets are efficient when asset prices fully reflect all relevant information. If a market is\nefficient, abnormal returns cannot be consistently achieved in that market with information obtained from sources specified by the EMH.\nIn the semi-strong form of market efficiency, asset prices are assumed to reflect all historical market data plus all publicly available\ninformation (eg, financial statements, earnings calls). Historical data and public information are both completely assimilated into prices, so an\ninvestor cannot achieve abnormal returns using those resources. An investor could achieve abnormal returns only by using insider information.\nTwo analytical methods are used to estimate the relative value of investments and develop investment decisions:\nTechnical analysis (eg, charting techniques) uses a market's historical trading and volume data.\nFundamental analysis (eg, free cash flow valuation) uses publicly available data to derive an asset's intrinsic value.\nTherefore, in a semi-strong form efficient market, neither technical nor fundamental analysis would be able to generate abnormal returns (Choices\nA and B).\nThings to remember:\nUnder the semi-strong form efficient market hypothesis, all historical market data and publicly available information are reflected in asset prices.\nTo develop investment decisions, technical analysis uses historical market data while fundamental analysis uses publicly available data.\nTherefore, in a market with semi-strong form efficiency, neither technical nor fundamental analysis would be able to generate abnormal returns.\nExplain the implications of each form of market efficiency for fundamental analysis, technical analysis, and the choice between active and passive\nportfolio management", "qhtml": null}, {"n": 21, "q": "After an election, new political leadership in a country allows more flexibility on the frequency of financial reporting. Consequently, many companies report financial results less often. Market efficiency will most likely: ", "opts": ["decrease.", "remain the same.", "increase."], "ans": "A", "expl": "Factors that increase\nmarket efficiency\nFair and orderly markets\nLow cost of information gathering\nCompany financial disclosure\nInvestment by foreigners permitted\nArbitrage and short selling\nLow transaction costs\nAvailability of daily market data\nExistence and prevalence of exchanges\nLarge number of analysts and investors\nAn efficient market is one in which new information is reflected quickly in asset prices. Market participants acquire market information from\ncompany reports and use that data to make investment decisions. Factors that increase the speed at which participants have access to\ninformation for valuation and trading facilitate faster price adjustments. This tends to increase market efficiency.\nLess frequent financial reporting impedes valuation and investing and increases the cost of gathering information. More financial disclosure\ncontributes to a fairer and more orderly market, as well as broader availability of information to analysts and investors, both of which tend to\nincrease market efficiency. As a result of these factors, less frequent financial disclosure by companies decreases market efficiency (Choices\nB and C).\nThings to remember:\nFactors that increase the speed at which participants receive new information tend to increase market efficiency. Company financial disclosure,\nfair and orderly markets, many analysts and investors, and low cost of information gathering all contribute to increased market efficiency.\nExplain factors that affect a market’s efficiency", "qhtml": null}, {"n": 22, "q": "Which of the following best describes the anomaly of earning abnormal profits by using only past market data?", "opts": ["The momentum anomaly", "The earnings surprise anomaly", "The initial public offering anomaly"], "ans": "A", "expl": "A market anomaly is a recurring market inefficiency that is inconsistent with efficient market theory. Weak-form market efficiency holds that stock\nprices contain all available past market data (ie, price and volume); therefore, an investor cannot earn abnormal profits by using only this\ninformation.\nHowever, considerable empirical evidence indicates that a momentum-based trading strategy using short-term historical stock price data can\nearn abnormal returns in subsequent periods, thus contradicting weak-form market efficiency.\n(Choice B) The earnings surprise anomaly is the lack of a complete and immediate price adjustment to the unexpected portion of reported\nearnings (eg, fundamental public data). Due to this gradual price adjustment, stocks with a positive (negative) earnings surprise subsequently\noutperform (underperform) without a release of new information, contradicting semi-strong form market efficiency.\n(Choice C) The initial public offering (IPO) anomaly indicates that, on average, investors purchasing shares through an IPO may be able to earn\nshort-term abnormal profits. IPOs are frequently underpriced, allowing investors to earn abnormal returns; however, the excess return is fleeting\nsince market prices adjust quickly, supporting semi-strong market efficiency.\nThings to remember:\nThe momentum anomaly contradicts weak-form market efficiency by earning abnormal returns using only historical price data.\nDescribe market anomalies", "qhtml": null}, {"n": 23, "q": "A country's financial markets are weak-form efficient. This implies that it is impossible to obtain consistent, abnormal returns in the country's markets using: ", "opts": ["technical analysis.", "insider information.", "fundamental analysis."], "ans": "A", "expl": "The efficient market hypothesis (EMH) specifies three forms of market efficiency: weak, semi-strong, and strong. Weak-form EMH holds that\nhistorical market data is reflected in market prices. Technical analysis involves using historical trading and volume data as the basis to buy and\nsell. If historical market data has already influenced prices, then it is not possible to produce consistent, abnormal returns (ie, returns better\nthan expected returns) using technical analysis.\n(Choices B and C) If markets are weak-form efficient, historical price and volume information are immediately reflected in market prices. Other\npublicly available information (eg, company financial reports) and material nonpublic (insider) information may not be reflected in prices under\nweak-form EMH. Therefore, it is possible for an investor to achieve consistent, abnormal returns by trading on publicly available information or\ninsider information.\nThings to remember:\nThe three forms of the efficient market hypothesis (EMH) are weak, semi-strong, and strong. Weak-form EMH holds that historical market data is\nreflected in asset market prices, implying that trading based on technical analysis will not produce consistent, abnormal returns.\nExplain the implications of each form of market efficiency for fundamental analysis, technical analysis, and the choice between active and passive\nportfolio management", "qhtml": null}, {"n": 24, "q": "All else equal, a company's book value of equity is most likely to decrease when the:", "opts": ["company stops paying common dividends.", "company reports a large accumulated loss.", "company's stock price falls below par value."], "ans": "B", "expl": "Book value of equity Market value of equity\n(Shareholders' equity) (Market cap)\nCommon stock* + Shares outstanding (current) ×\nRetained earnings (or accum. loss) Current stock price\n*Common stock = Shares issued × Issue price\nThe book value of equity is the amount of shareholders' equity reported on a company's balance sheet. It primarily consists of common stock\nand retained earnings. On the balance sheet:\ncommon stock reports the historical value of common equity issued, and\nretained earnings (accumulated loss) reports the cumulative net profit (loss) since a company's inception, net of dividends.\nAll else equal, accumulated losses will reduce the book value of equity by reducing retained earnings. The book value of equity is also the\ndifference between total assets and total liabilities.\nThe market value of equity is the current value of the shareholders' equity (Shares outstanding × Current stock price). A change in the current\nstock price will affect the equity's market value, not its book value (Choice C).\nSince the stock price is based on investors' expectations of a company's future earnings or cash flows, the market value of equity is forward-\nlooking, whereas the book value of equity (based on share value at issuance) is backward-looking.\n(Choice A) All else equal, halting dividends increases retained earnings and, thus, book value of equity since the company keeps more earnings,\ninstead of paying them as dividends.\nThings to remember:\nThe book value of equity is reported on a company's balance sheet as the historical value of common equity issued (ie, common stock) and\ncumulative net profit (loss) since a company's inception, net of dividends (ie, retained earnings). The equity's market value is based on current\nshare price, which is based on investors' current expectations of future earnings.\nDescribe behavioral finance and its potential relevance to understanding market anomalies", "qhtml": null}, {"n": 25, "q": "According to the Efficient Market Hypothesis, if a market is semi-strong form efficient, active management's net-of-fees returns to investors are most likely: ", "opts": ["less than passive management's.", "equivalent to passive management's.", "greater than passive management's."], "ans": "A", "expl": "The Efficient Market Hypothesis (EMH) specifies three forms of market efficiency: weak, semi-strong, and strong. Market efficiency is determined\nby how quickly and completely information is reflected in asset prices. If a market is truly efficient, abnormal returns cannot be achieved on a\nconsistent basis with the information available.\nThe semi-strong form of efficiency assumes that asset prices reflect all historical market data plus all publicly available information (eg,\nfinancial statement information). New public information is quickly assimilated into prices, so an investment manager cannot capitalize on events\nsuch as earnings surprises to achieve abnormal returns.\nActive portfolio management normally uses more frequent trading to exploit perceived inefficiencies. Active management therefore incurs higher\ntrading and information acquisition costs than passive management, which instead seeks to replicate the performance of the market or an index.\nAs a result, when a market is truly semi-strong form efficient, net-of-fees returns from passive management will, on average, outperform active\nportfolio management with its higher costs (Choices B and C).\nThings to remember:\nUnder the semi-strong form of the Efficient Market Hypothesis (EMH), all publicly available information is reflected in asset market prices. Semi-\nstrong form EMH implies that since active management incurs higher transaction costs, passive management will outperform net of fees.\nExplain the implications of each form of market efficiency for fundamental analysis, technical analysis, and the choice between active and passive\nportfolio management", "qhtml": null}, {"n": 26, "q": "A portfolio manager uses an active management strategy based on only historical and publicly available information and achieves abnormal returns. The manager is trading in a market best described as: ", "opts": ["weak form efficient.", "semi-strong form efficient.", "strong form efficient."], "ans": "A", "expl": "The efficient market hypothesis (EMH) defines market efficiency based on how quickly and completely information is reflected in asset prices. If\nmarkets are truly efficient, then abnormal returns cannot be achieved on a consistent basis. The EMH defines three forms of market efficiency:\nThe weak form assumes that asset prices reflect only historical market data (eg, price and volume data). In a weak form efficient market,\nthe market achieves only limited efficiency since it reflects limited information (ie, only historical data). An investment manager using active\nmanagement and all publicly available information could achieve abnormal returns to consistently outperform the market.\nThe semi-strong form assumes that asset prices reflect all historical market data plus all publicly available information (eg, financial\nstatement information). New public information is quickly assimilated into prices, so an investment manager cannot capitalize on events\nsuch as earnings surprises to achieve abnormal returns, making active management strategies ineffective, without using nonpublic\ninformation (Choice B).\nThe strong form assumes that asset prices reflect all public information as well as material, nonpublic information (ie, information known\nto management or other insiders). In this case, it is impossible for an investment manager to consistently outperform the market even on a\nshort-term basis since asset prices reflect all available information (Choice C).\nThings to remember:\nThe efficient market hypothesis (EMH) defines market efficiency based on how quickly and completely information is reflected in asset prices. The\nEMH defines three forms of market efficiency: weak, semi-strong, and strong. Only in a weak form efficient market can an investment manager\nuse active management to consistently outperform the market, since the market achieves only limited efficiency and reflects limited information.\nContrast weak-form, semi-strong-form, and strong-form market efficiency", "qhtml": null}, {"n": 27, "q": "Active management is most likely to outperform passive management on a risk-adjusted basis when markets are:", "opts": ["informationally and operationally efficient.", "informationally efficient and operationally inefficient.", "informationally inefficient and operationally efficient."], "ans": "C", "expl": "Passive investment strategies attempt to match the returns on a benchmark index. Active management strategies attempt to earn higher risk-\nadjusted returns by overweighting undervalued securities and underweighting overvalued securities. Successful active management\nrequires markets that are both:\nInformationally inefficient: new information is not rapidly reflected in market prices, enabling research to identify securities trading above\nor below intrinsic value, and\nOperationally efficient: trading-related costs are less than the additional returns earned by buying undervalued and selling overvalued\nsecurities\n(Choices A and B) If markets are informationally efficient, all publicly available information is reflected in security prices, so market prices are\nclose to intrinsic value. If securities always trade at intrinsic value, active strategies underperform passive strategies by the costs of trading. This\nis true in operationally efficient markets where trading costs are low. In operationally inefficient markets, active strategies are at an even greater\ndisadvantage.\nThings to remember:\nActive management strategies attempt to earn higher returns by overweighting undervalued securities and underweighting overvalued securities.\nSuccessful active management requires markets that are informationally inefficient so mispriced securities can be discovered through research.\nAdditionally, markets must be operationally efficient so that trading costs are less than the additional returns earned through trading mispriced\nsecurities.\nDescribe market efficiency and related concepts, including their importance to investment practitioners", "qhtml": null}];
+const CFG = {"title": "Wiley · Market Efficiency", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Equity Investments · 27 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

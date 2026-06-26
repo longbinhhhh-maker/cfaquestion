@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A floating-rate note has a quoted margin of 35 basis points (bps) and a discount margin of −15 bps. If the relevant reference rate is 3.25% on the bond's reset date, the new coupon rate is most likely:", "opts": ["3.10%", "3.45%", "3.60%"], "ans": "C", "expl": "The coupon rate of a floating-rate note (ie, FRN or floater) is based on a reference rate (eg, LIBOR). The quoted margin is the yield that is\nadded to the reference rate to determine each period's coupon rate. The quoted margin typically does not change during the life of the bond. The\ncoupon rate of the FRN in this scenario is the LIBOR rate plus 35 basis points (bps), or 3.25% + 0.35% = 3.60%.\nThe discount margin of an FRN (also called the required margin) is an adjustment to the rate used to discount the bond's cash flows. The\ndiscount margin represents the additional yield required given the risks of an FRN. When the bond is issued, the discount margin is the same as\nthe quoted margin, but changes in the bond's risks cause the discount margin to change. Any change in the discount margin affects the bond's\npresent value, not its coupon rate.\n(Choice A) 3.10% results from adding the discount margin (−15 bps), rather than the quoted margin, to the reference rate.\n(Choice C) 3.45% results from inappropriately adding the sum of the quoted margin and discount margin (20 bps) to the reference rate.\nThings to remember:\nThe quoted margin is an amount of yield added to a reference rate (eg, LIBOR) to derive the coupon rate of a floating-rate note (FRN). The\nquoted margin typically does not change during the life of the bond. The discount margin, which represents the additional yield investors require to\ncompensate for the risks of an FRN, will change if the risks change. Any change in the discount margin affects the bond's present value, not its\ncoupon rate.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 2, "q": "A 4%, annual-pay bond is currently priced at 105 per 100 of par value. It has three years to maturity and is callable at a price of 102.5 at the end of Year 1 and 100.5 at the end of Year 2. The yield-to-worst is the bond's:", "opts": ["yield to maturity.", "yield to first call.", "yield to second call."], "ans": "B", "expl": "A bond's present value is calculated by discounting its expected cash flows using its required return (ie, YTM). One of the assumptions underlying\nYTM is that the bond is held to maturity; however, this assumption may not always hold for callable bonds, which the issuer can redeem before\ntheir scheduled maturity.\nOnce called, a bond has no future cash flows, so its yield is calculated as though it will be called on its call date, with the call price substituted for\nits face value. For bonds with multiple call dates, a separate yield is calculated for each date, and each yield is referred to as the yield to first call,\nyield to second call, etc. The yield-to-worst is the lowest yield for all possible call dates as well as the YTM.\nThe bond in this question can be called at the end of Year 1 or Year 2. Each yield-to-call can be computed using a financial calculator. The\ncalculator strokes are shown below. The bond's yield to first call of 1.43%, which is the lowest of the three possible yields, is its yield-to-worst.\n(Choice A) 2.26% is the bond's yield to maturity.\n(Choice C) 1.68% is the bond's yield to second call.\nThings to remember:\nA callable bond may be redeemed before maturity, so its yield is calculated using the call date as the maturity date. When bonds have multiple call\ndates, the yield for each date is calculated separately and referred to as the yield to first call, yield to second call, etc. The lowest yield for all the\npossible yields is called the yield-to-worst.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 3, "q": "A bond's current price is 95 per 100 par value. Its current yield is best described as its annual coupon payments divided by its:", "opts": ["flat price.", "full price.", "par value."], "ans": "A", "expl": "A bond's yield describes and quantifies its return. There are several types of yields used for bonds. One measure is its current yield, which is\nthe bond's annual coupon payments divided by its flat price (ie, the price usually quoted by dealers, which does not account for accrued\ninterest).\nCurrent yield has two main drawbacks that limit its usefulness in analyzing or comparing bonds:\nIt accounts only for interest payments, so it ignores a bond's capital appreciation (or loss) and is also ineffective for bonds that do not pay\ninterest (ie, zero-coupon bonds).\nIt fails to include accrued interest in the denominator, which has the effect of making current yield too high. A bond's full price is its flat price\nplus accrued interest (Choice B).\n(Choice C) Coupon interest divided by par value is a bond's coupon rate.\nThings to remember:\nCurrent yield is a bond's annual coupon interest divided by its flat price. Current yield is not particularly useful for comparing bonds since the\nnumerator ignores any capital appreciation, and the denominator fails to account for accrued interest.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 4, "q": "A two-year floating-rate note makes quarterly payments at 3-month LIBOR plus 50 basis points (bps). The floater is priced at 98.75 per 100 of par value, and the current 3-month LIBOR is 1.5%. Assuming a 30/360 day-count convention and evenly spaced periods, the discount margin is closest to:", "opts": ["66 bps", "114 bps", "264 bps"], "ans": "B", "expl": "Floating-rate notes (FRNs, or floaters) are debt instruments that make periodic interest payments based on a reference rate, such as LIBOR,\nplus a quoted spread (ie, quoted margin). The price of an FRN equals the sum of its discounted future payments, with the discount rate\n(discount factor) equaling the reference rate plus a discount margin (ie, required margin).\nCompared with an FRN, the reference rate plus the quoted margin is analogous to the coupon rate, and the reference rate plus the discount\nmargin is analogous to the YTM.\nTo solve for the discount margin, first calculate the discount factor, then use that to derive the discount margin.\n1. Calculate discount factor (reference calculator tabs):\n2. Use discount factor to find discount margin:\n(Choice A) 66 bps is the discount factor, not the discount margin. The discount factor equals the sum of the reference rate and the discount\nmargin divided by the number of periods per year.\n(Choice C) 264 bps results from not subtracting the reference rate (0.015) from the product of the discount factor and the number of annual\npayments.\nThings to remember:\nFloating-rate notes (FRNs, or floaters) are debt instruments that make periodic interest payments based on a reference rate plus a quoted spread\n(ie, quoted margin). The price of an FRN equals the sum of its discounted future payments, where the discount factor is based on the reference\nrate plus a discount margin that reflects market return expectations.\nCalculate and interpret yield spread measures for floating-rate instruments. LOS\n5. With respect to an investor's rate of return, a money market instrument's discount rate most likely:\n A. understates return.\nB. fairly states return.\nC. overstates return.\nExplanation\nMoney market securities (eg, US Treasury bills) are highly liquid investments that mature in less than one year. They are frequently purchased at\na discount to face value. Returns for money market securities can be quoted on an annualized basis as money market yields (MMY) or bond\nequivalent yields, which are both derived using purchase price (ie, present value) as the denominator.\nIn contrast, the quoted \"discount rate\" (ie, discount basis yield) is derived from using the face value as a denominator. Since the face value is\nlarger than the purchase price (ie, larger denominator), the discount basis yield will be lower than the MMY (proxy for investor returns).\nConsequently, quoted discount rates on MMY understate investor returns (Choices B and C).\nThings to remember:\nA money market discount rate is calculated as a percentage of the money market instrument's face value. Thus, it understates the investor's rate\nof return, which is a percentage of the instrument's purchase price (ie, present value).\ncalculate and interpret yield measures for money market instruments", "qhtml": null}, {"n": 5, "q": "With respect to an investor's rate of return, a money market instrument's discount rate most likely:", "opts": ["understates return.", "fairly states return.", "overstates return."], "ans": "A", "expl": "Money market securities (eg, US Treasury bills) are highly liquid investments that mature in less than one year. They are frequently purchased at\na discount to face value. Returns for money market securities can be quoted on an annualized basis as money market yields (MMY) or bond\nequivalent yields, which are both derived using purchase price (ie, present value) as the denominator.\nIn contrast, the quoted \"discount rate\" (ie, discount basis yield) is derived from using the face value as a denominator. Since the face value is\nlarger than the purchase price (ie, larger denominator), the discount basis yield will be lower than the MMY (proxy for investor returns).\nConsequently, quoted discount rates on MMY understate investor returns (Choices B and C).\nThings to remember:\nA money market discount rate is calculated as a percentage of the money market instrument's face value. Thus, it understates the investor's rate\nof return, which is a percentage of the instrument's purchase price (ie, present value).\ncalculate and interpret yield measures for money market instruments", "qhtml": null}, {"n": 6, "q": "One year ago, an investor purchased a 3-year bond with a 6% semiannual coupon. The purchase price was 95. The bond is currently trading at a flat price of 99. The bond's current yield is closest to: ", "opts": ["6.1%", "6.3%", "6.5%"], "ans": "A", "expl": "The current yield is the total of one year's coupon payments divided by the bond's flat price. The flat price is the quoted price, which\nexcludes any accrued interest. Current yield as a return measure is advantageous because it is quick and easy to calculate. In this scenario, the\nbond has a 6% semiannual coupon, so there are 2 coupon payments of 3 (ie, 3% of 100 par) per year. The current yield is calculated as:\nAs a rate of return measure for an investor, current yield is a very rough approximation since current yield does not account for:\nany capital appreciation in the bond's price; or\nany accrued interest paid by the investor at purchase; or\nthe compounding effect of the frequency of coupon payments.\n(Choice B) 6.3% is the bond's current yield at the time of the bond purchase, based on the price of 95 per 100 par value.\n(Choice C) 6.5% is the bond's yield-to-maturity based on a price of 99.\nThings to remember:\nThe current yield of a bond is determined by summing the coupon payments for one year and dividing by the bond's flat price. Current yield is a\nvery rough measure of rate of return to an investor since it does not capture the effect of capital appreciation of the bond over time, accrued\ninterest, or the frequency of coupon payments.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 7, "q": "A 2-year floating rate note is priced at 98 per 100 par value and pays interest quarterly based on the 3-month LIBOR. It has a discount margin of 50 basis points (bps) and uses a 30/360 day-count convention. If the three-month LIBOR is 3% throughout the life of the bond, the quoted margin is closest to:", "opts": ["- 153 bps.", "- 54 bps.", "50 bps."], "ans": "B", "expl": "Floating rate debt instruments (ie, floaters or FRNs) do not pay a fixed coupon. Instead, coupon payments are based on a reference rate such as\nLIBOR, which can fluctuate from one coupon period to the next.\nThe present value of a floater is calculated as the sum of its discounted cash flows. The formula shows the required inputs. Two variables—the\nquoted margin and discount margin—affect the present value of each payment:\nTo determine the quoted margin, calculate the coupon payment using a financial calculator. Each quarterly payment for this bond is approximately\n0.6151 per 100 par value, with a coupon rate of 0.6151% per quarter, since the bond's quarterly yield is 0.8750% (based on an annual yield of\n3.5%, the sum of the 3-month LIBOR of 3% and the discount margin of 0.5%). Once the payment is known, the quoted margin in terms of basis\npoints (bps) is calculated using the formula shown above:\nThis means that the bond's interest payment is the 3-month LIBOR minus 54 bps. The quoted margin can be positive or negative.\n(Choice A) - 153 bps is the quoted margin if the coupon payments are discounted by specifying the denominator in the present value formula as\n(1 – discount margin)n instead of (1 + discount margin)n.\n(Choice C) 50 bps is the quoted margin that makes the bond's price equal to par value.\nThings to remember:\nA floating rate bond's coupon payments fluctuate according to the reference rate used for the bond's coupon rate. The quoted margin and the\ndiscount (ie, required) margin are two variables that affect the present value of a floating rate note. The quoted margin determines how interest\npayments are calculated, whereas the discount margin affects the discounted value of each payment.\nCalculate and interpret yield spread measures for floating-rate instruments.\n8.A T-bill with 121 days to maturity has a 360-day assumed year and a USD 1 million par value. If it is currently priced at USD 988,176, then its\ndiscount rate is closest to:\nA. 1.18%\n B. 3.52%\nC. 3.56%\nExplanation\nA money market interest rate is expressed as either a discount rate or an add-on rate. Both are annualized rates. A discount rate is a percentage\nof the future value (ie, par value) of the instrument; it applies to money market investments sold at a discount. An add-on rate is a percentage of\nthe bond's present value or price. The discount rate of a money market instrument is calculated as the change in value (FV − PV) divided by\nfuture value. The rate is annualized by multiplying it by the instrument's periodicity (days in the year ÷ days in the period).\nIn this scenario, the days in the period are equal to the days until maturity. The money market discount rate is calculated as:\nUnlike a bond market discount rate or a yield to maturity, which are each percentages of a present value, a money market discount rate is a\npercentage of a future value, annualized by multiplying the change in value (FV − PV) by the periodicity. In contrast, investors measure their rate\nof return as a percentage of the amount being invested. This means that the money market discount rate understates the investor's rate of return,\nwhich is a percentage of the present value, not the future value.\n(Choice A) 1.18% results from not annualizing the rate. After determining (FV − PV) ÷ FV, multiply by (days in the year ÷ days until maturity),\nusing the correct year convention (ie, 360 or 365). This will determine the correct annualized discount rate.\n(Choice C) 3.56% results from dividing by the present value to find the periodic interest rate. This is the equivalent of calculating an add-on rate.\nDiscount rates for money market instruments are calculated by dividing by the instrument's future value, not its present value.\nThings to remember:\nA money market discount rate is a percentage of the future value (ie, par value) of the instrument; it applies to money market investments sold at a\ndiscount. The discount rate of a money market instrument is calculated as the change in value (FV − PV) divided by future value. The rate is\nannualized by multiplying it by the instrument's periodicity (days in the year ÷ days in the period).\ncalculate and interpret yield measures for money market instruments", "qhtml": null}, {"n": 8, "q": "A T-bill with 121 days to maturity has a 360-day assumed year and a USD 1 million par value. If it is currently priced at USD 988,176, then its discount rate is closest to:", "opts": ["1.18%", "3.52%", "3.56%"], "ans": "B", "expl": "A money market interest rate is expressed as either a discount rate or an add-on rate. Both are annualized rates. A discount rate is a percentage\nof the future value (ie, par value) of the instrument; it applies to money market investments sold at a discount. An add-on rate is a percentage of\nthe bond's present value or price. The discount rate of a money market instrument is calculated as the change in value (FV − PV) divided by\nfuture value. The rate is annualized by multiplying it by the instrument's periodicity (days in the year ÷ days in the period).\nIn this scenario, the days in the period are equal to the days until maturity. The money market discount rate is calculated as:\nUnlike a bond market discount rate or a yield to maturity, which are each percentages of a present value, a money market discount rate is a\npercentage of a future value, annualized by multiplying the change in value (FV − PV) by the periodicity. In contrast, investors measure their rate\nof return as a percentage of the amount being invested. This means that the money market discount rate understates the investor's rate of return,\nwhich is a percentage of the present value, not the future value.\n(Choice A) 1.18% results from not annualizing the rate. After determining (FV − PV) ÷ FV, multiply by (days in the year ÷ days until maturity),\nusing the correct year convention (ie, 360 or 365). This will determine the correct annualized discount rate.\n(Choice C) 3.56% results from dividing by the present value to find the periodic interest rate. This is the equivalent of calculating an add-on rate.\nDiscount rates for money market instruments are calculated by dividing by the instrument's future value, not its present value.\nThings to remember:\nA money market discount rate is a percentage of the future value (ie, par value) of the instrument; it applies to money market investments sold at a\ndiscount. The discount rate of a money market instrument is calculated as the change in value (FV − PV) divided by future value. The rate is\nannualized by multiplying it by the instrument's periodicity (days in the year ÷ days in the period).\ncalculate and interpret yield measures for money market instruments", "qhtml": null}, {"n": 9, "q": "Interest rates of different money market instruments are best compared using their:", "opts": ["quoted yields.", "periodic interest rates.", "bond equivalent yields."], "ans": "C", "expl": "Money market instrument conventions and bond-equivalent yield\nMoney market\nFeature Variation\nbond-equivalent yield\nDay-count convention 360-day or 365-day 365-day\nRate types Discount rate or add-on rate Add-on rate\nPeriodicities Various Annualized\nMoney market instruments are short-term debt securities with maturities of 1 year or less. Analysis of money market instruments can be\nchallenging, since quoting conventions vary among different money market instruments. Money market instruments may use different day count\nconventions (eg, 360-day versus 365-day year), rate types, and/or periodicities.\nOne way of comparing yields of money market instruments with different conventions is to convert rates to an annualized 365-day-count\nadd-on rate, which is known as the money market instrument bond equivalent yield. This conversion makes the yields of instruments with\ndiffering conventions comparable.\n(Choice A) Since quoting conventions vary, the quoted yields of money market instruments are not comparable. This results in needing a way to\ncompare instruments with different quoting conventions.\n(Choice B) The periodic interest rates of different money market instruments are not annualized, and each instrument may have a different\nperiodicity. Therefore, the periodic interest rates of money market instruments may not be comparable.\nThings to remember:\nDiffering money market conventions (including different day-count conventions, rates types, and periodicities) make comparing money market\ninstruments challenging. The money market bond equivalent yield (the 365-day add-on rate) is a way to effectively compare money market\ninstruments yields.\ncalculate and interpret yield measures for money market instruments", "qhtml": null}, {"n": 10, "q": "A two-year floating-rate note pays three-month Libor plus 15 basis points. The floater is priced at 99.60 per 100 par value, three-month Libor is currently 1.45%, and the coupon reset today. Assuming a 30/360 day-count convention and quarterly coupon payments, the discount margin in basis points (bps) is closest to:", "opts": ["35 bps", "40 bps", "45 bps"], "ans": "A", "expl": "A floating-rate note (FRN) is a debt instrument with an interest rate that resets periodically, so that the interest rate and payments are \"floating\" and\nnot fixed. The interest rate is based on a reference rate, such as LIBOR, plus a quoted margin, which compensates the investor for the credit risk\nof the issuer.\nThe price of an FRN is its discounted future payments, where the discount factor is based on the reference rate plus a discount margin. The\ndiscount margin represents the market's required spread to price the FRN at par on the reset date.\nTo solve for the discount margin, first calculate the discount factor and then use that to derive the discount margin.\n1. Calculate the discount factor (using a financial calculator):\n2. Use the discount factor to find the discount margin:\n(Choice B) 40 bps is the difference between the market price and par value, not the discount margin.\n(Choice C) 45 bps is the periodic discount factor, not the discount margin. The periodic discount factor equals the sum of the reference rate and\nthe discount margin (180 bps) divided by the number of periods per year (4).\nThings to remember:\nA floating-rate note (FRN) is a debt instrument with an interest rate that resets periodically and is based on a reference rate, such as LIBOR, plus\na quoted margin. The price of an FRN is its discounted future payments, where the discount factor is based on the reference rate plus a discount\nmargin that reflects the market's required return.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 11, "q": "Of the following, the government equivalent yield best describes yield to maturity (YTM):", "opts": ["restated from a 30/360 day-count basis to an actual/actual day-count basis.", "calculated based on the actual dates that the bond pays interest and principal.", "calculated by assuming that interest and principal are paid on their scheduled dates."], "ans": "A", "expl": "A bond's yield describes and quantifies its return. One yield measure used for corporate bonds is the government equivalent yield. Many\ncorporate bonds use a 30/360 day-count convention, whereas government bonds, particularly US Treasury notes and bonds, use an actual/actual\nday-count convention. Each bond's YTM is based on its day-count convention, so the yields cannot be directly compared.\nThe government equivalent yield results from converting a corporate bond's YTM, which is based on a 30/360-day basis, to the YTM based on the\nactual/actual basis of a government bond. This makes the yields directly comparable and shows the additional yield required to compensate\ninvestors for the corporate bond's additional risk.\n(Choice B) The true yield is similar to the yield obtained from using the street convention but is modified to account for the actual day that a\npayment occurs (eg, an interest payment scheduled for a Sunday is instead made on the following Monday).\n(Choice C) The street convention is a bond's YTM calculated under the assumption that all payments are made on their scheduled dates,\nregardless of whether a scheduled date is a trading day.\nThings to remember:\nMany corporate bonds use a 30/360 day-count convention to calculate YTM, whereas government bonds, particularly US Treasury notes and\nbonds, use an actual/actual day-count convention. The government equivalent yield results from converting a YTM based on a 30/360 day-count\nconvention to a YTM based on an actual/actual convention.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 12, "q": "Using a 30/360 day-count convention, the discount rate for 90-day commercial paper currently priced at 99 per 100 par value is closest to:", "opts": ["4.00%", "4.04%", "4.06%"], "ans": "A", "expl": "Yield conventions for money market instruments\nMoney market instruments are short-term debt with maturities ranging from overnight to one year. Yields for money market instruments are\nstated on a noncompounded (ie, simple) basis. The time value of money functions on both approved calculators (HP 12C and TI BAII) do not work\nwhen interest is not compounded, so it is important to know the formula shown above.\nIn the formula above, the first term in the formula above (days in year divided by days to maturity) is used to annualize the rate. The second term\n(interest earned divided by the future value) is the interest rate.\nFor money market instruments quoted on a discount rate basis (eg, commercial paper, treasury bills), future value (FV) is typically the face value\npaid at maturity (eg, 100) and is greater than the present value (PV). When divided by the larger FV amount, the discount rate most likely\nunderstates an investor's return compared with measures that divide by the PV, such as the add-on rate for money market instruments (eg,\ncertificates of deposit).\n(Choice B) 4.04% is the add-on rate using a 360-day year, which results from incorrectly dividing the interest earned by the PV of 99 instead of\nthe FV of 100.\n(Choice C) 4.06% results from incorrectly using 365 for the number of days in the year instead of the given 360.\nThings to remember:\nThe discount rate for a money market instrument equals the quantity (days in year divided by days to maturity) multiplied by the interest rate\n(interest earned divided by the future value). For money market instruments quoted on a discount rate basis (eg, commercial paper), the future\nvalue (FV) is typically the face value paid at maturity.\ncalculate and interpret yield measures for money market instruments", "qhtml": null}, {"n": 13, "q": "A floating-rate note will most likely be priced at a premium when the quoted margin is:", "opts": ["less than the discount margin.", "greater than the reference rate.", "greater than the discount margin."], "ans": "C", "expl": "Floating-rate notes (FRN [ie, floaters]) are debt instruments that make interest (coupon) payments based on a reference rate, which can fluctuate\nfrom one period to the next. The reference rate is typically a short-term, low-risk money market rate, such as LIBOR.\nSince FRN investors may face additional credit risk, a quoted yield spread (ie, quoted margin) is added to the reference rate to compensate for\nthis risk. The discount margin (ie, required margin) reflects investor return expectations and is used for discounting future interest payments to the\npresent value of the FRN.\nAn FRN will trade at a premium if the quoted margin that the issuer pays is greater than the required margin that the market demands. This is\nsimilar to a fixed-rate bond, which sells at a premium when the coupon rate is greater than its YTM.\n(Choice A) The FRN will trade at a discount, not premium, when the quoted margin is less than the discount margin.\n(Choice B) The size of the quoted margin relative to the reference rate has no bearing on whether an FRN trades at a premium or discount.\nThings to remember:\nA floating-rate note will trade at a premium if the quoted margin that the issuer pays is greater than the required margin that the market demands.\nThis is similar to a fixed-rate bond, which sells at a premium when the coupon rate is greater than its YTM.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 14, "q": "An analyst has compiled the following information to compare the yields of three money market instruments: Investment X Investment Y Investment Z Day count 360 360 365 Term (in days) 180 90 30 Quoted rate 6.15% 6.20% 6.30% Rate type Add-on Discount Add-on If the credit risks are the same, the instrument that offers the highest rate of return is:", "opts": ["Investment X.", "Investment Y.", "Investment Z."], "ans": "B", "expl": "Analysis of money market instruments is made difficult by the variety of features and quoting conventions. Different times-to-maturity, types of\ninterest rates (ie, discount versus add-on), and periodicities will complicate comparisons. One way to simplify comparisons is to convert rates\nto a bond equivalent yield (ie, investment yield). The bond equivalent yield for money market instruments is the rate stated as a 365-day add-on\nrate, which—unlike a discount rate—is quoted as a percentage of present value rather than future value, and therefore represents an investor's\nannualized rate of return.\nIn this scenario, the money market instruments are quoted using different types of interest rates, either add-on or discount, and using either a 360-\nday or a 365-day year convention. Investment Z is quoted on a 365-day add-on basis, so it is already stated as a money market bond equivalent\nyield.\nInvestment X is quoted with an add-on rate, but its year convention is 360. The investment's bond equivalent yield (365-day add-on rate) is\ncalculated as follows:\nInvestment Y is quoted with a 360-day discount rate. It is converted to a 365-day add-on rate as follows:\nBond equivalent yield\n(365-day add-on rate)\nInvestment X 6.24%\nInvestment Y 6.39%\nInvestment Z 6.30%\nAfter conversion to the bond equivalent yield, it becomes clear that Investment Y has a higher annualized rate of return than Investment X (Choice\nA) or Investment Z.\n(Choice C) Investment Z has the highest quoted rate. However, the quoted rates are misleading in this case, since the day-count conventions\nand rate types are not equivalent and therefore not comparable.\nThings to remember:\nAnalysis of money market instruments is made difficult by the variety of features and quoting conventions. Comparisons can be facilitated by\nconverting interest rates to a bond equivalent yield. The bond equivalent yield for money market instruments is the 365-day add-on rate.\ncalculate and interpret yield measures for money market instruments", "qhtml": null}, {"n": 15, "q": "A floating-rate note (FRN) pays semiannual coupons based on six-month LIBOR + 0.5% and has a discount margin of 65 basis points at its reset date, 2 years from maturity. If LIBOR is at 4.5%, the FRN's discount on the reset date is closest to:", "opts": ["0.15", "0.28", "0.53"], "ans": "B", "expl": "A floating-rate note's (FRN's) coupon payments change based on a reference rate. The quoted margin is the amount added to the reference rate\nto determine the FRN's coupon. If the note's semiannual coupons are based on six-month LIBOR plus 0.50%, the quoted margin is 50 bps. The\nquoted margin, which is set at issuance and does not change, compensates the bondholder for the credit risk of the issuer at issuance.\nHowever, the credit risk may change after issuance. The required margin (in practice called discount margin) is the interest spread in\naddition to the reference rate required to compensate bondholders for the bond's credit risk such that the bond would be priced at par. If the\nquoted margin (used to determine the coupon) is equal to the required margin (used to determine the discount rate), then the bond will be priced\nat par on its reset date. If the required margin is greater than the quoted margin, the note will be priced at a discount since the coupon payments\nare not sufficient given the note's credit risk.\nIn this scenario, the FRN's price is determined using a financial calculator as follows:\nThe FRN is priced at a discount of 100 − 99.7184 ≈ 0.28. Note that the discount pricing (ie, the amount the price is below par) of the bond is a\nseparate concept from the discount margin discussed above.\n(Choice A) 0.15 is the discount of the note calculated incorrectly using 4, instead of 2, as the periodicity over 4 periods.\n(Choice C) 0.53 is the discount of the note calculated incorrectly using 1, instead of 2, as the periodicity over 4 periods.\nThings to remember:\nIf an FRN's quoted margin is greater than its required (discount) margin, it is priced at a premium in the market on the reset date. If quoted margin\nis less than required margin, the bond is priced at a discount on the reset date.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 16, "q": "An analyst gathers the following information for three money market instruments, all with similar credit risk. Each has a maturity of 270 days: On a bond equivalent basis, which money market instrument offers the highest return?", "opts": ["Instrument A", "Instrument B", "Instrument C"], "ans": "B", "expl": "Yield conventions for money market instruments\nYields on money market instruments are quoted either as a discount rate (DR) or an add-on rate (AOR). The different methods for calculating DR\nand AOR mean that they cannot be compared directly with each other. Converting each to a bond equivalent yield allows for comparability. The\nbond equivalent yield (BEY) for money market instruments is the AOR that assumes a 365-day year.\nThe steps for calculating the 365-day AOR for the money market instruments in this question are as follows, with Instrument B offering the highest\nrate:\nThings to remember:\nMoney market yields can be quoted as a discount rate or an add-on rate (AOR) and are not directly comparable. Converting each to a bond\nequivalent yield (BEY) allows for comparability. The BEY for money market instruments is the AOR that assumes a 365-day year.\ncalculate and interpret yield measures for money market instruments", "qhtml": null}, {"n": 17, "q": "Information on two bonds is shown below: If the bonds are priced on a date when they both pay coupon interest, Bond A's annual percentage rate (APR) is most likely: ", "opts": ["less than Bond B's.", "equal to Bond B's.", "greater than Bond B's."], "ans": "A", "expl": "A fixed-coupon bond's return (ie, yield) is measured in terms of percentage. The yield depends on both the amount of each coupon payment and\nthe bond's periodicity, which refers to the number of coupon (ie, compounding) periods per year. A bond that pays coupon interest\nsemiannually has a periodicity of 2, a bond that pays monthly has a periodicity of 12, etc.\nA bond's price is the PV of its future cash flows. Each bond's cash flows are discounted at a periodic yield, thus prohibiting the comparison of\nbonds with different periodicities. Multiplying the periodic yield by the number of compounding periods in a year produces the annual percentage\nrate (APR), allowing for the comparison of APRs for bonds with different periodicities.\nIn this question, Bond A's periodicity is 2, and its semiannual yield is approximately 2.64%. Multiplying the semiannual yield by the number of\ncoupon periods (2) results in an APR of approximately 5.27%. Bond B's periodicity is 4, its periodic yield is approximately 1.41%, and its APR is\napproximately 5.65% (1.41% × 4), which is greater than Bond A's APR (Choices B and C).\nThings to remember:\nA fixed-coupon bond's return, or yield, depends on both the amount of each coupon payment and the bond's periodicity, or the number of coupon\n(ie, compounding) periods per year. Multiplying a bond's periodic yield by the number of compounding periods per year generates the bond's\nannual percentage rate.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 18, "q": "A 90-day banker's acceptance has a 365-day assumed year and is offered at USD 500,000 par value. If its redemption amount is USD 511,033 at maturity, its add-on rate is closest to:", "opts": ["2.21%", "8.75%", "8.95%"], "ans": "C", "expl": "A money market interest rate is expressed as either a discount rate or an add-on rate. Both are annualized rates. A discount rate is a percentage\nof the future value (ie, par value) of the instrument and applies to instruments sold at a discount. An add-on rate is expressed as a percentage of\nthe bond's present value or price and normally applies to instruments offered at par.\nThe money market add-on rate in this scenario is calculated by dividing the difference between the present and future values by the present\nvalue, and then multiplying by the instrument's periodicity, as follows:\nUnlike a money market discount rate, an add-on rate can be viewed as an investor's annualized rate of return on the instrument if it is held to\nmaturity. Treating the add-on rate as an investor's annual rate of return assumes that, throughout the year, the money market instrument can be\nreinvested a number of times equal to its periodicity. In this scenario, that would mean reinvesting the instrument exactly 4.055 (365 ÷ 90) times in\none year.\n(Choice A) 2.21% is the result of failing to annualize the rate by multiplying by the instrument's periodicity (4.055).\n(Choice B) 8.75% is the result of calculating the period interest rate by dividing by the future value. This is the equivalent of calculating a\ndiscount rate. Add-on rates in money markets are calculated by dividing by the present value, not the future value, of the instrument.\nThings to remember:\nA money market interest rate is expressed as either a discount rate or an add-on rate. The add-on rate of a money market instrument is calculated\nby dividing the growth (future value − present value) by the present value, and then multiplying by the instrument's periodicity (days in the year ÷\ndays of the instrument's term).\ncalculate and interpret yield measures for money market instruments", "qhtml": null}, {"n": 19, "q": "A four-year, 3% coupon bond pays interest quarterly and is priced at 87.43 per 100 of par value. Its yield of 6.60% is based on a periodic rate of 1.65%. The bond's yield based on a periodicity of 2 is closest to:", "opts": ["3.33%", "3.43%", "6.65%"], "ans": "C", "expl": "A bond's present value is calculated by discounting its expected cash flows using its required return (ie, YTM). The conventional treatment is to\ndivide YTM by a bond's periodicity, which is the bond's number of discounting periods in a year (ie, number of coupon payments per year).\nUse the formula above to convert YTM for bonds with different periodicities:\n(Choice A) 3.33% is the bond's periodic return for a 6-month period. The yield for a semiannual bond is its periodic return multiplied by two.\n(Choice B) 3.43% is the bond's current yield, which is the bond's total coupon payments each year divided by the bond's current price.\nThings to remember:\nA bond's present value is calculated by discounting its expected cash flows by its yield-to-maturity (YTM). YTM is scaled by its periodicity, which is\nthe number of discounting periods in a year. Periodicity usually corresponds to the number of coupon payments.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 20, "q": "For money market instruments, add-on rates most likely:", "opts": ["understate total return.", "are used to compute bond-equivalent yields.", "provide a money market instrument's compounded rate of return."], "ans": "B", "expl": "The return for a money market instrument is quoted either as a discount rate (DR) or an add-on rate (AOR). All money market instrument returns\nare based on simple interest, so neither DR nor AOR represents a compounded rate (Choice C).\nThe formula for calculating DR is:\nThe formula for AOR is:\nThe difference in how each rate is derived means that they cannot be compared directly to each other. Converting their returns to a bond-\nequivalent yield allows for comparability. The bond-equivalent yield is the AOR calculated using a 365-day year.\n(Choice A) Discount rates understate total return since the denominator of the future value includes all future earnings from the instrument. Add-\non rates' returns are based on the initial investment (ie, present value) and provide a better measure of the return earned by the investor.\nThings to remember:\nMoney market instrument returns are quoted as discount rates or add-on rates. Both returns are based on simple interest calculations, so neither\nrate uses compounding as a component of return. The bond-equivalent yield for any money-market instrument is its 365-day add-on rate return.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}, {"n": 21, "q": "A new issue of 270-day commercial paper is priced at 96 per 100 of par value. Using a 360-day year, the discount interest rate at issuance is closest to: ", "opts": ["5.33%", "5.41%", "5.56%"], "ans": "A", "expl": "Money market instruments are quoted using either discount rates or add-on interest rates. Market convention determines the interest rates used\nfor specific securities.\nDiscount securities (eg, T-bills, commercial paper, banker's acceptances) are quoted using discount rates, which are calculated based\non the face value (ie, future value) of the security: (FV − PV) / FV.\nOther money market instruments (eg, certificates of deposit, repurchase agreements) are quoted using add-on rates, which are calculated\nbased on the price (ie, present value) of the security: (FV − PV) / PV.\nA discount security is a short-maturity debt instrument issued without a coupon. Investors purchase the security at a discount to (ie, below) the\nface value, and they receive the face value at maturity. The interest earned is the difference between the purchase price (PV) and the face value\n(FV). A money market discount interest rate is a periodic rate (ie, interest earned as a percentage of the face value); the rate is annualized by\nmultiplying it by the security's periodicity:\n(Choice B) A rate of 5.41% results from inappropriately using a 365-day year.\n(Choice C) 5.56% is the add-on equivalent rate of the commercial paper, calculated by using a periodic rate based on the instrument's price (96)\nrather than its face value.\nThings to remember:\nMoney market discount rates are interest rates used to quote discount securities. A discount rate equals the interest earned as a percentage of\nthe face value, annualized to account for the security's periodicity.\nCalculate and interpret yield spread measures for floating-rate instruments.", "qhtml": null}];
+const CFG = {"title": "Wiley · Yield and Yield Spread Measures for Floating-Rate Instruments", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Fixed Income · 21 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

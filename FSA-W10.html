@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A company reports financial results using IFRS. Which of the following most likely represents a conservative accounting choice?", "opts": ["Assuming longer useful lives for noncurrent assets", "Increasing life expectancies for retired pension recipients", "Reducing the allowance for uncollectible accounts receivable"], "ans": "B", "expl": "Comparison of common accounting choices\nAggressive accounting Conservative accounting\nRecognizing revenue upon sale rather than when completely earned Not recognizing revenue while seller retains any risk\nMaintaining reserves so earnings can be \"smoothed\" across periods Electing shorter useful lives for noncurrent assets\nUsing straight-line depreciation Using higher estimates for bad debt and warranty expense\nConservative accounting is an important characteristic of high-quality financial reporting. Conservative choices represent the managerial\nphilosophy that presenting financial results in a \"worst-case\" light minimizes the chances of future negative surprises.\nA defined benefit plan often represents a significant long-term liability based on projections that may never be realized. When a company\nassumes its employees will live longer in retirement, it acknowledges that it will likely owe them more money than originally anticipated. Increasing\nthe liability signals that the company is making appropriate provisions today to cover higher obligations in the future. This is an example of a\nconservative accounting choice.\nBy contrast, assuming longer useful lives for noncurrent assets or reducing the allowance for uncollectible accounts receivable decreases the\ncurrent period's expenses and increases earnings (Choices A and C). Accounting choices that increase the current period's earnings are\nconsidered more aggressive.\nThings to remember:\nConservative accounting choices often reduce the current period's earnings, either by increasing reported expenses or decreasing revenues.\nHowever, they are intended to minimize the chances of future negative surprises, which enhances investor confidence in the long-term\nsustainability of company reporting.\nExplain the difference between conservative and aggressive accounting", "qhtml": null}, {"n": 2, "q": "Which of the following best describes the relationship between the quality of financial reports and the quality of earnings?", "opts": ["High quality of earnings indicates a high quality of financial reporting.", "Low quality of earnings prevents analysts from determining the quality of reporting.", "High quality of financial reporting allows analysts to determine the quality of earnings."], "ans": "C", "expl": "The overall quality of financial statements varies widely (ie, exists on a spectrum) since it is a combination of earnings quality and reporting\nquality. Earnings quality is based on the sustainability and amount of earnings. Reporting quality is based on the usefulness of the financial\ninformation, as defined by its relevance and faithful representation.\nIf a company complies with US GAAP or IFRS and follows the International Accounting Standards Board's Conceptual Framework, the quality of\nfinancial reporting should be high. High-quality reporting allows analysts to determine earnings quality. However, if management\naggressively manipulates the rules (ie, earnings management), then reporting quality declines. At a certain point, the quality of reporting can be so\nlow that assessing the quality of earnings is impossible: The report does not represent the company's performance and may be fraudulent.\n(Choice A) High earnings quality indicates that earnings are high and sustainable. Reporting quality is based on the information's usefulness.\nHigh or low earnings quality does not directly impact the reporting quality.\n(Choice B) Low earnings quality does not prevent analysts from determining the reporting quality. Management's compliance with accounting\nstandards and the guidelines for preparing useful information determines the reporting quality.\nThings to remember:\nThe overall quality of financial statements is a combination of the financial reporting's usefulness and the company's earnings performance. High\nreporting quality enables analysts to evaluate the company's earnings quality. If reporting quality is too low, analysts cannot assess the earnings\nquality.\nDescribe a spectrum for assessing financial reporting quality", "qhtml": null}, {"n": 3, "q": "An analyst suspects a company of manipulating its financials. A trend that could most likely be a warning sign is:", "opts": ["declining inventory turnover over multiple periods.", "receivables decreasing as a percentage of total revenue.", "a net-income-to-cash-from-operating-activities ratio consistently below 1."], "ans": "A", "expl": "Common warning signs of accounting manipulation\nFrequent reporting \"surprises\"\n\"Nonrecurring\" items that consistently appear in multiple periods\nUnusual levels of receivables, payables, inventory turnover, operating cash flow, net income, profit margins\nUnderestimating warranty expenses that are \"restated\" in subsequent periods\nUseful lives for long-term assets that are different than industry average\nRelated-party transactions\nHeavy emphasis on pro forma (non-GAAP, non-IFRS) earnings\nFinancial reporting standards (eg, IFRS, US GAAP) give companies discretion and flexibility over the financial information they present, which can\nresult in companies manipulating their financials. Analysts must stay alert for warning signs of manipulation, which should be analyzed further.\nOne potential warning sign is a declining inventory turnover ratio over multiple periods. The inventory turnover ratio provides an indication on\nhow efficiently a company is managing its inventory. Although a declining ratio may simply be due to poor inventory management, it may also\nsignal that the company is purposefully not recognizing obsolescence to avoid write-downs in the current period. However, this could result in\ninventory write-downs in future periods.\n(Choice B) Receivables that are increasing as a percentage of total revenue may result from poor credit management or indicate aggressive\naccounting policies to recognize revenue early, such as \"channel stuffing\" (ie, delivering product to distributors ahead of customer demand).\n(Choice C) A net-income-to-cash-from-operating-activities ratio consistently above 1 may be a warning sign of lower quality financials or\nmanipulation. While this trend may be due to the cyclicality of the business, it could also indicate that the company is using aggressive accounting\npolicies to recognize revenue early or defer expense recognition.\nThings to remember:\nFinancial reporting standards allow companies discretion over the financial information they present to investors and flexibility over how it's\npresented, allowing for potential manipulation. One potential warning sign is a declining inventory turnover ratio, which may signal that the\ncompany is purposefully not recognizing inventory obsolescence to avoid write-downs.\ndescribe accounting warning signs and methods for detecting manipulation of information in financial reports", "qhtml": null}, {"n": 4, "q": "Which of the following circumstances would least likely result in a company issuing financial reports considered to be of low quality?", "opts": ["The company is experiencing an exceptionally strong period.", "Earnings are volatile from period to period due to a competitive industry.", "The CEO wants to sell the company at a large premium to its current stock price."], "ans": "A", "expl": "Low-quality financial statements refer to statements that may be incomplete, biased and/or contain errors. The CFA Institute identifies three\nconditions that often lead to low-quality statements: motivation, opportunity, and rationalization. Both incorrect answers illustrate situations in\nwhich a company's decision makers could be motivated to present their company's financial situation in a way that distorts the true picture.\nManagement can be motivated by career or compensation concerns to reduce earnings volatility (Choice B). One way to manage earnings\nvolatility is to create reserves that management can draw on when needed to \"smooth\" earnings from period to period. A company with less\nvolatile earnings in a volatile environment could be perceived as a superior investment, which in turn could lead to management having better job\nsecurity and compensation.\nSimilarly, a CEO's motivation for wanting to sell the company (Choice C) could be related to compensation. Many senior executives receive some\nof their compensation in company stock. Selling the company at a substantial premium directly benefits them, and companies with high earnings\ntend to command a higher price in takeovers. This could lead to choices that boost current earnings but prove to be unsustainable in the long\nterm.\nBy contrast, a company having a strong period has no need to further enhance earnings. It would want to issue high quality statements so that\nusers would trust that the earnings are \"real.\"\nThings to remember:\nLow-quality financial statements can result when career or compensation issues motivate managers to present potentially misleading—or even\nfraudulent—reports. Smoothing earnings to make them appear more consistent from period to period can result in increased job security or higher\ncompensation.\nDescribe motivations that might cause management to issue financial reports that are not high quality and conditions that are conducive to issuing\nlow-quality, or even fraudulent, financial reports", "qhtml": null}, {"n": 5, "q": "Adjusted EBITDA most accurately:", "opts": ["may exclude the impact of equity-based compensation.", "may be impacted by the choice of depreciation method.", "is commonly prepared under the same methodology across firms."], "ans": "A", "expl": "Management often presents pro forma (non-GAAP) financial measures, alongside US GAAP (or IFRS) measures, to convey its own\ninterpretation of company performance. Certain non-GAAP measures, such as adjusted EBITDA, may exclude the impact of noncash (eg, equity-\nbased compensation) or transitory (eg, litigation charges) items.\nAdjusted EBITDA varies across companies and often excludes the impact of equity-based compensation, acquisition-related charges, impairment,\nlawsuits, and gain or loss on disposal of assets or extinguishment of debt.\nThese management adjustments (ie, addbacks) are meant to normalize reported earnings (eg, net income) by eliminating the impact from\nnonrecurring items. However, management often justifies weak reported earnings by showing a reconciled schedule to a higher adjusted\nEBITDA. Therefore, analysts should apply some scrutiny to these measures.\n(Choice B) Depreciation method does not impact adjusted EBITDA since EBITDA measures earnings before depreciation.\n(Choice C) The method for calculating adjusted EBITDA is unique to every firm and subject to management discretion.\nThings to remember:\nManagement often presents pro forma (non-GAAP) financial measures, alongside reported US GAAP (or IFRS) measures, to convey its own\ninterpretation of company performance. Certain non-GAAP measures, such as adjusted EBITDA, may exclude the impact of noncash (eg, stock-\nbased compensation) or transitory (eg, litigation charges) items.\nDescribe presentation choices, including non-GAAP measures, that could be used to influence an analyst’s opinion", "qhtml": null}, {"n": 6, "q": "An analyst gathers the following information on two competitors, concerning their differences in accounting methods. Company 1 Company 2 Classification of investments Available-for-sale Trading securities held indefinitely Majority consists Composition of intangible assets No goodwill of goodwill Depreciation method on fixed assets Straight line Accelerated To facilitate proper financial comparison, the analyst should most appropriately:", "opts": ["adjust Company 2's gross book value of fixed assets.", "reduce Company 1's net income for fair value investment gains.", "reduce Company 1's amount of intangible assets by its goodwill balance."], "ans": "C", "expl": "Common analyst adjustments\nCategory Issue Adjustment\nAdjust net income and/or other comprehensive\nInvestments Available-for-sale vs. trading securities classification\nincome\nComparing different cost methods (FIFO, LIFO, weighted average,\nInventory Adjust COGS and inventory balance\nspecific ID)\nFixed Adjust depreciation expense and fixed assets' net\nStraight-line vs. accelerated depreciation methods\nassets book value\nGoodwill Significant M&A growth vs. internal organic growth Adjust book value of intangible assets for goodwill\nM&A = mergers and acquisitions.\nAnalysts often compare companies that use different accounting methods and/or rely on distinct assumptions and estimates when preparing\nfinancial results. Differences between IFRS and US GAAP may also distort comparison. Analysts often adjust financial statements for such\ndifferences and/or requirements to facilitate \"apples-to-apples\" comparisons.\nIn this scenario, Company 1's intangible assets include significant goodwill, while Company 2 has no goodwill. Goodwill results purely from\nmergers and acquisitions activities and represents the purchase premium over an acquired company's fair value of net identifiable assets.\nAlthough goodwill is periodically tested for impairment, its value is subjective (ie, based on what the acquirer paid) and may overstate the\nacquirer's assets. Therefore, an analyst should adjust Company 1's book value of intangible assets for better comparison with Company 2.\n(Choice A) Net book value, not gross book value of fixed assets, should be adjusted when comparing companies that use different depreciation\nmethods. Gross book value represents the historical purchase price and remains constant. Net book value is gross book value adjusted for\naccumulated depreciation.\n(Choice B) Company 1 appropriately classifies investments that are held indefinitely as available-for-sale. Fair value gains bypass net income\nand flow directly into other comprehensive income. Thus, no adjustment to Company 1's net income is necessary.\nThings to remember:\nDifferent companies often use different accounting methods and rely on distinct assumptions and estimates when preparing financial results.\nDifferences between IFRS and US GAAP may also distort comparison. Analysts often adjust financial statements for such differences and/or\nrequirements to facilitate comparisons.\nDescribe accounting methods (choices and estimates) that could be used to manage earnings, cash flow, and balance sheet items", "qhtml": null}, {"n": 7, "q": "Which of the following reporting practices is most likely considered aggressive accounting?", "opts": ["Presenting pro forma earnings per share (EPS) that are lower than reported EPS.", "Capitalizing, instead of expensing, in-process research and development (R&D) costs.", "Using the criteria of available-for-sale securities, rather than trading securities, to treat bond investment gains."], "ans": "B", "expl": "Aggressive accounting vs. conservative accounting\nAggressive Conservative\nCapitalizing costs Expensing costs\nClassifying investments as trading Classifying investments as available-\nsecurities for-sale securities\nPresenting better pro forma results Presenting pro forma results close to\nthan IFRS or GAAP results IFRS or GAAP results\nAccounting choices affect the quality of a company's financial results. Aggressive accounting choices tend to inflate financial performance (eg,\nearnings, cash flow) in the current period but may understate performance in future periods. Conservative choices typically understate\nperformance in the current period but may enhance future performance.\nCapitalizing (instead of expensing) in-process research and development (R&D) costs in a reporting period assigns those costs to an asset on the\nbalance sheet. They are then amortized periodically as an expense on the income statement. The capitalization of a cost will produce:\nhigher net income in the current period since the entire cost is not expensed immediately, but\nlower net income in future periods since the remaining cost is expensed over time.\nTherefore, capitalization is an aggressive accounting choice. R&D costs should be capitalized only when the product is reasonably certain to\ngenerate future revenue and is no longer considered to be in process.\n(Choice A) Pro forma earnings typically include numerous management adjustments (ie, add-backs) that cause them to differ from reported\nearnings (ie, those under GAAP or IFRS). In general, management presents pro forma earnings that are higher than reported earnings and\ntherefore considered aggressive.\n(Choice C) When bond investments are treated as available-for-sale securities, any gains in fair value are included in other comprehensive\nincome on the balance sheet instead of going directly to net income (earnings). Therefore, this treatment is a conservative choice.\nThings to remember:\nAggressive accounting choices tend to inflate financial performance (eg, earnings, cash flow) in the current period but may understate\nperformance in future periods. Conservative accounting choices typically understate performance in the current period but may enhance future\nperformance. Capitalizing in-process research and development costs is considered an aggressive accounting choice.\nExplain the difference between conservative and aggressive accounting", "qhtml": null}, {"n": 8, "q": "Which of the following is least likely to increase financial reporting discipline?", "opts": ["Auditor reports included as part of the auditing company's consulting services", "Debt covenants that require the current ratio to be at or above a minimum figure", "Regulations that enforce disclosure but do not require management to certify financial statements"], "ans": "A", "expl": "Primary mechanisms that enhance financial reporting discipline\nRegulators Recognize and enforce disclosure standards applicable to all companies\nOpinions that statements comply with standards and fairly present the\nAuditors\ncompany's finanical condition\nFeatures such as debt covenants create special financial reporting\nInvestors\nrequirements to aid creditors\nMany jurisdictions require a company's statements to be audited by an independent auditor. An unqualified (ie, \"clean\") auditor's opinion does\nnot guarantee the statements' accuracy, but it certifies that the statements comply with accounting standards and present the company's results\nfairly. The prospect of a poor auditor's opinion can induce a company to produce high-quality statements since market repercussions from a poor\nreport are severe.\nThe company being audited pays the auditor's fee. By itself, that does not impugn an auditor's independence and objectivity. However, an auditor\nthat bundles auditing with other services as part of overall engagement is not \"independent.\" Earning compensation from other services may\ncause an auditor to provide a lenient audit opinion to preserve those additional compensation sources.\n(Choice B) Investors or creditors may have legally enforceable rights against a company that violates the terms of an investment contract. An\nexample is a lender that can accelerate payment of the loan if the borrower violates a debt covenant.\n(Choice C) Regulations often impose penalties on a company if its financial statements contain material misstatements or omit certain\ninformation. The possibility of penalties tends to enhance reporting discipline, regardless of whether the regulations require management to attest\nto the information's accuracy.\nThings to remember:\nMarket regulators, auditors, and investors are all groups that can enhance discipline on companies' financial reporting. However, for auditors to\nfulfill the role as a disciplinary mechanism, they must be independent of the company they are auditing. Auditors who \"bundle\" an audit with other\nservices such as consulting cannot be considered independent.\nDescribe mechanisms that discipline financial reporting quality and the potential limitations of those mechanisms", "qhtml": null}, {"n": 9, "q": "A company reports a significant increase in earnings per share (EPS) for fiscal year 20X8. An analyst examining the annual financial statements determines that the increase arises mostly from sales of noncore fixed assets. The statements are GAAP-compliant in all respects, and the footnotes provide significant details about the sales. The financial statements most likely represent:", "opts": ["high-quality financial reporting and financial earnings.", "high-quality financial reporting but low-quality financial earnings.", "low-quality financial reporting but high-quality financial earnings."], "ans": "B", "expl": "Financial reporting can be evaluated from two perspectives. The first is the quality of the reporting itself. High-quality reporting is characterized\nby providing enough information to allow a user to make an informed decision about a company's valuation and desirability as an investment.\nHigh-quality reports consistently comply with accounting standards, provide more (rather than less) information, and use conservative\naccounting choices.\nThe second perspective is the quality of the earnings the company reports. A high-quality report does not necessarily mean that the earnings are\nalso of high quality. High-quality earnings result from activities that produce sustainable and recurring earnings. Earnings that result from\nasset sales are unsustainable.\nThe company in this question produces reports that appear to be of high quality (ie, complying with applicable accounting standards, detailed\nfootnotes). However, the reported earnings are not of high quality due to unsustainable earnings from asset sales.\n(Choices A and C) The reporting quality is high, but the earnings quality is low.\nThings to remember:\nFinancial reporting quality does not always equate to financial earnings quality. Reporting can be compliant, conservative, and sufficiently detailed\nto allow users to make useful decisions despite a low quality of earnings.\nCompare financial reporting quality with the quality of reported results (including quality of earnings, cash flow, and balance sheet items)", "qhtml": null}, {"n": 10, "q": "High-quality financial earnings are least likely characterized by:", "opts": ["detailed pro forma financial statements.", "sustainable and robust sources of revenue.", "conservative estimates of useful lives for noncurrent assets."], "ans": "A", "expl": "High-quality financial earnings are characterized by sustainability over future periods. The quality of reported earnings tends to be positively\ncorrelated to the quality of the financial statements that chronicle those earnings. Companies with conservative accounting policies tend to\ngenerate high-quality earnings more often than companies with more aggressive reporting methods. The same applies for companies that make\nunbiased accounting choices.\nPro forma statements are one characteristic of aggressive reporting. They selectively present limited information that makes current earnings\nappear stronger than might otherwise be justified. The selective nature of the information calls into question whether the earnings are\nsustainable. Pro forma presentations do not comply with either US GAAP or IFRS.\nChoosing shorter useful lives for noncurrent assets represents a conservative accounting choice (Choice C). The shorter lives result in higher\ndepreciation expense each year. The increased expense means lower earnings. Also, shorter useful lives implicitly signal the company's intent to\ninvest in its infrastructure to foster future earnings growth.\n(Choice B) Revenue is the primary driver of earnings. Robust and sustainable revenues tend to result in consistent, high-quality earnings.\nThings to remember:\nHigh-quality earnings are characterized by sustainability and robustness. Earnings that result from pro forma financial statements tend to be less\nsustainable since they are based on reporting that does not comply with GAAP.\nCompare financial reporting quality with the quality of reported results (including quality of earnings, cash flow, and balance sheet items)", "qhtml": null}, {"n": 11, "q": "Which of the following accounting choices would most likely artificially enhance reported results in the current period?", "opts": ["Expensing, rather than capitalizing, long-term asset purchases", "Decreasing future benefit projections for a goodwill impairment assessment", "Changing revenue recognition criteria from Free on Board (FOB) destination to FOB shipping"], "ans": "C", "expl": "Under both IFRS and US GAAP, revenue can be recognized when the risks and rewards of ownership have been transferred to the buyer. When\ngoods are in transit:\nunder Free on Board (FOB) destination, ownership transfers to the buyer when the shipped goods are received. Therefore, the seller can\nrecognize revenue only when the goods arrive at the customer's destination.\nunder FOB shipping point, ownership transfers to the buyer upon shipment. Therefore, the seller can recognize revenue when the goods\nare shipped.\nFor a seller, switching shipping terms from FOB destination to FOB shipping will change the timing of when the goods' ownership is transferred,\nthus changing when revenue can be recognized. It effectively allows a seller to recognize revenue earlier, which results in more reported revenue\nfor the current period. Therefore, management sometimes uses this tactic to enhance reported revenue for a period.\n(Choice A) Expensing, rather than capitalizing, an asset purchase will increase operating expenses for the current period, thus lowering profits.\nExpensing an asset purchase is a conservative choice.\n(Choice B) Decreasing future cash benefit projections in a goodwill impairment test will more likely lead to a write-down; therefore, it is a\nconservative choice.\nThings to remember:\nFor a seller, switching shipping terms from Free on Board (FOB) destination to FOB shipping will change the timing of when title is transferred,\nthus changing when revenue is recognized. Under FOB destination, the seller recognizes revenue only when the goods arrive at the customer's\ndestination. Under FOB shipping point, the seller can recognize revenue when the goods are shipped.\nDescribe accounting methods (choices and estimates) that could be used to manage earnings, cash flow, and balance sheet items", "qhtml": null}, {"n": 12, "q": "A company sells a homogeneous product and many of its sales are on credit. An analyst is reviewing the company's financial statements for the past three years. Which of the following would an analyst least appropriately consider to be a warning sign concerning the company's financial reporting?", "opts": ["Inventory turnover has declined each year over the period.", "The company routinely recognizes revenue using bill-and-hold arrangements.", "The ratio of cash flow from operations to net income is consistently more than 1.0."], "ans": "C", "expl": "Common warning signs of accounting manipulation\nFrequent reporting \"surprises\"\n\"Nonrecurring\" items that consistently appear in multiple periods\nUnusual levels of receivables, payables, inventory turnover, operating cash flow, net income, profit margins\nUnderestimating warranty expenses that are \"restated\" in subsequent periods\nUseful lives for long-term assets that are different than industry average\nRelated-party transactions\nHeavy emphasis on pro forma (non-GAAP, non-IFRS) earnings\nBoth GAAP and IFRS allow managers discretion over the financial information they are required to present and over how it is presented. Analysts\nmust be vigilant to detect managers' manipulation of financial statements which may reduce the quality of the financial statements and/or the\ncompany's earnings, even if such manipulation is not so extreme as to be criminal conduct.\nAnalysts should pay close attention to the ratio of cash from operations (CFO) to net income. Sales on credit (ie, new accounts receivable)\nare included in a company's net income. Receivables must be converted to cash to pay expenses. Not converting receivables to cash may\nindicate that the company is recognizing \"sales\" that are illusory (and thus cannot be converted to cash), which is an accounting impropriety. A\nratio of at least 1.0 indicates that CFO is keeping pace with net income; a ratio of consistently less than 1.0 likely constitutes a warning sign.\n(Choice A) Inventory turnover (ie, the ratio of COGS to average inventory) measures how quickly a company sells its inventory. If this ratio is\ndecreasing, it may signal that the company has poor inventory management or that its inventory is becoming obsolete. Declining inventory\nturnover is a warning sign.\n(Choice B) A bill-and-hold arrangement is an agreement for a sale today with delivery deferred to a subsequent period. The seller improperly\nrecognizes the revenue today despite not delivering the goods. Consistently using bill-and-hold transactions to recognize revenue is a warning\nsign.\nThings to remember:\nCompanies have discretion over what they present in financial statements and how they present it. Analysts must be mindful of warning signs in\naccounting that indicate possible low-quality statements and/or earnings. Two common signs are reduced inventory turnover ratios and consistent\nuse of bill-and-hold transactions to recognize revenue.\ndescribe accounting warning signs and methods for detecting manipulation of information in financial reports", "qhtml": null}, {"n": 13, "q": "Which of the following is least likely considered a warning sign for financial manipulation?", "opts": ["A gain from sale of assets reported in operating income", "A loss from a rare lawsuit reported as a nonoperating loss", "Receivables are increasing much faster than reported revenue"], "ans": "B", "expl": "Common warning signs of management manipulation\nTiming of revenue, vague service contracts, quarterly reporting surprises\nMisclassification of recurring and nonrecurring items\nUnusual levels of working capital, operating cash flow, profit margins\nUnderestimation of rebates and warranty expenses or uncollectible accounts\nDepreciation choices (eg, modified useful lives, capitalizing instead of expensing)\nRelated party transactions\nLack of financial disclosure\nHeavy emphasis on pro forma (ie, non-GAAP, non-IFRS) earnings\nManagement can intentionally misclassify recurring and/or nonrecurring items to manipulate financial results. This leads to poor reporting quality\nsince the reported levels of operating performance are unlikely to be sustainable. Common manipulative practices include misclassifying:\nnonrecurring income as recurring (eg, reporting gains from asset disposals under operating income) (Choice A) and\nrecurring expenses as nonrecurring (eg, reporting recurring restructuring charges as nonrecurring or unusual).\nIn this question, classifying a loss from a rare lawsuit as nonoperating income is reasonable since a rare lawsuit is unlikely to recur. Therefore,\nsuch reporting would not be considered an attempt at manipulation.\n(Choice C) Receivables increasing at a much faster rate than revenues suggests less efficient receivables collection but may also signal\naggressive \"channel stuffing,\" which is a form of manipulation.\nThings to remember:\nManagement can intentionally misclassify recurring and/or nonrecurring items to manipulate financial results. This includes misclassifying\nnonrecurring income as recurring and recurring expenses as nonrecurring.\ndescribe accounting warning signs and methods for detecting manipulation of information in financial reports", "qhtml": null}, {"n": 14, "q": "Which of the following is most likely to be considered an aggressive accounting choice?", "opts": ["Increasing the estimate for bad debt expense", "Using the percentage-of-completion instead of completed contract method", "Raising post-retirement life expectancy assumptions for a defined benefit plan"], "ans": "B", "expl": "Comparison of common accounting choices\nAggressive accounting Conservative accounting\nRecognizing revenue upon sale rather than when completely earned Not recognizing revenue while seller retains any risk\nMaintaining reserves so earnings can be \"smoothed\" across periods Electing shorter useful lives for noncurrent assets\nUsing straight-line depreciation Using higher estimates for bad debt and warranty expense\nAggressive accounting choices tend to enhance current earnings or a company's financial position but decrease future earnings. In many\ncases, accounting standards and/or regulations present several options from which companies may select for a given situation. Aggressive\naccounting selects the choice that makes the company look best in the current period.\nConservative accounting choices focus on the company's long-term outlook. When presented with viable options, managers that adhere to\nconservative accounting practices choose the one it believes best reflects the company's long-term earnings or financial position. A conservative\nchoice can also represent what management determines is the more objective result.\nThe percentage-of-completion method recognizes revenue proportionately to the expenses incurred each period for a multi-period construction\ncontract. It assumes both that the company will likely be paid AND that expenses will not change materially during the contract. By contrast, the\ncompleted contract method is more conservative since no revenue, expenses, or earnings are recognized until the contract is completed.\n(Choices A and C) Increasing an estimate for bad debt expense is considered a conservative choice since it reduces earnings in the period of\nincrease. Similarly, it is conservative to assume increases in compensation when determining a company's liability for a defined benefit plan since\nhigher compensation causes the future liability to increase.\nThings to remember:\nIn general, aggressive accounting choices are those that enhance a current period's earnings, potentially to the detriment of future earnings.\nConservative accounting choices are considered more objective and foster greater confidence that the company's results are sustainable for future\nperiods.\nExplain the difference between conservative and aggressive accounting", "qhtml": null}, {"n": 15, "q": "A manager collects the following information (in USD) on a company that reports under US GAAP: The company has no inventory at the beginning of the year and 100 units in inventory at the end of the year. Management is under pressure to meet its year-end earnings target and is considering changing its accounting methods. Which change in inventory costing method is most likely to increase earnings? ", "opts": ["LIFO to FIFO", "Periodic weighted average to LIFO", "FIFO to periodic weighted average"], "ans": "A", "expl": "LIFO vs. FIFO: impact on financial statements\nInventory costs COGS Profit\nIncreasing Higher Lower\nLIFO\nDecreasing Lower Higher\nIncreasing Lower Higher\nFIFO\nDecreasing Higher Lower\nAnalysts should be aware of how a change in accounting methods or estimates can be used to manage or manipulate earnings. Even when\npermitted by accounting standards, such a change should be interpreted in the context of the company's performance.\nWhen inventory costs are rising, changing inventory valuations to FIFO lowers COGS and increases earnings, since, under FIFO, the first\n(lowest cost) purchases flow into COGS. LIFO, however, uses the last purchases (highest cost) to value COGS, and under the periodic weighted\naverage (PWA) method, the average purchase cost flows into COGS.\nUsing the COGS formula, there are 100 units sold (0 + 200 − 100 = 100) during the period; the value of the units sold depends on the inventory\ncosting method used. To determine which change in accounting method increases earnings the most, first find COGS using each method.\nThen find the difference in inventory costing methods; a decrease in COGS increases earnings.\nSwitching from LIFO to FIFO saves the company USD 29,000 in reported expenses and increases earnings, whereas the other changes increase\nCOGS and decrease earnings (Choices B and C).\nThings to remember:\nAccounting methods or estimates can be used to manage or manipulate earnings. When inventory costs are rising, changing to the FIFO\ninventory valuation method decreases COGS and increases earnings since the cheapest purchases are used to value COGS.\nDescribe accounting methods (choices and estimates) that could be used to manage earnings, cash flow, and balance sheet items", "qhtml": null}, {"n": 16, "q": "Which of the following is most likely considered a warning sign in a company's financial reporting?", "opts": ["Classification of substantial expenses as recurring", "Substantially exceeding fourth-quarter earnings guidance regularly", "Increasing trend in levels of operating cash flow relative to net income"], "ans": "B", "expl": "Common warning signs of management manipulation\nTiming of revenue, vague service contracts, quarterly reporting surprises\nMisclassification of recurring and nonrecurring items\nUnusual levels of receivables, payables, inventory turnover, operating cash flow, net income, profit margins\nUnderestimation of rebates and warranty expenses or uncollectible accounts\nDepreciation issues (eg, modified useful lives, capitalizing instead of expensing)\nRelated party transactions\nLack of financial disclosure\nHeavy emphasis on pro forma (non-GAAP, non-IFRS) earnings\nFrequent fourth-quarter positive earnings surprises (ie, when earnings exceed guidance or estimates) may indicate that management is\nmanipulating profits or purposely providing unrealistic guidance. In essence, management may manipulate the timing of recognizing certain\nrevenues and expenses to achieve the desired outcome.\n(Choice A) Classifying substantial expenses as recurring indicates conservatism in management's choice of reporting since it lowers profits.\nManagement typically manipulates reporting to show higher profits.\n(Choice C) Increasing levels of operating cash flow to net income indicate high-quality net income since there are high levels of cash that support\nincome that is accrued.\nThings to remember:\nFrequent fourth-quarter earnings surprises may indicate that management is purposely over- or under-reporting results in selective quarters.\ndescribe accounting warning signs and methods for detecting manipulation of information in financial reports", "qhtml": null}, {"n": 17, "q": "Which of the following actions taken by management can most likely mislead investors by improving the appearance of net cash from operating activities? ", "opts": ["Delaying payment to suppliers", "Expensing instead of capitalizing asset costs", "Disposing of outdated capital equipment at a gain"], "ans": "A", "expl": "Analysts and investors often pay close attention to net cash from operating activities (CFO) on the cash flow statement. The CFO section explains\nhow cash is generated from core business activities by listing the sources and uses (ie, inflows and outflows) of cash. Management can\nmanipulate CFO by delaying payment to suppliers, a tactic known as stretching payables. This makes CFO temporarily appear higher on a\nreporting date.\nFor example, a EUR 10,000 invoice is due on December 31 of this year. A company can postpone payment by one day, to January 1 of next year,\nso that CFO appears to be EUR 10,000 higher on the year-end cash flow statement for this year. Trends such as decreasing accounts payable\nturnover ratios and an increasing number of days of payables outstanding may indicate the stretching of payables.\n(Choice B) Expensing, instead of capitalizing, asset costs decreases CFO since total asset costs are expensed on the income statement and are\ntherefore captured in CFO. Conversely, capitalizing an asset moves asset costs to the balance sheet and decreases cash from investing\nactivities.\n(Choice C) Proceeds from disposing capital assets are recognized as cash from investing activities. Gains from the disposal of assets do not\nincrease CFO.\nThings to remember:\nOne way that management can manipulate CFO is by delaying payment to suppliers, which makes CFO appear higher on a reporting date.\nDescribe accounting methods (choices and estimates) that could be used to manage earnings, cash flow, and balance sheet items", "qhtml": null}, {"n": 18, "q": "A company's chief financial officer accelerated revenue recognition during the last month of the year to earn a sizable personal bonus. Which of the following conditions conducive to issuing low-quality financial reports best explains this action?", "opts": ["Opportunity", "Motivation", "Rationalization"], "ans": "B", "expl": "According to the curriculum, there are three conditions that lead companies to publish low-quality financial reports: opportunity, motivation,\nand rationalization. Opportunity results from poor internal or external conditions, motivation results from pressure to meet targets, and\nrationalization results from the need to justify one's choices.\nIn this scenario, personal motivation (ie, a bonus) encourages the CFO to manipulate revenue through early recognition.\nThings to remember:\nAccording to the curriculum, there are three conditions that lead companies to publish low-quality financial reports: opportunity, motivation, and\nrationalization. Opportunity results from poor internal or external conditions, motivation results from pressure to meet targets, and rationalization\nresults from the need to justify one's choices.\nDescribe motivations that might cause management to issue financial reports that are not high quality and conditions that are conducive to issuing\nlow-quality, or even fraudulent, financial reports", "qhtml": null}];
+const CFG = {"title": "Wiley · Financial Reporting Quality", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Financial Statement Analysis · 18 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

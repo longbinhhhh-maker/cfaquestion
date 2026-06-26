@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Which of the following is most likely to cause errors in a machine learning (ML) model that is based on unsupervised learning?", "opts": ["The algorithm overfits the data.", "The algorithm's training data is biased.", "The algorithm uses unlabeled data to find common patterns."], "ans": "A", "expl": "Types of machine learning (ML)\nModel specifies inputs and outputs (\"labeled data\") to train algorithm\nSupervised\nAlgorithm predicts outcomes from new data sources\nModel does not specify outputs and uses unlabeled input data\nUnsupervised\nAlgorithm attempts to find patterns or characteristics from raw data\nCan incorporate supervised or unsupervised ML\nDeep learning\nUses multi-stage nonlinear data processing\nMachine learning (ML) is a subcategory of artificial intelligence in which computer algorithms \"learn\" to predict outcomes from inputs known\nas training data. Fintech incorporates ML to analyze information from very large data sets that the program then uses to predict outcomes. The\ntwo primary types of ML are supervised learning and unsupervised learning.\nOverfitting refers to an ML model that attributes significance to a variable in the training data when that variable only works with that specific\ndata. For models based on supervised learning, overfitting can cause prediction errors when using the program with different input data. For\nunsupervised learning models, overfitting occurs when the model fits the input data too well but has no predictive value when it uses a different\ndata set.\n(Choice B) This is an example of an event that causes errors in supervised ML. The algorithm attempts to model specified outcomes from input\ndata called \"training\" or \"labeled\" data. If the training data is of poor quality or if there is not enough data, the model will be a poor predictor of\nfuture outcomes. This isn't a factor in unsupervised ML since unsupervised ML uses only unlabeled data.\n(Choice C) This is an example of unsupervised ML, not one of its most common causes of errors. Unsupervised ML differs from supervised\nlearning in that the algorithm attempts to find patterns from the input data rather than trying to predict specific outcomes. The input data for\nunsupervised learning is called unlabeled data.\nThings to remember:\nMachine learning (ML) is a form of artificial intelligence. It is used in fintech to analyze large amounts of data to identify variables that allow the\nprediction of future outcomes, or to find patterns in raw input data. One problem with ML arises from overfitting, which happens when predicted\noutcomes are too specific to the input data. An algorithm that has been overfit loses its predictive ability when different input data is used.\nDescribe Big Data, artificial intelligence, and machine learning", "qhtml": null}, {"n": 2, "q": "A human investment adviser would least appropriately use a robo-adviser to:", "opts": ["create passively managed portfolios.", "offer wealth management and planning.", "gain a greater market share of cost-conscious investors."], "ans": "B", "expl": "Robo-advisers are low-cost investment services offered through an online platform with no (or minimal) involvement by a human adviser.\nTypically, an investor provides information concerning investment goals and risk tolerances through an online questionnaire. The robo-adviser\nuses algorithms and historical market data to recommend an asset allocation for a passive strategy, usually applied to a standardized portfolio of\nexchange-traded funds, that aligns with the investor's responses (Choice A).\nHigh net worth clients are usually inappropriate candidates for robo-advisers since they generally need advice on more complex investment\nissues, such as charitable giving and estate planning. In addition, high net worth clients are more likely to seek active management, since their\ngreater asset base allows for a higher risk tolerance. Thus, robo-advisers are usually inappropriate for wealth planning applications.\n(Choices C) Investment advisers often use robo-advisers to service investors who have less wealth and risk tolerance than high-net-worth clients\nand are more cost-conscious and therefore would benefit from low-cost, passive investment strategies.\nThings to remember:\nRobo-advisers offer investment recommendations, usually passive asset allocations applied to a standardized portfolio of funds, based on\nalgorithms that work with investors' quantifiable investment goals and risk tolerances. Robo-advisers are most appropriate for investors who\nwould benefit from passive and low-cost investment strategies, but are not appropriate for the complexities of wealth planning.\nDescribe applications of Big Data and Data Science to investment management", "qhtml": null}, {"n": 3, "q": "An analyst wishes to understand sentiment based on remarks during a recent earnings call. Of the following, the most appropriate visualization tool for the analyst to use would be a:", "opts": ["heat map.", "word cloud.", "frequency polygon."], "ans": "B", "expl": "A word cloud is a visual tool for representing the distribution of textual, unstructured data in a given data source (eg, financial filings, social\nmedia). The font size of each word in the word cloud is directly related to its frequency of occurrence within that source of data.\nWord clouds typically exclude common words that lack contextual meaning (eg, and, or, the) so that only meaningful words remain, allowing the\ncloud to provide useful information (eg, frequent use of positive words suggests positive sentiment). Word clouds may be used by financial market\nparticipants for purposes such as quickly assessing a company's sentiment based on its earnings filings or calls and learning potential customers'\nattitudes about products.\n(Choice A) Heat maps summarize and display the joint frequencies of two variables. They would not be appropriate for visualizing textual data.\n(Choice C) Frequency polygons display a distribution of numerical data by breaking the data into intervals, with the frequency of each interval\nrepresented by the height of a line. They would not be appropriate for visualizing textual data.\nThings to remember:\nA word cloud is a visual tool for representing the distribution of textual data in a given source. The size of each word represents its frequency\nwithin the data source, so that the words with larger fonts are those that appear most often in the source.\nDescribe applications of Big Data and Data Science to investment management", "qhtml": null}, {"n": 4, "q": "A fund manager is preparing a presentation that shows the fund's number of stock holdings per country and also categorizes the stocks by market cap. Which of the following data visualization tools is most appropriate to reflect this data? ", "opts": ["Tree-map", "Histogram", "Scatterplot matrix"], "ans": "A", "expl": "Data visualization tools display the frequency of categorical (ie, qualitative) or numerical (ie, quantitative) data points. Tree-maps visualize the\nfrequency of categorical variables by using nested rectangles and can show joint frequencies across different levels of a hierarchy. In this\nscenario, the fund manager wants to simultaneously show the total number of stock holdings per country and the stock classifications by market\ncap.\nThe frequency of each outcome of the first-level categorical variable (eg, country) is visualized using differently colored rectangles, with each\nrectangle's size proportional to the number of observations. Those rectangles are further divided into smaller rectangles, which group\nobservations based on a second categorical variable and show the frequency of variable outcomes (eg, different market caps). In this way, tree-\nmaps can display joint frequencies (eg, frequency by country and market cap) and accommodate as many levels of categorical data as needed.\n(Choice B) Histograms are used to display the frequency of numerical variables. They cannot be used with categorical variables.\n(Choice C) A scatterplot matrix is a collection of scatterplots in which each graph is used to examine the relationship between a different\ncombination of two numerical variables. It cannot be used for categorical variables.\nThings to remember:\nTree-maps visualize the frequency of categorical variables by using nested rectangles and can show joint frequencies across different levels of a\nhierarchy. Distinct variable outcomes are presented using differently colored rectangles that can be split further into subgroups. The size of each\nrectangle is proportional to the number of observations.\nDescribe applications of Big Data and Data Science to investment management", "qhtml": null}, {"n": 5, "q": "Natural language processing is most appropriate for use when:", "opts": ["analysis is needed for large amounts of sensor-based data.", "a company globally monitors employee emails for compliance.", "the algorithm must generate predictions that are highly accurate."], "ans": "B", "expl": "Text analytics is a fintech application that analyzes text- and voice-based data. Natural language processing (NLP) is a category of text\nanalytics that focuses mainly on developing algorithms and applications to interpret human language. NLP can enhance a company's\ncompliance processes by automatically monitoring employee emails for word patterns that may flag compliance issues or even fraud.\nOne limitation to NLP is that human language is imprecise; an algorithm may not be able to interpret idioms or distinguish true intent from\nsarcasm. NLP used to analyze emails does not necessarily conclude that fraud or noncompliance occurred. Instead, it allows humans to\ninvestigate further based on the initial algorithmic analysis. NLP may not be suitable for analysis that needs to convey very precise outputs or\npredictions (Choice C).\n(Choice A) Sensor-based data consists of items such as satellite imagery, climate and security updates for \"smart\" buildings, and smartphone\nimages. This type of data typically does not involve human language, so NLP would not be useful.\nThings to remember:\nNatural language processing is a category of text analytics. It involves data analysis of text- and voice-based data.\nDescribe applications of Big Data and Data Science to investment management", "qhtml": null}, {"n": 6, "q": "Machine learning may be most appropriate for data analysis if:", "opts": ["training data are applied to targeted outputs.", "the input data have not been filtered to eliminate bias.", "patterns from raw data inputs were obtained through supervised learning."], "ans": "A", "expl": "Types of machine learning (ML)\nModel specifies inputs and outputs (\"labeled data\") to train algorithm\nSupervised\nAlgorithm predicts outcomes from new data sources\nModel does not specify outputs and uses unlabeled input data\nUnsupervised\nAlgorithm attempts to find patterns or characteristics from raw data\nCan incorporate supervised or unsupervised ML\nDeep learning\nUses multi-stage nonlinear data processing\nMachine learning (ML) is a subcategory of artificial intelligence in which computer programs \"learn\" to predict outcomes from inputs known as\ntraining data. \"Fintech\" is the term used to describe the integration of technology with financial services. It incorporates ML to analyze information\nfrom very large datasets, which the programs then use to predict outcomes.\nOne type of ML model is created through supervised learning. Supervised learning refers to algorithms that map input data to specified outputs\n(ie, targeted outputs). Both the data and the targeted output are provided to the algorithm, which \"learns\" from subsequent input data. One\nexample is using historical information correlated to stock prices to identify variables that predict price changes. The algorithm then uses changes\nin those variables to predict future stock prices (ie, targeted outputs).\n(Choice B) ML requires large amounts of data to be effective. The data must be as free as possible from bias (eg, sample bias, where the\nsample is not representative of the environment in which the algorithm will be running). In addition, it must not contain spurious data (eg, data that\nappear to be related but are not causally connected).\n(Choice C) Supervised learning specifies inputs and outputs that an algorithm uses to find patterns in new raw data sources. Unsupervised\nlearning refers to ML models that determine patterns or characteristics from large amounts of raw input data without specified inputs or outputs.\nAn unsupervised learning algorithm may be able to discern patterns from data that would not be obvious to humans.\nThings to remember:\nMachine learning (ML) is a type of artificial intelligence. Supervised ML applies input data to algorithms that map the data to specific (ie, targeted)\noutputs. In order to be effective, the input data used to build and refine the algorithms must be free of bias.\nDescribe Big Data, artificial intelligence, and machine learning", "qhtml": null}, {"n": 7, "q": "Use of fintech most appropriately enhances a company's risk analysis capabilities when:", "opts": ["machine learning analyzes input data for errors.", "the data to be analyzed excludes quantitative data.", "the risk analysis focuses mainly on market and trading risk rather than operational risk."], "ans": "A", "expl": "Fintech refers to technological innovation in designing and delivering financial information and products. One practical application of fintech\nconcerns how investment companies can utilize machine learning to analyze and manage risk. Machine learning is the creation of algorithms that\nanalyze enormous amounts of qualitative and quantitative input data to predict future outcomes or to identify patterns that would not otherwise be\nobvious.\nRisk analysis uses data from multiple sources, many of which are classified as alternative sources (eg, photographs, text messages). Machine\nlearning is easily adapted to determine whether this data contains errors, bias, or outliers that would distort the predictive ability of a risk model\nthat will use the data. In other words, if the data contains errors that were missed during human quality control processes, machine learning can\nhelp validate the data before it is used by the algorithm that manages risk.\n(Choice B) Risk management uses both quantitative and qualitative data.\n(Choice C) Operational risk is the risk of loss caused by failed systems or processes within the firm. Fintech can use algorithms that analyze a\nvariety of input data to predict events that result in losses from operational risk.\nThings to remember:\nA practical application of fintech is to analyze risk in the investment industry. Risk analysis incorporates qualitative and quantitative data from\nmultiple sources. Machine learning can be used to vet data for errors, bias, and outliers before the data is inputted for risk models.\nDescribe applications of Big Data and Data Science to investment management", "qhtml": null}, {"n": 8, "q": "A corporate banking analyst is evaluating the concentration risk of a bank's lending portfolio jointly across countries and sectors. The analyst calculates the relative value of the loans (by country and sector) in proportion to the portfolio's value. Which of the following data visualization tools is most appropriate to reflect this data?", "opts": ["Heat map", "Line chart", "Scatterplot"], "ans": "A", "expl": "The frequency of categorical (qualitative) or numerical (quantitative) data points can be summarized using data visualization tools. The joint\nfrequencies of two categorical variables can be depicted using a heat map.\nHeat maps visualize relative magnitude using a color spectrum. One end of the color spectrum represents high-frequency data points; the\nopposite end represents low-frequency data points. Each cell is colored differently according to the corresponding frequency. Heat maps can also\nbe used to visualize the correlation between two categorical variables.\nIn this scenario, each loan is assessed for two categorical variables: the sector invested in and the country invested in. An analyst calculates the\nrelative frequency for each possible combination of the two variables, represented by each loan's percentage of the total portfolio (based on the\nloan's nominal value) and allocated jointly to each sector and country. Data points on the color spectrum's high end are associated with a higher\nconcentration risk in the corresponding markets.\n(Choice B) Line charts, such as frequency polygons, display the frequency of one variable only and therefore cannot show joint frequencies. In\nother applications, more than one variable can be accommodated by plotting multiple data sets separately in the same chart for comparison.\n(Choice C) A scatterplot shows the relationship between two numerical variables represented on the x-axis and the y-axis (eg, technology sector\nreturns versus Dow Jones Industrial Average returns). However, the two axes form a numerical scale for data points, so the scatterplot cannot be\nused to present categorical variables.\nThings to remember:\nHeat maps show relative magnitude and can depict the joint frequencies of two categorical variables. These maps use a color spectrum to\ngraphically represent frequency.\nDescribe applications of Big Data and Data Science to investment management", "qhtml": null}, {"n": 9, "q": "Big Data most likely:", "opts": ["excludes data generated from traditional sources.", "excludes unstructured data and includes only structured data.", "is typically composed of data sets generated at high velocities."], "ans": "C", "expl": "Overview of Big Data\nTraditional: includes financial reports, census reports\nData sources\nAlternative: includes social media, sensor networks\nVolume: large number of data points\nData set characteristics Velocity: high speed of data collection\nVariety: many different formats and sources\nStructured: tabular data with distinct fields (eg, address database)\nData structure Unstructured: unorganized data not in tabular format (eg, audios)\nSemistructured: mixture of structured and unstructured formats\nBig Data is a term referring to enormous amounts of data generated by businesses, governments, and individuals that can be captured through\nsources that are either traditional (eg, census reports) or alternative (eg, social media posts) (Choice A). These data sets are typically\ncharacterized by high volume (data points), velocity (speed), and variety (formats).\nThe data can be structured, unstructured, or semistructured (Choice B). Structured data is stored in a tabular format where a unique record is\nstored in each row and various fields are stored in each column. Unstructured data such as data from an audio file is not stored in a tabular form.\nSemistructured data is a combination of the two.\nThings to remember:\nBig Data refers to enormous amounts of data generated by businesses, governments, and individuals that can be captured through traditional or\nalternative sources. These data sets are typically characterized by high volume, velocity, and variety. The data can be structured, unstructured, or\nsemistructured.\nDescribe Big Data, artificial intelligence, and machine learning", "qhtml": null}, {"n": 10, "q": "When considering different sources of Big Data, structured data most likely includes:", "opts": ["computer spreadsheets of historic company information.", "postings by users of consumer products on social media.", "point-of-sale information transmitted by cash registers in stores."], "ans": "A", "expl": "Classifications of big data\nTraditional\nPrices of stock trades\nCompany reports\nSources\nAlternative\nSocial media\nSatellite images\nStructured: Tabular depiction (eg, spreadsheets)\nData types Unstructured: Requires additional applications such as\nimage recognition software and use data\nFintech refers to technological innovation in designing and delivering financial information and products. One area of fintech concerns ways\nto efficiently use data generated by businesses, governments, and individuals. This data can arise from both traditional and alternative information\nsources; collectively, this data is commonly referred to as Big Data.\nBig Data can be categorized as structured or unstructured. Structured data refers to data that can be easily stored in a database. Historical\nstock prices, company earnings. and economic statistics are examples of structured data. Unstructured data largely encompasses alternative\ndata sources such as social media postings and transaction information from point-of-sale registers in retail stores (Choices B and C).\nUnstructured data requires special applications to process the information before investment professionals can use it.\nThings to remember:\nFintech refers to technological innovations in the financial services industry. Many innovations focus on analyzing data from traditional and\nalternative sources, collectively known as Big Data. Big Data consists of both structured and unstructured data. The latter must be processed by\nspecial applications before it is used.\nDescribe Big Data, artificial intelligence, and machine learning", "qhtml": null}, {"n": 11, "q": "With respect to machine learning, a model is most likely underfitted when:", "opts": ["the underlying data set is too small to analyze.", "the model treats true parameters as if they were noise (ie, insignificant datapoints).", "the model treats noise (ie, insignificant datapoints) as if they were true parameters."], "ans": "B", "expl": "Potential errors in the machine learning process\nTreats insignificant parameters as significant parameters\nOverfit\nResults from overly precise analysis\nTreats significant parameters as insignificant parameters\nUnderfit\nResults from overly simplistic analysis\nMachine learning (ML) uses algorithms to identify patterns and relationships from training data (ie, input data) to predict outcomes for other data\nsets. According to CFA Institute curriculum, \"ML algorithms aim to 'find the pattern, apply the pattern.'\" Analysts should be aware of errors that\narise from overfitting or underfitting training data during the training process.\nOverfitting refers to putting undue weight on insignificant datapoints (ie, noise) and treating them as if they were significant (Choice C). It results\nfrom overly precise data analysis. False relationships or unsubstantiated patterns are drawn from the training data and may lead to prediction\nerrors in the future.\nUnderfitting refers to putting too little weight on true (ie, significant) parameters and treating them as if they were noise. It results from overly\nsimplistic data analysis. Important relationships or patterns may be left undiscovered in the training data, which may lead to prediction errors in\nthe future.\n(Choice A) Underfit does not refer to the size of the training data. It refers to how well the data is specified.\nThings to remember:\nAnalysts should be aware of errors that arise from overfitting or underfitting training data in the machine learning process. Overfitting refers to\nputting undue weight on insignificant datapoints (ie, noise) and treating them as if they were significant. Underfitting refers to putting too little\nweight on true (ie, significant) parameters and treating them as if they were noise.\nDescribe Big Data, artificial intelligence, and machine learning", "qhtml": null}, {"n": 12, "q": "Which of the following best describes fintech within the investment management industry? Fintech is:", "opts": ["the financial analysis of technology stocks.", "a form of technical analysis used to determine the price of an asset.", "the convergence of finance and technology that provides easier access to investment services."], "ans": "C", "expl": "The convergence of finance and technology is commonly known as fintech. Creators and users of fintech changed the investment management\nindustry. For example, firms now use robo-advisers, which are automated client account management programs using preset algorithms.\nInvestors using robo-advisers receive a portfolio that matches their objectives (ie, return) and constraints (ie, risks) with little human interaction.\nWith more automation than traditional investing, fintech enables investors to have easier access to investment management.\n(Choices A and B) Fintech is the innovation in finance using advancements in technology. It is neither a financial analysis of technology stocks\nnor a form of technical analysis.\nThings to remember:\nThe convergence of finance and technology is known as fintech. Advances in technology allow investors to get automated personalized portfolios\nwith less human interaction. These advances provide investors easier access to investment services.\nDescribe aspects of “fintech” that are directly relevant for the gathering and analyzing of financial data", "qhtml": null}, {"n": 13, "q": "With respect to Big Data, data related to the Internet of Things (IOT) is most likely generated through:", "opts": ["sensors.", "individuals.", "business processes."], "ans": "A", "expl": "Sources of alternative data\nIndividuals Text messages, videos, photos, audio files\nBusiness processes Customer transactions, bank records, supply chain data\nSensors Smartphones, satellites, Internet of Things (IOT)\nBig Data refers to the vast amount of data generated by businesses, governments, and individuals. This data can be captured from traditional or\nalternative sources. Traditional data can be obtained from publications such as company financial reports or government census reports. In\ncontrast, alternative data are usually less structured and come from sources such as social media posts, sensors, and credit card transactions.\nAccording to CFA Institute curriculum, alternative data can be broken down into three categories: data generated by individuals, business\nprocesses, and sensors.\nData from individuals include unstructured data from text messages, videos, photos, and online audio files (Choice B).\nData from business processes include credit card information, bank records, and supply chain information (Choice C).\nData from sensors come from devices such as smartphones, cameras, and satellites that are connected through a wireless network.\nData from sensors has vastly expanded over the years due to the ongoing development of microprocessors and networking technology. This\ngrowth has spawned the Internet of Things (IOT), an information ecosystem comprising networks of physical devices stored in offices, homes, and\ncars that enable data sharing over network connections.\nThings to remember:\nBig Data refers to the vast amount of data generated by businesses, governments, and individuals. This data can be captured from traditional or\nalternative sources. Alternative data include data from sensors (eg, smartphones, cameras, satellites) that are connected through a wireless\nnetwork. The Internet of Things (IOT) refers to an array of physical sensory devices that share information across a network.\nDescribe Big Data, artificial intelligence, and machine learning", "qhtml": null}, {"n": 14, "q": "Which of the following statements is most accurate regarding machine learning?", "opts": ["A model is underfitted when it treats noise data as true parameters.", "Supervised learning involves using algorithms to learn unlabeled data.", "Training data sets help identify historical relationships between variables."], "ans": "C", "expl": "Machine learning types and purposes\nType Purpose\nTraining Uncover relationships between inputs and outputs within historical data\nValidation Validate relationships and fine-tune predictive model\nTesting Test predictive accuracy\nA machine learning (ML) model uses an algorithm to uncover patterns and relationships from one data set to predict outcomes associated\nwith other data sets.\nThe machine learning process segments data into the three subsets shown above. The training data set is used for identifying historical\nrelationships between inputs and outputs. Once the algorithm is \"trained,\" it is validated and tested for accuracy with other data sets. After testing,\nthe ML model is ready for use.\n(Choice A) Underfitting and overfitting errors can emerge from the ML process. A model is underfitted when it treats true parameters as noise\ndata and is overfitted when it treats noise data as true parameters.\n(Choice B) Computers may employ a supervised or unsupervised approach to machine learning. Supervised learning models relationships\nbased on labeled training data (ie, the inputs and outputs are clearly labeled). Unsupervised learning models relationships based on unlabeled\ndata, so the algorithm attempts to \"guess\" the pairing of the inputs with the outputs.\nThings to remember:\nThe machine learning process segments data into training, validation, and testing subsets. The training data set is used for identifying historical\nrelationships between inputs and outputs. Once an ML model's algorithm is \"trained,\" it is validated and tested for accuracy with other data sets.\nAfter testing, the model is ready for use.\nDescribe Big Data, artificial intelligence, and machine learning", "qhtml": null}, {"n": 15, "q": "A machine learning model treats noise in a training data set as valid parameters and subsequently fails when applied in reality. This outcome is most likely a result of: ", "opts": ["overfitting.", "using structured data.", "using unstructured data."], "ans": "A", "expl": "Potential errors in the machine learning process\nTreats insignificant parameters as significant parameters\nOverfit\nResults from overly precise analysis\nTreats significant parameters as insignificant parameters\nUnderfit\nResults from overly simplistic analysis\nMachine learning (ML) uses algorithms to identify patterns and relationships from training data (ie, input data) to predict outcomes for other\ndata sets. Once a pattern is identified in the training data, it is then validated and tested before being applied to real data.\nAnalysts should be aware of errors that arise from overfitting or underfitting training data during the learning process. Overfitting happens when\nthe algorithm identifies spurious relationships or patterns (ie, noise) as significant, and results in identifying invalid relationships when applied\noutside the training data.\nUnderfitting happens when the algorithm puts too little weight on valid parameters and treats them as if they were noise. This overly simplistic\ndata analysis results in important relationships or patterns left undiscovered, leading to prediction errors in the future.\n(Choices B and C) Structured and unstructured data are classifications of big data, not ML model errors. Structured data refers to data that can\nbe easily stored in a database, such as historical stock prices, company earnings, or economic statistics. Unstructured data largely encompasses\nalternative data sources such as social media postings and transaction information from point-of-sale registers in retail stores.\nThings to remember:\nMachine learning uses algorithms to identify patterns and relationships in training data to then predict outcomes for other data sets. Overfitting\nhappens when the algorithm mistakes noise for valid data and identifies spurious relationships or patterns as significant; underfitting happens\nwhen the algorithm ignores valid data and thus fails to identify critical patterns or relationships. Both errors lead to predictive failures.\nDescribe Big Data, artificial intelligence, and machine learning", "qhtml": null}];
+const CFG = {"title": "Wiley · Introduction to Big Data Techniques", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Quantitative Methods · 15 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

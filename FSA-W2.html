@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A company reports net income of CNY 250 million and weighted average shares outstanding of 100 million for its fiscal year. The company also has convertible bonds outstanding with a par value of CNY 120 million. The bonds pay a 10% coupon and are convertible into a total of 10 million shares of common stock. If the company's tax rate is 25%, then its diluted earnings per share (in CNY) are closest to:", "opts": ["2.27", "2.30", "2.35"], "ans": "C", "expl": "Companies report diluted earnings per share (EPS) to show the potential effect of dilutive securities on share value. Diluted EPS indicate what a\ncompany's EPS would have been had all the company's potentially dilutive securities been converted into common stock.\nThe if-converted method assumes that conversion occurred at the beginning of the year. When potentially dilutive securities are converted to\ncalculate diluted EPS, the company's number of common shares outstanding is increased, and the costs related to those now-converted\nsecurities (eg, preferred dividends, bond interest) are added back to net income available to common shareholders.\nIn this scenario, if the company had converted its convertible bonds to common shares at the beginning of the period , its EPS would have been\nCNY 2.35. Since the company would not have paid after-tax interest expense of CNY 9 million, this is added back to net income in the numerator.\nIt also would have issued 10 million new common shares, which increases the weighted average shares outstanding in the denominator.\nFigures in millions of CNY (except EPS) Basic EPS Diluted EPS\nNet Income 250 250\n+After-tax interest expense (convertible bonds) - 9\nNumerator 250 259\nWeighted common shares outstanding 100 100\n+ New shares from debt conversion - 10\nDenominator 100 110\nEPS 250 / 100 = 2.50 259 / 110 = 2.35\nNote: After-tax interest expense = 120 convertible debt × 10% interest rate × (1 − 25% tax rate) = 9.\n(Choice A) A calculated EPS of 2.27 would result from adding the 10 million convertible bond shares to the company's total shares outstanding\nbut failing to add the interest paid on the convertible bonds to net income.\n(Choice B) A calculated EPS of 2.30 would result from adding the tax paid on the convertible bond interest (ie, CNY 3 million) to net income\ninstead of the after-tax amount.\nThings to remember:\nUsing the if-converted method, diluted earnings per share (EPS) are calculated assuming that the conversion of potentially dilutive securities\noccurred at the beginning of the year. For companies with convertible debt, diluted EPS are calculated by adding back after-tax interest cost to net\nincome and adding new common shares from conversion to weighted average shares outstanding.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 2, "q": "An air services company entered into a contract with a city to build a new runway at an airport. The contract price is €100 million, and the company estimated its total project costs to be €80 million. The contract calls for construction to take place over four years, and the company does not anticipate any material changes to its costs nor any uncertainty about receiving payment. Each year's costs are listed in the following table: Year 1 2 3 4 Total Costs (€ millions) 35 15 13 17 80 The company reports under IFRS standards. The amount of revenue that this company will recognize cumulatively at the end of Year 2 is closest to:", "opts": ["€0", "€50.0 million", "€62.5 million"], "ans": "C", "expl": "A tenet of accrual accounting is that revenue is recognized when it is earned. Revenue is earned when the seller has delivered goods or\nfurnished services. When a contract calls for delivery of goods or services over multiple periods (eg, airport construction), two special\naccounting methods exist to determine when and how much revenue must be recognized.\nThe two methods are the percentage-of-completion method and the completed contract method. The method to be used depends on whether the\ncontract's outcome is reasonably certain. \"Reasonable certainty\" focuses on the probability that the seller will be paid and the probability that the\nseller's estimated costs to complete the project will not change materially before completion. Both IFRS and GAAP require the percentage-of-\ncompletion method if these conditions are satisfied.\nThe company anticipates that it will receive the contract price and it expects that its project costs will not change, so it will use the percentage-of-\ncompletion method. The table below shows how the company will calculate its revenue:\nThings to remember:\nIf there is no uncertainty about the outcome of the contract, use the percentage-of-completion method for both GAAP and IFRS reporters.\nDescribe general principles of revenue recognition, specific revenue recognition applications, and implications of revenue recognition choices for\nfinancial analysis", "qhtml": null}, {"n": 3, "q": "An analyst gathers information about a company's outstanding common shares (in millions) for fiscal year 20X7. The company reported annual net income of CHF 500 million, paid CHF 40 million in preferred dividends, and paid CHF 30 million in common dividends. For 20X7, the company's basic earnings per share is closest to: ", "opts": ["0.21", "0.23", "0.24"], "ans": "A", "expl": "Basic earnings per share (EPS) measures the net income available to common shareholders on a per-share basis. The numerator reflects\nthe remaining net income available to common shareholders after preferred dividends are paid. The denominator is the weighted average\nnumber of shares outstanding to account for intra-year fluctuations arising from new issues and repurchases.\nTo calculate basic EPS:\n1. Calculate net income available to common shareholders:\n2. Determine weighted average shares outstanding:\n3. Divide results from above:\n(Choice B) 0.23 results from subtracting common dividends from net income. Common shareholders are entitled to common dividends;\ntherefore, the dividends should not be taken out of the numerator.\n(Choice C) 0.24 results from using the ending share balance on Dec 31 as the denominator. The denominator should be a time-weighted\naverage figure.\nThings to remember:\nBasic earnings per share (EPS) measures the net income available to common shareholders on a per-share basis. The numerator reflects the\nremaining net income available to common shareholders after preferred dividends are paid; the denominator is the time-weighted average of\nshares outstanding over the period.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities LOS\n4.A company reported earnings per share (EPS) of £1.35 on net income of £2,200,000 for the most recent year. It had issued new common\nshares during the year, and its weighted average number of shares for the year was 1 million. At the end of the year, there were 1.5 million\ncommon shares outstanding. The company has no dilutive securities in its capital structure. The amount of preferred dividends paid last year, if\nany, is closest to:\nA. £0\nB. £180,000\n\nC. £850,000\nExplanation\nBasic earnings per share (EPS) is a measure of a corporation's net income that is attributed to the common shareholders as owners of the\ncorporation. Scaling net income on a per-share basis provides a better means to compare net income across time periods.\nPreferred shareholders are not owners of the company and have no rights against the company's net income, except for the preferred stock's\ndividend. Dividends paid on preferred stock are a claim against net income and must be paid, just as interest must be paid on debt; therefore,\npreferred dividends are subtracted from net income to accurately reflect only the net income that is available to common shareholders.\nThe question provides the EPS; the unknown variable is the value of preferred dividends.\nRearrange the equation to solve for preferred dividends:\nInsert the known values and solve:\n(Choice A) From the rearranged equation for basic EPS, it is apparent that if preferred dividends equal zero, then net income would equal the\nproduct of EPS and weighted average number of common shares, but £2.20 million does not equal £1.35 million. In this example, preferred\ndividends cannot be equal to zero.\n(Choice B) £180,000 results from calculating basic EPS using the year-end number of shares rather than the weighted average throughout the\nyear. Net income is deemed to be earned constantly throughout the year rather than at one fixed point in time, so accounting for changes in\nshares outstanding throughout the year provides a better picture of EPS.\nThings to remember:\nSubtract any preferred dividends from net income before calculating basic earnings per share (EPS). In the formula for basic EPS, the\ndenominator is the weighted average number of common shares, not the number of shares at the end of the year.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 4, "q": "A company reported earnings per share (EPS) of £1.35 on net income of £2,200,000 for the most recent year. It had issued new common shares during the year, and its weighted average number of shares for the year was 1 million. At the end of the year, there were 1.5 million common shares outstanding. The company has no dilutive securities in its capital structure. The amount of preferred dividends paid last year, if any, is closest to:", "opts": ["£0", "£180,000", "£850,000"], "ans": "C", "expl": "Basic earnings per share (EPS) is a measure of a corporation's net income that is attributed to the common shareholders as owners of the\ncorporation. Scaling net income on a per-share basis provides a better means to compare net income across time periods.\nPreferred shareholders are not owners of the company and have no rights against the company's net income, except for the preferred stock's\ndividend. Dividends paid on preferred stock are a claim against net income and must be paid, just as interest must be paid on debt; therefore,\npreferred dividends are subtracted from net income to accurately reflect only the net income that is available to common shareholders.\nThe question provides the EPS; the unknown variable is the value of preferred dividends.\nRearrange the equation to solve for preferred dividends:\nInsert the known values and solve:\n(Choice A) From the rearranged equation for basic EPS, it is apparent that if preferred dividends equal zero, then net income would equal the\nproduct of EPS and weighted average number of common shares, but £2.20 million does not equal £1.35 million. In this example, preferred\ndividends cannot be equal to zero.\n(Choice B) £180,000 results from calculating basic EPS using the year-end number of shares rather than the weighted average throughout the\nyear. Net income is deemed to be earned constantly throughout the year rather than at one fixed point in time, so accounting for changes in\nshares outstanding throughout the year provides a better picture of EPS.\nThings to remember:\nSubtract any preferred dividends from net income before calculating basic earnings per share (EPS). In the formula for basic EPS, the\ndenominator is the weighted average number of common shares, not the number of shares at the end of the year.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 5, "q": "A construction company is hired to construct a building for a total contracted value of €10 million. The estimated cost of the building is €8 million. At the end of Year 1, the company has spent €3 million. At this time, the contract is modified to include an extension. The total contracted price is changed to €12 million and the new expected cost is €9 million. The amount of catch-up revenue that the company should immediately recognize (in € millions) is closest to: ", "opts": ["0.25", "0.67", "1.00"], "ans": "A", "expl": "Decisions regarding how and when to recognize and report revenue from long-term contracts on a company's income statement are based on\neach specific contract. Typically, revenue is reported over the life of a contract based on the percentage of costs incurred compared to the total\nestimated costs.\nUnder converged accounting standards, when a contract is changed, it is considered a new contract for purposes of revenue recognition if the\nchange relates to goods and services distinct from the goods and services already transferred. Otherwise, the change is considered a\nmodification. In this scenario, since the change involves an extension to the ongoing building construction, it is a modification.\nSince revenue earned under the modified contract is greater than under the original contract, the company must record catch-up revenue\nimmediately so that its cumulative revenue recognized equals the amount of revenue under the modified contract. The catch-up revenue (in\n€ millions) is calculated as follows:\nThe amount of catch-up revenue is €0.25 million, which is the difference in revenue that would be recognized between the two contracts (€4\nmillion − €3.75 million).\nEvaluate a company’s financial performance using common-size income statements and financial ratios based on the income statement", "qhtml": null}, {"n": 6, "q": "On January 1, a company has 50 million ordinary shares outstanding. During the year, the company pays INR 20 million in preferred dividends. On October 1, the company issues 30 million new ordinary shares. If the company reports INR 100 million of net income, then the company's basic earnings per share for the year is closest to:", "opts": ["INR 1.00", "INR 1.39", "INR 1.74"], "ans": "B", "expl": "A company's basic earnings per share (EPS) equals the income that is available to ordinary (common) shareholders divided by the weighted\naverage ordinary shares outstanding during the year. Net income must be reduced by preferred dividends since ordinary shareholders get paid\nafter preferred shareholders. Here, INR 80 million is available to ordinary shareholders since INR 100 million is reduced by the INR 20 million\npreferred dividend payment.\nTo calculate the weighted average number of shares outstanding, determine if the company changed the number of shares outstanding during\nthe year. Here, the company added 30 million shares on October 1. The company has 50 million shares outstanding from January 1 to\nSeptember 30. From October 1 to December 31, the company has 80 million shares outstanding. Weight each period's total number of\noutstanding shares by the fraction of the year for which they were outstanding.\nThe company's basic EPS of INR 1.39 is found by dividing INR 80 million by 57.5 million shares (INR 80 million / 57.5 million shares = INR 1.39\nper share).\n(Choice A) INR 1.00 results from dividing income available to ordinary shareholders by the number of ending shares outstanding, not by the\nweighted average number of ordinary shares outstanding.\n(Choice C) INR 1.74 results from using net income, not net income available to ordinary shareholders, in the calculation.\nThings to remember:\nA company's basic earnings per share (EPS) is found by dividing the income available to ordinary shareholders by its weighted average shares\noutstanding. To find the earnings available to ordinary shareholders, reduce net income by preferred dividend payments. Determine the weighted\naverage number of shares outstanding using the fraction of the year for which shares were outstanding.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 7, "q": "An analyst collects the following year-end data on a company: The company's operating profit margin is closest to:", "opts": ["9.0%", "11.5%", "16.0%"], "ans": "B", "expl": "Operating profit margin is a profitability ratio that explains how effectively a company manages its operational and production costs.\nOperating profit is revenue minus the sum of COGS and operating expenses. Operating expenses include expenses required to conduct normal\nbusiness operations. Here, operating expenses include administrative expenses and depreciation.\nOther examples of operating expenses include employee compensation, marketing, and research and development costs. Operating expenses\nexclude interest and tax expense since these are not considered part of normal operations. A higher operating profit margin suggests that a\ncompany is more effective in controlling operating and production costs.\nHere, find the operating profit margin by dividing operating income by revenue. Calculate operating income by subtracting COGS, administrative\nexpenses, and depreciation from revenue.\n(Choice A) 9.0% is a result of including interest expense as an operating expense. This understates the operating profit margin. Interest and tax\nexpense are not deducted from revenue when operating income is calculated.\n(Choice C) 16.0% is a result of excluding depreciation from operating expenses. This overstates the operating profit margin. Depreciation is\ndeducted from revenue when operating income is calculated.\nThings to remember:\nOperating profit margin is a profitability ratio that measures a company's ability to manage its operating costs. It is found by dividing its operating\nincome by revenue. Operating expenses include administration, depreciation, employee compensation, marketing, and research and\ndevelopment costs. Interest and tax expense are not deducted from revenue when operating income is calculated.\nEvaluate a company’s financial performance using common-size income statements and financial ratios based on the income statement", "qhtml": null}, {"n": 8, "q": "An analyst reviews a company's fiscal year-end common-size income statement: There are no other operating costs. If the annual research and development expense is ¥150 billion, then the company's operating profit is closest to:", "opts": ["¥1,829 billion", "¥1,899 billion", "¥1,979 billion"], "ans": "A", "expl": "Common-size income statements present each income statement account as a percentage of revenue. To find the operating profit, first find\nthe revenue using the amount of research and development (R&D) costs. Rearrange the common-size income statement formula to find each\nyear's revenue.\nOperating profit margin is determined from the common-size income statement by subtracting all operating expenses from the revenue. On a\ncommon-size income statement, revenue is expressed as 100% since all items are expressed in terms of revenue.\nHere, operating expenses are COGS, marketing, R&D, and depreciation. Operating profit is equal to the product of the operating profit margin\nand revenue: 0.4816 × 3,797 = ¥1,829 billion.\n(Choice B) ¥1,899 billion is the result of excluding depreciation expense from operating profit margin. This overstates operating profit.\nDeprecation, while a non-cash expense, is included in operating profit margin.\n(Choice C) ¥1,979 billion is the result of excluding R&D from the operating growth margin; this answer overstates operating profit.\nThings to remember:\nCommon-size income statements present income statement accounts as a percentage of revenue (eg, cost of goods sold / revenue), and\noperating profit is shown as operating profit margin.\nEvaluate a company’s financial performance using common-size income statements and financial ratios based on the income statement", "qhtml": null}, {"n": 9, "q": "A company has the following capital structure, which has been in effect for the entire year: Common shares outstanding, January 1 3,000,000 Convertible debt, 6% coupon, presently convertible $5,000,000 into 1,000,000 common shares (at par value) Preferred stock, 8% dividend, $50 par value $5,000,000 Net income $5,000,000 Corporate tax rate 30% The diluted earnings per share (EPS) that the company will report for the year is closest to: ", "opts": ["$1.20", "$1.23", "$1.53"], "ans": "A", "expl": "Convertible securities may reduce earnings per share (EPS), if converted, by increasing the number of common shares in the denominator. Such\nsecurities are dilutive; both GAAP and IFRS require companies to report basic EPS (ie, EPS without impact from conversion) and diluted EPS.\nThe deemed conversion increases the weighted average of the number of common shares outstanding. For calculating diluted EPS, treat\nconvertible securities as having been converted at the beginning of the period.\nWhen the convertible security is debt, the numerator for the equation must be adjusted to add back the interest expense since converting the\ndebt means that the interest will no longer be paid. This increases the net income that is available to common shareholders. Companies receive\na tax deduction for interest paid, which effectively reduces their actual interest expense, so the interest that is added back to net income is\ncalculated on an after-tax basis to reflect the true cost.\nThe calculations for the company's basic and diluted EPS are shown below:\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 10, "q": "An analyst gathers the following information about a company's most recent fiscal year: Net income: $50 million Weighted average common shares outstanding: 100 million Preferred shares outstanding: 2 million (each share paid an annual dividend of $1 and is convertible into 5 common shares) The company's diluted earnings per share (in $) is closest to:", "opts": ["0.45", "0.48", "0.49"], "ans": "A", "expl": "Companies with complex capital structures (ie, potentially dilutive securities) may report a diluted earnings per share (EPS) that is different\nfrom its basic EPS. Dilutive securities (eg, convertible preferred stock, convertible debt, employee stock options) are convertible into shares of\ncommon stock. Companies issue additional common shares upon conversion, creating more outstanding shares and thus diluting EPS. Using\nthe if-converted method, diluted EPS is calculated assuming that conversion occurred at the beginning of the period.\nAssuming the company in this scenario converted its preferred shares to common shares at the beginning of the period, it would not have paid\npreferred dividends of $2 million. Therefore, the diluted EPS numerator includes only net income. Furthermore, the company would have issued\n10 million additional common shares, increasing the denominator and reducing the EPS to $0.45.\n(Choice B) 0.48 is the basic EPS.\n(Choice C) 0.49 results from not applying the 5-to-1 conversion ratio to each preferred share.\nThings to remember:\nDilutive securities are convertible into shares of common stock. Companies issue additional common shares upon conversion, thus diluting\nearnings per share (EPS). Using the if-converted method, diluted EPS is calculated assuming that conversion occurred at the beginning of the\nperiod. When calculating diluted EPS for preferred stock conversion, exclude preferred dividends from the numerator and include the new\ncommon shares in the denominator.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 11, "q": "When analyzing income statements using common-size analysis, an analyst should most appropriately show:", "opts": ["tax expense as a percentage of pre-tax income.", "bad-debt expense as a percentage of net income.", "interest expense as a percentage of operating income."], "ans": "A", "expl": "Common-size income statements allow easy comparison of a company's performance over multiple periods (ie, time series analysis), or of the\nrelative performance of two or more companies (ie, cross-sectional analysis), by showing income statement entries as a percentage rather than as\nan absolute number. In general, this standardization involves converting all lines to a percentage of revenue.\nOne exception to this general rule applies to income tax expense. Analysts often refer to a company's effective tax rate, which is calculated by\ndividing income tax expense for the period by pretax income. The effective tax rate shows how the company is managing its tax exposure, and\nsince it will often be different from the statutory tax rate, the effective rate is a more important metric.\n(Choice B) For common-size statements, bad debt expense follows the general rule that all items are converted and shown as a percentage of\nrevenue.\n(Choice C) For common-size statements, interest expense follows the general rule that all items are converted and shown as a percentage of\nrevenue.\nThings to remember:\nIn creating a common-size income statement, all items except for income tax expense are presented as a percentage of revenue. Income tax\nexpense is presented as a percentage of pre-tax income.\nEvaluate a company’s financial performance using common-size income statements and financial ratios based on the income statement", "qhtml": null}, {"n": 12, "q": "An analyst gathers the following data on a company at year end: If the number of stock options outstanding remained constant throughout the year and the average stock price was 25, then the company's diluted EPS (in €) is closest to:", "opts": ["0.71", "0.78", "0.80"], "ans": "B", "expl": "The method used to calculate diluted EPS for a company with outstanding options assumes that\nthe options will be converted into common shares (ie, exercised) if the average stock price is greater than the exercise price, and\nthe company will use all cash proceeds from the exercised options to repurchase shares at the average market price to mitigate dilution.\nAs such, the net share increase equals new common shares issued net of repurchases.\nSince the average stock price (25) is greater than the exercise price (20), all 2 million options are assumed to be converted into common shares.\nThe company would have used all options proceeds (2 million × 20, or 40 million) to repurchase 1.6 million shares (40 million/25), thus increasing\nnet new shares by 0.4 million.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 13, "q": "A company receives CHF 500 today from a customer for a product that it will deliver two weeks from now. The company should most appropriately recognize CHF 500 of:", "opts": ["revenue today.", "unearned revenue today.", "cash two weeks from today."], "ans": "B", "expl": "Under accrual accounting, revenue is recognized when it is earned, independent of when the seller receives cash. The seller earns revenue upon\ndelivery of goods or services to the buyer, effectively transferring ownership. The timing of delivery relative to the timing of the buyer's payment\nmay vary by transaction.\nWhen the seller receives cash in advance of delivery, as is this case, the seller should initially record cash and unearned revenue (a liability\naccount) equal to the sales amount of 500 (Choice C). Upon subsequent delivery two weeks later, the seller should record revenue and reduce\nunearned revenue since the seller has fulfilled the delivery obligation, thus earning the revenue (Choice A).\nWhen a seller delivers on credit (ie, before receiving payment), the seller should initially record revenue and accounts receivable equal to the sales\namount at the time of delivery. Subsequently, when cash is received, the seller should record the cash receipt and reduce accounts receivable by\nthe amount of cash received.\nThings to remember:\nRevenue is recognized when it is earned, independent of when the seller receives cash. If the seller receives cash in advance of delivery, cash\nand unearned revenue are initially recorded. If the seller receives cash after delivery, then revenue and accounts receivable should be initially\nrecorded.\nDescribe general principles of revenue recognition, specific revenue recognition applications, and implications of revenue recognition choices for\nfinancial analysis", "qhtml": null}, {"n": 14, "q": "An analyst gathers the following information about a company for its fiscal year: The weighted average number of common shares outstanding is 20 million, with 750,000 options outstanding at the beginning of the year. There are no other dilutive securities. If the options' exercise price is CAD 15 per share and the average market price of the stock is CAD 20 per share, then the company's diluted earnings per share is closest to:", "opts": ["CAD 2.77", "CAD 2.89", "CAD 2.97"], "ans": "C", "expl": "The treasury stock method is used to calculate diluted earnings per share (EPS) when a company has issued options. If the average stock\nprice is greater than the exercise price, the method assumes that all the company's options are exercised. This increases the weighted average\nnumber of common shares outstanding.\nThe treasury stock method also assumes that the proceeds from exercise are used to buy back the maximum number of shares possible to\nminimize the increase in the number of shares considered outstanding and diminish EPS dilution.\nHere, the number of options equals the number of common shares that would be outstanding as a result of option exercise Multiply that number\nof common shares by the exercise price to determine the proceeds from exercise. Divide the proceeds from exercise by the average stock price\nto determine the number of shares considered repurchased.\nUsing the adjusted weighted average shares outstanding, diluted EPS is CAD 2.97.\n15.A company has agreed to build a multistory residential building for a contract sales price of $10 million, with delivery in four years. To complete\nthe project, the company has contracted with a real estate developer, who estimates the total costs will be $5 million, although changes in\nconstruction methods may result in higher total costs. The company prepares its financial statements under US GAAP. If the company spends $1\nmillion in costs on this project in Year 1, its reported revenue for Year 1 is closest to:\n\nA. $0\nB. $1 million\nC. $2 million\nExplanation\nAccrual accounting requires that revenue be recognized when it is earned. Revenue is earned when the seller delivers goods or furnishes\nservices. When a contract is completed over multiple periods (eg, airport construction), either the percentage-of-completion or the completed\ncontract accounting method determines when and how much revenue is recognized.\nThe reasonable certainty of the contract's outcome determines which method is used. Reasonable certainty identifies the probability that the\nseller will be paid and the probability that the seller's estimated costs to complete the project will not change materially during construction. If one\nor both criteria are not satisfied, US GAAP standards require the use of the completed contract method.\nIn this scenario, the company believes its costs may change during construction, so it must use the completed contract method. Under this\nmethod, the company recognizes zero revenues, costs, profits, and losses until completion.\n(Choice B) $1 million is the revenue recognized if the company reports under IFRS. Since the contract's outcome is uncertain, IFRS standards\nrequire the use of the modified percentage-of-completion method.\n(Choice C) $2 million results from using the percentage-of-completion method under US GAAP. Since the contract's outcome is uncertain, the\ncompany cannot use the percentage-of-completion method.\nThings to remember:\nUnder US GAAP accounting standards, use the completed contract method if the contract's outcome is uncertain, and recognize neither revenues\nnor costs until the period of completion.\nDescribe general principles of revenue recognition, specific revenue recognition applications, and implications of revenue recognition choices for\nfinancial analysis", "qhtml": null}, {"n": 15, "q": "A company has agreed to build a multistory residential building for a contract sales price of $10 million, with delivery in four years. To complete the project, the company has contracted with a real estate developer, who estimates the total costs will be $5 million, although changes in construction methods may result in higher total costs. The company prepares its financial statements under US GAAP. If the company spends $1 million in costs on this project in Year 1, its reported revenue for Year 1 is closest to: ", "opts": ["$0", "$1 million", "$2 million"], "ans": "A", "expl": "Accrual accounting requires that revenue be recognized when it is earned. Revenue is earned when the seller delivers goods or furnishes\nservices. When a contract is completed over multiple periods (eg, airport construction), either the percentage-of-completion or the completed\ncontract accounting method determines when and how much revenue is recognized.\nThe reasonable certainty of the contract's outcome determines which method is used. Reasonable certainty identifies the probability that the\nseller will be paid and the probability that the seller's estimated costs to complete the project will not change materially during construction. If one\nor both criteria are not satisfied, US GAAP standards require the use of the completed contract method.\nIn this scenario, the company believes its costs may change during construction, so it must use the completed contract method. Under this\nmethod, the company recognizes zero revenues, costs, profits, and losses until completion.\n(Choice B) $1 million is the revenue recognized if the company reports under IFRS. Since the contract's outcome is uncertain, IFRS standards\nrequire the use of the modified percentage-of-completion method.\n(Choice C) $2 million results from using the percentage-of-completion method under US GAAP. Since the contract's outcome is uncertain, the\ncompany cannot use the percentage-of-completion method.\nThings to remember:\nUnder US GAAP accounting standards, use the completed contract method if the contract's outcome is uncertain, and recognize neither revenues\nnor costs until the period of completion.\nDescribe general principles of revenue recognition, specific revenue recognition applications, and implications of revenue recognition choices for\nfinancial analysis", "qhtml": null}, {"n": 16, "q": "A company has 500,000 preferred shares that pay a dividend of $4 per share and 1 million common shares that pay a dividend of $1 per share. All shares are outstanding over the current year . If net income is $10 million, then the company's basic earnings per share for the current year is closest to:", "opts": ["$7", "$8", "$9"], "ans": "B", "expl": "A company's basic earnings per share (EPS) equals the income that is available to common shareholders divided by the weighted average\ncommon shares outstanding during the year. Dividends on all classes of stock are paid from net income. For basic EPS, net income must be\nreduced by the amount of dividends paid on preferred shares to accurately reflect the portion of earnings available to the common shareholders.\nIn this example, the company's preferred dividends totaled $2 million (500,000 shares × $4/share).\n(Choice A) Basic EPS of $7 would be the result of incorrectly subtracting both the preferred and common dividends from net income. Only\npreferred dividends are subtracted from net income to determine basic EPS since common dividends are available to common shareholders.\n(Choice C) Basic EPS of $9 would be the result of subtracting only common, not preferred, dividends from net income.\nThings to remember:\nA company's basic earnings per share (EPS) equals the earnings available to common shareholders divided by the weighted average number of\ncommon shares outstanding during the year. Net income must be adjusted by subtracting dividends paid to preferred shareholders. Basic EPS\nignores any potentially dilutive securities.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 17, "q": "A manufacturer operates two production plants: Plant 1 and Plant 2. After ten years, management restructures the company by closing Plant 2 and shifting its entire operations to Plant 1. All expenses, as well as any gains or losses, from the closure of Plant 2 are most appropriately be reported under:", "opts": ["extraordinary items.", "discontinued operations.", "unusual or infrequent items."], "ans": "C", "expl": "Most income statement information focuses on results from normal operations, since earnings and growth forecasts arise from how companies\nperform their usual activities. A company may also have gains or losses from transactions falling outside its normal operations, such as unusual\nor infrequent items or the discontinuation of a component of its business. Both GAAP and IFRS require special reporting treatment for such\nitems.\nUS GAAP and IFRS consider closing one of several production facilities (ie, restructuring) to be an unusual or infrequent item, reported as a part\nof operating income. The company reports the unusual or infrequent item separately from other operating revenues and expenses on the income\nstatement.\nThe company is not discontinuing its operations entirely, but instead is closing one facility (Plant 2) and shifting all operations to the other facility\n(Plant 1) (Choice B). Therefore any costs and gains (or losses) are considered restructuring costs captured under unusual or infrequent items,\nrather than activities relating to discontinued operations.\n(Choice A) After 2015, neither US GAAP nor IFRS recognize extraordinary items. Before then, an extraordinary item was defined as both\nunusual and infrequent and was treated the same as discontinued operations.\nThings to remember:\nBoth IFRS and GAAP require gains and losses from discontinued operations and unusual or infrequent items to be reported separately.\nDiscontinued operations involve the discontinuation of an entire line of business; closing only part of a business, or one of several manufacturing\nlocations, is an unusual or infrequent item. Gains and losses from unusual or infrequent items are shown before tax and are included as operating\nearnings.\nDescribe the financial reporting treatment and analysis of non-recurring items (including discontinued operations, unusual or infrequent items) and\nchanges in accounting policies", "qhtml": null}, {"n": 18, "q": "A company has 10 million shares of common stock outstanding and has not issued or repurchased common stock this year. It issued 300,000 employee stock options several years ago, which are presently exercisable at $40 per share. The average market price per share for the company's stock this year is $30. It also paid dividends of $1 million on its nonconvertible preferred stock. If the company has a net income of $11 million this year, the company's reported EPS will be closest to: ", "opts": ["$1.00", "$1.01", "$1.10"], "ans": "A", "expl": "Employee stock options, if exercised, will increase the number of shares outstanding. This causes earnings per share (EPS) to decrease since\nnet income is divided by a larger number of shares. Employee stock options are dilutive securities. The general rule is that all dilutive securities\nare converted to common stock or, in the case of options, exercised at the beginning of the period.\nFor employee stock options, this presumption of exercise is valid only if the stock's average market price exceeds the option's exercise price.\nExercising an option must make economic sense, which is not the case by paying $40 for a share worth $30. The options will not be exercised in\nthis case, so the weighted average number of shares will not change. Basic EPS is calculated as follows:\n(Choice B) Under these assumptions, the options would not be exercised since it would be economically unsound to do so. If they were, the\ntreasury stock method would result in the company having 100,000 fewer shares outstanding, or 9.9 million weighted average number of shares\nfor the period. Dividing $10 million ($11 million net income − $1 million preferred dividend) by 9.9 million shares results in an EPS of $1.01.\n(Choice C) Preferred dividends are paid from net income, so they are not available to the common shareholders. The EPS of $1.10 results from\nneglecting to first subtract the preferred dividends from net income before dividing by the weighted average number of common shares.\nThings to remember:\nEmployee stock options may not always be dilutive. If the exercise of the option is not economically warranted, do not presume exercise.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 19, "q": "At the end of its fiscal year, a company has net income of $8,750,000 and 1,000,000 weighted average common shares outstanding. It also has 200,000 shares of convertible preferred shares. Each preferred share pays a dividend of $15 per share and is convertible into two shares of the company's common stock. There are no other potentially dilutive securities. The company would most appropriately report diluted earnings per share of:", "opts": ["$4.11", "$5.75", "$6.25"], "ans": "B", "expl": "Diluted EPS is calculated using the if-converted method if a company issues convertible preferred shares. This method assumes the\nconvertible preferred shares are converted into common shares at the beginning of the period.\nHere, preferred dividends are $3,000,000 (200,000 shares × $15 per share dividend). Earnings available to common shareholders are lower in\nthe basic EPS ($5.75 million) than the if-converted method ($8.75 million). The additional number of shares considered outstanding using the if-\nconverted method is 400,000 (2 common shares per preferred share × 200,000 preferred shares).\nCalculated diluted EPS using the if-converted method is greater than basic EPS ($6.25 vs. $5.75). This means the convertible security is\nantidilutive. Under IFRS and GAAP, antidilutive securities are excluded from the diluted EPS calculation since it must reflect the maximum\npotential dilution from potentially dilutive securities. When a company has antidilutive securities, reported diluted EPS is equal to basic EPS\n($5.75).\nThings to remember:\nThe if-converted method is used to calculate diluted earnings per share (EPS) if a company issues convertible preferred shares. It assumes the\npreferred shares are converted, its dividends are not paid, and new common shares are created. If diluted EPS is greater than basic EPS, the\nsecurities are considered antidilutive and reported diluted EPS equals basic EPS.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 20, "q": "Under IFRS, a company reporting bad debt expense should most appropriately:", "opts": ["write off the receivable when the customer fails to pay and recognize the write-off as a bad debt expense.", "multiply the company's credit sales by its historical percentage of uncollectible receivables, and report that result as an operating expense.", "multiply the company's average accounts receivable by the historical percentage of delinquent receivables, and deduct that amount from revenues to calculate gross profit."], "ans": "B", "expl": "In general, an expense should be recognized in the same period in which the revenue associated with the expense was earned (ie, matching\nprinciple). Sales on credit are reported as revenue in the period they were made. If the company has a history of being unable to collect all its\ncredit sales, then both IFRS and US GAAP require it to report a bad debt expense as an operating expense for that period.\nNeither IFRS nor US GAAP mandate a specific methodology that a company must employ to estimate its bad debt expense. Several methods are\nacceptable, such as a percentage of uncollectible accounts that is based on overall sales, overall credit sales, or delinquent credit sales. The\nonly requirements are that:\nthe company use the method consistently; and\nthe method fairly reflects a reasonable assessment of the company's bad debt history.\n(Choice A) This is known as the direct write-off method. It violates the matching principle and neither IFRS nor US GAAP permit it to be used.\n(Choice C) An operating expense is deducted from gross profit to calculate earnings before interest and taxes. Deducting it from revenues to\ncalculate gross profit will distort gross profit margins.\nThings to remember:\nBad debt expenses are a deduction against gross profit and are used to calculate operating earnings. Neither IFRS nor US GAAP permit bad debt\nexpenses to be an offset against revenues.\nDescribe general principles of expense recognition, specific expense recognition applications, implications of expense recognition choices for\nfinancial analysis and contrast costs that are capitalized versus those that are expensed in the period in which they are incurred", "qhtml": null}, {"n": 21, "q": "XYZ Corporation has 10 million shares of common stock outstanding and has not issued or repurchased common stock this year. Several years ago, it issued $10 million in bonds with 1,000,000 warrants attached. Each warrant allows the holder to purchase one share of XYZ common stock for $30. The average market price per share for XYZ stock this year is $40. It also paid dividends of $1 million on its nonconvertible preferred stock. If XYZ has a net income of $16 million this year, the diluted earnings per share that XYZ will report is closest to:", "opts": ["$1.36", "$1.46", "$1.56"], "ans": "B", "expl": "A warrant is essentially an option allowing the holder of the warrant the right to purchase shares of common stock at a predetermined price.\nExercising a warrant causes the number of common shares outstanding to increase. This increase usually causes the company's earnings-per-\nshare (EPS) to decrease, so warrants are dilutive securities.\nWhen calculating EPS, warrants are treated as having been exercised at the earlier of the beginning of the accounting period, if the warrants\nwere then outstanding, or the date of issuance. Both IFRS and GAAP require companies to use the treasury stock method for calculating the\neffect of warrants on EPS. An example of XYZ's use of the treasury stock method is shown below.\nA key assumption underlying the treasury stock method is that the average market price of the stock is more than the exercise price, so the\nproceeds will purchase fewer shares than were issued from the warrants' exercise. The resulting weighted average is then used to calculate\ndiluted EPS. An example of XYZ's use of the treasury stock method is shown below.\n(Choice A) $1.36 is obtained when the denominator is increased by the total number of shares issued from the warrants' exercise (1,000,000)\ninstead of the net shares added (250,000).\n(Choice C) $1.56 results from neglecting to subtract the preferred dividend from net income in the numerator.\nThings to remember:\nWhen warrants (or employee stock options) are part of a company's capital structure, they are treated as dilutive securities. IFRS and GAAP both\nrequire the company to use the treasury stock method for calculating diluted earnings per share.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 22, "q": "In 20X9 a publicly traded corporation reported $10 million in net income. The information concerning its common shares outstanding is shown below: Change in Shares Date (20X9) Action Shares Outstanding 1/1 Beginning balance 3,000 3/1 Shares issued 9,000 12,000 6/1 Shares repurchased (3,000) 9,000 11/1 Shares issued 6,000 15,000 12/31 Ending balance 15,000 All shares in thousands The company also has 500,000 shares of nonconvertible preferred stock, which have been outstanding the entire year. The annual dividend for each share of preferred stock is $5.00, which has been paid. The basic earnings per share (EPS) for this company in 20X9 is closest to:", "opts": ["$0.50", "$0.77", "$1.03"], "ans": "B", "expl": "Basic earnings per share (EPS) divides a company's net income by the number of shares of common stock outstanding. Scaling net income on a\nper-share basis provides a better means to compare net income across time periods. Basic EPS assumes that the company has not issued other\nsecurities, such as convertible debt, that can be converted into common stock.\nDividends on all classes of stock are paid from net income but since EPS applies only to common shares, net income must be adjusted by\nsubtracting dividends paid to preferred shareholders. Adjusting for preferred dividends accurately reflects the portion of income that is available to\ncommon shareholders. In this question, the company's preferred dividends totaled $2.5 million (500,000 shares × $5 / share), so the EPS\nnumerator becomes $10 million − $2.5 million = $7.5 million.\nA company that issues or repurchases common shares throughout the year will show different amounts of common shares outstanding at different\ntimes. Companies use a time-weighted average to show the relative time period for which different amounts have been outstanding. The table\nbelow demonstrates how the company calculates its weighted average:\nThings to remember:\nTo calculate earnings per share, adjust net income by subtracting any preferred dividends paid, then divide net income by the number of\noutstanding shares. Calculate the weighted average of shares outstanding by multiplying the number of outstanding shares by the portion of the\nyear covering that amount. Repeat for varying amounts of shares, then total the shares for all portions.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 23, "q": "A manufacturer will voluntarily increase the useful lives of several different types of equipment it uses in its manufacturing process. The change will be effective for the current year. To account for this change in its financial statements, the company is most likely required to:", "opts": ["restate net income reported in all prior financial statements.", "explain the change in the footnotes but not restate prior earnings.", "restate net income for prior periods if it determines that the change is material."], "ans": "B", "expl": "Treatment of accounting changes\n(identical under US GAAP and IFRS)\nChanges in accounting policies Changes in accounting estimates\nImposed on companies by accounting bodies Apply mostly to changes in useful lives\nRequire retroactive earnings restatement Voluntary by companies\nApplicable to all firms No retroactive restatement\nAn accounting change is a type of nonrecurring or nonoperating item that may require special treatment on a company's income statement.\nChanges in accounting policies occur when IFRS or US GAAP make changes to their standards. Policy changes affect all companies that must\nadhere to the standards and require that they retroactively apply the changes by restating prior earnings from prior periods.\nBy contrast, changes in accounting estimates are voluntarily undertaken by individual companies. These mostly apply to changes in the\nestimated useful lives of long-term assets and result from a company's determination that prior estimates of useful life are no longer valid due to\nchanged circumstances. Companies apply these changes prospectively; they disclose the change in the footnotes to their financial statements,\nbut no restatement is required.\nNeither IFRS nor US GAAP required the company in this question to change their useful life estimates by changing the relevant accounting\nstandards. The company's changes are properly classified as changes in estimates rather than changes in policy. The company will apply the\nnew depreciation expenses going forward and disclose the changes in the footnotes to its financial statements.\n(Choices A) Restatement is required only when the change results from a change in accounting policy rather than a change in accounting\nestimates.\n(Choice C) When accounting standards change, companies must change their accounting policies to comply with the updated standards.\nCompanies are not allowed to decide for themselves whether to comply by determining whether the change is \"material.\"\nThings to remember:\nChanges in accounting policies are applied retroactively and require restatement of prior earnings. Changes in accounting estimates apply\nprospectively, do not require restatement, and are disclosed in the footnotes to financial statements.\nDescribe the financial reporting treatment and analysis of non-recurring items (including discontinued operations, unusual or infrequent items) and\nchanges in accounting policies", "qhtml": null}, {"n": 24, "q": "A company sells cloud-based accounting software. A 12-month subscription costs $3,000 payable in advance. If this company reports under IFRS standards, how much revenue will it recognize for the 4th month of each subscription?", "opts": ["$0", "$250", "$1,000"], "ans": "B", "expl": "Accrual accounting Cash accounting\nRevenue is earned\nSeller substantially completes all of its obligations\nGoods delivered\nRevenue recognition Cash is received\nServices provided\nSeller (usually) completes obligations before receiving payment\nExample: Payment is due 30 days after invoice\nExpense is incurred\nMirror image of revenue recognition\nExpense recognition Cash is paid\nGoods received\nServices accepted or consumed\nA key concept of accrual accounting is that revenue is recognized when it is earned. The seller earns revenue from a sale when it has\nsubstantially fulfilled all its obligations under the terms of the sale. The seller then reports the earned revenue. Under accrual accounting, revenue\nrecognition does not depend on whether the seller receives payment.\nThe company in this question provides its subscribers with access for one year following the subscriber's payment, so it has received payment\nbefore it has completed its obligation. However, accounting standards require that it recognize a prorated amount of the subscription price as\nrevenue each month during the subscription period. Accordingly, the company will recognize 1/12th of the total subscription price each month, or\n$3,000 / 12 = $250.\nNote that the answer is the same whether the seller reports under IFRS or US GAAP accounting standards.\n(Choice A) The company's obligation can be viewed as 12 separate monthly contracts. At the end of every month, it will have earned the\nprorated share of the subscription price and will recognize the revenue associated with that month. Accounting standards do not permit the\ncompany to delay any revenue recognition until the end of the entire subscription period. Such a delay would distort its financial picture.\n(Choice C) $1,000 is the cumulative amount of income earned by the end of Month 4, not the amount earned solely for Month 4.\nThings to remember:\nRevenue can be recognized ratably over the life of a contract. For subscription contracts that involve periodic sales of goods or services, the\nseller earns a pro rata amount of the subscription price each time it delivers the good or performs the required service.\nDescribe general principles of revenue recognition, specific revenue recognition applications, and implications of revenue recognition choices for\nfinancial analysis", "qhtml": null}, {"n": 25, "q": "A company finalizes a contract to sell a product that will be delivered to the customer 2 months from today. The customer will pay the full amount of the contract next month. If the company expects no problems in delivering the product or receiving payments, then it will most appropriately recognize revenue:", "opts": ["immediately.", "when cash is received.", "when the product is delivered."], "ans": "C", "expl": "Accrual accounting Cash accounting\nRevenue is earned\nSeller substantially completes all of its obligations\nGoods delivered\nRevenue recognition Cash is received\nServices provided\nSeller (usually) completes obligations before receiving payment\nExample: Payment is due 30 days after invoice\nExpense is incurred\nMirror image of revenue recognition\nExpense recognition Cash is paid\nGoods received\nServices accepted or consumed\nUnder both IFRS and US GAAP, revenue is recognized when it is earned, independent of when cash is received, as under accrual accounting.\nThe seller earns revenue from a sale when it has satisfied its performance obligations, effectively transferring the risk and rewards of\nownership. This typically occurs when a good or service is delivered to the buyer.\nUnder accrual accounting, the recognition of revenue occurs independently of when the seller receives cash for the sale, which is when the\nrevenue is recognized in cash basis accounting (Choice B). In accrual accounting, when a company delivers goods or services at a different time\nfrom when it receives cash, it creates an asset or liability on its balance sheet to account for the different events of recognizing revenue and\nreceiving cash.\nIn this scenario, the company finalized a contract to deliver a product 2 months from today. Therefore, no revenue is recognized immediately\nsince no product is delivered immediately (Choice A). Revenue will be recognized on the income statement when the delivery is made in 2\nmonths since that is when the risk and rewards of ownership are transferred.\nThings to remember:\nUnder accrual accounting, which is typically used for income statements, revenue is recognized when it is earned; this occurs when the seller\nsatisfies its performance obligations by transferring the risk and rewards of ownership. This recognition of revenue occurs independently of when\nthe seller receives cash for the sale.\nDescribe general principles of revenue recognition, specific revenue recognition applications, and implications of revenue recognition choices for\nfinancial analysis", "qhtml": null}, {"n": 26, "q": "An analyst compiles the following information on a company: ¥ millions 20X1 20X2 Revenue 1,500 2,000 COGS 500 650 Selling, general, and administrative expenses 450 550 Depreciation and amortization 100 150 Operating income 450 650 Interest expense 80 90 Pretax profit 370 560 Income tax expense 111 140 Net income 259 420 The analyst decides to use a common-size income statement to evaluate the company. After the necessary adjustments are made, which of the following was the greatest contributor to the company's net profit margin expansion in 20X2?", "opts": ["Greater gross margin percentage", "Smaller proportion of interest expenses", "Smaller proportion of selling, general, and administrative expenses"], "ans": "C", "expl": "Common-size income statements present each statement item as a percentage of total revenue. This allows analysts to compare companies\nof different sizes, view performance trends over time, and identify differences or changes in the companies' strategies.\nIn this scenario, the common-size income statement is calculated as follows:\nReported (¥) Common size (%)\nIncome statement 20X1 20X2 20X1 20X2\nRevenue 1,500 2,000 100.0 100.0\nCOGS 500 650 33.3 32.5\nGross profit (margin) (calculated) 1,000 1,350 66.7 67.5\nSelling, general, and administrative expenses 450 550 30.0 27.5\nDepreciation and amortization 100 150 6.7 7.5\nOperating income (margin) 450 650 30.0 32.5\nInterest expense 80 90 5.3 4.5\nPretax profit (margin) 370 560 24.7 28.0\nIncome tax expense 111 140 7.4 7.0\nNet income (margin) 259 420 17.3 21.0\nThe greatest contributing factor to the company's net profit margin expansion is a decline in the proportion of selling, general, and\nadministrative (SG&A) expenses, which fell 2.5% from 30.0% of revenue in 20X1 to 27.5% in 20X2.\nThings to remember:\nCommon-size income statements present each statement item as a percentage of total revenue. This allows analysts to compare companies of\ndifferent sizes, view performance trends over time, and identify differences or changes in the companies' strategies.\nEvaluate a company’s financial performance using common-size income statements and financial ratios based on the income statement\n27.An analyst collects the following information on two companies:\nCompanies A and B paid common dividends of €200,000 and €250,000, respectively. Company A's net profit margin is most likely:\nA. less than Company B's.\n B. equal to Company B's.\nC. greater than Company B's.\nExplanation\nNet profit margin reveals how effective management is in managing all expenses and converting revenue to profit. It is used to measure the\namount of net income (ie, based on accounting standards) that the company creates per unit (€) of revenue. A larger net profit margin signals that\nthe company is more efficient at generating a profit.\nHere, divide each company's net income by its revenue to compare the two companies' net profit margins. Both companies have the same net\nprofit margin of 17.2%.\n(Choice A) This choice is correct if the companies' operating profit margin, not net profit margin, is used in the evaluation.\n(Choice C) This answer results if common dividend payments are subtracted from the net income in calculating the net profit margin. Its\ncalculation does not include dividend payments since they are not expenses but instead are a distribution of capital from the company to\nshareholders. This is also true if gross margin, not net profit margin, is used in the evaluation.\nThings to remember:\nNet profit margin is the ratio of net income to revenue. The greater a company's net profit margin, the greater its ability to produce profits.\nEvaluate a company’s financial performance using common-size income statements and financial ratios based on the income statement", "qhtml": null}, {"n": 27, "q": "An analyst collects the following information on two companies: Companies A and B paid common dividends of €200,000 and €250,000, respectively. Company A's net profit margin is most likely:", "opts": ["less than Company B's.", "equal to Company B's.", "greater than Company B's."], "ans": "B", "expl": "Net profit margin reveals how effective management is in managing all expenses and converting revenue to profit. It is used to measure the\namount of net income (ie, based on accounting standards) that the company creates per unit (€) of revenue. A larger net profit margin signals that\nthe company is more efficient at generating a profit.\nHere, divide each company's net income by its revenue to compare the two companies' net profit margins. Both companies have the same net\nprofit margin of 17.2%.\n(Choice A) This choice is correct if the companies' operating profit margin, not net profit margin, is used in the evaluation.\n(Choice C) This answer results if common dividend payments are subtracted from the net income in calculating the net profit margin. Its\ncalculation does not include dividend payments since they are not expenses but instead are a distribution of capital from the company to\nshareholders. This is also true if gross margin, not net profit margin, is used in the evaluation.\nThings to remember:\nNet profit margin is the ratio of net income to revenue. The greater a company's net profit margin, the greater its ability to produce profits.\nEvaluate a company’s financial performance using common-size income statements and financial ratios based on the income statement", "qhtml": null}, {"n": 28, "q": "On January 1, 20X8, Company Z issued convertible preferred stock that pays a dividend. Other than common stock, Company Z has issued no other securities. When an analyst calculated its basic and diluted earnings per share (EPS) for the year, the analyst found that basic EPS was $0.50 and diluted EPS was $0.55. Company Z should treat the convertible stock as:", "opts": ["dilutive and report only diluted EPS.", "antidilutive and report only basic EPS.", "dilutive and report both diluted EPS and basic EPS."], "ans": "B", "expl": "Both US GAAP and IFRS require companies that have convertible securities in their capital structure (ie, complex structure) to calculate and\nreport both basic earnings per share (EPS) and diluted EPS. Diluted EPS assumes that all convertible securities were converted to common stock\nat the beginning of the period. Conversion usually causes EPS to be lower due to the increased number of shares over which net income is\napportioned.\nWhen diluted EPS is greater than basic EPS, the convertible securities are described as antidilutive. Both GAAP and IFRS require a company to\nexclude antidilutive securities from EPS calculations and report only the lower EPS figure (ie, basic EPS). Company Z has both convertible\npreferred and common stock, but since its diluted EPS is $0.05 greater than basic EPS, the convertible preferred stock is antidilutive. Therefore,\nCompany Z will report only the basic EPS of $0.50 for the year.\n(Choice A) The convertible preferred stock is antidilutive, so Company Z will report only basic EPS.\n(Choice C) The convertible preferred stock is antidilutive, but GAAP and IFRS both require Company Z to report basic, not diluted, EPS.\nThings to remember:\nEven if a security is convertible, if its conversion to common stock causes earnings per share (EPS) to increase, then the security is antidilutive\nand is treated as nonconvertible when calculating EPS. If diluted EPS is higher than basic EPS, both IFRS and US GAAP require the company to\nreport only basic EPS.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 29, "q": "A company has issued convertible bonds and has no other dilutive securities outstanding. If the convertible bonds are antidilutive, the impact on reported basic and diluted earnings per share (EPS) is most likely that:", "opts": ["basic EPS increases.", "neither earnings measure changes.", "both basic and diluted EPS are impacted."], "ans": "B", "expl": "IFRS and US GAAP require companies to report basic and diluted earnings per share (EPS). Basic EPS is calculated by dividing the firm's\nincome available to common shareholders (ie, net income less preferred dividends) by its weighted average number of common shares. Basic\nEPS ignores any impact from potentially dilutive convertible securities. If the company has a simple capital structure with no convertible\nsecurities, then diluted EPS is equal to basic EPS.\nIf the company has a complex capital structure, and if its convertible securities are dilutive, then diluted EPS is less than basic EPS. Accounting\nstandards treat all dilutive convertible securities as if they are converted to common stock at the beginning of the year. In general, this\nhypothetical conversion increases the number of shares outstanding, which makes diluted EPS less than basic EPS.\nIn some cases, conversion results in fewer common shares outstanding and/or in more earnings available to common shareholders, which causes\ncalculated diluted EPS to be greater than basic EPS. In such cases, the securities are antidilutive. Since companies should report the most\nconservative (ie, lowest) figure for EPS, if basic EPS is lower than calculated diluted EPS, then reported diluted EPS is equal to basic EPS. Both\nbasic and diluted EPS effectively ignore any impact from antidilutive securities (Choices A and C).\nThings to remember:\nAntidilutive convertible securities indicate that were the securities converted, there would be fewer shares outstanding and/or more earnings\navailable to common shareholders, which causes calculated diluted earnings per share (EPS) to be greater than basic EPS. In that case, reported\ndiluted EPS is equal to basic EPS since it is the more conservative measure.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 30, "q": "A company will report net income of €30 million this fiscal year ending 31 December. It began the year with 40 million common shares and neither issued nor repurchased common shares during the year. On July 1, the firm sold 100,000 shares of convertible preferred stock for €50 per share. The shares carry a 5% dividend and are immediately convertible into 20 shares of common stock. The effective tax rate is 40%. The company's diluted EPS for the year is closest to: ", "opts": ["€0.71", "€0.73", "€0.74"], "ans": "A", "expl": "A corporation must report basic earnings per share (EPS) as well as diluted EPS if its capital structure includes securities that can be\nconverted into common shares. If converted, such securities increase the number of shares outstanding, so net income is divided by more\nshares, resulting in a lower per-share figure.\nFor calculating diluted EPS, convertible preferred stock is assumed to have been converted to common stock (ie, if-converted method) at the\nbeginning of the period.\nThe if-converted method treats the preferred stock as though it never existed, so the company will not have to pay dividends on it. For diluted\nEPS, the dividends that would have been paid are added back to net income, which increases the numerator. Firm B's adjustments from basic to\ndiluted EPS are shown below:\n(Choice B) The preferred dividends were added back to net income, so the numerator is correct, but the weighted average number of shares was\ncalculated as if the preferred stock had been converted as of the date it was issued (July 1), rather than the beginning of the period (January 1).\nThis would cause the additional shares to be 1,000,000 instead of 2,000,000, and the diluted EPS to be approximately 0.73.\n(Choice C) 0.74 is closest to the company's basic EPS, not its diluted EPS.\nThings to remember:\nConversion of convertible securities is assumed to be at the beginning of the period if the securities were outstanding at the beginning of the\nperiod. If the securities were issued during the period, conversion is assumed to have occurred at as of the date of issuance.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 31, "q": "A company just sold a warehouse that it no longer uses. The sale price was $4 million payable in equal installments over four years. The buyer has paid the first installment of $1 million and is expected to make the remaining payments on time. The company carried the warehouse on its balance sheet at its net book value of $6 million. This year, the company will most appropriately recognize a loss of:", "opts": ["$0", "$500,000", "$2,000,000"], "ans": "C", "expl": "Under the accrual accounting method, revenues are generally recognized in the accounting period they are earned, and any associated gains or\nlosses are also recognized in the same period. A seller earns the revenue by performing all its requirements under a contract. One exception to\nthe general rule is for installment sales, in which the seller receives payments over more than one accounting period.\nWith installments, the seller recognizes a prorated amount of the total profit from the sale each year. However, the installment sales exception\napplies only when the seller has a gain from the sale. If the sale is made at a loss, then the entire loss is realized immediately and recognized\nin the period of the sale.\n(Choice A) Although the company's loss may exceed $2 million if the buyer defaults on payments, the firm at this point has no reason to assume\nthat the buyer will default. There is no uncertainty surrounding the current amount of the company's loss of $2 million; therefore, the firm must\nimmediately realize and recognize the loss.\n(Choice B) The installment sales exception does not apply to sales made at a loss, and the seller cannot prorate the loss over the installment\nperiod.\nThings to remember:\nDeferring realization and recognition of revenues through use of the installment sales method applies only when the transaction would result in a\ngain at the time of sale. When the sale is made at a loss, the entire loss must be realized and recognized in the period of the sale.\nDescribe general principles of revenue recognition, specific revenue recognition applications, and implications of revenue recognition choices for\nfinancial analysis", "qhtml": null}, {"n": 32, "q": "An analyst gathers the following information about a company for the most recent fiscal year: annual net income: HKD 500 million weighted average common shares outstanding: 250 million convertible debt outstanding: HKD 100 million at 9% interest, convertible into 10 million common shares tax rate: 33.33% If there are no other dilutive securities, then diluted EPS (in HKD) is closest to: ", "opts": ["1.95", "2.00", "2.11"], "ans": "A", "expl": "Companies with complex capital structures (ie, potentially dilutive securities) may report a diluted EPS that is different from its basic EPS.\nDilutive securities, such as convertible debt, are convertible into shares of common stock. Companies issue additional common shares upon\nconversion, thus increasing the number of shares outstanding and reducing EPS. Under the if-converted method, diluted EPS is calculated\nassuming that conversion occurred at the beginning of the year.\nIf the company had converted its convertible bonds at the beginning of the period to common shares, it would not have paid after-tax interest\nexpense of HKD 6 million for the year. Therefore, it is added back to net income in the diluted EPS numerator. Furthermore, the company would\nhave issued 10 million additional common shares, which increases the denominator and dilutes the EPS to HKD 1.95.\n(Choice B) 2.00 is the basic EPS.\n(Choice C) 2.11 results from subtracting the new common shares in the denominator, instead of adding.\nThings to remember:\nUnder the if-converted method, diluted EPS is calculated assuming that conversion occurred at the beginning of the year. For companies with\nconvertible debt in their capital structure, add back after-tax interest cost to net income in the numerator and add additional common shares issued\nto the denominator.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 33, "q": "Which of the following best describes a conservative approach for managing expenses?", "opts": ["Using estimates that maximize periodic expenses", "Expensing the cost of warranties when they occur", "Decreasing receivables when an account is deemed uncollectible"], "ans": "A", "expl": "Conservative accounting policies\nUnderstate net income\nOverstate expenses\nUse estimates to recognize expenses\nOne aspect of a company's reporting is how conservative its accounting policies are. Companies using highly conservative accounting policies\nensure that operational uncertainties are adequately considered and disclosed in their financial statements. The use of estimates that produce\nhigher expenses (ie, lower net income) is considered conservative.\nThe cost of warranties is unknown since the future claims are uncertain. To be conservative, a company should record estimated warranty\nexpenses immediately and in each period. This is preferable to waiting until the actual warranty expenses occur (Choice B).\nSimilarly, when a company has credit sales, customer defaults are uncertain at the time of purchase. The company should estimate defaults and\nrecord an expense in each period. It would be less conservative to wait and decrease accounts receivable as incurred since this would delay\nrecognition of the bad debt expense (Choice C).\nThings to remember:\nCompanies may use conservative accounting policies to ensure that operational uncertainties are adequately considered and disclosed in their\nfinancial statements. The use of estimates to calculate expenses is considered more conservative than waiting for actual events to occur since it\nallows companies to recognize a greater expense (eg, more than zero) earlier.\nDescribe general principles of expense recognition, specific expense recognition applications, implications of expense recognition choices for\nfinancial analysis and contrast costs that are capitalized versus those that are expensed in the period in which they are incurred", "qhtml": null}, {"n": 34, "q": "An analyst collects the following information on a company for the most recent reporting period: Net income €100 million Preferred dividends €5 million Weighted average common shares outstanding 150 million Stock options 20 million Exercise price €30 Average stock price €40 Based on this information, if the number of stock options is constant during the period, then the company's diluted EPS (in €) is closest to:", "opts": ["0.56", "0.61", "0.63"], "ans": "B", "expl": "The method used to calculate diluted EPS for a company with outstanding options assumes that:\nthe options will be converted into common shares (ie, exercised) if the average stock price is greater than the exercise price, and\nthe company will use all cash proceeds from the exercised options to repurchase shares at the average market price to mitigate EPS\ndilution.\nThus, the net share increase equals new common shares issued, net of repurchases.\nNote that since the average stock price (€40) is greater than the exercise price (€30), all 20 million options are assumed to be converted into\ncommon shares. The company would have used all options proceeds (20 million × €30, or €600 million) to repurchase 15 million shares (€600\nmillion / €40), thus increasing net new shares by 5 million.\nDescribe how earnings per share is calculated and calculate and interpret a company’s basic and diluted earnings per share for companies with\nsimple and complex capital structures including those with antidilutive securities", "qhtml": null}, {"n": 35, "q": "A company's 20X6 income statement is: On the company's 20X6 common-size income statement, rent expense is closest to: ", "opts": ["5%", "10%", "33%"], "ans": "A", "expl": "A common-size income statement shows each income statement figure as a percentage of revenue. Since this method evaluates all\nexpenses and overall profitability in proportion to revenue, not as absolute numbers, it allows for more useful reviews of a company's performance\nover multiple periods or comparisons between two companies. In this scenario, rent expense, expressed as a percentage of revenue, is 5%\n(10,000 ÷ 200,000):\nOne exception is made for tax expense, which is expressed as a percentage of pretax income, not revenue. That percentage is the company's\neffective tax rate. Although tax expense and the effective tax rate are related to revenue, they also reflect a company's management of tax\nobligations, so the effective tax rate is the preferred metric for comparisons. This metric also allows analysts to project net income based on\nhistorical effective tax rates.\nThings to remember:\nPreparing a common-size income statement requires converting each income statement figure to a percentage of revenue. The one exception is\ntax expense, which is expressed as a percentage of pretax income, not revenue.\nEvaluate a company’s financial performance using common-size income statements and financial ratios based on the income statement", "qhtml": null}];
+const CFG = {"title": "Wiley · Analyzing Income Statements", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Financial Statement Analysis · 35 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

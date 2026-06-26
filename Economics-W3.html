@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Which of the following is most likely a long-run objective of fiscal policy?", "opts": ["Stabilize GDP growth rates", "Maximize growth and minimize unemployment", "Minimize the amount of government borrowing"], "ans": "A", "expl": "The general goal of fiscal policy (ie, government spending and taxes) is maximizing overall welfare. Specific policies are often designed to aid\ndisadvantaged population groups (eg, disabled or low-income populations) or help specific sectors (eg, infant or strategic industries). Those goals\nare more easily attained when an economy is growing at its potential.\nConsequently, the most significant fiscal policies are designed to stabilize output near an economy's sustainable GDP growth rate. At that level\nof output, income growth and employment are at the highest levels that can be maintained without creating inflationary pressure. Growth above\nthat level is countered with contractionary policies to stifle inflation. Growth below potential is addressed by fiscal stimulus to prevent excessive\nunemployment.\n(Choice B) Expansionary fiscal policies could enable an economy to grow above its sustainable rate in the short run, at the cost of rising\ninflation. The long-run result is likely slower growth and higher unemployment.\n(Choice C) Although less indebtedness is preferable, the amount of government borrowing is much less important than GDP growth and\nunemployment rate targets. Also, many economists believe government deficits and debt have little impact on GDP growth.\nThings to remember:\nThe broad goal of fiscal policy is maximizing general welfare. Policies are usually designed to stabilize an economy at levels of output near its\nsustainable GDP growth rate. Growth exceeding that level is countered with contractionary policies to stifle inflation. Growth below potential is\naddressed by fiscal stimulus.\nDescribe roles and objectives of fiscal policy as well as arguments as to whether the size of a national debt relative to GDP matters", "qhtml": null}, {"n": 2, "q": "An economy is experiencing a recession and rising rates of unemployment. If income tax cuts are used to stimulate more rapid GDP growth, which of the following factors is most likely to impede the effectiveness of that fiscal policy? ", "opts": ["Consumers may decide to increase savings.", "Businesses may not be able to increase output to meet rising demand.", "Government spending will be reduced to offset the decline in tax revenues."], "ans": "A", "expl": "It is often difficult to predict the private sector's reaction to government economic policy actions. In weak economies, the expansionary impact of\nincome tax cuts may be significantly dampened by consumers' decisions against spending the additional after-tax income. Consumers may\nincrease savings instead, either to cushion the impact of an ongoing recession or to pay for expected future tax increases.\n(Choice B) In a recession, the business sector is operating well below full capacity. Consequently, any increase in demand could be met by\nincreasing output.\n(Choice C) Unless operating under a balanced budget constraint, governments would not have to reduce spending to offset the loss of revenue\nfrom cutting income tax rates.\nThings to remember:\nIncome tax cuts may not result in economic growth. Consumers may increase savings due to fears of an ongoing recession or to pay for expected\nfuture tax increases.\nExplain the implementation of fiscal policy and difficulties of implementation as well as whether a fiscal policy is expansionary or contractionary", "qhtml": null}, {"n": 3, "q": "Which of the following is most likely to be considered a type of indirect tax?", "opts": ["Taxes on corporate profits", "Inheritance taxes on estates", "Excise taxes on sales of fuel"], "ans": "C", "expl": "Categories of taxes\nDirect Indirect\nIncome: wages, interest, business profits, capital\nSales of goods or services: sales, value-added (VAT),\nTax on gains\nexcise\nWealth: real estate, inheritances\nPaid by Recipient/holder Buyer\nCollected\nRecipient/holder Seller\nfrom\nFiscal policy is the use of government spending and taxation to influence economic activity. Governments impose taxes primarily to raise\nrevenue to fund operations and repay debt, although tax policy can also be used to encourage or discourage certain consumer and business\nbehaviors.\nIndirect taxes are taxes on spending for goods or services. The tax may apply to the full price of a product (eg, sales tax) or to only a portion of\nthe product's value (eg, value-added tax). Such taxes are described as indirect since, although the tax is effectively paid by the buyer (as part of\nthe purchase cost), the tax is collected by the product seller, who then pays it to the government. A sales tax applies generally to all products\n(with specified exemptions); an excise tax is applied only to a specific product (eg, fuel, tobacco).\nOne way to view the distinction between direct and indirect taxes is that a collector of indirect tax, such as a gas station, collects the excise tax on\ngasoline from consumers and remits it to the government. A direct tax, such as an income tax on the gas station's profits, is assessed against the\nstation and is not passed along to the station's customers.\n(Choices A and B) Both taxes on corporate profits (a type of income tax) and inheritance taxes (a type of wealth tax) are direct taxes. Direct\ntaxes are paid directly to the government by the beneficiary of the item being taxed.\nThings to remember:\nIndirect taxes are taxes on spending for goods or services. An indirect tax is effectively paid by the buyer but collected by the product seller, who\nthen pays it to the government. A sales tax is generally applied to all products; an excise tax is applied only to specific products such as fuel or\ntobacco.\nDescribe tools of fiscal policy, including their advantages and disadvantages", "qhtml": null}, {"n": 4, "q": "A country with an independent central bank experiences an unanticipated recession and responds with an expansionary monetary policy rather than a discretionary fiscal policy. Which of the following is the best rationale for the country's response? ", "opts": ["Monetary policy can be implemented more rapidly.", "Monetary policy is more powerful than fiscal policy.", "Fiscal policy is ineffective at stimulating economic activity."], "ans": "A", "expl": "Recognition lags, action lags, and impact lags impede successful management of economic cycles. The first of these (ie, recognition lag) results\nfrom not recognizing the need to act, which may delay both monetary and fiscal policy actions.\nHowever, monetary policy (eg, reducing interest rates) can usually be implemented more rapidly and can affect the economy more immediately\nthan fiscal policy (eg, infrastructure spending). Central banks can implement monetary policy changes within days of deciding to act, and the\nchanges begin affecting the economy fairly quickly.\nIn contrast, even when governments have discretionary spending authority, well-designed fiscal stimulus programs can take many months to plan.\nWhen significant changes in government spending or taxes require legislative approval, action and impact lags often result in prolonged delays\nbefore the new policies affect the economy.\n(Choice B) Both monetary and fiscal policy actions can have a substantial impact on an economy. The impact depends on the magnitude of the\npolicy action. No consensus exists regarding which is more powerful.\n(Choice C) Increases in government spending or reductions in taxes (ie, expansionary fiscal policy) are usually very effective at stimulating higher\nlevels of GDP.\nThings to remember:\nRecognition, action, and impact lags impede successful economic management. Both monetary and fiscal policy actions can be delayed if the\nneed to act is not recognized. Since monetary policy usually has shorter action and impact lags, it is more frequently used to offset unexpected\neconomic fluctuation.\nCompare monetary and fiscal policy", "qhtml": null}, {"n": 5, "q": "An extended period of GDP growth causes a country's budget balance to change from a slight deficit to a substantial surplus. Due to the budget surplus, the impact of fiscal policy on the future course of the economy is most likely:", "opts": ["neutral.", "expansionary.", "contractionary."], "ans": "C", "expl": "Government spending and taxation are the tools of fiscal policy. As the largest economic agent in most economies, the balance between\ngovernment expenditures and tax revenues has a substantial impact. Changes in the net budget balance are often more significant for the near-\nterm direction of the economy than the absolute levels of spending or revenues.\nA shift in the net budget balance from deficit to surplus results from tax revenues rising more rapidly than increases in government expenditures\ndue to past GDP growth. A current surplus represents a withdrawal of spending power from the economy by the government. Reduced\nspending results in a GDP lower than it otherwise would have been, which is why a budget surplus is viewed as having a contractionary impact\n(Choices A and B).\nThings to remember:\nA budget surplus represents a withdrawal of money from the economy by the government. As a result, there is less spending by consumers and\nbusinesses than otherwise would have occurred. The direct result of a budget surplus is slower GDP growth, so its impact is contractionary.\nExplain the implementation of fiscal policy and difficulties of implementation as well as whether a fiscal policy is expansionary or contractionary", "qhtml": null}, {"n": 6, "q": "Which of the following statements is most likely an appropriate description of indirect taxes? When used as a fiscal policy tool, in the short run indirect taxes:", "opts": ["are difficult to implement.", "have little impact on spending behavior.", "generate tax revenue at little cost to the government."], "ans": "C", "expl": "Categories of taxes\nDirect Indirect\nIncome: wages, interest, business profits, capital\nSales of goods or services: sales, value-added (VAT),\nTax on gains\nexcise\nWealth: real estate, inheritances\nPaid by Recipient/holder Buyer\nCollected\nRecipient/holder Seller\nfrom\nFiscal policy (ie, taxes and government spending) is implemented to optimize or improve economic factors such as GDP growth, wealth\ndistribution, and allocation of resources. Tax revenues are the primary source of financing for government expenditures and can be used as a\ntool of fiscal policy implementation, for example, by encouraging (discouraging) consumer spending.\nThe primary advantages of using indirect taxes as a tool of fiscal policy is that they:\nare easy to implement,\naffect spending behavior immediately (buyers' costs change as tax rates change), and\nimpose little or no cost on the government (collection costs are borne by the seller).\n(Choice A) Indirect taxes are collected by product sellers that can easily adjust their systems (eg, cash registers) so that a higher tax rate is\nreflected in the gross selling price. Direct taxes often require much longer to implement since systems for collecting withholding taxes from\nemployees and estimated taxes from businesses must be reprogrammed to reflect the new tax and withholding rates.\n(Choice B) Indirect taxes usually have an immediate effect on consumers' spending behavior.\nThings to remember:\nTaxation is a fiscal policy tool and taxes are categorized as direct or indirect. The primary advantages of indirect taxes as a tool of fiscal policy are\nthat they are easy to implement, affect spending behavior immediately, and increase tax revenues while imposing little or no cost on the\ngovernment.\nDescribe tools of fiscal policy, including their advantages and disadvantages", "qhtml": null}, {"n": 7, "q": "Which of the following statements best describes a disadvantage of using fiscal policy as a short-run economic tool?", "opts": ["Indirect taxes are difficult to implement and have a delayed impact.", "Capital spending plans take a long time to formulate and implement.", "Direct taxes have very small expectational effects and long lead times."], "ans": "B", "expl": "Fiscal policy vs. short-run cyclical fluctuations\nPolicy tool Examples Issues\nSales\nIndirect taxes Easily enacted, affect behavior and government revenues quickly\nExcise\nAdvantages\nTaxes\nSocial policy Adjustments can almost instantly encourage or discourage behavior\nSubsidies\nIndividual income\nDirect taxes Requires significant notice to update computerized systems\nCorporate profits\nDisadvantages\nHighways\nCapital spending Lengthy lead times needed to formulate and implement\nSchools\nFiscal policy (ie, government spending and taxes) attempts to maximize overall welfare by stabilizing output near an economy's sustainable GDP\ngrowth rate. At that level of output, income growth and employment are at the highest levels that can be maintained without creating inflationary\npressure:\nGrowth above that level may be countered with contractionary policies to stifle inflation.\nGrowth below that level may be addressed by fiscal stimulus to prevent excessive unemployment.\nGovernment capital spending on infrastructure (eg, bridges, airports) provides strong stimulus to output and can increase the sustainable GDP\ngrowth rate. However, effective capital spending plans can take years to formulate and implement and, therefore, may have little effect on the\neconomy in the short run.\n(Choice A) Indirect taxes are easy to implement and affect consumer and business behavior and government revenues immediately. These are\nadvantages of using this short-run tool.\n(Choice C) Direct taxes (eg, individual income taxes) can take a long time to change but have powerful effects on economic activity. The impact\nof direct taxes is felt well before their implementation, with powerful expectational impacts occurring as soon as the new tax rates are announced.\nThings to remember:\nFiscal policy attempts to stabilize output near an economy's sustainable GDP growth rate. Expansionary or contractionary fiscal policy is pursued\nwhen GDP diverges from the economy's potential. Government capital spending plans can take years to formulate and implement and, therefore,\nmay have little effect on the economy in the short run.\nDescribe tools of fiscal policy, including their advantages and disadvantages", "qhtml": null}, {"n": 8, "q": "An economist states: \"Fiscal deficits and tax cuts have no net effect on the economy since the private sector offsets these policy actions by increasing savings to pay for future tax increases.\" The economist's statement best reflects which of the following?", "opts": ["Fisher effect", "Money neutrality", "Ricardian equivalence"], "ans": "C", "expl": "Ricardian equivalence\nFiscal deficits have no net effect on the economy.\nGovernment's choice is essentially to tax now or to tax in the future.\nPrivate sector increases savings by an amount equal to the deficit to pay future taxes.\nFiscal deficits have little effect on private consumption and investment decisions.\nPolicymakers should favor monetary policy tools over fiscal deficits.\nRicardian equivalence is an economic theory suggesting that fiscal deficits and tax cuts have no net effect on the economy. According to\nthis theory, the private sector reacts to these fiscal policy actions by increasing savings to pay for inevitable future tax increases; this reaction\nleaves national savings (ie, the sum of all public and private savings) unchanged.\nFor example, a government enacts a tax cut to stimulate the economy but needs to borrow an equivalent amount to cover current spending.\nAccording to the Ricardian equivalence theory, these actions would have no net effect on the economy since the private sector would increase its\nsavings by an amount equal to the tax cut to ensure there would be enough to repay the debt in the future. Thus, there would be no change in\nincome available for consumption and no change to aggregate demand.\n(Choice A) The Fisher effect theorizes that real (ie, inflation-adjusted) interest rates are stable. It is not a theory about reaction to fiscal policies.\n(Choice B) Money neutrality refers to the idea that in the long run, an increase in the money supply only affects nominal price factors (eg, wages,\nexchange rates) and has no impact on real variables such as production and employment.\nThings to remember:\nRicardian equivalence is an economic theory that suggests fiscal deficits and tax cuts have no net effect on the economy. According to this theory,\nthe private sector reacts to these fiscal policy actions by increasing savings to pay for inevitable future tax increases, and this reaction leaves\nnational savings unchanged.\nDescribe tools of fiscal policy, including their advantages and disadvantages", "qhtml": null}, {"n": 9, "q": "Country A is a small country, with very low per capita GDP, running a large fiscal deficit. The government has substantially increased its debt burden over the last 10 years, and, as a result, investment flowing into the private sector has declined. This situation best describes:", "opts": ["the Fisher effect.", "Ricardian equivalence.", "the crowding out effect."], "ans": "C", "expl": "The crowding out effect refers to the idea that too much government borrowing may divert savings away from private investment. The\ncrowding out effect assumes:\nA finite amount of savings is to be used for investment.\nAn increasing supply of government debt (ie, increasing demand for funds from savings) raises the cost of borrowing for all market\nparticipants.\nCrowding out occurs over the long run (ie, more than a few years).\nThe concept is based on the notion that government borrowing absorbs capital that could otherwise be used for private investment. Thus, private\ninvestment is displaced and becomes more expensive (ie, higher borrowing costs), leading to suboptimal economic allocations and slower\ngrowth over the long run.\n(Choice A) The Fisher effect does not address private sector investment and the supply/demand dynamic of government debt. The Fisher effect\nposits that real (ie, inflation-adjusted) interest rates are stable and that fluctuations in nominal interest rates are primarily a function of changes in\ninflation expectations.\n(Choice B) Ricardian equivalence suggests that fiscal deficits and tax cuts have no net effect on the economy. According to this theory, the\nprivate sector reacts to these fiscal policy actions by increasing savings to pay for inevitable future tax increases, suggesting that consumer\nexpenditures will decrease as savings increase.\nThings to remember:\nThe crowding out concept refers to the idea that too much government borrowing may divert savings away from private investment. Private\ninvestment is displaced and becomes more expensive, leading to suboptimal economic allocations and slower growth over the long run.\nDescribe roles and objectives of fiscal policy as well as arguments as to whether the size of a national debt relative to GDP matters", "qhtml": null}, {"n": 10, "q": "Which of the following most likely limits the effectiveness of fiscal policy in stabilizing aggregate demand? The government's inability to:", "opts": ["run a budget deficit large enough to stimulate the economy.", "slow an overheated economy by reducing government spending.", "borrow during recessions due to investor preference for corporate debt."], "ans": "A", "expl": "Macroeconomic issues that inhibit effective fiscal policy\nUnemployment/inflation Higher employment increases inflation, so policies to\ntradeoff lower inflation create more unemployment\nMarkets limit access to and/or increase cost of debt,\nBudget deficit limits\npreventing adequate stimulus spending\nDifficult to determine accurately since expansionary\nFull-employment GDP policy for an economy at full employment creates\ninflation without increasing growth\nShortages of labor or capital prevent expansionary\nFactor constraints policy from increasing growth and may result in higher\ninflation\nGovernment borrowing displaces private sector\nCrowding out borrowing, so reduced private spending offsets\nincreases in government spending\nStabilizing aggregate demand is a primary objective of fiscal policy. Adjustments to spending and tax rates are the main fiscal policy tools\ngovernments use. A variety of factors can impede their success:\nRecognition, action, and impact lags\nMacroeconomic issues\nUncertainty as to:\nthe future of the economy and\nthe reaction of the private sector to policy actions\nGovernment budgets are likely to already be operating at a deficit during a recession. Financial market reaction (ie, higher interest rates) or\npolitical pressure may prevent a government from increasing the deficit by increased spending or lower tax rates. In that case, the government\nmay be unable to run a deficit large enough to stabilize aggregate demand and stimulate economic recovery.\n(Choice B) Government spending is a significant contributor to GDP, so reductions in spending result in lowering GDP. If the political will exists,\ngovernment spending can be cut to slow an economy's rate of growth.\n(Choice C) As the most creditworthy borrower in an economy, a government usually is able to issue debt, even during recessions. However,\nexcessive borrowing may increase interest rates and/or crowd out (displace) private borrowers.\nThings to remember:\nThe primary objective of fiscal policy is to stabilize aggregate demand. During recessions, governments may not be able to run large enough\ndeficits to provide adequate stimulus to create economic growth.\nExplain the implementation of fiscal policy and difficulties of implementation as well as whether a fiscal policy is expansionary or contractionary", "qhtml": null}, {"n": 11, "q": "As opposed to fiscal policy, monetary policy is used to:", "opts": ["maintain price stability.", "raise revenue through taxation.", "determine the level of government spending."], "ans": "A", "expl": "Monetary policy tools Fiscal policy tools\nSet reserve requirements\nSet tax rates\nSet short-term interest rates\nSet levels of government spending\nManage foreign exchange and gold reserves\nMonetary policy refers to activities directed by central banks to promote stable economic growth. Price stability is one of the components of\nstable growth. Central banks attempt to achieve stability by influencing money supply levels with tools such as the following:\nRequiring banks to maintain reserves with the central bank to meet customers' withdrawal demands\nSetting targets for short-term interest rates and using open market operations to achieve interest rate targets\nManaging foreign currency and gold reserves by buying/selling as needed to maintain liquidity and national currency.\n(Choices B and C) Fiscal policy applications optimize economic activity without creating inflationary pressure. Governments set tax and\nspending levels to achieve their goals and support economic growth.\nThings to remember:\nMonetary policy refers to activities directed by central banks to promote stable economic growth. Price stability is one of the components of stable\ngrowth. Fiscal policy refers to government taxation and spending policies.\nCompare monetary and fiscal policy", "qhtml": null}, {"n": 12, "q": "Governments have numerous fiscal policy tools at their disposal. Which of the following statements best describes an advantage of using a specific fiscal policy tool? ", "opts": ["Indirect taxes can be adjusted quickly.", "Direct taxes can target certain products to modify consumer behavior.", "Capital spending programs are one of the fastest ways to provide fiscal stimulus."], "ans": "A", "expl": "Government tax types\nDescription Advantages Disadvantages\nLong lead time to change\nApplies to income, wealth, and corporate Ease of collection\nDirect Potential disincentives if taxes are too\nprofits Progressive in nature\nhigh\nQuickly adjustable\nRegressive tax\nIndirect Applies to spending on goods and services Can be used to modify social\nPotentially costly to collect\nbehavior\nFiscal policy broadly describes the policies around government revenues and expenditures. For most economies, taxes provide the revenues that\nfund the government's operations and programs (ie, expenditures). If taxes do not provide the required revenues, debt is often issued to make up\nthe difference. Taxes can be classified into two broad categories:\nDirect taxes are imposed on wealth and income, such as an income, inheritance, and capital gains taxes.\nIndirect taxes are transaction-based and apply to the purchase or sale of goods and services.\nExamples of indirect taxes include sales and value-added taxes (VAT). Indirect taxes can be adjusted quickly and used to influence certain\nsocial behaviors, such as a tax on alcohol, tobacco, or fossil fuels.\n(Choice B) Changes to direct taxes require a relatively long lead time since they require a change to the tax code. Adjustments to payroll\nsystems and other similar tax schedules tied to income can be quite cumbersome and time-consuming to adjust.\n(Choice C) Capital spending programs are government expenditures that take considerable time to plan and implement. For example, the life\ncycle of large-scale road construction or improvements is often measured in years.\nThings to remember:\nIndirect taxes are transaction-based and apply to the purchase or sale of goods and services. Indirect taxes can be adjusted quickly and used to\ninfluence certain social behaviors, such as a tax on alcohol, tobacco, or fossil fuels.\nDescribe tools of fiscal policy, including their advantages and disadvantages", "qhtml": null}, {"n": 13, "q": "The advantage of automatic stabilizers over discretionary fiscal policy is that they most likely:", "opts": ["affect real GDP growth rates more rapidly.", "have a greater impact on GDP per unit of fiscal expenditure.", "can be more precisely calibrated to achieve the desired impact."], "ans": "A", "expl": "Discretionary fiscal policies (ie, government spending and taxes) require specific actions (eg, legislation) to be implemented. However,\nvarious lags impede the effectiveness of discretionary fiscal policy. In contrast, automatic stabilizers are programs already in place that are\ntriggered by changes in economic activity, so they are not subject to these lags. Automatic stabilizers steady the economy by their\ncountercyclical nature. Examples of automatic stabilizers include:\nUnemployment benefits: Unemployment increases as economies weaken, so government spending on these programs increases. The\nreverse occurs when economies strengthen.\nProgressive income tax: Incomes rise as economies strengthen, placing more workers in higher tax brackets, resulting in less spending\nrelative to income. The reverse occurs when economies weaken.\n(Choice B) The economic impact on GDP per unit of fiscal expenditure is not determined by whether it results from automatic stabilizers or\ndiscretionary policy. The impact depends on the timing and the change in spending or tax revenues.\n(Choice C) Discretionary fiscal policy can achieve very specific changes in government spending or tax rates. The impact of automatic\nstabilizers, however, cannot be precisely quantified because spending and tax revenue changes depend on the level of economic activity, which\ncannot be accurately predicted.\nThings to remember:\nA variety of lags impede the success of discretionary fiscal policy. There are often long delays before changes in government spending or taxes\nimpact the economy. In contrast, automatic stabilizers result in changes to government spending and tax revenues triggered by changes in\neconomic activity, providing the desired countercyclical impact.\nDescribe tools of fiscal policy, including their advantages and disadvantages", "qhtml": null}, {"n": 14, "q": "Which of the following is the most appropriate argument in support of larger government budget deficits during a recession, despite high levels of government debt relative to GDP?", "opts": ["Higher taxes can be imposed to pay the debt.", "Increased debt can result in the utilization of idle resources.", "Governments can borrow at lower rates than businesses or consumers."], "ans": "B", "expl": "Government debt reflects a government's cumulative budget deficits (ie, shortfalls of revenues versus expenditures). Economists disagree about\nthe significance of high levels of government debt relative to GDP. Those who favor increasing already high levels of debt argue that budget\ndeficits may generate economic growth if there are underutilized resources.\nIn recessions, the unemployment rate is relatively high and capacity utilization is low. Increases in government debt resulting from tax cuts or\nspending increases do not necessarily divert resources from productive uses. Therefore, a budget deficit can result in higher levels of\nemployment and GDP growth.\n(Choice A) Raising taxes to repay debt may be a disincentive to economic activity. Higher tax rates may reduce the incentive to work and invest,\nleading to lower growth in the long run.\n(Choice C) Governments can usually borrow at lower rates than businesses or consumers. However, this may crowd out other borrowers and\nlead to higher interest rates on the smaller pool of capital for private borrowers.\nThings to remember:\nIncreases in government debt may generate economic growth if there are underutilized resources. In recessions, the unemployment rate is\nrelatively high and capacity utilization is low. So long as the increased debt does not divert resources from productive uses, it can result in higher\nlevels of employment and GDP growth.\nDescribe roles and objectives of fiscal policy as well as arguments as to whether the size of a national debt relative to GDP matters", "qhtml": null}, {"n": 15, "q": "An economist reads the following statement in a research article: \"If a country's national debt is financed by borrowing, the size of its national debt relative to GDP may not matter, in the long run.\" This statement is most likely supported if:", "opts": ["government borrowing discourages private borrowing.", "most of the debt is owed to the country's own citizens.", "the debt reduces incentives for consumers to increase savings."], "ans": "B", "expl": "Economists debate whether the size of a country's national debt relative to GDP matters. If the debt grows too large relative to GDP, it may\ncast doubt on the country's ability to pay its debts in the future (ie, solvency). Interest payments on the debt may burden the current budget. A\nlarge existing national debt may also hinder efforts at expansionary fiscal policy, which typically enlarges public debt. One factor that eases these\nconcerns is if most of a country's debt is owed internally to fellow citizens, as is currently the case in Japan and South Korea, for example.\n(Choice A) Too much government borrowing may discourage or \"crowd out\" private borrowing and investment, both by diverting capital from the\nprivate sector and by creating greater demand for capital that pushes up interest rates. This scenario would support the argument that the size of\nthe national debt relative to GDP does matter.\n(Choice C) Concerns about the size of government debt relative to GDP would be countered by increased consumer saving rates, particularly if\nconsumers increased saving rates in anticipation of supporting the higher debt. Adding, not reducing, incentives for consumers to save would be a\ncondition that would support this statement.\nThings to remember:\nEconomists debate whether the size of a country's national debt relative to GDP matters. If the debt grows too large relative to GDP, it may\nnegatively affect the country's economy. One factor that eases these concerns is if most of a country's debt is owed to its own citizens, as is the\ncase in Japan and South Korea, for example.\nDescribe roles and objectives of fiscal policy as well as arguments as to whether the size of a national debt relative to GDP matters", "qhtml": null}];
+const CFG = {"title": "Wiley · Fiscal Policy", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Economics · 15 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

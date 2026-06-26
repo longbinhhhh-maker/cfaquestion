@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A company is building a new plant. The NPV of the plant is projected to be €8 million if demand is high, and −€3 million if demand is low. Both scenarios are equally likely. The company has also secured a 1-year lease on some adjoining land, with an option to buy, to expand the facility if demand is high. The costs of the lease and expected cash flows from the expansion option are: Option cost (1-year lease expense) 0.5 million Annual net cash inflows over 5 years (Years 2–6), if exercised 0.4 million Required rate of return 8% The value of the plant with the option (in EUR) is closest to:", "opts": ["Regulatory", "Expansion", "Replacement"], "ans": "B", "expl": "Categories of capital projects\nProject type Rationale for undertaking project\nReplacement To replace existing equipment due to wear and tear, or to improve efficiency\nExpansion To expand business volume through scaling\nNew products and services To produce new products and provide new services\nRegulatory, safety, and environmental To comply with regulation\nCapital projects take years to complete and require large amounts of monetary investment. Companies group capital projects into various\ncategories, as shown above. In this scenario, the vendor plans to scale up the business by moving it into a restaurant building that would be much\nlarger than the truck. This expansion project would allow the vendor to meet growing demand for the product and increase sales.\n(Choice A) The vendor is not undertaking the project for regulatory compliance purposes.\n(Choice C) Replacement projects are undertaken when existing equipment is worn out. In this scenario, the food truck is being replaced with a\nrestaurant building due to rising customer demand, not due to equipment wear and tear.\nThings to remember:\nCompanies group capital projects into various categories: replacement projects; expansion projects; new products and services; and regulatory,\nsafety, and environmental projects. An expansion project is undertaken when a business needs to scale up its sales volume.\nDescribe types of capital investments", "qhtml": null}, {"n": 2, "q": "A corporation is evaluating two projects with the following cash flows (INR million): Year 0 1 2 3 Project 1 −10 3 6 8 Project 2 −10 8 6 3 Project 1 has a required rate of return of 3% and an internal rate of return (IRR) of 26.9%, while Project 2 has a required rate of return of 8% and an IRR of 38.8%. If the projects are mutually exclusive, the most appropriate investment decision is to invest in: ", "opts": ["Regulatory", "Expansion", "Replacement"], "ans": "B", "expl": "Categories of capital projects\nProject type Rationale for undertaking project\nReplacement To replace existing equipment due to wear and tear, or to improve efficiency\nExpansion To expand business volume through scaling\nNew products and services To produce new products and provide new services\nRegulatory, safety, and environmental To comply with regulation\nCapital projects take years to complete and require large amounts of monetary investment. Companies group capital projects into various\ncategories, as shown above. In this scenario, the vendor plans to scale up the business by moving it into a restaurant building that would be much\nlarger than the truck. This expansion project would allow the vendor to meet growing demand for the product and increase sales.\n(Choice A) The vendor is not undertaking the project for regulatory compliance purposes.\n(Choice C) Replacement projects are undertaken when existing equipment is worn out. In this scenario, the food truck is being replaced with a\nrestaurant building due to rising customer demand, not due to equipment wear and tear.\nThings to remember:\nCompanies group capital projects into various categories: replacement projects; expansion projects; new products and services; and regulatory,\nsafety, and environmental projects. An expansion project is undertaken when a business needs to scale up its sales volume.\nDescribe types of capital investments", "qhtml": null}, {"n": 3, "q": "A street vendor sells pizza from a food truck. To accommodate rapidly rising customer demand, the vendor seeks to replace the food truck with a much larger restaurant building. Which of the following capital budgeting categories best describes this project?", "opts": ["Regulatory", "Expansion", "Replacement"], "ans": "B", "expl": "Categories of capital projects\nProject type Rationale for undertaking project\nReplacement To replace existing equipment due to wear and tear, or to improve efficiency\nExpansion To expand business volume through scaling\nNew products and services To produce new products and provide new services\nRegulatory, safety, and environmental To comply with regulation\nCapital projects take years to complete and require large amounts of monetary investment. Companies group capital projects into various\ncategories, as shown above. In this scenario, the vendor plans to scale up the business by moving it into a restaurant building that would be much\nlarger than the truck. This expansion project would allow the vendor to meet growing demand for the product and increase sales.\n(Choice A) The vendor is not undertaking the project for regulatory compliance purposes.\n(Choice C) Replacement projects are undertaken when existing equipment is worn out. In this scenario, the food truck is being replaced with a\nrestaurant building due to rising customer demand, not due to equipment wear and tear.\nThings to remember:\nCompanies group capital projects into various categories: replacement projects; expansion projects; new products and services; and regulatory,\nsafety, and environmental projects. An expansion project is undertaken when a business needs to scale up its sales volume.\nDescribe types of capital investments", "qhtml": null}, {"n": 4, "q": "A company is using net present value analysis to evaluate an investment that it will finance with borrowed funds. The most appropriate discount rate to use in evaluating the project is the:", "opts": ["project's internal rate of return.", "project's opportunity cost of funds.", "cost of debt capital borrowed to finance the project."], "ans": "B", "expl": "Net present value (NPV) analysis evaluates investments based on the present value of a project's cash flows. NPV is the difference between\nthe present values of the cash outflows and inflows generated by the project. The present values are the nominal cash flows discounted by the\nopportunity cost of funds.\nThe opportunity cost of funds (r) is the rate of return that could be earned on another investment of equivalent risk. Every project must earn at\nleast the return available from comparable projects, given that return also meets the investors' requirements. Therefore, the opportunity cost of\nfunds is the investors' required rate of return and the project's cost of capital and is used as the discount rate in NPV analysis.\n(Choice A) Since the internal rate of return (IRR) does not reflect the investors' required return or the opportunity cost of funds, it is not an\nappropriate discount rate for NPV analysis. The IRR is an alternative to NPV analysis in capital budgeting.\n(Choice C) Discounting by the cost of debt capital borrowed to finance a project is inappropriate since it does not reflect the return necessary to\ncompensate all sources of funds for a project's risk.\nThings to remember:\nNet present value (NPV) analysis evaluates investments based on the present value of project cash flows. A project's NPV is the difference\nbetween cash outflows and inflows discounted by the opportunity cost of funds. The opportunity cost of funds is the rate of return required to\ncompensate investors' for the project's risk and is the project's cost of capital.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 5, "q": "When evaluating mutually exclusive projects, the IRR most likely:", "opts": ["is appropriate for a project with nonconventional cash flows.", "does not provide context regarding the scale of the investment options.", "provides realistic reinvestment assumptions for projects with conventional cash flows."], "ans": "B", "expl": "Problems when using internal rate of return (IRR) to evaluate capital projects\nPotentially more than one IRR exists when future cash flows are negative (eg, expanding original\nMultiple IRR\nproject)\nNo IRR Possible that no IRR exists: no discount rate results in zero net present value (NPV)\nRelative scale A project with small NPV could have high IRR, and one with low IRR could have large NPV\nUnrealistic reinvestment\nUnlikely that firms with high hurdle rates can reinvest at those rates\nassumption\nNet present value (NPV) and internal rate of return (IRR) are the most common methods used to determine a project's profitability in capital\nbudgeting decisions. The general rule is to accept a project if:\nthe project's NPV is positive or\nthe project's IRR is greater than the company's required rate of return.\nA project's IRR is the single discount rate that equates the present value of forecasted cash flows to the initial investment, resulting in a zero NPV.\nIf projects are mutually exclusive, the decision to pursue one project precludes investing in the others. In such cases, a ranking problem (eg,\none project with a higher IRR but smaller NPV than another) could exist.\nSince IRR does not provide context regarding the scale (ie, monetary amount of value added) of investment options, best practice is for a\ncompany to maximize profitability as measured by project NPV. For example, a project may generate an IRR of 20% and NPV of $1 million, but\nan alternative project that generates a 16% IRR and NPV of $3 million adds more value.\n(Choice A) A project with unconventional cash flows can generate multiple IRRs. This complicates the investment decision since there is no way\nto assess which rate is correct, making IRR an inferior measure of project profitability, especially when projects must be ranked.\n(Choice C) The IRR method assumes that a company will be able to reinvest cash flows at the IRR rate. The NPV required rate of return\nassumption (ie, that the company can reinvest at its cost of capital) is considered more conservative and realistic than IRR for all types of cash\nflows.\nThings to remember:\nIf projects are mutually exclusive, a ranking problem could exist between them when making capital budgeting decisions. Since IRR does not\nprovide context regarding the scale of investment options, best practice is for a company to maximize profitability as measured by project NPV.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 6, "q": "An automobile manufacturer has a factory producing low-margin compact cars. The company is considering converting the factory to the production of luxury sedans, financed by borrowing the necessary funds. The company is also considering selling the factory. Using net present value (NPV) analysis, which of the following is least likely an incremental cash flow for investing in luxury sedan production?", "opts": ["Potential proceeds from selling the factory", "Financing costs of funds borrowed to finance investment", "Forgone profits on the compact cars no longer being produced"], "ans": "B", "expl": "Capital budgeting cash flow considerations\nCharacterization Definition Include\nIncremental cash flows Cash flows resulting from decision to invest Yes\nSunk costs Funds spent previously No\nOpportunity costs Returns from alternate use of investment funds or fixed assets Yes\nExternalities Cash flow impacts on other company investments Yes\nFinancing costs Cost of capital to invest No\nPotential investment projects should be evaluated based on their incremental cash flows. Incremental refers to changes in cash flows that\nresult from the decision to invest or not invest in a project. In this scenario, incremental cash flows should include:\nProject cash flows: the costs of retooling the factory and operating cash flows from producing the luxury sedans;\nOpportunity costs: cash flows forgone since the proceeds from selling the factory and operating cash flows from producing compact cars are\nnot realized (Choices A and C); and\nExternalities: the reduction in net revenues from other product lines if customers buy the new luxury sedans instead of other automobiles\nproduced by the company.\nCash flows the company should not consider include:\nSunk costs: the funds previously spent to build and maintain the factory; and\nFinancing costs: the costs factored in when cash flows are discounted using an opportunity cost of capital.\nSubtracting the interest expense from project cash flows amounts to double counting the financing costs.\nThings to remember:\nPotential investment projects should be evaluated based on their incremental cash flows: the changes in cash flows that result from the decision to\ninvest or not invest in a project. Cash flows that should be considered include project operating cash flows, opportunity costs, and externalities.\nSunk costs and financing costs should be excluded.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 7, "q": "When making capital budgeting decisions, which of the following types of investment projects most likely allow management to have the highest level of confidence?", "opts": ["Expansion projects", "Replacement projects", "New products and services"], "ans": "B", "expl": "Categories of capital projects\nRationale Decision considerations\nMost accurate cash flow projections, greatest\nReplacement Worn, broken, or inefficient assets\ncertainty of decisions\nGreater uncertainties over cost and revenues\nExpansion Add capacity for existing products\ncompared with replacement projects\nNew products and Research and development, and investment in Greater uncertainties than expansion projects,\nservices products not yet offered by the company most complex investment decisions\nRegulatory, safety, and Driven by external party (eg, government, insurance Necessary to stay in business, not directly profit-\nenvironmental company) driven like other categories\nPet projects or high-risk Overly optimistic projections, or failure to apply\nCapital allocation error\ninvestments proper project analyses\nProfit-motivated capital budgeting decisions are classified as replacement projects, expansion projects, or introduction of new products and\nservices. Since replacement projects are projects that replace assets already in use, net cash flows can be estimated much more accurately\ncompared to other capital budgeting decisions:\nAcquisition and operating costs: Such assets have been purchased or constructed previously, and there is an operating history on which to\nbase cost estimates.\nRevenues: Previous period revenues and familiarity with the product market's competitive environment allow for better revenue estimates.\nMore accurate cash flow estimates allow managers a higher degree of confidence regarding decisions on replacement projects compared to\ndecisions on other types of projects.\n(Choice A) Although expansion projects also imply an extension of previous investments, they entail more uncertainties than replacement\nprojects. There may be advantages and disadvantages related to the larger scale of operations and reactions of competitors that are difficult to\nquantify. These factors cause expansion project decisions to be more complex.\n(Choice C) Decisions to invest in new products or services are the most complex capital budgeting decisions since they have the greatest\nuncertainties regarding initial cost, operating expenses, and revenues.\nThings to remember:\nCapital budgeting decisions are classified as replacement projects, expansion projects, or introduction of new products or services. Replacement\nprojects' net cash flows can typically be estimated with less uncertainty and therefore less risk compared to other capital budgeting decisions.\nDescribe types of capital investments", "qhtml": null}, {"n": 8, "q": "Which of the following most accurately describes the opportunity cost of funds used in net present value (NPV) analysis of investment projects?", "opts": ["Company's average cost of debt capital", "Expected return on comparable investment projects", "Discount rate that results in projects having a zero NPV"], "ans": "B", "expl": "Net present value (NPV) analysis evaluates investments based on the present value of a project's cash flows. NPV is the difference between\nthe present value of the cash outflows and inflows generated by the project. The present values are the nominal cash flows discounted by the\nproject's required rate of return (r).\nInvestment in a project means forgoing the return that could have been earned from investing in other projects (ie, opportunity cost of funds).\nTherefore, companies require a return that is at least equal to the rate of return available from comparable projects, given that return also meets\nthe investors' requirements.\n(Choice A) A company's average cost of debt capital is inappropriate for valuing an individual project since the average cost is not based on the\nproject's risk or required return.\n(Choice C) The discount rate that results in projects having an NPV of zero is the internal rate of return (IRR). IRR is an alternative capital\nbudgeting method to NPV analysis.\nThings to remember:\nNet present value (NPV) analysis evaluates investments based on the present value of a project's cash flows. NPV is the difference between cash\noutflows and inflows discounted by the opportunity cost of capital. The opportunity cost of capital is the rate of return required to compensate\ninvestors for the project's risk.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 9, "q": "A company plans to retool an automobile factory to produce a new model to replace the existing model. Which of the following is most appropriately considered an opportunity cost? ", "opts": ["Forgone revenue from the existing model", "Interest expense on money borrowed to finance the project", "Decline in sales of another model produced by the company"], "ans": "A", "expl": "Capital budgeting considerations\nDescription Impact on projected cash flows\nSunk costs Costs previously incurred None\nOpportunity Forgone value of using an asset in its next-best\nReduce net cash flows by cash flow forgone\ncosts use\nIgnore if outside of company, adjust cash flows if inside\nExternalities Side effects of project\ncompany\nUsing an asset in one activity often means forgoing its use in some other endeavor. In capital budgeting, an opportunity cost is the net cash flow\nnot realized from an asset being used in some alternative activity. The net cash flows not received from the highest value alternate use of the\nasset are treated as an opportunity cost and subtracted from cash flows projected in the capital budgeting process.\nIn this scenario, a company considers retooling the factory to produce a new model and discontinuing production of the existing model. The\nrevenue no longer earned on the discontinued model is an opportunity cost related to the introduction of the new model. The net cash flows\nprojected for the new model must be reduced by the net cash flows no longer earned on the discontinued model.\n(Choice B) Financing costs are related to the opportunity cost of capital. However, the opportunity cost of capital is not factored into the net cash\nflows from an investment. Financing costs are related to the discount rate used to calculate the cash flows' present value.\n(Choice C) Lost revenues on another model still being sold should be factored into incremental net cash flows. However, this is an example of an\nexternality—specifically, cannibalization—and not an opportunity cost.\nThings to remember:\nIn capital budgeting, an opportunity cost is the net cash flow not realized from an asset since it is used in some alternative activity. The net cash\nflows not received from the highest value alternate use of the asset are treated as an opportunity cost and subtracted from cash flows projected in\nthe capital budgeting process.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 10, "q": "A company's analyst made the following after-tax cash flow projections for two independent investments: Year 0 1 2 3 Project A −36,000 14,000 16,000 16,000 Project B −39,000 15,500 16,500 17,000 The cost of capital is the company's hurdle rate of 12.5%. Based on the internal rate of return (IRR) approach, which of the following actions is most appropriate for the company? ", "opts": ["The price paid for acquiring the land", "The amount the company could realize from selling the land", "The company's costs of debt and equity that are used to finance the factory"], "ans": "B", "expl": "Basic principles of capital budgeting\n1. Decisions are based on cash flows.\n2. Timing of cash flows is crucial.\n3. Cash flows are based on opportunity costs.\n4. Cash flows are analyzed on an after-tax basis.\n5. Cash flows exclude financing costs.\n6. Cash flows are not accounting net income.\nCapital budgeting refers to how companies decide to invest in long-term projects. When analyzing a specific project, a company should\nconsider the project's cash flows from the perspective of opportunity costs: the cash flows if the project is accepted versus what they would be\nif it is not.\nIn this scenario, the company could sell the land instead of building the factory, so the cash received from the potential sale represents an\nopportunity cost of building the factory. The cash received from the sale would be compared to the discounted future cash flows generated from\nthe factory.\nNot all cash flows are relevant to the analysis. Costs that the company previously incurred, such as the price paid for the land, are considered\nsunk costs. Sunk costs are those that cannot be recovered regardless of whether the project is accepted and should not be considered in the\nanalysis (Choice A).\n(Choice C) Financing costs are factored into the company's required rate of return, which is used as the rate to discount the cash flows. Including\nthese costs as separate cash flows would be double counting them.\nThings to remember:\nWhen analyzing a specific project, a company should consider the project's cash flows from the perspective of opportunity costs. Sunk costs,\nwhich are costs that have already been incurred and cannot be recovered regardless of whether the project is accepted, should not be considered\nin the analysis.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 11, "q": "A company considers building a new factory on land that it owns. When deciding whether to proceed with the project, which of the following is most appropriate to include as a cash flow?", "opts": ["The price paid for acquiring the land", "The amount the company could realize from selling the land", "The company's costs of debt and equity that are used to finance the factory"], "ans": "B", "expl": "Basic principles of capital budgeting\n1. Decisions are based on cash flows.\n2. Timing of cash flows is crucial.\n3. Cash flows are based on opportunity costs.\n4. Cash flows are analyzed on an after-tax basis.\n5. Cash flows exclude financing costs.\n6. Cash flows are not accounting net income.\nCapital budgeting refers to how companies decide to invest in long-term projects. When analyzing a specific project, a company should\nconsider the project's cash flows from the perspective of opportunity costs: the cash flows if the project is accepted versus what they would be\nif it is not.\nIn this scenario, the company could sell the land instead of building the factory, so the cash received from the potential sale represents an\nopportunity cost of building the factory. The cash received from the sale would be compared to the discounted future cash flows generated from\nthe factory.\nNot all cash flows are relevant to the analysis. Costs that the company previously incurred, such as the price paid for the land, are considered\nsunk costs. Sunk costs are those that cannot be recovered regardless of whether the project is accepted and should not be considered in the\nanalysis (Choice A).\n(Choice C) Financing costs are factored into the company's required rate of return, which is used as the rate to discount the cash flows. Including\nthese costs as separate cash flows would be double counting them.\nThings to remember:\nWhen analyzing a specific project, a company should consider the project's cash flows from the perspective of opportunity costs. Sunk costs,\nwhich are costs that have already been incurred and cannot be recovered regardless of whether the project is accepted, should not be considered\nin the analysis.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 12, "q": "A project has the following forecasted annual cash flows (in ¥ billions): Year Cash Flow 0 −5 1 15 2 8 3 −20 Based on this information, which of the following discount rates will produce the lowest net present value (NPV)? ", "opts": ["The cost of retooling", "The original cost of the factory before retooling", "The market value of the factory before retooling"], "ans": "B", "expl": "Capital budgeting considerations\nDescription Impact on projected cash flows\nSunk costs Costs previously incurred None\nOpportunity Forgone value of using an asset in its next-best\nReduce net cash flows by cash flow forgone\ncosts use\nIgnore if outside of company, adjust cash flows if inside\nExternalities Side effects of project\ncompany\nCapital budgeting decisions should be based only on a project's expected incremental future cash flows: changes in cash flows that will result from\nan investment under consideration. The basis for making the decision is the amount and/or timing of those future cash flows, including opportunity\ncosts and externalities but excluding sunk costs.\nSunk costs are expenditures previously incurred. Funds already spent (ie, past cash flows) should not factor into the capital budgeting\ndecision. If a project is partially completed and being evaluated while still in the construction phase, its sunk costs are its earlier (ie, incurred to\nthat point) expenditures.\n(Choice A) Retooling the factory is the cost of the investment being evaluated. Since this cost has not yet been incurred, it is not a sunk cost.\n(Choice C) The current market value of the existing factory is an opportunity cost, which the net cash flow forecasts should include.\nThings to remember:\nSunk costs are expenditures previously incurred. Capital budgeting decisions should be based only on a project's expected incremental future—\nnot past—cash flows. Therefore, sunk costs should not be included in the capital budgeting decision.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 13, "q": "A company is evaluating a high-risk investment in a new product line. A facility to produce the new product would be built on land that previously generated rental income of CAD 20,000 per year. The product will benefit from a recently run marketing campaign with a cost of CAD 80,000. Other data related to the investment are as follows: Initial outlay (in CAD) 700,000 Annual after-tax cash flows for 4 years (in CAD) 240,000 Required return on investment 8.0% WACC 6.4% The project's NPV (in CAD) is closest to:", "opts": ["The cost of retooling", "The original cost of the factory before retooling", "The market value of the factory before retooling"], "ans": "B", "expl": "Capital budgeting considerations\nDescription Impact on projected cash flows\nSunk costs Costs previously incurred None\nOpportunity Forgone value of using an asset in its next-best\nReduce net cash flows by cash flow forgone\ncosts use\nIgnore if outside of company, adjust cash flows if inside\nExternalities Side effects of project\ncompany\nCapital budgeting decisions should be based only on a project's expected incremental future cash flows: changes in cash flows that will result from\nan investment under consideration. The basis for making the decision is the amount and/or timing of those future cash flows, including opportunity\ncosts and externalities but excluding sunk costs.\nSunk costs are expenditures previously incurred. Funds already spent (ie, past cash flows) should not factor into the capital budgeting\ndecision. If a project is partially completed and being evaluated while still in the construction phase, its sunk costs are its earlier (ie, incurred to\nthat point) expenditures.\n(Choice A) Retooling the factory is the cost of the investment being evaluated. Since this cost has not yet been incurred, it is not a sunk cost.\n(Choice C) The current market value of the existing factory is an opportunity cost, which the net cash flow forecasts should include.\nThings to remember:\nSunk costs are expenditures previously incurred. Capital budgeting decisions should be based only on a project's expected incremental future—\nnot past—cash flows. Therefore, sunk costs should not be included in the capital budgeting decision.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 14, "q": "A company is considering retooling an existing factory to manufacture a new product. Which of the following is most appropriately considered a sunk cost?", "opts": ["The cost of retooling", "The original cost of the factory before retooling", "The market value of the factory before retooling"], "ans": "B", "expl": "Capital budgeting considerations\nDescription Impact on projected cash flows\nSunk costs Costs previously incurred None\nOpportunity Forgone value of using an asset in its next-best\nReduce net cash flows by cash flow forgone\ncosts use\nIgnore if outside of company, adjust cash flows if inside\nExternalities Side effects of project\ncompany\nCapital budgeting decisions should be based only on a project's expected incremental future cash flows: changes in cash flows that will result from\nan investment under consideration. The basis for making the decision is the amount and/or timing of those future cash flows, including opportunity\ncosts and externalities but excluding sunk costs.\nSunk costs are expenditures previously incurred. Funds already spent (ie, past cash flows) should not factor into the capital budgeting\ndecision. If a project is partially completed and being evaluated while still in the construction phase, its sunk costs are its earlier (ie, incurred to\nthat point) expenditures.\n(Choice A) Retooling the factory is the cost of the investment being evaluated. Since this cost has not yet been incurred, it is not a sunk cost.\n(Choice C) The current market value of the existing factory is an opportunity cost, which the net cash flow forecasts should include.\nThings to remember:\nSunk costs are expenditures previously incurred. Capital budgeting decisions should be based only on a project's expected incremental future—\nnot past—cash flows. Therefore, sunk costs should not be included in the capital budgeting decision.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 15, "q": "With regards to capital budgeting, which of the following statements best describes project interactions?", "opts": ["Mutually exclusive projects do not compete directly for resources.", "When a company has unlimited funds, all projects should be selected.", "Project sequencing refers to undertaking one project based on the outcome of another project."], "ans": "C", "expl": "Companies typically select projects to undertake based on each project's net present values (NPVs). When there are no constraints (eg, limited\nfunds, mutually exclusive projects, time constraints), projects with positive NPVs should be chosen. However, constraints often prevent\ncompanies from doing so. Depending on the situation, certain project interactions (illustrated above) need to be considered.\nWith project sequencing, the ability to start a project is contingent on the completion of another project. For example, the second version of\na device will start production only after the first version of the device proves its potential.\n(Choice A) If two projects are mutually exclusive, then only one can be selected. For example, a company with financing to bring only one\ngaming device to market would have to choose between two prototypes in development.\n(Choice B) Even when a company has access to unlimited funding, projects with negative NPVs should be rejected since they destroy wealth.\nThings to remember:\nConstraints often prevent companies from investing in all profitable projects. Three types of project interactions include project sequencing, capital\nrationing, and mutually exclusive projects. With project sequencing, the ability to begin one project is contingent on the completion of another\nproject.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 16, "q": "A company is considering the introduction of a new product and expects that, as a result, sales of its existing products will decrease. This is best described as a(n):", "opts": ["sunk cost.", "externality.", "opportunity cost."], "ans": "B", "expl": "Capital budgeting cash flow considerations\nCharacterization Definition Include\nIncremental cash flows Cash flows resulting from decision to invest Yes\nSunk costs Funds spent previously No\nOpportunity costs Returns from alternate use of investment funds or fixed assets Yes\nExternalities Cash flow impacts on other company investments Yes\nFinancing costs Cost of capital to invest No\nIn the context of capital budgeting analysis, an externality occurs when a project under consideration affects other company projects.\nCannibalization is a type of externality that results when sales of a company's new product are offset by decreased sales for one of its existing\nproducts; in essence, the new product is a competitor of the existing product.\n(Choice A) Sunk costs are costs incurred in the past as a result of a decision to spend those funds at that time. The past decision to spend those\nfunds cannot be changed; since the introduction of a new product is a capital budgeting decision about how to use new capital, it does not take\ninto consideration sunk costs.\n(Choice C) Opportunity cost is the value of a resource in its next best use. In this situation, the opportunity cost would be the potential revenue of\nusing the same resources to develop a different product.\nThings to remember:\nIn capital budgeting analysis, an externality occurs when a project under consideration affects other company projects. Cannibalization is a type of\nexternality that reduces the number of customers or sales for another product of the company.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 17, "q": "A company has a budget of $100 million for its next fiscal year and is evaluating multiple independent, profitable projects in which to invest. The sum of the projects' initial investments surpasses $100 million, and none are mutually exclusive. Which of the following is most appropriate for the company to employ when evaluating the projects?", "opts": ["Post-auditing", "Capital rationing", "Project sequencing"], "ans": "B", "expl": "Companies regularly evaluate potential projects to see if they will be profitable based on the expected required rate of return for each project. In\nan ideal world, companies would take on every project that was profitable. However, companies often have a limited amount of funds that can be\nput toward potential projects.\nA company uses the capital rationing process to allocate funds to projects when it does not have enough funding for all profitable projects.\nBest practice would be for a company to maximize profitability, measured by the net present value (NPV) of the project or combination of\nprojects within its budget. In this scenario, the company should ration its capital and maximize value by finding the combination of projects with a\ntotal investment of no more than $100 million that also have the highest cumulative NPV.\n(Choice A) Post-auditing is the process of comparing a completed project's actual results to its projected results. This process helps companies\nexplain why results differ from expectations and improve projections for future projects. Post-auditing occurs after a project is completed, so it\nwould not be used in evaluating new projects.\n(Choice C) Project sequencing occurs when the ability to undertake one project is contingent on the success of another (eg, expansion of a\nmanufacturing plant if new machinery performs).\nThings to remember:\nCapital rationing is a process to allocate company funds to projects when the company does not have enough funding for all available profitable\nprojects. Best practice would be for a company to maximize the NPV of the project or combination of projects within its budget.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 18, "q": "An analyst is evaluating the profitability of a five-year expansion project. Which of the following should be used to value the project according to the principles of capital budgeting?", "opts": ["Net income", "Operating profit", "After-tax cash flows"], "ans": "C", "expl": "Basic principles of capital budgeting\n1. Decisions are based on cash flows.\n2. Timing of cash flows is crucial.\n3. Cash flows are based on opportunity costs.\n4. Cash flows are analyzed on an after-tax basis.\n5. Cash flows exclude financing costs.\n6. Cash flows are not accounting net income.\nCapital budgeting is the process that companies use to select the most profitable capital projects. Capital projects involve the initial purchase\nof a long-term asset that generates future cash flow. These decisions are crucial because a company's limited funds will be locked in for the\nduration of the project. Projects can be so grand in scale that the company's success may hinge on selecting the optimal projects.\nCapital budgeting uses after-tax cash flows, not net income. Furthermore, financing costs are ignored in the cash flows because the cost of\ndebt is already factored into the required rate of return.\n(Choice A) Net income cannot be used to evaluate capital projects because accounting net income does not equate to cash flow (Principle 6): net\nincome includes non-cash expenses such as depreciation and amortization. Furthermore, net income includes financing costs (Principle 5).\n(Choice B) Operating profit cannot be used to evaluate capital projects since operating profit is pre-tax (Principle 4). Furthermore, operating\nprofit may include non-cash items such as depreciation and amortization.\nThings to remember:\nCapital budgeting decisions are made using after-tax cash flows. Interest expense is not accounted for in cash flows since interest is a component\nof the discount rate used to discount cash flows.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 19, "q": "A manufacturer is evaluating a plan to replace an existing product with a new product. For the capital budgeting decision, an externality is most appropriately considered to be the company's:", "opts": ["borrowing costs to finance the plan.", "lost net cash flow from the product replaced.", "increased sales of a complementary product."], "ans": "C", "expl": "Capital budgeting considerations\nDescription Impact on projected cash flows\nSunk costs Costs previously incurred None\nOpportunity Forgone value of using an asset in its next-best\nReduce net cash flows by cash flow forgone\ncosts use\nIgnore if outside of company, adjust cash flows if inside\nExternalities Side effects of project\ncompany\nIn capital budgeting decisions, externalities are indirect effects of an investment that are not reflected in its direct cash flows. As such,\nexternalities are not included in the:\ncosts related to acquiring and operating the investment or\nthe net revenue created by the investment.\nExternalities may be positive or negative.\nWhen an investment affects other operations of the company, creating externalities, the related changes in those net cash flows should be\nfactored into the investment decision. For example, if a new product is expected to result in increased sales of a complementary company\nproduct, those projected net cash flows should be included in the capital budgeting analysis of the new product investment.\n(Choice A) Financing costs of an investment are not an externality. They are related to the cost of capital used in evaluating a capital budgeting\ndecision.\n(Choice B) The lost net cash flow of the discontinued product replaced by the new product is considered an opportunity cost of making the\ninvestment, not an externality.\nThings to remember:\nIn capital budgeting, externalities are any effects not included in the costs related to acquiring and operating the investment and the net revenue\ncreated by the investment. When an investment is expected to affect other operations of the company, creating externalities, the related changes\nin those net cash flows should be factored into the investment decision.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 20, "q": "A company plans to replace its old equipment. The replacement equipment would cost AUD 20 million, and the cash flows (in AUD millions) are expected to be: Projected Cash Flows (AUD) Year 1 2 3 4 Cash Flow 4 8 8 4 Based on this information, the internal rate of return (IRR) for replacing the equipment is closest to:", "opts": ["A only.", "B only.", "both A and B."], "ans": "A", "expl": "NPV and IRR criteria are commonly used to make capital investment decisions. The general rule is to accept a project if:\nthe project's NPV is positive or\nthe project's IRR is greater than the required rate of return (ie, hurdle rate).\nFor independent projects with conventional cash flows, the NPV and IRR lead to the same investment decision. When a project has a positive\nNPV, IRR will always be greater than the project's required rate of return, and vice versa.\nIRR and NPV can produce conflicting rankings when projects are mutually exclusive (ie, the firm can accept only one project). NPV is a better\ncriterion than IRR since the NPV model:\nshows the amount of value added to the firm, whereas IRR shows only the rate of return, not the actual value added. In this case, Project B\nhas a higher IRR (24.3%) that translates into a lower NPV of £18.10 million (as per the calculations below). The greater the NPV, the more\nvalue added to the firm.\nuses a more conservative reinvestment rate. The discounted cash flow analysis implicitly assumes cash flows are reinvested at the discount\nrate, which is the required rate of return (for NPV) or the IRR. Required rates of return are returns that could be earned on equivalent\nprojects, so NPV reflects a more realistic reinvestment assumption.\n12 30 55\n= −60 + + + = 20.49\nNPV of Project A\n(1 + 0.08)1 (1 + 0.08)2 (1 + 0.08)3\n60 45 5\n= −80 + + + = 18.10\nNPV of Project B\n(1 + 0.08)1 (1 + 0.08)2 (1 + 0.08)3\nThe company should choose Project A since the projects are mutually exclusive and Project A has a greater NPV than Project B.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC),\nand contrast their use in capital allocation LOS\n22. In forecasting cash flows for capital budgeting decisions, managers most appropriately exclude:\n A. sunk costs.\nB. externalities.\nC. opportunity costs.\nExplanation\nThe capital allocation process is a series of steps typically undertaken in making a capital investment decision. The process assumes that the\ndecision is based on cash flow analysis. When analyzing a project as a capital investment opportunity, not all costs are included in estimating\nthe project's cash flows.\nCosts excluded from the cash flow estimate are:\nSunk costs, which are cash outflows incurred prior to the investment decision. Since these costs exist regardless of the decision, they do\nnot represent a cost of the project and are therefore not included in the estimate.\nFinancing costs (interest costs), which are already reflected in the required rate of return used to discount after-tax cash flows and are\ntherefore not included.\nCosts included in the cash flow estimate are:\nExternalities, which are the positive (eg, synergy) or negative (eg, cannibalization) effects that an investment would have on other projects\nor business activities within the company. Externalities are included since they would affect the firm's overall cash flow (Choice B).\nOpportunity costs, which represent income that may be generated if the resources for the project are invested elsewhere (ie, the second-\nbest use). Opportunity costs would affect cash flows and are therefore included (Choice C).\nThings to remember:\nThe capital allocation process is a series of steps typically undertaken in making a capital investment decision. The process assumes that the\ndecision is based on cash flow analysis. Sunk costs are incurred prior to making the investment decision and are therefore not included in the\ninvestment's estimated cash flows.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation\n23. When establishing a company's investment decision-making process, which of the following recommendations would be most appropriate?\n A. Ignore sunk costs as part of the investment analysis.\nB. Use ROE as a key determinant in investment decisions.\nC. Rely primarily on allocation templates to improve turnaround.\nExplanation\nCommon pitfalls in capital allocation\nImproper discount rates\nCalculation mistakes Accounting errors\nPoor estimates of overhead cost\nMisuse or overuse of allocation templates\nFavoring IRR for investments with uneven cash flows\nProcess deficiencies\nIncluding sunk costs\nIgnoring opportunity costs\nFailing to capture competitor response to investments\nLack of scrutiny around pet projects\nFlawed managerial decision-making Reliance on short-term metrics (ie, EPS, ROE)\nOverspending or underspending allocation budgets\nFailing to consider investment alternatives\nThe general principles of capital allocation (ie, investment decision-making) are often very difficult to apply since:\nsome decisions are subjective, requiring a manager's judgment, and\ncertain risks may be hard to capture in capital allocation models.\nA robust capital allocation process does not include sunk costs (ie, unrecoverable costs incurred in the past). Only costs that directly affect or are\naffected by the investment decision should be considered; therefore, sunk costs should be disregarded.\n(Choice B) Focusing on ROE instead of NPV may not lead to investments that improve long-term shareholder wealth. Often, companies focus\non ROE to boost short-term performance; investments with large NPVs may take time to become profitable and would not improve short-term\nperformance.\n(Choice C) Investment allocation templates might improve efficiency in the decision-making process, but the characteristics of investment\nopportunities that do not fit into the standardized template may be inadvertently ignored. Instead of quick turnaround, a strong capital allocation\nprocess should focus primarily on properly capturing investment characteristics.\nThings to remember:\nThere are several common pitfalls that companies may face when making investment decisions. Investment analysts should disregard sunk\ncosts, avoid relying on allocation templates, and focus on NPV instead of metrics like ROE, which typically has a short-term focus.\nDescribe principles of capital allocation and common capital allocation pitfalls", "qhtml": null}, {"n": 21, "q": "A company is analyzing two mutually exclusive three-year projects with conventional cash flows: Cash Flows (£ millions) Year 0 1 2 3 IRR Project A −60 12 30 55 22.2% Project B −80 60 45 5 24.3% If the hurdle rate is 8% and there are no other cash flows, then based on the IRR and NPV criteria, the best investment decision is to invest in: ", "opts": ["A only.", "B only.", "both A and B."], "ans": "A", "expl": "NPV and IRR criteria are commonly used to make capital investment decisions. The general rule is to accept a project if:\nthe project's NPV is positive or\nthe project's IRR is greater than the required rate of return (ie, hurdle rate).\nFor independent projects with conventional cash flows, the NPV and IRR lead to the same investment decision. When a project has a positive\nNPV, IRR will always be greater than the project's required rate of return, and vice versa.\nIRR and NPV can produce conflicting rankings when projects are mutually exclusive (ie, the firm can accept only one project). NPV is a better\ncriterion than IRR since the NPV model:\nshows the amount of value added to the firm, whereas IRR shows only the rate of return, not the actual value added. In this case, Project B\nhas a higher IRR (24.3%) that translates into a lower NPV of £18.10 million (as per the calculations below). The greater the NPV, the more\nvalue added to the firm.\nuses a more conservative reinvestment rate. The discounted cash flow analysis implicitly assumes cash flows are reinvested at the discount\nrate, which is the required rate of return (for NPV) or the IRR. Required rates of return are returns that could be earned on equivalent\nprojects, so NPV reflects a more realistic reinvestment assumption.\n12 30 55\n= −60 + + + = 20.49\nNPV of Project A\n(1 + 0.08)1 (1 + 0.08)2 (1 + 0.08)3\n60 45 5\n= −80 + + + = 18.10\nNPV of Project B\n(1 + 0.08)1 (1 + 0.08)2 (1 + 0.08)3\nThe company should choose Project A since the projects are mutually exclusive and Project A has a greater NPV than Project B.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC),\nand contrast their use in capital allocation LOS\n22. In forecasting cash flows for capital budgeting decisions, managers most appropriately exclude:\n A. sunk costs.\nB. externalities.\nC. opportunity costs.\nExplanation\nThe capital allocation process is a series of steps typically undertaken in making a capital investment decision. The process assumes that the\ndecision is based on cash flow analysis. When analyzing a project as a capital investment opportunity, not all costs are included in estimating\nthe project's cash flows.\nCosts excluded from the cash flow estimate are:\nSunk costs, which are cash outflows incurred prior to the investment decision. Since these costs exist regardless of the decision, they do\nnot represent a cost of the project and are therefore not included in the estimate.\nFinancing costs (interest costs), which are already reflected in the required rate of return used to discount after-tax cash flows and are\ntherefore not included.\nCosts included in the cash flow estimate are:\nExternalities, which are the positive (eg, synergy) or negative (eg, cannibalization) effects that an investment would have on other projects\nor business activities within the company. Externalities are included since they would affect the firm's overall cash flow (Choice B).\nOpportunity costs, which represent income that may be generated if the resources for the project are invested elsewhere (ie, the second-\nbest use). Opportunity costs would affect cash flows and are therefore included (Choice C).\nThings to remember:\nThe capital allocation process is a series of steps typically undertaken in making a capital investment decision. The process assumes that the\ndecision is based on cash flow analysis. Sunk costs are incurred prior to making the investment decision and are therefore not included in the\ninvestment's estimated cash flows.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation\n23. When establishing a company's investment decision-making process, which of the following recommendations would be most appropriate?\n A. Ignore sunk costs as part of the investment analysis.\nB. Use ROE as a key determinant in investment decisions.\nC. Rely primarily on allocation templates to improve turnaround.\nExplanation\nCommon pitfalls in capital allocation\nImproper discount rates\nCalculation mistakes Accounting errors\nPoor estimates of overhead cost\nMisuse or overuse of allocation templates\nFavoring IRR for investments with uneven cash flows\nProcess deficiencies\nIncluding sunk costs\nIgnoring opportunity costs\nFailing to capture competitor response to investments\nLack of scrutiny around pet projects\nFlawed managerial decision-making Reliance on short-term metrics (ie, EPS, ROE)\nOverspending or underspending allocation budgets\nFailing to consider investment alternatives\nThe general principles of capital allocation (ie, investment decision-making) are often very difficult to apply since:\nsome decisions are subjective, requiring a manager's judgment, and\ncertain risks may be hard to capture in capital allocation models.\nA robust capital allocation process does not include sunk costs (ie, unrecoverable costs incurred in the past). Only costs that directly affect or are\naffected by the investment decision should be considered; therefore, sunk costs should be disregarded.\n(Choice B) Focusing on ROE instead of NPV may not lead to investments that improve long-term shareholder wealth. Often, companies focus\non ROE to boost short-term performance; investments with large NPVs may take time to become profitable and would not improve short-term\nperformance.\n(Choice C) Investment allocation templates might improve efficiency in the decision-making process, but the characteristics of investment\nopportunities that do not fit into the standardized template may be inadvertently ignored. Instead of quick turnaround, a strong capital allocation\nprocess should focus primarily on properly capturing investment characteristics.\nThings to remember:\nThere are several common pitfalls that companies may face when making investment decisions. Investment analysts should disregard sunk\ncosts, avoid relying on allocation templates, and focus on NPV instead of metrics like ROE, which typically has a short-term focus.\nDescribe principles of capital allocation and common capital allocation pitfalls", "qhtml": null}, {"n": 22, "q": "In forecasting cash flows for capital budgeting decisions, managers most appropriately exclude:", "opts": ["sunk costs.", "externalities.", "opportunity costs."], "ans": "A", "expl": "The capital allocation process is a series of steps typically undertaken in making a capital investment decision. The process assumes that the\ndecision is based on cash flow analysis. When analyzing a project as a capital investment opportunity, not all costs are included in estimating\nthe project's cash flows.\nCosts excluded from the cash flow estimate are:\nSunk costs, which are cash outflows incurred prior to the investment decision. Since these costs exist regardless of the decision, they do\nnot represent a cost of the project and are therefore not included in the estimate.\nFinancing costs (interest costs), which are already reflected in the required rate of return used to discount after-tax cash flows and are\ntherefore not included.\nCosts included in the cash flow estimate are:\nExternalities, which are the positive (eg, synergy) or negative (eg, cannibalization) effects that an investment would have on other projects\nor business activities within the company. Externalities are included since they would affect the firm's overall cash flow (Choice B).\nOpportunity costs, which represent income that may be generated if the resources for the project are invested elsewhere (ie, the second-\nbest use). Opportunity costs would affect cash flows and are therefore included (Choice C).\nThings to remember:\nThe capital allocation process is a series of steps typically undertaken in making a capital investment decision. The process assumes that the\ndecision is based on cash flow analysis. Sunk costs are incurred prior to making the investment decision and are therefore not included in the\ninvestment's estimated cash flows.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation\n23. When establishing a company's investment decision-making process, which of the following recommendations would be most appropriate?\n A. Ignore sunk costs as part of the investment analysis.\nB. Use ROE as a key determinant in investment decisions.\nC. Rely primarily on allocation templates to improve turnaround.\nExplanation\nCommon pitfalls in capital allocation\nImproper discount rates\nCalculation mistakes Accounting errors\nPoor estimates of overhead cost\nMisuse or overuse of allocation templates\nFavoring IRR for investments with uneven cash flows\nProcess deficiencies\nIncluding sunk costs\nIgnoring opportunity costs\nFailing to capture competitor response to investments\nLack of scrutiny around pet projects\nFlawed managerial decision-making Reliance on short-term metrics (ie, EPS, ROE)\nOverspending or underspending allocation budgets\nFailing to consider investment alternatives\nThe general principles of capital allocation (ie, investment decision-making) are often very difficult to apply since:\nsome decisions are subjective, requiring a manager's judgment, and\ncertain risks may be hard to capture in capital allocation models.\nA robust capital allocation process does not include sunk costs (ie, unrecoverable costs incurred in the past). Only costs that directly affect or are\naffected by the investment decision should be considered; therefore, sunk costs should be disregarded.\n(Choice B) Focusing on ROE instead of NPV may not lead to investments that improve long-term shareholder wealth. Often, companies focus\non ROE to boost short-term performance; investments with large NPVs may take time to become profitable and would not improve short-term\nperformance.\n(Choice C) Investment allocation templates might improve efficiency in the decision-making process, but the characteristics of investment\nopportunities that do not fit into the standardized template may be inadvertently ignored. Instead of quick turnaround, a strong capital allocation\nprocess should focus primarily on properly capturing investment characteristics.\nThings to remember:\nThere are several common pitfalls that companies may face when making investment decisions. Investment analysts should disregard sunk\ncosts, avoid relying on allocation templates, and focus on NPV instead of metrics like ROE, which typically has a short-term focus.\nDescribe principles of capital allocation and common capital allocation pitfalls", "qhtml": null}, {"n": 23, "q": "When establishing a company's investment decision-making process, which of the following recommendations would be most appropriate?", "opts": ["Ignore sunk costs as part of the investment analysis.", "Use ROE as a key determinant in investment decisions.", "Rely primarily on allocation templates to improve turnaround."], "ans": "A", "expl": "Common pitfalls in capital allocation\nImproper discount rates\nCalculation mistakes Accounting errors\nPoor estimates of overhead cost\nMisuse or overuse of allocation templates\nFavoring IRR for investments with uneven cash flows\nProcess deficiencies\nIncluding sunk costs\nIgnoring opportunity costs\nFailing to capture competitor response to investments\nLack of scrutiny around pet projects\nFlawed managerial decision-making Reliance on short-term metrics (ie, EPS, ROE)\nOverspending or underspending allocation budgets\nFailing to consider investment alternatives\nThe general principles of capital allocation (ie, investment decision-making) are often very difficult to apply since:\nsome decisions are subjective, requiring a manager's judgment, and\ncertain risks may be hard to capture in capital allocation models.\nA robust capital allocation process does not include sunk costs (ie, unrecoverable costs incurred in the past). Only costs that directly affect or are\naffected by the investment decision should be considered; therefore, sunk costs should be disregarded.\n(Choice B) Focusing on ROE instead of NPV may not lead to investments that improve long-term shareholder wealth. Often, companies focus\non ROE to boost short-term performance; investments with large NPVs may take time to become profitable and would not improve short-term\nperformance.\n(Choice C) Investment allocation templates might improve efficiency in the decision-making process, but the characteristics of investment\nopportunities that do not fit into the standardized template may be inadvertently ignored. Instead of quick turnaround, a strong capital allocation\nprocess should focus primarily on properly capturing investment characteristics.\nThings to remember:\nThere are several common pitfalls that companies may face when making investment decisions. Investment analysts should disregard sunk\ncosts, avoid relying on allocation templates, and focus on NPV instead of metrics like ROE, which typically has a short-term focus.\nDescribe principles of capital allocation and common capital allocation pitfalls", "qhtml": null}, {"n": 24, "q": "A company has spent $2 million on market research to determine whether to sell or renovate an existing building. If the company sells the building, it will receive $500 million today. If the company renovates the building, it will have to invest $100 million immediately. The company also will have to borrow the $100 million at a 6% annual interest rate. If the company decides to renovate, the project's initial cash outlay ($ millions) is closest to: ", "opts": ["600", "602", "606"], "ans": "A", "expl": "Cash flows $ in millions Include in cash flow?\nMarket research 2 No, sunk cost\nOpportunity cost of not selling building 500 Yes, opportunity cost\nRenovation costs 100 Yes, initial investment\nInterest cost on loan 6 No, financing cost\nCapital budgeting is the process companies use to select the most profitable capital projects; projected cash flows are useful for evaluating\neach potential project. Capital projects usually involve an initial cash outlay followed by a series of cash inflows. In addition to direct inflows and\noutflows, opportunity costs should be considered when estimating a project's cash flows.\nIn this scenario, if the company uses the building instead of selling it, the sale offer represents opportunity cost. This cost should be included in\nthe net cash flow for Year 0 along with the renovation costs, resulting in an initial cash outlay of $600 million ($500 million + $100 million).\n(Choice B) $602 million includes the market research, a sunk cost that is irrelevant to future investment decisions.\n(Choice C) $606 million includes the interest cost for the loan. Financing costs are not included in cash flows since they are implicitly reflected in\nthe required rate of return.\nThings to remember:\nIn capital budgeting, some cash flows that are not directly part of a project represent an opportunity cost and should be included in the investment\ndecision. Sunk costs are not relevant to the investment decision. Financing costs are not included in cash flows since they are implicit in the\nrequired rate of return.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 25, "q": "A corporation is investing in a three-year project that generates the following after-tax cash flows: Year 0 1 2 3 Cash flow (€) −20,000 10,000 15,000 17,000 If the weighted average cost of capital (WACC) is 10%, the net present value (NPV) is closest to: ", "opts": ["Project A", "Project B", "Project C"], "ans": "C", "expl": "Capital rationing is the process of allocating limited funds to the most profitable project(s). When projects are mutually exclusive, only one\nproject can be selected. Net present value (NPV) is the best profitability indicator for project selection. NPV is calculated as the sum of the\nproject's discounted cash flows minus the initial outlay. Positive NPV is the best measure of profitability; therefore, the manager should choose\nProject C.\nThe internal rate of return (IRR) is another commonly used measure of profitability. IRR is the discount rate that equates the present value of the\nfuture cash flows to the initial outlay, effectively causing NPV to be zero. Project A has the highest IRR, but it is not the optimal selection (Choice\nA).\nNPV is better than the IRR due to more conservative reinvestment assumptions. NPV assumes reinvestment of cash flows at the weighted\naverage cost of capital, which is frequently lower than the IRR. Furthermore, NPV is preferred since gains are measured in currency amounts, not\nin percentage terms.\n(Choice B) The discounted payback period is a measure of liquidity. The drawback to liquidity measures is that they consider how quickly an\ninvestment can be recovered but fail to consider the profitability of the investment. Project B has the lowest (best) discounted payback period, yet\nit has the worst profitability as indicated by both NPV and IRR.\nThings to remember:\nWhen projects are mutually exclusive, select the project with the highest net present value (NPV). NPV is the best metric for determining the most\nprofitable project.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 26, "q": "A finance manager collects the following data on three projects: The weighted average cost of capital is 11%. The company has limited capital and the projects are mutually exclusive. Which project is the company's best choice?", "opts": ["Project A", "Project B", "Project C"], "ans": "C", "expl": "Capital rationing is the process of allocating limited funds to the most profitable project(s). When projects are mutually exclusive, only one\nproject can be selected. Net present value (NPV) is the best profitability indicator for project selection. NPV is calculated as the sum of the\nproject's discounted cash flows minus the initial outlay. Positive NPV is the best measure of profitability; therefore, the manager should choose\nProject C.\nThe internal rate of return (IRR) is another commonly used measure of profitability. IRR is the discount rate that equates the present value of the\nfuture cash flows to the initial outlay, effectively causing NPV to be zero. Project A has the highest IRR, but it is not the optimal selection (Choice\nA).\nNPV is better than the IRR due to more conservative reinvestment assumptions. NPV assumes reinvestment of cash flows at the weighted\naverage cost of capital, which is frequently lower than the IRR. Furthermore, NPV is preferred since gains are measured in currency amounts, not\nin percentage terms.\n(Choice B) The discounted payback period is a measure of liquidity. The drawback to liquidity measures is that they consider how quickly an\ninvestment can be recovered but fail to consider the profitability of the investment. Project B has the lowest (best) discounted payback period, yet\nit has the worst profitability as indicated by both NPV and IRR.\nThings to remember:\nWhen projects are mutually exclusive, select the project with the highest net present value (NPV). NPV is the best metric for determining the most\nprofitable project.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 27, "q": "All else equal, the net present value (NPV) analysis for which of the following types of projects correctly uses the highest discount rate?", "opts": ["Expansion projects", "Replacement projects", "New products and services"], "ans": "C", "expl": "Categories of capital projects\nRationale Decision considerations\nMost accurate cash flow projections, greatest\nReplacement Worn, broken, or inefficient assets\ncertainty of decisions\nGreater uncertainties over cost and revenues\nExpansion Add capacity for existing products\ncompared with replacement projects\nNew products and Research and development, and investment in Greater uncertainties than expansion projects,\nservices products not yet offered by the company most complex investment decisions\nRegulatory, safety, and Driven by external party (eg, government, insurance Necessary to stay in business, not directly profit-\nenvironmental company) driven like other categories\nPet projects or high-risk Overly optimistic projections, or failure to apply\nCapital allocation error\ninvestments proper project analyses\nCapital projects are classified as replacement projects, expansion projects, or introductions of new products and services. All else equal,\ninvestments in new products and services are riskier, so a company would require a higher expected return. This results in a higher discount\nrate for NPV analysis compared with other types of projects. The greater uncertainty of success may mean more difficulty in estimating both the:\ncosts, since the firm has no experience developing the product or service, or acquiring and managing the operations it requires, and\nrevenues, since it is difficult to estimate either the size of the market for a product or service that did not previously exist or the potential\nmarket share for a product introduced amid existing competition.\n(Choice A) Expansion projects enlarge or replicate existing facilities, so the firm could estimate the investment's cost based on experience and\nforecast revenues from existing operations. Therefore, all else equal, expansion projects are less risky, which allows for a lower discount rate.\n(Choice B) Replacement projects replace operating assets to maintain a company's existing size. In general, such projects do not affect revenue\nforecasts, and the firm can base cost estimates on experience; therefore, all else equal, replacement projects are the least risky and use the\nlowest discount rate.\nThings to remember:\nCapital projects are classified as replacement projects, expansion projects, or introductions of new products and services. All else equal,\ninvestments to develop, make, and sell new products and services are riskier than other types of projects and therefore require higher discount\nrates.\nDescribe types of capital investments", "qhtml": null}, {"n": 28, "q": "A company invests in Project X in 20X8 and plans to invest in Project Y in 20X9 only if Project X is financially successful. This project interaction is best described as:", "opts": ["capital rationing.", "mutually exclusive.", "project sequencing."], "ans": "C", "expl": "Companies often make choices among possible projects since there are constraints that prevent them from pursuing all net present value (NPV)\npositive projects. Depending on the circumstances, these project interactions include:\nproject sequencing,\ncapital rationing, or\nmutually exclusive projects.\nWith project sequencing, projects are lined up sequentially through time, so that investing in Project X creates the option to invest in Project Y.\nThe decision to invest in Project Y (or other future projects) will be based on the completion and success of Project X. For example, a company\nmay begin delivery services in a new region. Depending on the success of the delivery service, the company will decide whether to build a\ndistribution center in that region.\n(Choice A) Capital rationing is the process of allocating limited resources (at any one time) to the most profitable combination of projects. This\noccurs when a company has more positive NPV projects than its resources will allow it to pursue.\n(Choice B) Mutually exclusive projects are those that compete directly with each other, so only one project can be selected. This is usually due to\na resource constraint.\nThings to remember:\nProject sequencing is the process of lining up projects sequentially through time. A company invests in a project and bases the decision to pursue\nfuture projects on the success of the previous project.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 29, "q": "In capital budget decisions, which of the following best describes a project sequencing interaction?", "opts": ["Ranking investment selections based on projects' net present values", "Choosing projects with shorter payback periods to speed reinvestment of capital", "Investing in a project today to create the option to invest in another, future projects"], "ans": "C", "expl": "Companies regularly evaluate the potential profitability of projects based on their expected cash flows. With no constraints, companies could take\non every project that has a positive net present value (NPV). However, companies are often forced to make choices since constraints prevent\nthem from pursuing all profitable projects or can mandate a specific order of project completion. Depending on the circumstances, these project\ninteractions include:\nproject sequencing,\ncapital rationing, and\nmutually exclusive projects.\nWith project sequencing, the ability to undertake one project is dependent on the completion of another. For example, the successful\ncompletion of one project may create the option to invest in future contingent projects, assuming favorable economic conditions at that time.\n(Choice A) Ordering investment selections based on projects' net present values is a common criterion for making investment decisions but is not\nrelated to project sequencing.\n(Choice B) Choosing projects with shorter payback periods to speed the reinvestment of funds is one criterion for making investment decisions,\nbut it not related to project sequencing. The payback period is deemed an inferior criterion to NPV since it does not account for performance over\nthe entire life of the investment.\nThings to remember:\nProject sequencing, capital rationing, or mutual exclusivity are constraints that can prevent companies from pursuing all profitable projects or\nmandate a specific order of project completion. With project sequencing, the ability to undertake one project is contingent on the successful\ncompletion of another.\nDescribe the capital allocation process, calculate net present value (NPV), internal rate of return (IRR), and return on invested capital (ROIC), and\ncontrast their use in capital allocation", "qhtml": null}, {"n": 30, "q": "A company is evaluating the production of a new product that requires an initial outlay of CHF 1 billion. The product is expected to produce after-tax cash flows of CHF 250 million for six years. The company anticipates that the new product will reduce existing product sales, net of variable costs, by CHF 50 million each year the new product is sold. Based on only this information, the project's IRR is closest to:", "opts": ["Overestimating overhead costs", "Disregarding ROE when analyzing the project", "Using the cost of debt to discount the projected cash flows"], "ans": "C", "expl": "A company's management uses the capital allocation process when making capital investment decisions. One important assumption of this\nprocess is that financing costs are ignored when estimating the project cash flows since they are already reflected in the discount rate. The\nappropriate discount rate is the required rate of return, which is:\nthe minimum return an investor will accept when undertaking a project,\na risk-adjusted discount rate, and\nproject-specific, so riskier projects will require a higher rate.\nThe required rate of return is also called the opportunity cost of capital since the company estimates returns of comparable projects and selects\nthe best alternative(s) to invest. All undertaken projects become part of the company's portfolio, which is financed by a mix of equity and\ndebt instruments. Equity investors' required rate of return is defined by this capital structure, adjusted by the risk profile of each project.\nEven for an average-risk project, the cost of debt will always be lower than this required rate of return, which reflects the greater risk to equity\ninvestors (ie, cost of equity). Therefore, discounting the cash flows by the cost of debt underestimates the required return and overestimates\nthe project's NPV.\n(Choice A) Incorrectly estimating overhead costs generated by the project is a common capital allocation mistake. Overestimating overhead\nwould result in an underestimated NPV.\n(Choice B) ROE is a short-run accounting number and should not be included in the investment decision, which should be based on cash flow\nanalysis and focused on the long-term interest of shareholders.\nThings to remember:\nA project's cash flow should be discounted by the proper risk-adjusted discount rate, the required rate of return. Discounting it by only the cost of\ndebt is a mistake that will result in an overestimated NPV.\nDescribe principles of capital allocation and common capital allocation pitfalls", "qhtml": null}, {"n": 31, "q": "A project with an initial investment of CNY 7.0 million generates the following after-tax cash flows: If the required rate of return is 15%, the net present value (in CNY millions) is closest to: ", "opts": ["Overestimating overhead costs", "Disregarding ROE when analyzing the project", "Using the cost of debt to discount the projected cash flows"], "ans": "C", "expl": "A company's management uses the capital allocation process when making capital investment decisions. One important assumption of this\nprocess is that financing costs are ignored when estimating the project cash flows since they are already reflected in the discount rate. The\nappropriate discount rate is the required rate of return, which is:\nthe minimum return an investor will accept when undertaking a project,\na risk-adjusted discount rate, and\nproject-specific, so riskier projects will require a higher rate.\nThe required rate of return is also called the opportunity cost of capital since the company estimates returns of comparable projects and selects\nthe best alternative(s) to invest. All undertaken projects become part of the company's portfolio, which is financed by a mix of equity and\ndebt instruments. Equity investors' required rate of return is defined by this capital structure, adjusted by the risk profile of each project.\nEven for an average-risk project, the cost of debt will always be lower than this required rate of return, which reflects the greater risk to equity\ninvestors (ie, cost of equity). Therefore, discounting the cash flows by the cost of debt underestimates the required return and overestimates\nthe project's NPV.\n(Choice A) Incorrectly estimating overhead costs generated by the project is a common capital allocation mistake. Overestimating overhead\nwould result in an underestimated NPV.\n(Choice B) ROE is a short-run accounting number and should not be included in the investment decision, which should be based on cash flow\nanalysis and focused on the long-term interest of shareholders.\nThings to remember:\nA project's cash flow should be discounted by the proper risk-adjusted discount rate, the required rate of return. Discounting it by only the cost of\ndebt is a mistake that will result in an overestimated NPV.\nDescribe principles of capital allocation and common capital allocation pitfalls", "qhtml": null}, {"n": 32, "q": "A company undertakes an average-risk project, which is 100% financed with debt and generates relevant overhead costs. One year later, the CFO realizes that the project's NPV had been significantly overestimated. Which of the following capital allocation mistakes would most appropriately explain this overestimation?", "opts": ["Overestimating overhead costs", "Disregarding ROE when analyzing the project", "Using the cost of debt to discount the projected cash flows"], "ans": "C", "expl": "A company's management uses the capital allocation process when making capital investment decisions. One important assumption of this\nprocess is that financing costs are ignored when estimating the project cash flows since they are already reflected in the discount rate. The\nappropriate discount rate is the required rate of return, which is:\nthe minimum return an investor will accept when undertaking a project,\na risk-adjusted discount rate, and\nproject-specific, so riskier projects will require a higher rate.\nThe required rate of return is also called the opportunity cost of capital since the company estimates returns of comparable projects and selects\nthe best alternative(s) to invest. All undertaken projects become part of the company's portfolio, which is financed by a mix of equity and\ndebt instruments. Equity investors' required rate of return is defined by this capital structure, adjusted by the risk profile of each project.\nEven for an average-risk project, the cost of debt will always be lower than this required rate of return, which reflects the greater risk to equity\ninvestors (ie, cost of equity). Therefore, discounting the cash flows by the cost of debt underestimates the required return and overestimates\nthe project's NPV.\n(Choice A) Incorrectly estimating overhead costs generated by the project is a common capital allocation mistake. Overestimating overhead\nwould result in an underestimated NPV.\n(Choice B) ROE is a short-run accounting number and should not be included in the investment decision, which should be based on cash flow\nanalysis and focused on the long-term interest of shareholders.\nThings to remember:\nA project's cash flow should be discounted by the proper risk-adjusted discount rate, the required rate of return. Discounting it by only the cost of\ndebt is a mistake that will result in an overestimated NPV.\nDescribe principles of capital allocation and common capital allocation pitfalls", "qhtml": null}, {"n": 33, "q": "A company considers whether it should increase its production capacity based on a 50% probability that export restrictions will be lifted and demand will increase. Managers gather the following data (in SEK millions): Current production facility NPV 30 Cost of license to expand production facility 10 Value of option to expand 20 The value of the production facility with the option (in SEK millions) is closest to:", "opts": ["20", "30", "40"], "ans": "C", "expl": "Real option classifications\nReal option type Flexibility offered to:\nTiming Delay an investment decision until more information becomes available (eg, project sequencing)\nFundamental Undertake projects only when fundamentals of underlying asset are favorable (eg, oil refineries)\nAbandon a project (ie, abandonment option)\nSizing\nExpand (ie, growth option)\nPrice-setting Increase prices with demand\nChange output volume\nProduction-flexibility Use alternative input\nProduce different output\nA real option arises during normal business activities or operations when management has some flexibility in the investment decision process.\nWhen evaluating investment projects, management should consider whether any real options are embedded in or linked to a project and the\nvalue they add to the project.\nA production-flexibility option allows management to alter production to manage demand-supply mismatches. It offers flexibility to:\nuse alternative inputs,\nchange output volume, and\nproduce different outputs.\nIn this scenario, the option gives the firm flexibility to increase production as demand increases. The option value takes into account that the\noption will be exercised only under favorable conditions and reflects the probability of those conditions. Firms typically use the NPV criterion to\nevaluate a capital investment with a real option. The NPV of the production facility can be calculated as follows:\nProduction facility's NPV = NPV without option − Cost of option + Value of option\n= 30 million − 10 million + 20 million\n= SEK 40 million\n(Choice A) SEK 20 million results from considering only the project's initial NPV and the option cost. When calculating total project value, the\noption value should also be considered.\n(Choice B) SEK 30 million results from incorrectly multiplying the option value by the probability of demand rising (ie, probability of the option\nbeing exercised).\nThings to remember:\nWhen evaluating investment projects, management should consider whether any real options are embedded in or linked to a project, as well as\nthe value of the option(s). The investment decision will then be based on total project NPV, which considers both the cost and the value of the\noption(s).\nDescribe types of real options relevant to capital investments", "qhtml": null}];
+const CFG = {"title": "Wiley · Capital Investments and Capital Allocation", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Corporate Issuers · 33 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "For the current year, a company reports the following information: £ millions Revenues 25 Cost of goods sold (COGS) 10 Beginning accounts receivable 30 Ending accounts receivable 18 The company had no investing or financing activities during this time. The amount of cash that it collected from customers is closest to:", "opts": ["£13 million", "£27 million", "£37 million"], "ans": "C", "expl": "Cash collected from customers in each accounting period is classified as cash from operations (CFO). Collections are calculated using\nrevenues (found on the income statement) and the change in accounts receivable (found on the balance sheet). When a company makes a\ncredit sale, accounts receivable increases by the amount of the sale. When customers pay, accounts receivable decreases, and cash increases,\nby the amount of payment.\nIf cash collected equals revenues, then the beginning and ending accounts receivable are identical. Any difference between beginning and\nending receivables results when cash collected differs from revenues. If cash collected exceeds revenues, then beginning accounts receivable is\ngreater than ending accounts receivable. The reverse is true if revenues are greater than cash collected.\nIn this question, revenues, beginning accounts receivable, and ending accounts receivable are all known. The calculations shown in the left table\nabove can be rearranged in the right table to solve for the unknown variable (cash collected).\n(Choice A) £13 million results from subtracting the change in accounts receivable from revenue rather than adding it.\n(Choice B) £27 million results from subtracting cost of goods sold from total revenues. Cost of goods sold impacts inventory, not changes in\naccounts receivable.\nThings to remember:\nCash from operations (CFO) can be derived from a company's revenue and the changes in its accounts receivable. There are two balance-sheet\nvariables (beginning and ending accounts receivable), one income-statement variable (revenues), and one cash-flow variable (CFO). Knowing\nany three allows the fourth to be derived by rearranging the calculations.\nDescribe how the cash flow statement is linked to the income statement and the balance sheet", "qhtml": null}, {"n": 2, "q": "An accountant gathers the following information (in $ millions) from a company's financial statements. If all sales and purchases were made on credit, then based on this information, which of the following is the accountant's most appropriate conclusion?", "opts": ["Cash paid to suppliers is $41 million.", "Cash paid for employee wages is $67 million.", "Cash collected from customers is $152 million."], "ans": "B", "expl": "Cash flow from operating activities (CFO) can be presented using the indirect method (as shown in the question) or the direct method. The\nindirect method reconciles an accrual-based net income to CFO by adjusting net income for:\nnoncash items (eg, depreciation)\nnonoperating items (eg, gain/loss on sale of assets)\nchanges in working capital (eg, accounts receivable)\nIn contrast, the direct method (see example) groups types of cash transactions (eg, cash received from customers, cash paid to suppliers) with\neach line item representing an actual cash receipt or payment.\nTo derive the amounts on the direct statement, the accountant can adjust certain income statement items for changes in working capital.\nChanges in working capital can be derived from the information provided on the indirect statement.\nIn this scenario, wages payable (WP) provided a $3 million \"source\" of funds on the indirect statement, which implies that WP (a liability) increased\nby $3 million on the balance sheet. The company accrued a wage expense of $70 million for the period but WP increased by $3 million, so only\n$67 million in wages were paid for the period.\nThings to remember:\nThe direct method for presenting cash from operating activities groups cash transactions by source, with each line item representing an actual\ncash receipt or payment. To derive direct method cash flows from an indirect cash flow statement, income statement items are adjusted for the\nchanges to working capital shown on the indirect statement.\nDemonstrate the conversion of cash flows from the indirect to direct method", "qhtml": null}, {"n": 3, "q": "Assume an analyst knows only a company's earnings before interest and taxes. If the company reports under US GAAP and the analyst wanted to derive the company's cash from operations, which of the following would the analyst least likely need to consider?", "opts": ["Interest expense incurred during the period", "Temporary additions to cash from bank overdrafts", "Changes in accounts receivable realized for the period"], "ans": "B", "expl": "Examples of cash flow statement components\nCash from operations Cash generated from company's core operations\n(CFO) Interest paid on debt (US GAAP)\nPurchases and sales of PPE\nCash from investing\nPurchases and sales of other company's equity\n(CFI)\nand/or debt\nIssuance/repurchase of company's own equity and\nCash from financing\ndebt\n(CFF)\nDividends paid (US GAAP)\nCash from operations (CFO) refers to cash inflows or outflows related to day-to-day activities that create revenues for the company. These\nactivities include receiving cash from sales, as well as cash payments for items such as inventory, salaries, insurance, and rent. However, under\nUS GAAP, short-term bank loans that cover overdrafts on checking accounts are classified as cash from financing (CFF) rather than CFO.\nSales revenue comprises both cash and noncash (ie, credit) transactions. Credit sales reduce the amount of cash collected in a period, so the\nanalyst needs to know the change in accounts receivable for a period to derive CFO (Choice C).\nSimilarly, interest paid is a component of CFO. Since interest expense can consist of cash and accrual items, adjustments to interest expense are\nrequired to calculate both cash interest paid and CFO (Choice A).\nThings to remember:\nCash from operations includes inflows and outflows related to a company's generation of revenues. However, under US GAAP, short-term bank\nloans used to cover overdrafts are considered cash from financing rather than cash from operations.\nDescribe the steps in the preparation of direct and indirect cash flow statements, including how cash flows can be computed using income\nstatement and balance sheet data", "qhtml": null}, {"n": 4, "q": "A company reports the following data (in millions): Income statement Indirect cash flow statement Net sales $1,500 Net income $200 Cost of goods sold 800 Depreciation and amortization 150 Adjustments for changes to net working capital: Gross profit 700 Increase in inventory −10 Sales and wage expenses 250 Decrease in accounts receivable 20 Depreciation and amortization 150 Decrease in wages payable −15 Operating income 300 Decrease in accounts payable −5 Interest expense 50 Increase in interest payable 0 Tax expense 50 Increase in taxes payable 5 Net income 200 Cash from operating activities 345 Based on only this information, the cash paid to suppliers (in $ millions) reported on the company's cash flow statement in the direct format would be closest to:", "opts": ["785", "805", "815"], "ans": "C", "expl": "Components of direct cash flow statement\nCash received from customers Revenue − Δ accounts receivable\nCash paid to suppliers COGS + Δ inventory − Δ accounts payable\nCash paid to employees Wage expense − Δ wages payable\nCash paid for interest Interest expense − Δ interest payable\nCash paid for taxes Tax expense − Δ taxes payable\nNote: Δ reflects changes to balances, so signs may differ from indirect cash flow statement.\nCash flow from operating activities can be presented in a company's cash flow statement using either the direct or indirect method. The direct\nmethod displays cash inflows (eg, cash received from customers) and cash outflows (eg, cash paid to suppliers). An indirect cash flow\nstatement can be converted to the direct format by adjusting for the changes in working capital items found on the statement.\nTo solve this question, the sources and uses of cash on the indirect cash flow statement must be converted to changes of balances on the balance\nsheet, which are then used in the equations in the main image. On the indirect cash flow statement:\nA net negative cash flow from inventory indicates an increase (ie, a positive change) in inventory as purchases (ie, a use of cash)\nexceeded COGS. In this case, the change in inventory of −10 on the indirect cash flow statement indicates an increase in the inventory\nbalance on the balance sheet. This results in an increase to cash paid to suppliers of 10.\nA net negative cash flow from accounts payable indicates a decrease (ie, a negative change) in accounts payable as the company paid\nmore to suppliers (ie, a use of cash) than it purchased on credit (ie, a source of cash). In this case, a change of accounts payable of −5 is a\ndecrease in the accounts payable balance. This results in an increase to cash paid to suppliers of 5.\nNote: since inventories are an asset while accounts payable are a liability, their signs on the cash flow statement indicate different directions for\nthe change in cash.\nCash paid to suppliers = COGS + Δ inventory − Δ accounts payable\nCash paid to suppliers = 800 + 10 − (−5) = 815\nDemonstrate the conversion of cash flows from the indirect to direct method\n5. For the current year, a company recorded a RUB 2 million gain on sale of equipment and RUB 20 million in depreciation expense. The\ncompany also purchased new equipment for RUB 50 million that will not begin depreciating until next year. Additional information is provided:\nGiven the information above, and assuming that no other assets were sold, the cash received from the sale of equipment (in RUB millions) is\nclosest to:\n A. 12\nB. 22\nC. 32\nExplanation\nInvesting activities on the cash flow statement involve the purchase and sale of long-term assets (eg, equipment) and securities (other companies'\nstocks). When a company sells (disposes of) equipment, the cash received (ie, sales proceeds) is recorded as an inflow for investing activities.\nThe disposal may result in a gain or loss, which is the difference between the cash received and the equipment's net book value (historical book\nvalue less accumulated depreciation).\nIn this scenario, the company recorded a gain, meaning that the sales proceeds exceeded net book value. To calculate the sales proceeds, follow\nthe steps below:\nLong-term capital assets are presented on the balance sheet at net book value (gross value less accumulated depreciation). Understanding the\nrelationship between beginning net PPE and ending net PPE allows one to determine the amount of equipment disposed.\n(Choice B) 22 results from applying gross equipment amounts instead of net equipment amounts in the formula.\n(Choice C) 32 results from leaving out depreciation in the equation.\nThings to remember:\nWhen a company sells (disposes of) equipment, the sales proceeds are recorded as a cash inflow under investing activities. The disposal may\nresult in a gain or loss, which equals the difference between the cash received and the equipment's net book value (historical book value less\naccumulated depreciation).\nDescribe how the cash flow statement is linked to the income statement and the balance sheet", "qhtml": null}, {"n": 5, "q": "For the current year, a company recorded a RUB 2 million gain on sale of equipment and RUB 20 million in depreciation expense. The company also purchased new equipment for RUB 50 million that will not begin depreciating until next year. Additional information is provided: Given the information above, and assuming that no other assets were sold, the cash received from the sale of equipment (in RUB millions) is closest to:", "opts": ["12", "22", "32"], "ans": "A", "expl": "Investing activities on the cash flow statement involve the purchase and sale of long-term assets (eg, equipment) and securities (other companies'\nstocks). When a company sells (disposes of) equipment, the cash received (ie, sales proceeds) is recorded as an inflow for investing activities.\nThe disposal may result in a gain or loss, which is the difference between the cash received and the equipment's net book value (historical book\nvalue less accumulated depreciation).\nIn this scenario, the company recorded a gain, meaning that the sales proceeds exceeded net book value. To calculate the sales proceeds, follow\nthe steps below:\nLong-term capital assets are presented on the balance sheet at net book value (gross value less accumulated depreciation). Understanding the\nrelationship between beginning net PPE and ending net PPE allows one to determine the amount of equipment disposed.\n(Choice B) 22 results from applying gross equipment amounts instead of net equipment amounts in the formula.\n(Choice C) 32 results from leaving out depreciation in the equation.\nThings to remember:\nWhen a company sells (disposes of) equipment, the sales proceeds are recorded as a cash inflow under investing activities. The disposal may\nresult in a gain or loss, which equals the difference between the cash received and the equipment's net book value (historical book value less\naccumulated depreciation).\nDescribe how the cash flow statement is linked to the income statement and the balance sheet", "qhtml": null}, {"n": 6, "q": "A company receives cash of €55 million from the sale of equipment in 20X7. During that year, the company had depreciation expenses of €20 million and capital expenditures of €65 million; the capital expenditures were all used to purchase new equipment. The company reported the following balance sheet data: € millions 20X7 20X6 Gross cost of equipment 800 760 Accumulated depreciation (150) (140) Based on only this information, the gain on the sale of the equipment (in € millions) is closest to:", "opts": ["10", "30", "40"], "ans": "C", "expl": "When companies sell equipment, they report a noncash gain (loss) equal to the difference between the cash received from the sale and\ncurrent net book value (BV) of the equipment. When the net BV of the equipment sold is not provided, financial statement items can be used to\nestimate the cost.\nIn this scenario, to calculate the BV of the disposed equipment, use the relationship between the change in the equipment's net BV and factors\nthat account for that change: capital expenditures (ie, increases to BV) and depreciation expense and disposals of equipment (ie, decreases to\nBV). The net BV of the disposed equipment can be derived as follows:\nSince the cash received from the sale is 55, the gain from the sale is 40 (55 − 15).\nDescribe the steps in the preparation of direct and indirect cash flow statements, including how cash flows can be computed using income\nstatement and balance sheet data\n7. Using IFRS, a company reports the following in its year-end financial data:\nThe company sells its products and purchases its supplies only on credit. In 20X3, it paid, in cash, taxes of €350,000 and interest of €165,000,\nreported as an operating cash flow. There are no other cash receipts or expenditures. Using the direct method to determine operating cash flows,\nthe company's net cash flow provided by operating activities for 20X3 is closest to:\nA. €0\nB. €200,000\n\nC. €600,000\nExplanation\nNet cash provided by operating activities is the net amount of cash received from customers and paid to suppliers, lenders (ie, interest),\nemployees, and governments (ie, taxes). It is part of a company's cash flow statement and uses the direct method of reporting cash flow.\nCash received from customers is derived from credit sales and changes in accounts receivable (AR). All revenue is generated by extending credit\nto customers. During 20X3 the company received more cash from customers than it recorded as credit sales, since AR decreased by 200, from\n650 to 450. Cash received from customers is 1,000 + 650 - 450 = 1,200.\nCash paid to suppliers is calculated using cost of goods sold (COGS) and the changes in accounts payable (AP) and inventory (INV). AP\nincreased by 165, from 435 to 600, and INV declined by 300, from 800 to 500. Since AP increased, the company made more credit purchases\nthan it paid to its suppliers. A decline in INV implies that the company's credit purchases are less than its COGS. Cash paid to suppliers is 550 –\n(500 – 800) – (600 – 435) = 85.\nUsing the given cash payments for taxes (350) and interest (165), respectively, net cash provided by operating activities is €600,000.\nNote that under IFRS, cash paid for interest can be reported as a cash flow from either operations or financing.\n(Choice A) €0 is the result of mistakenly increasing the cash paid to suppliers since AP increased, not decreased.\n(Choice B) €200,000 is the result of incorrectly decreasing, not increasing, cash received from customers due to a decrease in accounts\nreceivable.\nThings to remember:\nNet cash provided by operating activities is the net amount of cash received from customers and paid to suppliers, lenders (ie, interest),\nemployees, and governments (ie, taxes). It is part of a company's cash flow statement and uses the direct method of reporting cash flow.\nDescribe the steps in the preparation of direct and indirect cash flow statements, including how cash flows can be computed using income\nstatement and balance sheet data\n8.A company reports the following information under US GAAP:\nIn 20X2, all dividends declared were paid to shareholders. Based on only the data above, if net income for 20X2 is USD 55 million, 20X2 cash\nflow from financing activities (in USD millions) is closest to:\nA. 60\n\nB. 65\nC. 85\nExplanation\nA company's cash flows from financing activities are related to obtaining or repaying capital. Such activities may include issuing or repurchasing\ncommon stock, paying dividends to shareholders, and borrowing or repaying debt. In this question, the net cash from financing activities\nincludes the proceeds from issuing common stock (a cash inflow) and the payment of dividends (a cash outflow).\nAs in most cases, the proceeds from issuing common stock are the total changes in common stock and additional paid-in capital. Dividend\npayments can be determined from the change to retained earnings, after accounting for net income.\nCash flow from financing activities is USD 65 million, including total proceeds from issuing common stock of 75 million less dividends paid of 10\nmillion.\n(Choice A) 60 million results from subtracting the increase in accumulated other comprehensive income (AOCI). AOCI mainly includes\nunrealized gains and losses from securities, which do not represent actual cash flows. Since cash flow from financing activities is prepared under\nthe direct method, only actual cash flows are included.\n(Choice C) 85 million results from incorrectly adding, instead of subtracting, dividends.\nThings to remember:\nA company's cash flows from financing activities are related to obtaining or repaying capital. Such activities may include issuing or repurchasing\ncommon stock, paying dividends to shareholders, and borrowing or repaying debt. In most cases, the proceeds from issuing common stock are\nthe total change in common stock and additional paid-in capital. Dividend payments can be determined from the change to retained earnings,\nafter accounting for net income.\nDescribe how the cash flow statement is linked to the income statement and the balance sheet", "qhtml": null}, {"n": 7, "q": "Using IFRS, a company reports the following in its year-end financial data: The company sells its products and purchases its supplies only on credit. In 20X3, it paid, in cash, taxes of €350,000 and interest of €165,000, reported as an operating cash flow. There are no other cash receipts or expenditures. Using the direct method to determine operating cash flows, the company's net cash flow provided by operating activities for 20X3 is closest to:", "opts": ["€0", "€200,000", "€600,000"], "ans": "C", "expl": "Net cash provided by operating activities is the net amount of cash received from customers and paid to suppliers, lenders (ie, interest),\nemployees, and governments (ie, taxes). It is part of a company's cash flow statement and uses the direct method of reporting cash flow.\nCash received from customers is derived from credit sales and changes in accounts receivable (AR). All revenue is generated by extending credit\nto customers. During 20X3 the company received more cash from customers than it recorded as credit sales, since AR decreased by 200, from\n650 to 450. Cash received from customers is 1,000 + 650 - 450 = 1,200.\nCash paid to suppliers is calculated using cost of goods sold (COGS) and the changes in accounts payable (AP) and inventory (INV). AP\nincreased by 165, from 435 to 600, and INV declined by 300, from 800 to 500. Since AP increased, the company made more credit purchases\nthan it paid to its suppliers. A decline in INV implies that the company's credit purchases are less than its COGS. Cash paid to suppliers is 550 –\n(500 – 800) – (600 – 435) = 85.\nUsing the given cash payments for taxes (350) and interest (165), respectively, net cash provided by operating activities is €600,000.\nNote that under IFRS, cash paid for interest can be reported as a cash flow from either operations or financing.\n(Choice A) €0 is the result of mistakenly increasing the cash paid to suppliers since AP increased, not decreased.\n(Choice B) €200,000 is the result of incorrectly decreasing, not increasing, cash received from customers due to a decrease in accounts\nreceivable.\nThings to remember:\nNet cash provided by operating activities is the net amount of cash received from customers and paid to suppliers, lenders (ie, interest),\nemployees, and governments (ie, taxes). It is part of a company's cash flow statement and uses the direct method of reporting cash flow.\nDescribe the steps in the preparation of direct and indirect cash flow statements, including how cash flows can be computed using income\nstatement and balance sheet data\n8.A company reports the following information under US GAAP:\nIn 20X2, all dividends declared were paid to shareholders. Based on only the data above, if net income for 20X2 is USD 55 million, 20X2 cash\nflow from financing activities (in USD millions) is closest to:\nA. 60\n\nB. 65\nC. 85\nExplanation\nA company's cash flows from financing activities are related to obtaining or repaying capital. Such activities may include issuing or repurchasing\ncommon stock, paying dividends to shareholders, and borrowing or repaying debt. In this question, the net cash from financing activities\nincludes the proceeds from issuing common stock (a cash inflow) and the payment of dividends (a cash outflow).\nAs in most cases, the proceeds from issuing common stock are the total changes in common stock and additional paid-in capital. Dividend\npayments can be determined from the change to retained earnings, after accounting for net income.\nCash flow from financing activities is USD 65 million, including total proceeds from issuing common stock of 75 million less dividends paid of 10\nmillion.\n(Choice A) 60 million results from subtracting the increase in accumulated other comprehensive income (AOCI). AOCI mainly includes\nunrealized gains and losses from securities, which do not represent actual cash flows. Since cash flow from financing activities is prepared under\nthe direct method, only actual cash flows are included.\n(Choice C) 85 million results from incorrectly adding, instead of subtracting, dividends.\nThings to remember:\nA company's cash flows from financing activities are related to obtaining or repaying capital. Such activities may include issuing or repurchasing\ncommon stock, paying dividends to shareholders, and borrowing or repaying debt. In most cases, the proceeds from issuing common stock are\nthe total change in common stock and additional paid-in capital. Dividend payments can be determined from the change to retained earnings,\nafter accounting for net income.\nDescribe how the cash flow statement is linked to the income statement and the balance sheet", "qhtml": null}, {"n": 8, "q": "A company reports the following information under US GAAP: In 20X2, all dividends declared were paid to shareholders. Based on only the data above, if net income for 20X2 is USD 55 million, 20X2 cash flow from financing activities (in USD millions) is closest to:", "opts": ["60", "65", "85"], "ans": "B", "expl": "A company's cash flows from financing activities are related to obtaining or repaying capital. Such activities may include issuing or repurchasing\ncommon stock, paying dividends to shareholders, and borrowing or repaying debt. In this question, the net cash from financing activities\nincludes the proceeds from issuing common stock (a cash inflow) and the payment of dividends (a cash outflow).\nAs in most cases, the proceeds from issuing common stock are the total changes in common stock and additional paid-in capital. Dividend\npayments can be determined from the change to retained earnings, after accounting for net income.\nCash flow from financing activities is USD 65 million, including total proceeds from issuing common stock of 75 million less dividends paid of 10\nmillion.\n(Choice A) 60 million results from subtracting the increase in accumulated other comprehensive income (AOCI). AOCI mainly includes\nunrealized gains and losses from securities, which do not represent actual cash flows. Since cash flow from financing activities is prepared under\nthe direct method, only actual cash flows are included.\n(Choice C) 85 million results from incorrectly adding, instead of subtracting, dividends.\nThings to remember:\nA company's cash flows from financing activities are related to obtaining or repaying capital. Such activities may include issuing or repurchasing\ncommon stock, paying dividends to shareholders, and borrowing or repaying debt. In most cases, the proceeds from issuing common stock are\nthe total change in common stock and additional paid-in capital. Dividend payments can be determined from the change to retained earnings,\nafter accounting for net income.\nDescribe how the cash flow statement is linked to the income statement and the balance sheet", "qhtml": null}, {"n": 9, "q": "For the current period, a company reported SGD 5 million in interest expense and paid SGD 5.5 million of interest in cash. If the beginning interest payable balance was SGD 4.5 million, the ending interest payable balance for the current period is closest to: ", "opts": ["SGD 4 million.", "SGD 5 million.", "SGD 6 million."], "ans": "A", "expl": "Under accrual basis accounting, for any period, the recorded interest expense may differ from actual interest payments: Interest expense can\nbe fully recorded in one period while portions of it may be payable in a future period. Interest paid for a period is equal to the interest expense\nadjusted for the changes in interest payable, a current liability.\nIn this question, the company must have reduced its outstanding interest payable balance by 0.5 million for the period since it made interest\npayments of 5.5 million while incurring interest expense of only 5.0 million. Reducing the beginning interest payable balance of 4.5 million by 0.5\nmillion results in an ending interest payable balance of 4.0 million.\n(Choice B) SGD 5 million results from adding the 0.5 million to the beginning interest payable balance instead of subtracting it.\n(Choice C) SGD 6 million results from adding 0.5 million to interest payments of 5.5 million.\nThings to remember:\nUnder accrual basis accounting, for any period, the recorded interest expense may differ from actual interest payments. Interest paid for a period\nis equal to the interest expense adjusted for the changes in interest payable, a current liability.\nDescribe how the cash flow statement is linked to the income statement and the balance sheet", "qhtml": null}, {"n": 10, "q": "Interest received may be classified as cash flow from investing under:", "opts": ["IFRS only.", "US GAAP only.", "both IFRS and US GAAP."], "ans": "A", "expl": "Differences between US GAAP and IFRS for cash flow statement items\nUS GAAP IFRS\nInterest received Operating Operating or investing\nInterest paid Operating Operating or financing\nDividend received Operating Operating or investing\nDividend paid Financing Operating or financing\nTaxes paid Operating Typically operating, but specific portions can be classified as financing or investing\nUS GAAP and IFRS have different rules for how interest received and interest paid are reported on a company's statement of cash flows.\nFor interest received by the company:\nUS GAAP classify it as an operating cash flow.\nIFRS classify it as either an operating or investing cash flow.\nFor interest paid by the company:\nUS GAAP classify it as an operating cash flow.\nIFRS classify it as an operating or financing cash flow.\nIFRS usually grant companies more flexibility in the classification of certain activities. In this scenario, IFRS allows the company to treat interest\nreceived as a cash flow from investing activities.\n(Choices B and C) US GAAP classify interest received as operating cash flow only.\nThings to remember:\nUS GAAP and IFRS have different rules for how interest received and interest paid are reported on a company's statement of cash flows. US\nGAAP classify interest received as an operating cash flow, whereas IFRS classify it as an operating or investing cash flow. US GAAP classify\ninterest paid as an operating cash flow, whereas IFRS classify it as an operating or financing cash flow.\nContrast cash flow statements prepared under International Financial Reporting Standards (IFRS) and US generally accepted accounting\nprinciples (US GAAP)", "qhtml": null}, {"n": 11, "q": "In addition to and separate from its core operations, a global food distributor rents out office complexes that it owns. Last year the company paid total taxes of €15 million, including €3 million in taxes on income from the rentals. Under IFRS, the company's income tax payments would most likely be classified on the company's statement of cash flows as cash flows from:", "opts": ["investing (CFI) and financing (CFF).", "operations (CFO) and investing (CFI).", "operations (CFO) and financing (CFF)."], "ans": "B", "expl": "Cash flow treatment of investment income taxes paid\nUS GAAP IFRS\nInvestment\nCFO CFO or CFI\nincome\nIncome CFO, but can treat taxes paid\nCFO\ntaxes on CFI income as CFI\nCash flow statements divide cash inflows and outflows into three categories: cash from operations (CFO), cash from investing (CFI), and cash\nfrom financing (CFF). CFO encompasses cash inflows and outflows related to a company's daily activities. In contrast, CFI refers to inflows and\noutflows from noncore activities, such as passive investments in other companies. There are no income tax implications for CFF.\nIn most cases, IFRS classify all taxes paid as CFO regardless of the underlying source of income. However, when a portion of the taxes can be\nspecifically identified as paid on investment income, IFRS permit (but do not require) the company to classify that portion of the taxes as CFI.\nThis company attributes €3 million of its total taxes paid to the rental income, which is not part of its core operations. The rents received constitute\nCFI, and the company may classify the taxes associated with those rents as CFI. The balance of the tax payment is classified as CFO.\n(Choices A and C) Financing activities that give rise to CFF entries include borrowing or repaying debt, issuing stock, and paying dividends.\nNone of the taxes paid relate to any type of financing activity, so none can be classified as CFF.\nThings to remember:\nIn most cases, all taxes paid are classified as CFO under IFRS. If the company can identify a portion of taxes as attributable to income that would\nbe classified as CFI, IFRS permit the company to classify those taxes as CFO or CFI.\nContrast cash flow statements prepared under International Financial Reporting Standards (IFRS) and US generally accepted accounting\nprinciples (US GAAP)", "qhtml": null}, {"n": 12, "q": "With respect to the cash flow statement, dividends paid can be most appropriately classified as an:", "opts": ["investing activity under IFRS.", "operating activity under IFRS.", "operating activity under US GAAP."], "ans": "B", "expl": "Difference between US GAAP and IFRS for cash flow statement items\nStatement item US GAAP IFRS\nInterest received Operating Operating or investing\nInterest paid Operating Operating or financing\nDividends received Operating Operating or investing\nDividends paid Financing Operating or financing\nTaxes paid Operating Typically operating (specific portions can be classified as financing or investing)\nUS GAAP and IFRS have different guidelines for how dividend receipts and dividend payments are reported on a company's statement of cash\nflows:\nDividends received by the company are classified as operating cash flows under US GAAP but as operating or investing cash flows\nunder IFRS.\nDividends paid by the company are classified as financing activities under US GAAP but as financing or operating cash flows under\nIFRS.\nIFRS commonly grant companies more reporting flexibility in the classification of certain activities. In this scenario, a company can report\ndividends paid under operating activities or financing activities under IFRS.\n(Choice A) Neither IFRS nor US GAAP allow companies to report dividends paid under investing activities.\n(Choice C) Under US GAAP, companies may report dividends paid only under financing activities.\nThings to remember:\nUS GAAP and IFRS have different rules for how dividend payments may be classified on the cash flow statement. US GAAP consider dividends\npaid as financing cash flows, whereas IFRS consider them financing or operating cash flows. IFRS commonly grant companies more reporting\nflexibility in the classification of certain activities.\nContrast cash flow statements prepared under International Financial Reporting Standards (IFRS) and US generally accepted accounting\nprinciples (US GAAP)", "qhtml": null}, {"n": 13, "q": "On its cash flow statement, a company classified its interest paid and interest received as operating activities and classified its dividends paid to shareholders as a financing activity. These classifications are most appropriate under which accounting standard?", "opts": ["Only IFRS", "Only US GAAP", "Either IFRS or US GAAP"], "ans": "C", "expl": "Differences between US GAAP and IFRS for cash flow statement items\nUS GAAP IFRS\nInterest received Operating Operating or investing\nInterest paid Operating Operating or financing\nDividend received Operating Operating or investing\nDividend paid Financing Operating or financing\nTaxes paid Operating Typically operating, but specific portions can be classified as financing or investing\nUS GAAP and IFRS have different rules for how certain financial items are classified on a company's statement of cash flows. In general, US\nGAAP has more stringent rules and IFRS allows more flexibility. For example, IFRS allows a choice of classification for interest and dividends\n(paid or received) and for taxes paid.\nIn this scenario, the company has classified its interest paid and interest received as operating activities and its dividends paid to shareholders as\na financing activity. These classifications are allowed under both US GAAP and IFRS (Choices A and B).\nThings to remember:\nUS GAAP and IFRS have different rules for how certain financial items are reported on a company's statement of cash flows. In general, US\nGAAP has more stringent rules and IFRS allows more flexibility.\nContrast cash flow statements prepared under International Financial Reporting Standards (IFRS) and US generally accepted accounting\nprinciples (US GAAP)", "qhtml": null}, {"n": 14, "q": "An accountant wants to report cash from operating activities by using the data below: If the accountant accurately prepares the cash flow statement under the direct format, then it most likely reports:", "opts": ["cash paid to employees 71; cash paid for interest 5.", "cash paid to suppliers 82; cash paid to employees 69.", "cash received from customers 198; cash paid for taxes 9."], "ans": "C", "expl": "Cash flow from operating activities (CFO) can be presented using either the direct or indirect method. The direct format displays various\ncategories of cash transactions (eg, cash received from customers, cash paid to suppliers). To create a direct presentation, the accountant\nshould:\n1. Remove noncash items from the income statement.\n2. Convert the remaining income statement revenue and expense items to cash amounts (from accrual amounts) by adjusting for the change\nin working capital.\n3. Itemize the components of cash from operating activities with the amounts calculated in step 2.\nCash received from customers (198) equals revenue (200) minus the change in accounts receivable (2). Accounts receivable increased by 2\nmillion, so revenue exceeded cash receipts by that amount. Cash paid for taxes (9) equals tax expense (10) minus the change in taxes payable\n(1). Taxes payable increased by 1 million, so tax expense exceeded taxes paid by that amount.\n(Choice A) Cash paid to employees should be USD 69 million, not USD 71 million. USD 71 million results from incorrectly adding the increase in\nwages payable, instead of subtracting, to wage expense.\n(Choice B) Cash paid to suppliers should be USD 83 million, not USD 82 million. USD 82 million results from ignoring the increase in inventory,\nwhich understates the amount of purchases. Purchases equals COGS plus the change in inventory.\nThings to remember:\nTo derive the direct presentation format for cash from operating activities: (1) Remove non-cash items from the income statement, (2) convert the\nremaining income statement to a cash basis by adjusting for changes in working capital amounts, and (3) display the itemized individual\ncomponents in the operating cash flow section.\nDemonstrate the conversion of cash flows from the indirect to direct method", "qhtml": null}, {"n": 15, "q": "An analyst has obtained the following information for a company: Year-end December 31 € millions Revenues 41.8 Cost of goods sold (COGS) 36.5 Beginning inventory 31.2 Ending inventory 38.6 Beginning accounts payable 15.7 Cash paid to suppliers 16.1 The amount of the company's ending accounts payable is closest to:", "opts": ["€28.7 million", "€43.5 million", "€48.8 million"], "ans": "B", "expl": "The amount of cash payments to suppliers is a function of the company's cost of goods sold (COGS), the change in its inventories, and the\nchange in its accounts payable.\nInventory is a current asset, so purchasing inventory increases assets. If the company buys the inventory on credit instead of paying cash, an\naccount payable equal to the purchase price is created. The increase in liabilities exactly offsets the increase in assets, so the company has\nobtained inventory with no cash outlay.\nIn this question, the unknown variable is the ending accounts payable, which is solved by rearranging the above equation:\n(Choice A) This incorrect answer is obtained by subtracting, rather than adding, the change in inventory to COGS.\n(Choice C) This incorrect answer is found by using revenue instead of COGS as the first element of the equation. This is an easy mistake to\nmake since the formula for calculating cash received (rather than paid) in CFO uses revenue.\nThings to remember:\nCash paid to suppliers is a function of cost of goods sold, changes in inventory, and changes in accounts payable for the accounting period. The\nbasic formula to calculate cash payments can be rearranged to derive any variable in the equation.\nDescribe the steps in the preparation of direct and indirect cash flow statements, including how cash flows can be computed using income\nstatement and balance sheet data", "qhtml": null}, {"n": 16, "q": "A company reports the following information in its year-end financial statements: If all company purchases are made on credit, the cash paid to suppliers in 20X3 is closest to:", "opts": ["$540,000", "$660,000", "$1,260,000"], "ans": "B", "expl": "Cash paid to suppliers is one element of operating cash flow using the direct method. Companies track credit purchases and cash payments\nto vendors in accounts payable (AP). AP increases when credit purchases are recorded and decreases when the company pays its bills.\nPayments to suppliers during a period can be calculated if the change in AP, the change in inventory (INV), and COGS are known.\nHere, the increase in inventory (325 − 250 = 75) means purchases were greater than COGS. An increase (150 − 135 = 15) in AP indicates that\nthe company purchased more inventory on credit than it paid cash to suppliers during the same period. Cash paid to suppliers is $660,000.\n(Choice A) $540,000 results from decreasing, not increasing, cash paid to suppliers for the change in inventory and adding, not subtracting, it for\nthe increase in AP.\n(Choice C) $1,260,000 is found by using revenue, not COGS, in the cash paid to suppliers formula.\nThings to remember:\nCash paid to suppliers is one element of operating cash flow using the direct method. It is calculated from the change in accounts payable, the\nchange in inventory, and cost of goods sold.\nDescribe the steps in the preparation of direct and indirect cash flow statements, including how cash flows can be computed using income\nstatement and balance sheet data", "qhtml": null}, {"n": 17, "q": "For the most recent period, a company generated a net income of HKD 75 million and increased its dividends payable balance by HKD 5 million. Retained earnings showed a beginning balance of HKD 700 and an ending balance of HKD 755. If no other activities had an impact on retained earnings, the total of dividends paid during the period (in HKD millions) is closest to:", "opts": ["15", "20", "25"], "ans": "A", "expl": "Under accrual basis accounting, a company records all the dividends declared on its balance sheet for the current period, regardless of when all\nthe dividends will be paid. If a portion of the dividends is to be paid during a future period, that amount is recorded as dividends payable,\nwhich is a current liability.\nIn this question, HKD 20 million in dividends declared is derived from retained earnings and net income. Dividends payable increased by HKD 5\nmillion, indicating the company deferred HKD 5 million in dividend payments to a future period. Therefore, only HKD 15 million in dividends was\npaid out during the current period.\n(Choice B) 20 is the total for dividends declared, not dividends paid.\n(Choice C) 25 results from incorrectly adding, instead of subtracting, the increase in dividends payable.\nThings to remember:\nUnder accrual basis accounting, a company records all the dividends declared on its balance sheet for the current period, regardless of when all\nthe dividends will be paid. If a portion of the dividends is to be paid during a future period, that amount is recorded as dividends payable, which is\na current liability.\nDescribe how the cash flow statement is linked to the income statement and the balance sheet", "qhtml": null}, {"n": 18, "q": "In its 20X8 balance sheet, a South African gold mining company reported beginning wages payable of ZAR 5.1 million and ending wages payable of ZAR 3.6 million. If its cash flow statement for the same period indicated cash wages paid of ZAR 25.6 million, the company's reported wage expense is closest to:", "opts": ["ZAR 24.1 million", "ZAR 25.6 million", "ZAR 27.1 million"], "ans": "A", "expl": "Under accrual accounting, a company incurs wage expense each period regardless of when wages are actually paid. If actual payment will occur\nin a later period, the obligation is entered as wages payable—a current liability—on the balance sheet. Wages paid are a component of cash flow\nfrom operations (CFO). Calculating CFO using the direct method requires analysis of both the expense and the current liability.\nCash paid to employees in any period is a function of wage expense and the change in wages payable for that period. Increasing wages payable\nmeans that the company is deferring cash payments until a later period, so the amount of cash paid in the current period decreases.\nSubtracting this increase from the reported wage expense results in cash paid for wages that is less than the wage expense.\nThis equation has four variables. When three of the four variables are known, the equation can be rearranged algebraically to solve for the\nunknown:\n(Choice B) ZAR 25.6 million uses only the wage expense without considering the change in wages payable.\n(Choice C) ZAR 27.1 million is the result of the change in wages payable being subtracted from—instead of added to—cash wages in the\nrearranged formula.\nThings to remember:\nCash wages paid equals the wage expense shown on the income statement minus the change in wages payable for the period.\nDescribe how the cash flow statement is linked to the income statement and the balance sheet", "qhtml": null}];
+const CFG = {"title": "Wiley · Analyzing Statements of Cash Flows I", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Financial Statement Analysis · 18 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

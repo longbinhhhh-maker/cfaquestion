@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Open market purchases of government securities by a central bank are most likely:", "opts": ["neutral.", "expansionary.", "contractionary."], "ans": "B", "expl": "Monetary policy tools\nTool Description Expansionary Contractionary\nOpen market operations Trade securities (usually government securities) Buy securities Sell securities\nPolicy interest rate Set interest rate used to signal markets Lower Raise\nReserve requirements Set percentage of bank deposits held in reserves Decrease Increase\nOpen market operations (ie, buying or selling government securities) is the most frequently used monetary policy tool for most major central\nbanks. Central bank purchases of securities are an expansionary policy.\nCentral banks usually purchase securities from commercial banks or designated market makers. The immediate impact is an increase in bank\nreserves. Banks employ the additional reserves by making loans or investments, which results in an expansion of the money supply. As the\nmoney supply increases, the cost of borrowing (ie, interest rates) tends to fall.\nLower interest rates stimulate borrowing by consumers to buy houses, cars, appliances, and other major items. Lower rates also encourage\nbusinesses to invest because profit margins will be higher due to lowered interest expenses. Additionally, some projects not viable at the previous\nborrowing cost may now be profitable.\nThings to remember:\nOpen market purchases of securities are expansionary central bank policies that increase bank reserves. Added reserves usually result in a larger\nmoney supply, putting downward pressure on interest rates. Lower rates spur consumption and investment, causing the economy to expand.\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}, {"n": 2, "q": "In an economy that operates under an exchange rate targeting policy, which of the following conditions is most likely?", "opts": ["The central bank is required to maintain a fixed policy interest rate.", "Monetary policy can focus on internal rather than external considerations.", "Target country inflation (deflation) is imported regardless of the effect on the domestic economy."], "ans": "C", "expl": "Monetary policy targets\nStated Long-run Country\npolicy target economic goal characteristics\nFixed rate or\nPrice stability leading to better long-\nInflation range for specified\nrun performance\nprice index\nLarger,\nOptimize across\nmore developed economies\nInterest multiple goals\nTarget adjusted over business cycle\nrates (employment,\nGDP growth)\nSmaller,\nExchange Fixed rate or range versus target Stability versus economies of major less developed\nrate currency trading partners with significant import/export\nsectors\nThe goal of monetary policy is to optimize economic welfare, although central banks are given a variety of policy targets intended to attain that\ngoal. Central banks may have:\nOne policy target (ie, single mandate) that guides all policy actions:\nA specific inflation target (eg, 2%) or a specified range\nAn exchange rate target, which is a fixed level or band of values versus a major currency (eg, EUR)\nMultiple policy targets that seek an optimal balance among potentially conflicting goals:\nHigh employment\nGDP growth\nStable prices\nStable exchange rate\nWhen a country uses exchange rate targeting, its policies are designed to maintain an exchange rate target (or range) with another currency,\nusually from a larger and/or more stable economy. As a result, if the target currency's economy experiences inflation or deflation, so does the\neconomy that targets it.\nIn this situation, since all policy actions must be aimed at maintaining the targeted currency exchange value, the targeting economy gives up\nmonetary policy independence. This may adversely affect both the targeting economy and its ability to address any adverse effects. For\nexample, exchange rate targeting may keep a central bank from exercising independent monetary policies based solely on domestic conditions,\nsuch as maintaining a fixed policy interest rate or adjusting monetary policy (Choices A and B).\nThings to remember:\nExchange rate targeting results in giving up monetary policy independence. Maintaining the target often means tolerating conditions that\nadversely affect the domestic economy.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 3, "q": "A developing economy has a target exchange rate for its currency. The inflation rate in the developing economy drops below the inflation rate in the target currency. Central bank action to defend the target exchange rate is most likely to result in a decrease in the developing economy's:", "opts": ["money supply.", "short-term interest rates.", "balance of payments surplus."], "ans": "B", "expl": "A country forgoes monetary policy independence if it establishes a target exchange value for its currency. Monetary policy cannot pursue goals\nrelated to GDP growth, unemployment, or inflation. Policy actions are driven by the demands of maintaining the announced exchange rate target.\nThe domestic economy must adapt to the policy of the target currency country. This often results in increased volatility of the domestic money\nsupply and interest rates.\nDomestic inflation rates below target currency inflation rates put upward pressure on the exchange value of the developing economy's\ncurrency. To offset the currency market pressure and maintain the target exchange rate, the central bank must sell its currency and buy the\ntarget currency. Sales of the developing economy currency will expand the domestic money supply and decrease interest rates.\n(Choice A) The central bank needs to sell the domestic currency to maintain the target exchange rate. This would increase the domestic money\nsupply.\n(Choice C) The balance of payments must always net to zero, so there can be neither a surplus nor a deficit.\nThings to remember:\nDomestic inflation below target currency inflation will put upward pressure on the domestic currency. Maintaining the target exchange rate\nnecessitates sales of the domestic currency by the central bank. Currency sales will expand the domestic money supply and decrease interest\nrates.\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}, {"n": 4, "q": "Which of the following is most likely a role of a central bank?", "opts": ["Issues national debt", "Sets long-term interest rates", "Acts as lender of last resort to banks"], "ans": "C", "expl": "Typical roles of a central bank\nLender of last resort\nSupplier of currency\nResponsible for monetary policy\nServes as the government's and banker's bank\nOversees the banking system\nRegulates the payments system\nManages foreign exchange and gold reserves\nCentral banks are a key component of a modern, financially connected world. The roles and responsibilities of central banks can be broadly split\ninto banking and monetary functions.\nBanking responsibilities include overseeing and regulating the banking and payment processing system. A central bank also functions as the\ngovernment's and bankers' bank, providing funds and liquidity when needed. As such, central banks are ultimately the lender of last resort to\nbanks, when other sources of capital are unavailable.\nMonetary responsibilities include money creation and, to a certain extent, overseeing the value of the currency. This leads directly to the role of\nconducting monetary policy and managing a country's foreign exchange and gold reserves.\n(Choice A) Central banks do not issue debt; this is usually a treasury function.\n(Choice B) Central banks set short-term interest rates through monetary policy, not long-term rates.\nThings to remember:\nThe roles and responsibilities of a central bank include acting as the government's and bankers' bank and lender of last resort; regulating the\nbanking and payment system; supplying the currency; and managing monetary policy, foreign exchange, and gold reserves.\nDescribe the roles and objectives of central banks", "qhtml": null}, {"n": 5, "q": "Which of the following best characterizes the approach most central banks take regarding inflation?", "opts": ["Minimize inflation rates", "Maintain targeted inflation rates", "Accept market-determined inflation rates"], "ans": "B", "expl": "Periods of high inflation usually coincide with poor economic growth and greater inflation uncertainty. Unexpected inflation carries great economic\ncosts (eg, low GDP growth). Consequently, price stability is a primary goal for most central banks. As a means of attaining that goal, target\ninflation rates consistent with price stability are established.\nQuality improvements complicate measuring changes in the cost of living. Innovation leads to the creation of more useful (ie, valuable) products\nover time. Some amount of price level increase reflects the higher quality goods, not an erosion in the purchasing power of money. Therefore,\nprice stability is not defined as a 0% inflation rate. Instead, it is defined as a low and stable inflation rate (one generally consistent with product\nenhancements).\nIn some countries the inflation target is set by the government. In other countries the central banks set the inflation target independently of the\ngovernment; such central banks are said to be target independent. Central banks' performance is assessed in part by monitoring their\neffectiveness at keeping inflation within the target range.\n(Choice A) Central banks do not attempt to achieve the lowest possible inflation rates. Very low inflation (eg, <1%) or negative inflation (ie,\ndeflation) is believed to inhibit an economy from fully achieving its potential GDP.\n(Choice C) Central banks believe the goal of price stability is too important to allow inflation to result from the unconstrained interplay of market\nforces. All major central banks have inflation targets or target ranges for achieving price stability.\nThings to remember:\nPrice stability is a goal of monetary policy for most central banks. To achieve this goal, most central banks use inflation rate targets. Central\nbanks adjust their policies to achieve actual inflation consistent with the target.\nDescribe the roles and objectives of central banks", "qhtml": null}, {"n": 6, "q": "Which of the following best describes a contractionary fiscal policy?", "opts": ["A decrease in the government budget surplus", "A reduction in export subsidies to manufacturers", "An expansion of eligibility for unemployment benefits"], "ans": "B", "expl": "Contractionary fiscal policies are designed to constrain economic growth. Contractionary policies are usually not intended to literally contract\n(ie, shrink) the size of an economy but to prevent an economy from growing too rapidly. Excessive growth relative to an economy's sustainable\ngrowth rate is a possible cause of inflation. Increased taxation and reduced spending are contractionary fiscal policies.\nExport subsidies are payments made by the government to domestic businesses designed to increase exports. A reduction in export subsidies\nreduces government payments to the exporters. The direct contractionary impact is lower revenue for the manufacturers. The result is fewer\npurchases of materials and cutbacks on employee hours. The effects filter through the economy as other impacted suppliers and employees\nreduce their spending accordingly.\n(Choice A) Other things constant, decreases in government budget surpluses are expansionary. Reductions in government budget surpluses\nresult from increases in spending or reductions in taxes (or both). Since both of those government actions are expansionary, smaller surpluses\nlead to increases in GDP.\n(Choice C) Increasing government transfer payments is an expansionary policy. Expanded eligibility for unemployment benefits generally results\nin more total money being paid to beneficiaries. The consequence is greater consumption spending and higher GDP.\nThings to remember:\nIncreased taxation and reduced spending are contractionary fiscal policies. A reduction in export subsidies reduces government payments to\nexporting businesses. Beyond the directly impacted businesses, the effects will filter through the economy as suppliers and their employees cut\nback spending.\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}, {"n": 7, "q": "If a central bank wants to increase the money supply, the most appropriate action it can take is to:", "opts": ["increase the policy rate.", "reduce the reserve requirements.", "sell government bonds to commercial banks."], "ans": "B", "expl": "Monetary policy tools\nTool Description Expansionary Contractionary\nOpen market operations Trade securities (usually government securities) Buy securities Sell securities\nPolicy interest rate Set interest rate used to signal markets Lower Raise\nReserve requirements Set percentage of bank deposits held in reserves Decrease Increase\nIn a system of fractional reserve banking, reserve requirements are one policy tool used by central banks to control the money supply and, in turn,\nspending and economic growth. Reserve requirements set the minimum percentage of commercial banks' deposit liabilities that must be held as\nreserves; banks make loans with the excess deposits.\nLowering the reserve requirements for commercial banks allows those banks to lend more money. In theory, this should increase the money\nsupply since additional money lent by banks can be deposited and lent multiple times.\nThus, there is an inverse relationship between reserve requirements and the amount of money created, as reflected by the money multiplier. All\nelse being equal, the smaller (larger) the reserve requirement is:\nthe larger (smaller) the money multiplier, and\nthe more (less) money is created by fractional reserve banking, and\nthe greater (smaller) the money supply.\n(Choice A) Increasing the policy rate makes taking out short-term loans from the central bank more expensive for commercial banks. This\ntypically causes commercial banks to increase their own lending rates, which lowers demand for loans and reduces the money supply.\n(Choice C) Selling securities to commercial banks reduces the commercial banks' reserves and typically makes them less willing and/or able to\nmake loans, which reduces the money supply.\nThings to remember:\nLowering the reserve requirements for commercial banks allows those banks to lend more money. In theory, this should increase the money\nsupply since additional money that is lent by banks can be deposited and lent multiple times. Thus, there is an inverse relationship between\nreserve requirements and the amount of money created.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 8, "q": "Which of the following is least likely a quality of an effective central bank?", "opts": ["Transparency", "Independence", "Creditworthiness"], "ans": "C", "expl": "The qualities of effective central banks are independence, credibility, and transparency. Since central banks do not issue debt securities, the\nability to repay debt in a timely fashion (ie, creditworthiness) is not a factor in assessing their effectiveness.\nMajor central banks have large amounts of liabilities outstanding; however, the liabilities are either physical currency issued by the central bank or\ndeposits (by other financial institutions) held at the central bank. As such, central bank liabilities have no stated maturity and do not need to be\nretired. Furthermore, most central banks face no legal limits on the amount of money they can create. This means any requests for withdrawals\ncan be honored; therefore, creditworthiness is not a factor for central banks.\n(Choices A and B) Central banks should have independence since they must be able to act considering only the long-term economic\nconsequences, not the short-term political consequences, of their actions. Independence is supported by transparency in setting policy objectives\nand actions.\nThings to remember:\nThe qualities of effective central banks are independence, credibility, and transparency. Since central banks do not issue debt securities and can\ncreate money to satisfy liabilities, creditworthiness is not a factor in assessing their effectiveness.\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}, {"n": 9, "q": "An increase in which of the following would most appropriately be considered expansionary fiscal policy?", "opts": ["New excise taxes on vehicle motor fuel", "Infrastructure spending on highways and bridges", "Reducing budget deficits by raising corporate income taxes"], "ans": "B", "expl": "Increases in government spending cause an increase in GDP. More infrastructure spending causes the aggregate demand to increase.\nConsequently, an increase in government spending is an expansionary fiscal policy.\nThe immediate impact of increased spending on highways and bridges is the additional sales revenue for the firms that supply the materials and\nmachinery used in the construction projects. The firms involved in the construction—and their equipment and materials suppliers—will hire\nadditional workers. As a result, aggregate demand is further stimulated by the increased income that workers spend on consumption.\n(Choice A) A tax on vehicle fuel raises consumers' costs. This puts downward pressure on GDP and is therefore a contractionary policy.\n(Choice C) Raising corporate income taxes reduces investments and hiring. This is a contractionary policy, not an expansionary policy.\nThings to remember:\nIncreases in government spending lead to increases in GDP. More spending results in increased sales by government suppliers. Those firms and\ntheir suppliers need to hire additional workers. As a result, aggregate demand expands, so increased government spending is an expansionary\nfiscal policy.\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}, {"n": 10, "q": "Which of the following monetary policy actions is most likely expansionary?", "opts": ["Selling government securities through open market operations", "Lowering the policy rate to a level below the neutral interest rate", "Raising reserve requirements to reduce the amount of excess reserves"], "ans": "B", "expl": "Monetary policy tools\nTool Description Expansionary Contractionary\nOpen market operations Trade securities (usually government securities) Buy securities Sell securities\nPolicy interest rate Set interest rate used to signal markets Lower Raise\nReserve requirements Set percentage of bank deposits held in reserves Decrease Increase\nExpansionary monetary policies encourage more rapid growth of GDP by stimulating economic activity, including business and consumer\ninvestment and consumption. Since businesses borrow to invest in additional plant and equipment and consumers borrow to increase purchases\nof goods and services, policies that stimulate lending and borrowing are expansionary.\nA policy rate (ie, official interest rate or official policy rate) is the interest rate a central bank charges when it lends money to commercial banks.\nSetting the policy rate below a neutral rate of interest means the central bank is attempting to increase the real GDP growth rate by:\nreducing the cost of borrowing from the central bank, which encourages commercial banks to use additional reserves to make loans,\nincreasing the supply of available credit; and\nlowering borrowing rates generally since commercial bank base lending rates are often tied to the policy rate, stimulating demand for credit.\nSince this policy leads to increased lending and borrowing and should stimulate economic growth, it is expansionary.\n(Choice A) When central banks sell government securities, they reduce bank reserves since commercial banks pay for the securities using\nreserves. This discourages lending and borrowing and slows GDP growth; therefore, it is a contractionary monetary policy.\n(Choice C) Raising the reserve requirement to reduce excess reserves inhibits commercial banks' ability to make loans; therefore, it is not an\nexpansionary policy.\nThings to remember:\nLowering the policy rate below the neutral interest rate is an expansionary monetary policy. A lower policy rate encourages commercial banks to\nincrease reserves by borrowing from the central bank. The additional reserves are used to make loans, which results in increased consumption\nand investment, leading to higher rates of GDP growth.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 11, "q": "If the inflation rate is expected to rise above a central bank's inflation target, that central bank's most appropriate action would be to:", "opts": ["increase the policy rate above the neutral rate.", "buy government bonds from commercial banks.", "lower the reserve requirement for commercial banks."], "ans": "A", "expl": "Monetary policy tools\nTool Description Expansionary Contractionary\nOpen market operations Trade securities (usually government securities) Buy securities Sell securities\nPolicy interest rate Set interest rate used to signal markets Lower Raise\nReserve requirements Set percentage of bank deposits held in reserves Decrease Increase\nCentral banks have different primary policy objectives, but one common goal is price stability. Central banks attempt to achieve this stability by\ninfluencing money supply levels with one or more monetary policy tools. When a central bank expects inflation to rise above the target, it\nwould most appropriately seek to curb inflation by implementing a contractionary monetary policy.\nTo accomplish this, the central bank can target an increase in commercial banks' lending rates by increasing its policy rate above the neutral\nrate. Commercial banks tend to base their lending rates on the policy rate plus a spread. Therefore, a higher policy rate would cause those banks\nto either raise their lending rates or accept lower margins, thus discouraging lending and borrowing. Less supply and demand for business and\nconsumer loans would slow capital expenditures and consumption. In theory, these effects should lower inflationary pressures.\n(Choice B) Buying government bonds from commercial banks is an expansionary monetary policy that gives those banks more excess reserves\nto lend. This policy would be inappropriate if the goal is to reduce inflationary pressures.\n(Choice C) Lowering the reserve requirement for commercial banks encourages those banks to lend more money. This expansionary monetary\npolicy would be inappropriate if the goal is to reduce inflationary pressures.\nThings to remember:\nA central bank's policy rate is the interest rate it charges when lending money to commercial banks. If a central bank expects inflation to rise\nabove its target, it can increase the policy rate above the neutral rate with the goal of reducing inflationary pressures by increasing commercial\nbanks' lending rates.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 12, "q": "When the central bank sells securities to banks via open market operations, which of the following is the most likely result?", "opts": ["An increase in bank reserves", "A decrease in base lending rates", "A decrease in banks' capacity to lend"], "ans": "C", "expl": "Monetary policy tools\nTool Description Expansionary Contractionary\nOpen market operations Trade securities (usually government securities) Buy securities Sell securities\nPolicy interest rate Set interest rate used to signal markets Lower Raise\nReserve requirements Set percentage of bank deposits held in reserves Decrease Increase\nCentral banks use monetary policy tools to manage the money supply and achieve price stability.\nWhen the economy is growing too fast and inflation is high, central banks will enact contractionary policies to reduce the money supply to\nmoderate growth and inflation.\nWhen the economy is slow and inflation is low, central banks will enact expansionary policies to increase the money supply to accelerate\ngrowth and inflation.\nOpen market operations involve the central bank buying (selling) securities from (to) banks or market makers. Selling securities to banks is a\ncontractionary tactic. Bank reserves are reduced when commercial banks buy securities as the central banks sells securities (Choice A); in\neffect, the central bank has taken money out of circulation. Since bank reserves are lower, banks are less willing and/or able to extend loans,\nreducing the money supply.\n(Choice B) Base lending rates used by banks are directly tied to the central bank policy rate and not related to open market operations.\nThings to remember:\nOpen market operations involve the central bank buying (selling) securities from (to) banks or market makers. Selling securities to banks is a\ncontractionary tool that decreases bank reserves and the money supply. Buying securities from banks is an expansionary tool that increases bank\nreserves and the money supply.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 13, "q": "Most central banks with an inflation-targeting policy aim for an inflation rate of about 2%. Which of the following best describes a reason why this level has become the prevailing standard? ", "opts": ["A lower rate would risk deflation", "To adhere to a neutral policy rate", "To keep the country's borrowing costs low"], "ans": "A", "expl": "Features of successful central bank inflation-targeting policy\nCentral bank independence and transparency\nPolicy decisions based on a wide range of financial and economic considerations\nAn inflation target high enough to avoid deflation but low enough to achieve price stability\nInflation targeting is the most widely implemented central bank monetary policy framework used to achieve price stability. Broadly speaking,\nmonetary policy is a blunt tool that influences the economy and inflation to varying degrees and with lagged effects.\nWith inflation targeting, the central bank's goal is to maintain an inflation rate low enough to avoid destabilizing inflation yet high enough to\navoid the risk of deflation. Since it is not possible to precisely calibrate monetary policy to achieve an ideal inflation rate—consistently positive\nand just above zero—the prevailing preference among central banks has settled around a 2% inflation target as the optimum policy level.\n(Choice B) The neutral policy rate is the monetary policy rate that maintains the existing state of economic growth. The neutral policy rate equals\nthe economy's real trend rate of growth plus long-run inflation rate expectations.\n(Choice C) Keeping the government's interest costs low is not a stated objective of monetary policy for any of the world's major central banks.\nThings to remember:\nInflation targeting is the most widely implemented central bank monetary policy framework used to achieve price stability. A 2% inflation target is\nviewed as the optimum policy level since it is far enough above zero to avoid deflation but low enough to avoid destabilizing high inflation.\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}, {"n": 14, "q": "If a monetary system has a fractional reserve banking system and the central bank changes the reserve requirement from 10% to 12%, it is most likely that: ", "opts": ["the money multiplier decreases.", "money supply growth increases.", "interest rates on bank deposits decrease."], "ans": "A", "expl": "With a fractional reserve banking system, banks keep only a portion (ie, fraction) of deposits as reserves and make loans with the excess. The\nminimum reserve requirement is most often set by the central bank and is one of three primary tools of monetary policy. In theory, the smaller\n(larger) the reserve requirement, the more (less) excess there is to be lent out and circulated in the economy, increasing (decreasing) the money\nsupply and stimulating (contracting) spending and economic growth.\nThe money multiplier is a measure of the inverse effect of the reserve requirement on the money supply, defined as 1 ÷ reserve requirement.\nFor example, a reserve requirement of 10% results in a money multiplier of 10. Each deposit in excess of the reserve requirement is multiplied as\nit is loaned and deposited multiple times, each time as a fraction of the initial deposit. Therefore, as the reserve requirement increases\n(decreases), the money multiplier decreases (increases), resulting in slower (faster) money supply growth (Choice B).\n(Choice C) Interest rates on bank deposits are primarily a function of the central bank's policy rate, not the reserve requirement.\nThings to remember:\nBanks are required to hold reserves equal to a fraction of their deposits; this is known as the reserve requirement. The money multiplier is a\nmeasure of the inverse effect of the reserve requirement on the money supply, defined as 1 ÷ reserve requirement.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 15, "q": "When the commercial banking system holds significant excess reserves, which of the following central bank actions is most likely to affect commercial banks' base lending rates? ", "opts": ["Changing the official policy rate", "Changing the reserve requirement", "Buying or selling securities in the open market"], "ans": "A", "expl": "Monetary policy tools\nTool Description Expansionary Contractionary\nOpen market operations Trade securities (usually government securities) Buy securities Sell securities\nPolicy interest rate Set interest rate used to signal markets Lower Raise\nReserve requirements Set percentage of bank deposits held in reserves Decrease Increase\nA policy rate (or official interest rate or official policy rate) is the rate at which a central bank lends to commercial banks. Policy rates are\nadjusted to influence interest rates throughout the economy and affect economic activity.\nSince the policy rate is the cost of obtaining reserves from the central bank, commercial banks often tie base lending rates to the central bank\npolicy rate. Therefore, commercial banks usually increase their base lending rate when a central bank increases its policy rate. Base lending\nrates are reference rates for setting loan interest rates for different types of clients (eg, large corporations: Base lending rate + 0.50%; privately\nheld small businesses: Base lending rate + 3.00%).\nSince changing reserve requirements and buying or selling securities affects reserves, such policy actions by central banks are less likely to\nimpact base lending rates when there are already significant excess reserves and therefore ample capacity to make loans and expand the money\nsupply (Choices B and C).\nThings to remember:\nA policy rate is the rate at which a central bank lends to commercial banks. Since the policy rate is the cost of obtaining reserves from the central\nbank, commercial banks often tie their base lending rates to the central bank policy rate.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 16, "q": "A demand curve for money is depicted in the graph below: Which of the following best explains the shape of the curve between M and M ? 0 1 ", "opts": ["Liquidity trap", "Policy rate of zero", "Neutral rate of interest"], "ans": "A", "expl": "There are limits to the effectiveness of monetary policy. This is often true in a deflationary environment when the demand curve for money\nbecomes horizontal (ie, infinitely elastic), as shown in the graphs above. A liquidity trap occurs when the quantity of money continues to expand\nbut fails to lower interest rates since economic agents would rather hold cash than borrow or lend. At this point, monetary policy stops\nstimulating economic activity and loses its effectiveness.\nA central bank's monetary policy tools depend on others to implement them. For example, a central bank can lower interest rates or reduce\nreserve requirements but cannot force anyone to borrow or lend. A liquidity trap is an example of such ineffectiveness.\nThe economist John Maynard Keynes is credited with coining the phrase \"pushing on a string\" to describe the limitations of monetary policy. It is\neasy to visualize how pulling on a string can bring something closer and how pushing on a string has no effect since it crumples and goes\nnowhere. In a liquidity trap, the central bank is effectively \"pushing on a string.\"\n(Choice B) Central bank policy is not constrained by the zero boundary; policy rates can and have been negative. The demand for money does\nnot necessarily stagnate at a zero-bound policy rate.\n(Choice C) The neutral rate of interest is the central bank's policy rate that neither slows nor accelerates economic activity and is not specifically\nassociated with the money demand curve.0\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}, {"n": 17, "q": "Quantitative easing is operationally similar to which monetary policy tool?", "opts": ["Changing the reserve requirement", "Conducting open market operations", "Increasing or decreasing the policy rate"], "ans": "B", "expl": "Monetary policy tools\nTool Description Expansionary Contractionary\nOpen market operations Trade securities (usually government securities) Buy securities Sell securities\nPolicy interest rate Set interest rate used to signal markets Lower Raise\nReserve requirements Set percentage of bank deposits held in reserves Decrease Increase\nQuantitative easing (QE) is operationally equivalent to buying securities through open market operations. QE is pursued after other\nexpansionary policies (eg, decreasing interest rates) have failed to return the economy to its potential growth rate. QE is intended to prevent a\nrecession from becoming a depression. The differences between open market operations and QE are the scale of the purchases, the types of\nsecurities purchased, and the sellers.\nIn the aftermath of the 2008 financial crisis, QE purchases were of unprecedented magnitude (multiple trillions of USD or similar values of EUR,\nGBP, and JPY). Furthermore, whereas open market operations normally dealt in short-term government securities, QE purchases were often\nlong-term government securities and securities of other issuers (eg, corporate bonds). Also, many sellers were not from the usual group of banks\nand market makers.\n(Choices A and C) Neither changing the reserve requirement nor adjusting the policy rate (also called the official interest rate or official policy\nrate) requires central banks to trade securities; therefore, neither is operationally similar to QE.\nThings to remember:\nQuantitative easing (QE) is operationally equivalent to buying securities through open market operations at a much larger scale. QE is undertaken\nwhen other expansionary policies have failed to return the economy to its potential growth rate and extraordinary measures are required. QE is\nenacted to prevent an already weak economy from weakening further.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 18, "q": "Large open market purchases of government securities by a central bank are used to decrease:", "opts": ["real GDP growth rates.", "domestic inflation rates.", "domestic currency's exchange value."], "ans": "C", "expl": "Monetary policy actions are typically used to affect one or more of the following domestic economic variables: GDP growth, inflation, interest rates,\nand/or currency value. Monetary policies are either:\nexpansionary, which are typically used to increase economic growth when it is below potential GDP or when the economy is in recession, or\ncontractionary, which are typically used to reduce inflation expectations and often accompanied by policies that reduce expected GDP\ngrowth rates.\nA policy of central bank open market purchases of securities is an expansionary policy. Such purchases increase commercial bank reserves,\nin turn leading to an increase in the money supply. All else equal, this causes domestic interest rates to decrease and investors to invest in\ncurrencies with relatively higher interest rates, resulting in a decrease in the domestic currency's exchange value.\n(Choices A and B) Open market security purchases are indicative of an expansionary monetary policy, which would be used to increase GDP\ngrowth rates and put upward pressure on domestic inflation.\nThings to remember:\nA policy of central bank open market purchases is an expansionary policy that results in a money supply increase and lower domestic interest\nrates. All else equal, this causes investors to invest in currencies with relatively higher interest rates, resulting in a decrease in the domestic\ncurrency's exchange value.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 19, "q": "Which of the following is least accurate regarding monetary policy tools?", "opts": ["Bank reserve requirements are independent of the central bank policy rate.", "Banks typically increase base rates when the central bank increases the policy rate.", "Bank reserve requirements increase when the central bank buys securities from banks."], "ans": "C", "expl": "Monetary policy tools\nTool Description Expansionary Contractionary\nOpen market operations Trade securities (usually government securities) Buy securities Sell securities\nPolicy interest rate Set interest rate used to signal markets Lower Raise\nReserve requirements Set percentage of bank deposits held in reserves Decrease Increase\nCentral banks use monetary policy tools to manipulate the money supply to achieve price stability. When the economy is growing too fast and\ninflation is high, central banks will enact contractionary policies to reduce the money supply to moderate growth and inflation. When the economy\nis growing slowly and inflation is muted, central banks will enact expansionary policies to increase the money supply to accelerate growth.\nCentral banks use open market operations (ie, buying [selling] of securities from [to] banks) to manipulate the amount of bank reserves. Banks\nreserves increase when the central bank buys securities from banks. Conversely, bank reserves decrease when central banks sell securities.\nNote that the open market operations change the amount of bank reserves, and not the bank reserve requirement.\n(Choice A) The bank reserve requirement and the central bank's policy rate are two separate monetary policy tools for influencing the amount of\nloanable money.\n(Choice B) Central banks will typically lend to banks at the policy rate. When policy rates change, banks will adjust their own base lending rates\naccordingly.\nThings to remember:\nCentral banks use monetary policy tools to manipulate the money supply to achieve price stability. The three tools are open market operations,\nthe policy rate, and reserve requirements. Central banks buy and sell securities to banks in the open market to manage the money supply.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 20, "q": "A country pursues tight fiscal policy and easy monetary policy for several years. Which of the following are the most likely consequences for the size of the public and private sectors relative to the country's GDP?", "opts": ["Larger public sector and smaller private sector", "Smaller public sector and larger private sector", "No change in their relative sizes as both sectors would be equally affected"], "ans": "B", "expl": "Economic activity is divided between the public sector (eg, government bureaucracy, the military) and private sector (eg, businesses, consumers).\nThe private sector accounts for the bulk of economic activity in most countries. However, the public sector accounts for a significant portion of\nGDP in most developed economies. Since monetary policy and fiscal policy impact the economy through different channels, the specific policy\nmix may impact the two sectors differently.\nTight fiscal policy (eg, lower government spending) may result in slower growth, if not outright shrinkage, of the public sector. Easy monetary\npolicy (eg, increased open market purchases) likely causes lower interest rates, stimulating expansion of the private sector through more\nconsumer spending and business investment. The mix of tight fiscal and easy monetary policy usually results in the private sector accounting for\na larger proportion of GDP and the public sector a smaller proportion (Choices A and C).\nThings to remember:\nThe relative sizes of the public and private sectors can be impacted by the specific mix of monetary and fiscal policies. Tight fiscal policy likely\nresults in slower growth of the public sector. Easy monetary policy likely stimulates expansion of the private sector through more consumer\nspending and business investment.\nExplain the interaction of monetary and fiscal policy", "qhtml": null}, {"n": 21, "q": "Which of the following is least likely a function of a central bank?", "opts": ["Regulate the payment system", "Determine infrastructure spending", "Manage foreign exchange and gold reserves"], "ans": "B", "expl": "Typical roles of central banks\nMonetary roles Banking roles\nAct as lenders of last resort\nManage money supply\nOversee the banking system\nImplement monetary policy\nRegulate the payment system\nManage foreign exchange and gold reserves\nServe as government's and bankers' bank\nFiscal policy (ie, government management of expenditures and receipts to affect economic growth) is executed by governments, not central\nbanks. Infrastructure spending is a fiscal policy tool used to provide public goods (eg, hospitals, schools) and stimulate economic activity.\nCentral banks are responsible for monetary and banking functions. For example, central banks manage foreign currency and gold reserves by\nbuying/selling as needed to maintain liquidity and stabilize national currency (Choice C). In addition, central banks regulate payment processing\nsystems to ensure efficient financial transactions (Choice A).\nThings to remember:\nInfrastructure spending is a fiscal policy tool used by governments, not central banks. Central banks are responsible for monetary policy activities\nand oversight of banking functions.\nDescribe the roles and objectives of central banks", "qhtml": null}, {"n": 22, "q": "Which of the following factors may limit the impact of expansionary monetary policy in a deflationary economy?", "opts": ["Short-term interest rates cannot be reduced to 0% by central banks.", "Central bank policy may fail to induce banks to increase lending activity.", "Central bank open market operations may be unable to sufficiently expand bank reserves."], "ans": "B", "expl": "Monetary policy impacts the real economy indirectly. Central banks attempt to influence the direction of the real economy by manipulating bank\nreserves. Expansionary monetary policies create excess bank reserves with the intent of expanding the money supply, resulting in lower\ninterest rates and more rapid GDP growth.\nThe money supply expands only if the banks use the reserves to make loans. However, banks must expect to profit from making a loan.\nFurthermore, businesses normally borrow only if the loan proceeds can be profitably invested. A weak economy undermines the incentives of both\nborrowers and lenders. The inability of central banks to induce more lending activity can impede the transmission of monetary policy actions to the\nreal economy.\n(Choice A) Interest rates can be reduced below 0%. Several major central banks (eg, Bank of Japan, European Central Bank) have pursued\npolicies resulting in negative short-term interest rates.\n(Choice C) Independent central banks generally face no limits on their ability to create excess reserves through open market purchases. The US\nFederal Reserve created trillions of dollars of bank reserve in the attempt to foster economic recovery after the financial crisis of 2008.\nThings to remember:\nAn expansionary monetary policy increases bank reserves, but the money supply is expanded only if banks use the additional reserves to make\nmore loans. A weak economy reduces the incentives of both borrowers and lenders. Central banks' inability to induce more lending dampens the\nimpact of expansionary monetary policy.\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}, {"n": 23, "q": "Which of the following most likely limits a central bank's ability to implement effective expansionary monetary policy? The central bank is unable to:", "opts": ["reduce the policy interest rate below the neutral rate.", "increase the amount of excess reserves held by commercial banks.", "increase businesses and consumers' willingness to hold bank deposits."], "ans": "C", "expl": "In a system of fractional reserve banking, banks hold reserves to back their deposits. Central banks directly control commercial bank reserves but\nnot the money supply. To increase the money supply, the usual transition mechanism for expansionary monetary policy is:\ncentral banks create excess bank reserves by\nbuying securities through open market operations or\nreducing reserve requirements for commercial banks;\ncommercial banks use their excess reserves to make loans;\nborrowers use loan proceeds to make payments; and\nrecipients of the payments deposit the money into their banks.\nThe increase in deposits increases the money supply.\nHowever, the effectiveness of expansionary policy may be limited by businesses' and consumers' unwillingness to hold money in bank\ndeposits (eg, when interest rates are low). Furthermore, money in deposits is exposed to the bank's credit risk, which may in turn cause\nwithdrawals from the bank. This reduces the money supply and limits the effect of the expansionary policy.\n(Choices A and B) Central banks face few limits on setting policy rates or creating excess reserves. Central banks can pursue these policies to\nthe extent they deem appropriate, so the inability to reduce the policy rate or increase excess bank reserves are not impediments to pursuing\nexpansionary policies.\nThings to remember:\nCentral banks face few limits on reducing policy rates or creating excess reserves. A major constraint on expansionary monetary policy is central\nbanks' inability to control businesses' and consumers' willingness to hold bank deposits.\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}, {"n": 24, "q": "Which of the following is least likely a transmission mechanism of central bank policy?", "opts": ["Gold prices", "Asset prices", "Exchange rates"], "ans": "A", "expl": "One of a central bank's fundamental roles is implementing policies that promote price stability. Long-term price stability is achieved largely by\nestablishing long-term inflation expectations through monetary policy tools that first affect the money supply.\nIn turn, those effects are spread through the economy by monetary transmission mechanisms, including the following:\nShort-term interest rates\nAsset prices (eg, stocks, housing)\nExchange rates\nExpectations and confidence of economic agents (eg, individuals, firms, governments)\nMonetary transmission mechanisms spread policy changes through the economy, affecting prices and ultimately the level of inflation\n(Choices B and C).\nIndependence and transparency enhance a central bank's credibility. After establishing its credibility with the financial markets and economic\nagents, the central bank can more effectively steer long-term inflation expectations through policy actions since the transmission mechanisms\nreact in expected ways, creating a mutually beneficial feedback loop.\nThings outside the scope of a central bank's influence that are not considered transmission mechanisms include fiscal policy, commodity (eg, gold)\nprices, and economic agents' willingness to borrow or lend.\nThings to remember:\nMonetary transmission mechanisms, including short-term interest rates, asset prices, exchange rates, and the expectations and confidence of\neconomic agents, spread policy changes through the economy.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 25, "q": "All else being equal, which of the following central bank actions is most appropriate to reduce interest rates?", "opts": ["Sell government securities", "Reduce reserve requirements", "Increase prudential regulation of banks"], "ans": "B", "expl": "Reserves are funds that banks hold to meet customer withdrawals. Central banks usually set minimum reserve requirements, sometimes to\nmaintain bank solvency but often as a monetary policy tool. Supply and demand for money determines interest rates. Lowering the reserve\nrequirement creates excess reserves. Banks use the additional reserves to make loans, resulting in an expansion of the money supply.\nIncreases in the money supply should put downward pressure on interest rates.\n(Choice A) The sale of government securities by a central bank is a contractionary monetary policy and is likely to put upward pressure on\ninterest rates.\n(Choice C) Prudential regulations are rules designed to protect bank customers. Although central banks have a role in banking regulation in\nmany countries, prudential regulation is not a monetary policy tool.\nThings to remember:\nA reduction in the reserve requirement creates excess reserves in the banking system. Banks will likely use the excess reserves to make\nbusiness and consumer loans; loans that lead to an increase in the money supply, and a larger money supply puts downward pressure on interest\nrates.\nDescribe tools used to implement monetary policy tools and the monetary transmission mechanism, and explain the relationships between\nmonetary policy and economic growth, inflation, interest, and exchange rates", "qhtml": null}, {"n": 26, "q": "Which of the following central bank actions is most likely considered expansionary monetary policy?", "opts": ["Reducing the reserve requirement", "Selling government bonds through open market operations", "Holding the policy rate constant as the neutral rate falls below it"], "ans": "A", "expl": "Monetary policy tools\nTool Description Expansionary Contractionary\nOpen market operations Trade securities (usually government securities) Buy securities Sell securities\nPolicy interest rate Set interest rate used to signal markets Lower Raise\nReserve requirements Set percentage of bank deposits held in reserves Decrease Increase\nExpansionary monetary policies are used to increase economic growth during periods of decline (eg, when output is below potential GDP). For\nexample, a central bank can implement an expansionary policy of increasing excess reserves in the commercial banking system by:\nmaking open market purchases,\nreducing reserve requirements, which turns some required reserves into excess reserves, or\nreducing the policy interest rate, which reduces the costs banks incur when borrowing reserves.\nExcess reserves encourage increased lending since banks can earn higher returns by making loans than by holding reserves. This expands the\nmoney supply and lowers interest rates, leading to growth in borrowing, investment, and consumption, and thus an expanded GDP.\n(Choice B) A central bank conducts open market sales to reduce its holdings of government bonds when implementing a contractionary monetary\npolicy. Commercial banks use reserves to purchase the bonds, which contracts the money supply.\n(Choice C) A central bank holds its policy interest rate constant as the neutral rate of interest falls below the policy rate in order to tighten credit\nconditions. This inaction by a central bank is contractionary, not expansionary.\nThings to remember:\nExpansionary monetary policies are used to increase economic growth. Reducing reserve requirements creates excess reserves, leading to\nexpansion of the money supply and lower interest rates. Lower interest rates result in increased borrowing, investment, and consumption, and\nthus an expanded GDP.\nDescribe qualities of effective central banks; contrast their use of inflation, interest rate, and exchange rate targeting in expansionary or\ncontractionary monetary policy; and describe the limitations of monetary policy", "qhtml": null}];
+const CFG = {"title": "Wiley · Monetary Policy", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Economics · 26 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

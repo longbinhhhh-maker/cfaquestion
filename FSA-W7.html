@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Which of the following statements best describes the revaluation model and cost model for valuing long-lived tangible assets?", "opts": ["Both models compare historical costs to fair value.", "Only the revaluation model uses the lower of historical cost or fair value.", "Under the cost model, carrying values are always less than or equal to historical costs."], "ans": "C", "expl": "Long-lived asset valuations\nRevaluation model Cost model\nBeginning carrying value Historical cost\nDepreciation for all years Accumulated depreciation\nFair value adjustment Revaluation =\nNot applicable\nCurrent fair value − carrying value\nEnding carrying value Historical cost Historical cost\n−Accumulated depreciation −Accumulated depreciation\n± Revaluation\nIFRS, but not US GAAP, allow companies to choose between the cost model or the revaluation model for valuing long-lived assets. Using the\ncost model, an asset's carrying value is its historical cost less accumulated depreciation. The cost model only allows decreases in the carrying\nvalue of a long-lived asset, which could result from depreciation or impairment. Therefore, the cost model always reports an asset's carrying\nvalue below its historical cost.\nUsing the revaluation model, the asset's carrying value changes based on its fair value. Revaluations adjust an asset's carrying value upward or\ndownward. An initial upward revaluation suggests that a company reports the asset on the balance sheet at a higher value than its original cost.\n(Choice A) The revaluation model, unlike the cost model, compares an asset's historical cost to its fair value to make adjustments to the asset's\ncarrying value.\n(Choice B) Under the revaluation model, an asset's carrying value is based on its fair value. This can be higher or lower than the asset's\nhistorical cost.\nThings to remember:\nUsing the cost model, an asset's carrying value is its historical cost less accumulated depreciation. The cost model only allows decreases in the\nvalue of a long-lived asset below its historical cost, which could result from depreciation or impairment. Therefore, the cost model always reports\nan asset's carrying value below its historical cost.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets", "qhtml": null}, {"n": 2, "q": "At the beginning of 20X7, a company purchased production equipment for EUR 50 million with a 10-year useful life. At the end of 20X7, management estimates that the equipment is worth EUR 60 million. The company reports under IFRS and uses the revaluation model for valuing its production equipment. If the company has no previous revaluations, the impact on net income due to the increase in the equipment's value (in EUR) is closest to: ", "opts": ["0", "1,000,000", "10,000,000"], "ans": "A", "expl": "Financial statement treatment of revaluation of noncurrent assets—IFRS only\nUpward revaluation Downward revaluation\nGain recognized in other comprehensive income (OCI) as\nInitial Loss recognized on income statement\nrevaluation surplus\nRecognized on income statement to the extent of previous\nReduces revaluation surplus\nrecognized losses\nSubsequent If revaluation surplus = 0, recognized on income\nGain in excess of previous losses recognized as revaluation\nstatement as loss\nsurplus\nCompanies that use IFRS may elect to use the revaluation method to account for changes in long-lived assets' values. The accounting treatment\nof a revaluation depends on whether the asset's value increases or decreases and whether the valuation is initial or subsequent. An asset's initial\nrevaluation gain, as is the case here, is reported in shareholders' equity as an increase to other comprehensive income (OCI) and does not\nimpact net income.\nAn asset's value initial revaluation loss is recognized on the income statement. Subsequent revaluation gains are also recognized in income, but\nonly to the extent that they reverse previously recognized losses. Gains that exceed previously recognized losses (ie, revaluation surplus) are\nreported in other comprehensive income. In this case, none of the increase in value represents a recovery of previously recognized losses since\nthe company has never revalued its long-lived assets.\n(Choice B) EUR 1,000,000 is the result of recognizing a gain that represents 1/10 (ie, one year's worth) of the EUR 10 million increase in value\nbased on its 10-year useful life.\n(Choice C) EUR 10,000,000 is the result of recognizing the entire gain as an increase in net income. Initial gains in value under the revaluation\nmethod do not impact net income; they are accounted for in OCI.\nThings to remember:\nUnder the revaluation method, an asset's initial revaluation gain is reported in shareholder's equity as an increase to other comprehensive\nincome. An asset's value initial revaluation loss is recognized in the income statement. Subsequent revaluation gains are also recognized in\nincome, but only to the extent that they reverse previously recognized losses.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 3, "q": "If the value of a patent has been impaired, the impairment is most appropriately accounted for:", "opts": ["only on the balance sheet.", "only in the footnotes to the financials.", "on both the balance sheet and income statement."], "ans": "C", "expl": "Impairment of intangible assets with a finite life\nImpairment test done only when significant events warrant analysis\nAccounting treatment essentially the same as for tangible assets\nImpairment reduces the value of the asset on the balance sheet\nImpairment flows through the income statement and into net income\nIntangible assets with a finite life (eg, patents) are amortized over time and can become impaired under certain circumstances. Testing for\nimpairment occurs irregularly and only when significant events warrant additional scrutiny.\nIf an asset is deemed impaired, it is written down using an impairment charge that flows through the income statement, reducing net income in that\nperiod (Choice A). The write-down also reduces the asset's carrying value (ie, historical cost minus accumulated amortization) on the balance\nsheet.\n(Choice B) The footnotes are likely to include additional information regarding an impairment charge, but the impairment will definitely be\nreflected in the balance sheet and income statement.\nThings to remember:\nIntangible assets with a finite life can become impaired. If an asset is deemed impaired, it is written down by the amount of the impairment,\nreducing the carrying value on the balance sheet. The impairment charge also flows through the income statement, reducing net income in that\nperiod.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 4, "q": "A company capitalized a ¥120 million equipment purchase at the beginning of this year and will use straight-line depreciation with zero salvage value and a three-year useful life. The company generates ¥200 million in revenue every year, and the tax rate is 25%. If depreciation and taxes are the only expenses, and based only on this information, the second year's ending financial results most likely show:", "opts": ["¥40 million in taxes.", "¥80 million in net PPE.", "¥120 million in cash from operations."], "ans": "A", "expl": "Capitalizing an asset purchase initially reports the full asset cost on the balance sheet and subsequently allocates that cost to the income\nstatement as depreciation expense over the asset's useful life. This allows the income statement to reflect the cost of using the asset more\naccurately in each period of its use.\nWhen the company capitalizes a purchase, the purchase price is reported on the balance sheet upon initial recognition. In this situation, each\nyear's depreciation expense of ¥40 million, or (¥120 million purchase price − 0 salvage value) / 3 years, is reported on the income statement.\nSince revenue is ¥200 million for Year 2 and ¥40 million in depreciation is the only expense, pretax income equals ¥160, and 25% of pretax\nincome equals ¥40 million.\n(Choice B) ¥80 million is the net PPE at the end of the first year. Since historical cost (ie, gross PPE) is ¥120 million, and accumulated\ndepreciation after two years is ¥80 million, net PPE equals ¥40 million at the end of the second year.\n(Choice C) ¥120 million is the net income for the second year, not cash from operating activities. To derive cash from operations for the second\nyear, ¥40 million of depreciation (ie, noncash charge) is added back to net income.\nThings to remember:\nCapitalizing an asset purchase initially reports the full asset cost on the balance sheet and subsequently allocates that cost to the income\nstatement as depreciation expense over the asset's useful life. This allows the income statement to reflect the cost of using the asset more\naccurately in each period of its use.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets", "qhtml": null}, {"n": 5, "q": "An analyst has collected the following information on a technology company that reports financial results using US GAAP: 20X7 $ thousands Gross profit 25,000 Research and development expenses (5,000) Depreciation and amortization expenses (4,000) Total equity (beginning of year) 100,000 Total equity (end of year) 120,000 Tax rate 25% The company amortizes intangible assets over a five-year period using straight-line depreciation. Assume that the company can elect to either expense or capitalize its research and development costs. If it had capitalized all research and development costs in 20X7, its return on equity for 20X7 would be closest to:", "opts": ["10.9%", "13.4 %", "14.1%"], "ans": "B", "expl": "A company that expenses research and development (R&D) costs shows higher expenses and lower taxes and net income than a company\nthat capitalizes those costs. Capitalizing R&D expenses means that the company removes $5 million in expenses from its income statement.\nEarnings before interest, taxes, depreciation and amortization (EBITDA) rises from $20 million to $25 million.\nHowever, capitalization also increases the company's noncurrent intangible assets by $5 million. The company amortizes its intangible assets\nover five years, so amortization expense rises by $1 million in 20X7. The overall result is an increase in both pretax income (from $16 million to\n$20 million), and after-tax (net) income (from $12 million to $15 million).\nReturn on equity (ROE) = net income ÷ average equity. The table below shows the adjustments to net income and equity from the company's\ncapitalization of its R&D costs ($ thousands):\n(Choice A) 10.9% is the company's original ROE (ie, expensing rather capitalizing R&D costs).\n(Choice C) 14.1% results from correctly removing the R&D expense from the income statement but neglecting to account for the additional\namortization expense.\nThings to remember:\nCapitalizing research and development costs instead of expensing them causes a company to report higher earnings and higher return on equity\nin the period that the costs were capitalized. However, these increases are partially offset by a higher amortization expense since capitalization\nincreases the company's intangible assets. ROE is net income as a percentage of average equity.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets", "qhtml": null}, {"n": 6, "q": "A manufacturer purchases equipment at the beginning of 20X2 for AUD 17 million. At the end of 20X4, the accumulated depreciation is AUD 9 million, including the 20X4 depreciation expense of AUD 2 million. At the beginning of 20X5, management sells the equipment and receives AUD 3 million on the sale. The reported loss (in AUD millions) from the equipment's derecognition is closest to:", "opts": ["3", "5", "8"], "ans": "B", "expl": ".\nWhen a long-lived asset has no more economic benefit, its owner disposes of the asset by selling, exchanging, or abandoning it and derecognizes\nthe asset. If the asset is sold and there is a difference between the sales price and the asset's net book value, the company records a gain or\nloss on the sale in the amount of that difference.\nNet book value is the difference between the equipment's historical cost and its accumulated depreciation. To find the gain or loss from this sale,\nsubtract the equipment's historical cost from the sales price and add back its accumulated depreciation. In this scenario, the result is a loss of\nAUD 5 million.\n(Choice A) AUD 3 million is the result of adjusting the gain or loss by the current 20X4 depreciation expense. The 20X4 depreciation expense is\nincluded in the company's 20X4 accumulated depreciation.\n(Choice C) AUD 8 million is the asset's net book value (ie, equipment's historical cost less its accumulated depreciation).\nThings to remember:\nA company disposes of and derecognizes a long-lived asset when it provides no more economic benefit. If the equipment is sold and there is a\ndifference between its book value and the sales price, then the company records a gain or loss on the sale in the amount of that difference.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 7, "q": "At the beginning of 20X3, a company purchases a patent for CHF 100 million and expenses it over its 10-year useful life. The patent has an estimated residual value of CHF 10 million. At the end of 20X7, the company sells and derecognizes the patent, recording a loss of CHF 40 million. If the company uses the straight-line amortization method, the patent's sales price (in CHF millions) is closest to:", "opts": ["5", "10", "15"], "ans": "C", "expl": "When an intangible asset has no more economic benefit, the owner disposes of (ie, sells, exchanges, or abandons) the asset and derecognizes\nit. If the asset is sold and there is a difference between the sales price and the asset's book value, the company records a gain or loss in the\namount of that difference.\nBook value is the difference between the asset's historical cost (ie, purchase price) and its accumulated amortization. In this scenario, to find\nthe accumulated amortization using the straight-line method, calculate annual amortization expense and multiply it by the 5-year period.\nRearranging the gain or loss formula, the sales price is CHF 15 million.\n(Choice A) A sales price of CHF 5 million results from reducing the patent's original purchase price by its residual value. This accounts for the\nasset's residual value twice and understates the sales price.\n(Choice B) A sales price of CHF 10 million results from excluding the patent's residual value when determining amortization expense and\naccumulated amortization.\nThings to remember:\nA company derecognizes intangible assets when the assets have no more economic benefit. If an intangible asset is sold and there is a difference\nbetween the sales price and the asset's book value, the company records a gain or loss on the sale in the amount of that difference.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 8, "q": "A company buys a patent from a technology firm. If the patent purchase is not a part of a business combination, then the total cost of acquiring the patent is most likely: ", "opts": ["recorded at fair value on the balance sheet.", "expensed immediately on the income statement.", "allocated to fair value and goodwill on the balance sheet."], "ans": "A", "expl": "Treatment for intangible assets\nAcquisition method Treatment of costs\nPurchased on a stand-alone basis Fair value of assets capitalized on balance sheet\nResearch costs expensed immediately on income statement\nDeveloped internally through research\nDevelopment costs capitalized on balance sheet if product is developed for internal use (US\nand development\nGAAP) or has demonstrated technical feasibility (IFRS)\nAcquired through a business Fair value of assets capitalized on balance sheet\ncombination (eg, merger) Additional goodwill created on balance sheet\nIntangible assets (eg, patents, trademarks, software) lack physical form and grant the holder exclusive rights to future benefits. These assets can\nbe obtained through a standalone purchase, the acquisition of another company, or internal development.\nThe means of acquiring an intangible asset determines whether its costs are capitalized or expensed. If capitalized, the total purchase cost of the\nasset appears on the balance sheet and is subsequently amortized on the income statement over its useful life. If expensed, the entire purchase\ncost immediately reduces net income for the period on the income statement.\nIn this scenario, the patent is a standalone purchase (ie, without a business combination), so the total purchase costs are capitalized on the\nbalance sheet at fair value. Alternatively, acquiring the patent through a business combination (eg, merger) would create goodwill\n(Choice B) If the patent is developed internally, research costs are expensed.\n(Choice C) There is no goodwill in this scenario since goodwill results only from business combinations.\nThings to remember:\nIntangible assets can be obtained through a standalone purchase, the acquisition of another company, or internal development. If an intangible\nasset is acquired through a standalone purchase or business combination, it is capitalized. Acquiring an asset through a business combination\nmay create goodwill.\nCompare the financial reporting of the following types of intangible assets: purchased, internally developed, and acquired in a business\ncombination", "qhtml": null}, {"n": 9, "q": "A company decides to revalue a noncurrent asset upward to reflect its current fair value. The company had issued a bond to pay for this asset. If the asset has not been previously revalued, either upward or downward, the most likely impact of the company's decision is a: ", "opts": ["lower leverage ratio and lower return on equity.", "higher leverage ratio and lower return on assets.", "higher leverage ratio and higher return on assets."], "ans": "A", "expl": "Financial statement treatment of revaluation of noncurrent assets—IFRS only\nUpward revaluation Downward revaluation\nGain recognized in other comprehensive income (OCI) as\nInitial Loss recognized on income statement\nrevaluation surplus\nRecognized on income statement to the extent of previous\nReduces revaluation surplus\nrecognized losses\nSubsequent If revaluation surplus = 0, recognized on income\nGain in excess of previous losses recognized as revaluation\nstatement as loss\nsurplus\nIFRS, but not US GAAP, permit companies to revalue noncurrent assets to reflect their fair value. Revaluations can be up or down, and impact\nboth the income statement and the balance sheet. An upward revaluation means that the company reports the asset on the balance sheet at a\nhigher value than its original cost. This increase in the asset's carrying value results in a corresponding increase in shareholders' equity.\nFor initial upward revaluations, the increase in value bypasses the income statement and is reported in other comprehensive income (OCI);\nit has no impact on net income. Both return on assets (ROA) and return on equity (ROE) use net income as the numerator. Neither ratio's\nnumerator changes, so both will be lower, not higher (Choice C).\nThe leverage ratio is calculated as average total assets divided by average shareholders' equity. Unless a company has zero liabilities,\naverage assets is always greater than average equity. When a ratio is greater than one, adding the same amount to both the numerator and\ndenominator causes that ratio to decrease, not increase (Choice B).\nThings to remember:\nRevaluation of noncurrent assets is permitted under IFRS, but not US GAAP. Upward revaluation results in a lower leverage ratio, and because\nthe increase in value is initially recognized in other comprehensive income rather than the income statement, both return on assets and return on\nequity will also be lower.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets", "qhtml": null}, {"n": 10, "q": "All else being equal, which of the following patent acquisition methods will most likely result in a company reporting the smallest amortization expense during the initial year of the patent?", "opts": ["Purchase a patent", "Develop a patent internally", "Obtain a patent through a merger"], "ans": "B", "expl": "Treatment for intangible assets\nAcquisition method Treatment of costs\nPurchased on a stand-alone basis Fair value of assets capitalized on balance sheet\nResearch costs expensed immediately on income statement\nDeveloped internally through research\nDevelopment costs capitalized on balance sheet if product is developed for internal use (US\nand development\nGAAP) or has demonstrated technical feasibility (IFRS)\nAcquired through a business Fair value of assets capitalized on balance sheet\ncombination (eg, merger) Additional goodwill created on balance sheet\nIntangible assets (eg, patents, trademarks, or software) lack physical form and grant the holder exclusive rights to future benefits. Management\nmay obtain these assets by purchasing them, internally developing them, or merging with a company that already owns them. Valuation of an\nintangible asset depends on the method of acquisition.\nAmortization expenses the capitalized value of an asset over its useful life. When a company develops a patent internally, it must expense\nresearch costs as incurred. Since there are no further development costs for a patent, no costs are capitalized and no amortization expense is\nreported over the patent's useful life.\n(Choices A and C) Purchasing a patent or merging with a company that has a patent both involve capitalizing the fair value of the patent; both\nresult in amortization expense over the patent's useful life.\nThings to remember:\nIf an intangible asset is acquired through a purchase or merger, the costs are capitalized and subsequently amortized. If the asset is developed\ninternally, amortization is minimized since research costs are expensed as incurred and not capitalized or amortized.\nCompare the financial reporting of the following types of intangible assets: purchased, internally developed, and acquired in a business\ncombination", "qhtml": null}, {"n": 11, "q": "Which of the following actions creates costs that are most likely expensed as incurred?", "opts": ["A company develops a patent internally.", "A firm purchases a trademark with cash.", "A corporation acquires copyrights through a merger."], "ans": "A", "expl": "Treatment for intangible assets\nAcquisition method Treatment of costs\nPurchased on a stand-alone basis Fair value of assets capitalized on balance sheet\nResearch costs expensed immediately on income statement\nDeveloped internally through research\nDevelopment costs capitalized on balance sheet if product is developed for internal use (US\nand development\nGAAP) or has demonstrated technical feasibility (IFRS)\nAcquired through a business Fair value of assets capitalized on balance sheet\ncombination (eg, merger) Additional goodwill created on balance sheet\nLong-lived assets that lack physical substance and are nonfinancial in nature are called intangible assets. Patents, trademarks, and copyrights\nare examples of intangible assets. Companies can buy intangible assets, develop them internally, or acquire them as part of a business\ncombination (ie, merger with another company).\nIf a trademark is developed internally (ie, within the company), its cost is expensed in the period incurred. In contrast, if a company obtains an\nintangible asset by purchasing it or acquiring it through a business combination, then its cost is capitalized and amortized over the asset's useful\nlife (Choices B and C).\nThings to remember:\nCompanies can buy intangible assets, develop them internally, or acquire them as part of a business combination. If an intangible asset is\ndeveloped internally, at least some of its costs are expensed as incurred.\nCompare the financial reporting of the following types of intangible assets: purchased, internally developed, and acquired in a business\ncombination", "qhtml": null}, {"n": 12, "q": "A company purchases a piece of capital equipment at the beginning of the year. The equipment has a useful life of three years and zero salvage value. All else being equal, compared to capitalizing the expenditure, if the company expenses the purchase, it would most appropriately report:", "opts": ["lower total cash after three years.", "the same cumulative net income over three years.", "lower cash flow from investing over the three years."], "ans": "B", "expl": "Expensing an asset purchase initially reports the amount of the expenditure on the income statement whereas capitalizing an asset\npurchase initially reports the amount of the expenditure on the balance sheet. Each method initially impacts the company's financial results\ndifferently, but the cumulative impact to net income and total cash flow under both methods is the same over time.\nThe example below shows this application for a ¥90 million asset purchase. This example assumes straight-line depreciation but would be true of\nany depreciation method:\nIf the company expenses the asset, the cost of ¥90 million is recorded one time on the income statement that year. As a result, net income and\noperating cash flow are initially low but subsequently recover in future years.\nIf the company capitalizes the asset, the cost of ¥90 million is instead reported on the balance sheet as a long-term asset upon initial recognition\nand subsequently spread to the income statement as a depreciation expense over the asset's useful life (ie, ¥30 million annually). Therefore, the\nimpact to net income and operating cash flow is reflected each year. However, at the end of three years, the cumulative impact to net income and\ntotal cash flow is the same.\n13.An investment firm recently sold some old office furniture with a historical cost of €100,000. Upon completing the sale, the company\nrecognized a gain of €5,000. If the accumulated depreciation on the furniture was €70,000, then the furniture was sold for a price (in €) closest to:\n\nA. 35,000\nB. 75,000\nC. 105,000\nExplanation\nCompanies often dispose of assets (eg, equipment, furniture) by selling to another party. The gain or loss on the sale is the sales amount\nminus the carrying value of the asset at the time of the sale. Carrying value (ie, net book value) is the gross book value (ie, historical cost)\nminus accumulated depreciation.\nIn this scenario, rearrange the equation to calculate the sales price. The company recorded a €5,000 gain on the sale of furniture with a carrying\nvalue of €30,000, so the sales price must have been closest to €35,000.\n(Choice B) €75,000 results from adding a gain of €5,000 to an accumulated depreciation of €70,000.\n(Choice C) €105,000 results from adding a gain of €5,000 to a historical cost of €100,000.\nThings to remember:\nThe gain or loss on the sale of a long-lived asset is the sales amount minus the carrying value of the asset at the time of the sale. Carrying value\n(ie, net book value) is the gross book value (ie, historical cost) minus accumulated depreciation.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 13, "q": "An investment firm recently sold some old office furniture with a historical cost of €100,000. Upon completing the sale, the company recognized a gain of €5,000. If the accumulated depreciation on the furniture was €70,000, then the furniture was sold for a price (in €) closest to: ", "opts": ["35,000", "75,000", "105,000"], "ans": "A", "expl": "Companies often dispose of assets (eg, equipment, furniture) by selling to another party. The gain or loss on the sale is the sales amount\nminus the carrying value of the asset at the time of the sale. Carrying value (ie, net book value) is the gross book value (ie, historical cost)\nminus accumulated depreciation.\nIn this scenario, rearrange the equation to calculate the sales price. The company recorded a €5,000 gain on the sale of furniture with a carrying\nvalue of €30,000, so the sales price must have been closest to €35,000.\n(Choice B) €75,000 results from adding a gain of €5,000 to an accumulated depreciation of €70,000.\n(Choice C) €105,000 results from adding a gain of €5,000 to a historical cost of €100,000.\nThings to remember:\nThe gain or loss on the sale of a long-lived asset is the sales amount minus the carrying value of the asset at the time of the sale. Carrying value\n(ie, net book value) is the gross book value (ie, historical cost) minus accumulated depreciation.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 14, "q": "A company acquires manufacturing equipment for $200,000. The equipment has 10 years of useful life left with an estimated salvage value of $10,000. The company depreciates the equipment using straight-line depreciation. If the company sells the equipment for $30,000 after 8 years, the loss recorded on the equipment sale is closest to:", "opts": ["-$8,000", "-$10,000", "-$18,000"], "ans": "C", "expl": "Companies often dispose of assets (eg, used equipment, furniture) by selling to another party. The gain or loss on the sale equals the sales\namount minus the carrying amount of the asset at the time of the sale. The carrying amount (ie, net book value) equals the gross book value\n(ie, historical cost) minus accumulated depreciation.\nTo solve for the loss on the equipment sale:\nThings to remember:\nThe gain or loss on the sale is the sales amount minus the carrying amount of the asset at the time of the sale. The carrying amount equals the\nhistorical cost minus accumulated depreciation.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios LOS\n15.A company is currently developing a new software product for potential introduction to the market. If the company has demonstrated the\ntechnical feasibility of the software, then future development costs should most appropriately:\nA. be expensed.\n B. be capitalized as a long-term asset.\nC. reduce cash flow from operating activities.\nExplanation\nTreatment of research and development (R&D) costs\nIFRS US GAAP\nR&D costs: generally expensed\nResearch costs: Software exceptions\nexpensed R&D costs expensed prior to establishment of\nDevelopment technical feasibility\ncosts: capitalized R&D costs capitalized once technical feasibility\nis established\nIntangible assets (eg, patents, trademarks, software) lack physical form and can be obtained through standalone purchases, mergers and\nacquisitions (ie, business combinations), or internal development. When an intangible asset is acquired:\nexternally, costs are capitalized.\ninternally, certain research and development (R&D) costs may be expensed or capitalized.\nIFRS and US GAAP differ in some areas on the treatment of internal R&D costs:\nIFRS require companies to expense research costs when incurred and to capitalize development costs. Under IFRS, development costs\nare incurred once a product has proven technical feasibility.\nUS GAAP consider R&D costs together and typically require companies to expense those costs. However, for software, R&D costs are\ncapitalized once technical feasibility has been demonstrated.\nIn this scenario, the software product is being developed internally and has demonstrated technical feasibility. Therefore, the development costs\nsatisfy the capitalization criteria under both IFRS and US GAAP (Choice A).\n(Choice C) Since the development costs are capitalized, they represent a cash outflow under investing activities, not operating activities. Cash\nflow from operating activities captures costs that are expensed on the income statement.\nThings to remember:\nIFRS require companies to expense research costs when incurred and to capitalize development costs. Development costs are incurred once a\nproduct has proven technical feasibility. US GAAP typically require companies to expense research and development costs but capitalize costs for\nsoftware products once technical feasibility has been demonstrated.\nCompare the financial reporting of the following types of intangible assets: purchased, internally developed, and acquired in a business\ncombination", "qhtml": null}, {"n": 15, "q": "A company is currently developing a new software product for potential introduction to the market. If the company has demonstrated the technical feasibility of the software, then future development costs should most appropriately:", "opts": ["be expensed.", "be capitalized as a long-term asset.", "reduce cash flow from operating activities."], "ans": "B", "expl": "Treatment of research and development (R&D) costs\nIFRS US GAAP\nR&D costs: generally expensed\nResearch costs: Software exceptions\nexpensed R&D costs expensed prior to establishment of\nDevelopment technical feasibility\ncosts: capitalized R&D costs capitalized once technical feasibility\nis established\nIntangible assets (eg, patents, trademarks, software) lack physical form and can be obtained through standalone purchases, mergers and\nacquisitions (ie, business combinations), or internal development. When an intangible asset is acquired:\nexternally, costs are capitalized.\ninternally, certain research and development (R&D) costs may be expensed or capitalized.\nIFRS and US GAAP differ in some areas on the treatment of internal R&D costs:\nIFRS require companies to expense research costs when incurred and to capitalize development costs. Under IFRS, development costs\nare incurred once a product has proven technical feasibility.\nUS GAAP consider R&D costs together and typically require companies to expense those costs. However, for software, R&D costs are\ncapitalized once technical feasibility has been demonstrated.\nIn this scenario, the software product is being developed internally and has demonstrated technical feasibility. Therefore, the development costs\nsatisfy the capitalization criteria under both IFRS and US GAAP (Choice A).\n(Choice C) Since the development costs are capitalized, they represent a cash outflow under investing activities, not operating activities. Cash\nflow from operating activities captures costs that are expensed on the income statement.\nThings to remember:\nIFRS require companies to expense research costs when incurred and to capitalize development costs. Development costs are incurred once a\nproduct has proven technical feasibility. US GAAP typically require companies to expense research and development costs but capitalize costs for\nsoftware products once technical feasibility has been demonstrated.\nCompare the financial reporting of the following types of intangible assets: purchased, internally developed, and acquired in a business\ncombination", "qhtml": null}, {"n": 16, "q": "A company has equipment with a carrying value of USD 2 million. If the company reclassifies the equipment as held for use until disposal, the company most likely: ", "opts": ["continues to report depreciation and impairment charges.", "no longer reports impairment charges but continues reporting depreciation.", "no longer reports depreciation but continues reporting impairment charges."], "ans": "A", "expl": "A company may dispose of an asset by selling, exchanging, distributing, or abandoning it. If a noncurrent asset is considered held for sale (ie,\nwill be sold), the company no longer records depreciation expense or impairment charges.\nIf the asset is to be abandoned, exchanged, or distributed, it is classified as held for use until disposal. In this scenario, management will\ncontinue to report depreciation expenses and test the asset for impairment since the asset's carrying value is greater than zero (USD 2\nmillion). This lasts from the initial classification until the asset's disposal or until management reclassifies the asset (Choices B and C).\nThings to remember:\nA company may dispose of an asset by selling, exchanging, distributing, or abandoning it. If the company intends to abandon an asset, the asset\nis classified as held for use until disposal. If the asset's carrying value is greater than zero, the company continues to report depreciation and test\nfor impairment charges.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 17, "q": "A construction firm reports financial results under US GAAP. In 20X8, the firm borrowed $10 million for five years at 6% interest to construct its new headquarters building, which will have a useful life of 50 years and will be depreciated using the straight-line method. Construction will take three years to complete, and during that period the firm will earn $40,000 interest per year by temporarily investing the loan proceeds that it does not currently require for construction. If the firm has no other long-term assets and the loan requires only interest to be paid each year (ie, no amortization of principal), the amount of interest that the firm will capitalize is closest to:", "opts": ["$1.68 million", "$1.80 million", "$3.00 million"], "ans": "B", "expl": "Capitalized interest arises when a firm borrows to create a long-term asset (eg, a factory). The interest expense from the loan is added to the\ncost of the asset and increases the carrying value of the asset on the balance sheet. Instead of being included as interest expense, the\ncapitalized interest increases depreciation expense each year.\nThe firm incurs interest expense of $600,000 ($10 million × 6%) per year on the loan. Both IFRS and GAAP specify that interest is capitalized\nduring the construction period only. Interest is treated as a cost of acquisition. When the construction is finished, the asset has been \"acquired\"\nand requires no further acquisition expenditures. The firm's construction lasts three years, so the total capitalized interest is $1.80 million.\nIFRS and US GAAP treat capitalized interest similarly; the main difference concerns income received from temporarily investing loan proceeds\nduring construction. IFRS require firms to offset the amount of capitalized interest by the income, but GAAP do not allow this. The firm reports\nunder US GAAP, so it cannot offset the $120,000 income received ($40,000 per year for three years) against the $1.80 million capitalized interest\n(Choice A).\n(Choice C) The firm will treat the final two years of interest costs as ordinary interest expenses on the income statement. $3 million results from\ncapitalizing interest for the entire five-year loan period.\nThings to remember:\nCapitalized interest is the interest expense incurred from loans used to build long-term assets while the asset is being built. Capitalized interest is\nadded to the cost of the long-term asset and will be expensed over the asset's useful life through increased depreciation expense. Unlike US\nGAAP, IFRS require capitalized interest to be reduced by any income received from investing unneeded loan proceeds.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets", "qhtml": null}, {"n": 18, "q": "A company reports its financial results under IFRS and provides the following information on a machine that it owns: £ Asset's historical cost 35,000 Accumulated depreciation 19,000 Undiscounted future cash flows from asset 20,000 Discounted future cash flows from asset 14,000 Fair value 17,500 Cost to sell asset 3,000 This year, the allowable impairment charge (£) that the company can take for the machine is closest to:", "opts": ["0", "1,500", "2,000"], "ans": "B", "expl": "Impairment is an unanticipated decline in an asset's value, such as a decline in demand for the good that the asset produces. The amount of\nimpairment under IFRS and US GAAP is the difference between the asset's carrying value (ie, net book value) and its \"recoverable amount,\" but\nUS GAAP and IFRS differ in how each defines \"recoverable.\"\nIFRS define \"recoverable amount\" as the greater of the asset's fair value less costs to sell the asset and the discounted future cash flows (ie,\nvalue in use) that the asset is expected to generate. By contrast, US GAAP define recoverable amount as the undiscounted cash flows. Under\nIFRS, if the carrying value (ie, historical cost less accumulated depreciation) exceeds the recoverable amount, then the impairment charge equals\nthe difference between them.\nThis company uses IFRS, so the machine's recoverable amount is the higher of its net fair value (£17,500 − 3,000 = £14,500) or its discounted\ncash flows (£14,000). The impairment charge calculation is shown in the table below:\n(Choice A) £0 results from applying the US GAAP standards of comparing undiscounted future cash flows (£20,000) to the asset's net book value\n(£16,000). Undiscounted future cash flows exceed the net book value, so there is no impairment under US GAAP.\n(Choice C) £2,000 results from incorrectly subtracting the discounted cash flows, rather than the net fair value, from the carrying value.\nThings to remember:\nIFRS and US GAAP require companies to determine whether noncurrent assets are impaired. IFRS uses the difference between the carrying\nvalue and the recoverable amount to determine whether, and by how much, an asset is impaired. IFRS define \"recoverable amount\" as the\ngreater of the net fair value and the discounted future cash flows from the asset.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 19, "q": "A company acquires the assets of another company in a business combination and records goodwill. Under US GAAP, which of the following is most likely included in goodwill?", "opts": ["Separable patents", "The fair market value of PPE", "Nonidentifiable intangible assets"], "ans": "C", "expl": "In a business combination, the difference between the purchase price and fair market value of net assets (ie, assets − liabilities) is goodwill. At\nthe time of the merger, long-lived tangible assets and identifiable intangibles are not reported as goodwill; instead, they are revalued to their fair\nmarket value. Intangible assets are identifiable and are included in the fair market value of net assets if:\nUnder US GAAP, they:\nOriginate as a legal claim (eg, patents, trademarks)\nAre separable (ie, can be sold separately) from the acquired company\nUnder IFRS, they:\nOriginate as a legal claim (eg, patents, trademarks)\nAre separable (ie, can be sold separately) from the acquired company\nAre controlled by the acquiring company\nCan create measurable economic benefits\nHave reliably measured costs\nIf intangible assets do not meet these criteria, they are not included in the fair market value of net assets and are accounted for as goodwill.\n(Choice A) Under US GAAP, if an intangible asset originates as a legal claim or is separable (eg, a patent), it is considered an identifiable\nintangible asset and is not included in goodwill.\n(Choice B) Tangible assets are revalued to their fair market value in a business combination. By definition, a tangible asset's (eg, PPE's) fair\nmarket value is identifiable and is not part of goodwill.\nThings to remember:\nIn a business combination, long-lived tangible assets and identifiable intangible assets are revalued to fair market value and are not included in\ngoodwill. Under US GAAP, intangible assets must be 1) identifiable (ie, originate as a legal claim), and 2) separable (ie, can be sold separately\nfrom the acquired company). Under IFRS, intangible assets must be identifiable, controllable, and have measurable economic costs and benefits.\nCompare the financial reporting of the following types of intangible assets: purchased, internally developed, and acquired in a business\ncombination", "qhtml": null}, {"n": 20, "q": "Under US GAAP, an impairment of property, plant, and equipment (PPE) most likely occurs when the carrying amount is:", "opts": ["more than the sum of the asset's discounted future cash flows.", "less than the sum of the asset's undiscounted future cash flows.", "more than the sum of the asset's undiscounted future cash flows."], "ans": "C", "expl": "Impairment typically arises from an unanticipated decline in an asset's value. An asset is impaired when its carrying amount (ie, its book value)\nis greater than its recoverable amount. Under US GAAP, the recoverable amount is measured as the sum of the asset's undiscounted future\ncash flows, which represents total future economic benefits. Simply stated, an asset is impaired if its expected future benefits are below its current\nbook value.\nWhen impairment occurs, the value of the asset is reduced on the balance sheet and an impairment charge is simultaneously reported on the\nincome statement. According to US GAAP, impairment charges may never be reversed, even if the asset's value increases in the future.\n(Choices A and B) Under US GAAP, impairment occurs when the carrying value is more than the sum of the undiscounted future cash flows.\nThings to remember:\nImpairment typically arises from an unanticipated decline in an asset's value. An asset is impaired when its carrying amount is greater than its\nrecoverable amount. Under US GAAP, recoverable amount is measured as the sum of the asset's undiscounted future cash flows.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 21, "q": "At the beginning of 20X2, a company reporting under US GAAP purchases a patent for USD 20 million with no residual value and a useful life of 10 years. At the end of 20X3, the company determines that the patent's expected cash generation is lower due to changes in the law. It estimates the following: If the company uses straight-line amortization, the 20X3 impairment charge the company records is closest to:", "opts": ["USD 6 million.", "USD 7 million.", "USD 8 million."], "ans": "B", "expl": "Impairment is recognized when an asset's carrying value (ie, historical cost less accumulated amortization) is greater than its undiscounted\nfuture cash flows (ie, recoverable amount). The actual impairment loss is the difference between the asset's carrying value and its fair\nmarket value.\nIn this scenario, determine the carrying value at the end of 20X3. Using the straight-line method, the amortization expense is USD 2 million per\nyear. The carrying value at the end of 20X3 is found by subtracting two years (20X2 and 20X3) of amortization from its historical cost.\nSince the carrying value is greater than the undiscounted cash flow, the company records an impairment loss. The amount of the loss (USD 7\nmillion) is the difference between the carrying value (USD 16 million) and the fair market value (USD 9 million).\n(Choice A) USD 6 million is found by using the undiscounted future cash flow, not the fair market value when calculating the impairment charge.\n(Choice C) USD 8 million is found by subtracting the net fair market value from the asset's carrying value since that is greater than its value in\nuse. Under IFRS, the recoverable amount is the greater of the fair market value net of selling costs or its value in use.\nThings to remember:\nUnder US GAAP, impairment is calculated if the carrying value is greater than its undiscounted cash flows (ie, impairment test). The actual\nimpairment loss is the difference between the asset's carrying value and its fair market value.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 22, "q": "A company reports under US GAAP and provides the following information on its equipment: Metric $ Carrying amount 31,000 Expected future cash flows Undiscounted 28,000 Present value 26,500 Fair value if sold 22,000 Cost to sell 2,500 Due to an impairment charge, the carrying value of the machine is closest to:", "opts": ["19,500", "22,000", "26,500"], "ans": "B", "expl": "Impairment charges are recognized when an asset's carrying amount, measured as historical cost minus accumulated depreciation, is greater\nthan its recoverable value. US GAAP defines the recoverable amount as simply the undiscounted expected future cash flows. In this case,\nthe carrying amount ($31,000) exceeds the recoverable amount ($28,000).\nThe impaired asset is written down to a new carrying value with a new depreciation schedule. Under US GAAP, the asset would be written down\nto fair value (ie, value if sold [$22,000]). This fair value estimate becomes the new carrying amount.\nIn contrast, IFRS defines the recoverable amount and the new carrying value as the greater of the asset's fair value less costs to sell the asset\n($22,000 − $2,500) or the discounted future cash flows ($26,500) that the asset is expected to generate (Choices A and C).\nThings to remember:\nOnce an asset is deemed impaired, it is written down to a new carrying value. Under US GAAP, that value is the fair value of the asset if sold.\nUnder IFRS, the new carrying value is the greater of the discounted future cash flows or the net fair value.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 23, "q": "In 20X7, a firm reported earnings before interest and taxes (EBIT) of €32.2 million, interest expense of €3.5 million on its income statement, and interest paid of €3.1 million on its cash flow statement. The footnotes also revealed that if the firm had no capitalized interest in 20X7, depreciation expense would change by €450,000. After factoring in all effects of capitalized interest, the analyst recalculated the interest coverage ratio to be 7.5 times. The amount of capitalized interest reported by the firm in 20X7 is closest to:", "opts": ["€850,000", "€1,133,000", "€1,250,000"], "ans": "C", "expl": "Firms that report capitalized interest usually have an overstated interest coverage ratio. Capitalized interest is included with noncurrent (ie,\nlong-term) assets and not as an expense on the income statement, so interest expense is less for firms that capitalize, resulting in a larger ratio.\nThe firm pays the interest each year, so from an analytical perspective, it is irrelevant whether the firm records the interest as an expense or an\nasset. Analysts routinely adjust the interest coverage ratio to add the capitalized interest to the interest paid.\nAnother adjustment must be made for depreciation. When a noncurrent asset includes capitalized interest, it is expenses as incrementally higher\ndepreciation expense. For example, if a noncurrent asset includes $100 of capitalized interest, and the asset is depreciated straight-line over ten\nyears, then depreciation expense increases by $10 each year (= 100/10). This additional depreciation is added to earnings before interest and\ntaxes (EBIT).\nSo, the total adjustment requires two steps:\nadjust for the capitalized interest (in the denominator) to reflect the firm's \"true\" interest cost.\nadjust for additional depreciation expense (in the numerator).\nThe adjustments to the firm's interest coverage ratio are shown below:\n(Choice A) 850,000 results from incorrectly using interest expense rather than interest paid in the interest coverage ratio.\n(Choice B) 1,133,333 results from an incorrect numerator caused by subtracting the incremental depreciation from EBIT instead of adding it to\nEBIT.\nThings to remember:\nCapitalized interest can cause the interest coverage ratio to be overstated. Adjust the denominator by adding the capitalized interest to interest\npaid. Adjust the ratio's numerator by adding incremental depreciation resulting from the capitalized interest to earnings before interest and taxes.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets\n24.A company acquires an asset that has a cost of ¥90 million, a useful life of 3 years, and zero salvage value. The asset will be abandoned at\nthe end of 3 years. The company does not pay dividends. All else being equal, expensing the cost of this asset, instead of capitalizing it, will most\nlikely result in:\nA. higher return on equity at the end of the first year.\nB. lower cash from investing activities in the first year.\n C. the same retained earnings at the end of the asset's useful life.\nExplanation\nExpensing an asset captures its full cost on the income statement when the asset is purchased. In contrast, capitalizing an asset initially captures\nits full cost as a long-term asset on the balance sheet and subsequently spreads its depreciation expense to the income statement over the asset's\nuseful life.\nDue to this timing difference, expensing results in lower net income initially and higher net income in subsequent years. In contrast, net income\nis more even each year during the asset's useful life when its cost is capitalized. However, the total net income over the asset's life is the same\nunder both methods. Since retained earnings are the accumulation of net income, net of any dividends paid (which in this case is zero), retained\nearnings at the end of the asset's life are identical whether the asset is capitalized or expensed.\nFor example, assume this company begins operations in Year 0 with ¥200 million in cash and purchases the asset in Year 1. Furthermore,\nassume the asset generates annual revenue of ¥100 million, as shown:\nIf expensed, the full ¥90 million cost is captured as net income in Year 1. If capitalized, the ¥90 million appears on the balance sheet under Gross\nPPE in Year 1 and subsequently reduces each year's income by ¥30 million (before tax) in depreciation (assuming the straight-line method is\nused). At the end of 3 years, retained earnings under both scenarios equal ¥168 million.\n(Choice A) Expensing (compared to capitalizing) an asset results in lower ROE (= net income / average shareholders' equity) during the first year\nsince Year 1's net income is proportionally reduced more than average shareholders' equity.\n(Choice B) Expensing an asset results in greater cash flow from investing activities since the full cost, which is a negative cash flow, is reflected\nin cash from operating activities.\nThings to remember:\nExpensing or capitalizing an asset purchase initially affects the company's financial results differently, but the cumulative impact to retained\nearnings under both methods is the same over time.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets", "qhtml": null}, {"n": 24, "q": "A company acquires an asset that has a cost of ¥90 million, a useful life of 3 years, and zero salvage value. The asset will be abandoned at the end of 3 years. The company does not pay dividends. All else being equal, expensing the cost of this asset, instead of capitalizing it, will most likely result in:", "opts": ["higher return on equity at the end of the first year.", "lower cash from investing activities in the first year.", "the same retained earnings at the end of the asset's useful life."], "ans": "C", "expl": "Expensing an asset captures its full cost on the income statement when the asset is purchased. In contrast, capitalizing an asset initially captures\nits full cost as a long-term asset on the balance sheet and subsequently spreads its depreciation expense to the income statement over the asset's\nuseful life.\nDue to this timing difference, expensing results in lower net income initially and higher net income in subsequent years. In contrast, net income\nis more even each year during the asset's useful life when its cost is capitalized. However, the total net income over the asset's life is the same\nunder both methods. Since retained earnings are the accumulation of net income, net of any dividends paid (which in this case is zero), retained\nearnings at the end of the asset's life are identical whether the asset is capitalized or expensed.\nFor example, assume this company begins operations in Year 0 with ¥200 million in cash and purchases the asset in Year 1. Furthermore,\nassume the asset generates annual revenue of ¥100 million, as shown:\nIf expensed, the full ¥90 million cost is captured as net income in Year 1. If capitalized, the ¥90 million appears on the balance sheet under Gross\nPPE in Year 1 and subsequently reduces each year's income by ¥30 million (before tax) in depreciation (assuming the straight-line method is\nused). At the end of 3 years, retained earnings under both scenarios equal ¥168 million.\n(Choice A) Expensing (compared to capitalizing) an asset results in lower ROE (= net income / average shareholders' equity) during the first year\nsince Year 1's net income is proportionally reduced more than average shareholders' equity.\n(Choice B) Expensing an asset results in greater cash flow from investing activities since the full cost, which is a negative cash flow, is reflected\nin cash from operating activities.\nThings to remember:\nExpensing or capitalizing an asset purchase initially affects the company's financial results differently, but the cumulative impact to retained\nearnings under both methods is the same over time.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets", "qhtml": null}, {"n": 25, "q": "At the beginning of this year, a company purchased electronic goods that cost €120,000 and chose to expense the purchase instead of capitalizing it. The electronics have a useful life of 3 years with zero salvage value, and the company uses straight-line depreciation. The company reports €300,000 in revenue each year and is taxed at 25%. There are no other expenses aside from the purchase cost and corporate tax. Based only on this information and compared to capitalizing the asset, expensing the asset most likely results in:", "opts": ["net PPE that is €120,000 lower in the current year.", "net income that is €60,000 lower in the current year.", "cash from operations that is €100,000 higher in the current year."], "ans": "B", "expl": "Expensing or capitalizing an asset purchase impacts the company's financial results differently each year, but the cumulative impact to net income\nand total cash flow under both methods is the same over time. In this scenario, when the company expenses the asset, the full cost of €120,000\nis reported on the income statement this year. Subtracting €120,000 from revenue of €300,000 results in pretax income of €180,000, which yields\n€135,000 of net income after deducting €45,000 of taxes.\nHad the company capitalized the asset, at initial recognition €120,000 would be reported on the balance sheet as a long-term asset. At year-end,\n€40,000 of depreciation (ie, €120,000 purchase price less 0 salvage value over 3 years) is reported as depreciation expense on the income\nstatement and reduces pretax income to €260,000, which yields €195,000 in net income after subtracting €65,000 in taxes. Therefore, expensing\nthe asset would result in net income that is 135,000 − 195,000 = €60,000 lower in the first year.\n(Choice A) €120,000 lower net PPE results from not subtracting depreciation of €40,000. Net PPE at year-end is €80,000.\n(Choice C) Cash from operations (CFO) is actually €100,000 lower when the asset is expensed. This is because expensing the entire purchase\ncost reduces net income in the first year, which also reduces CFO.\nThings to remember:\nExpensing an asset results in lower net income and cash from operations in the first year compared to capitalizing it because the full equipment\ncost is absorbed upon initial recognition.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets", "qhtml": null}, {"n": 26, "q": "A company purchased equipment at the beginning of 20X2. At the end of 20X2, the fair value of the equipment fell to €10,000 below its book value. Using the revaluation model and ignoring tax effects, on the 20X2 financial reports, this most likely results in a €10,000 reduction in: ", "opts": ["net income.", "accumulated depreciation.", "other comprehensive income."], "ans": "A", "expl": "Financial statement treatment of revaluation of noncurrent assets—IFRS only\nUpward revaluation Downward revaluation\nGain recognized in other comprehensive income (OCI) as\nInitial Loss recognized on income statement\nrevaluation surplus\nRecognized on income statement to the extent of previous\nReduces revaluation surplus\nrecognized losses\nSubsequent If revaluation surplus = 0, recognized on income\nGain in excess of previous losses recognized as revaluation\nstatement as loss\nsurplus\nCompanies that report under IFRS are permitted to revalue long-term assets to their current fair value. An upward revaluation occurs when an\nasset's fair value exceeds its carrying amount (ie, net book value). A downward revaluation occurs when an asset's fair value falls below its\ncarrying amount.\nThe accounting treatment for each case is:\nFor an initial upward revaluation, the initial gain from the asset mark-up bypasses the income statement and directly increases other\ncomprehensive income, reported as a component of shareholders' equity on the balance sheet.\nFor an initial downward adjustment, the initial loss from the asset mark-down appears on the income statement and reduces net income,\nwhich then flows to shareholders' equity on the balance sheet.\nThe different treatments of the upward and downward revaluations reflect accounting standards' conservative bias: the company must \"own\" the\ndownward revaluation and report it as directly affecting net income, and thus earnings performance, but cannot similarly \"take credit\" for an\nupward revaluation.\nIn this scenario, the fair value of the asset drops below its balance sheet book value, so a downward revaluation occurs. This directly reduces net\nincome by €10,000.\n(Choice B) Since the downward revaluation occurs at the end of 20X2, the depreciation expense will be adjusted going forward. Therefore, there\nis no change to accumulated depreciation in 20X2.\n(Choice C) Only upward revaluations impact other comprehensive income on the balance sheet.\nThings to remember:\nCompanies reporting under IFRS are allowed to use the revaluation model. For an initial upward revaluation, the initial gain from the asset mark-\nup bypasses the income statement and directly increases other comprehensive income on the balance sheet. For an initial downward adjustment,\nthe initial loss from the asset mark-down appears on the income statement and reduces net income.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 27, "q": "A company sells a noncurrent asset for $3 million. It originally paid $4 million for the asset and reported a loss of $900,000 on the sale. At the time of the sale, the accumulated depreciation for the asset was closest to: ", "opts": ["$100,000", "$1,000,000", "$1,900,000"], "ans": "A", "expl": "A gain or loss from the sale of a noncurrent asset is reported on the income statement. The gain or loss is calculated as the difference between\nthe sales price and the asset's book value at the time of sale. As the figure above demonstrates, book value is the difference between the\nhistorical cost of the asset and the asset's accumulated depreciation.\nInserting the variables for book value into the equation for gain or loss on sale results in the relationship on the right in the figure. All variables to\ncalculate the gain or loss are known except for the accumulated depreciation.\nRearranging the equation on the right results in:\n(Choice B) $1,000,000 is the difference between the sales price and the historical cost. It does not account for any depreciation that would\nreduce the historical cost to the current book value.\n(Choice C) $1,900,000 results from mistaking the $900,000 loss as a gain and adding it to the difference between the historic cost and the sales\nprice.\nThings to remember:\nA gain or loss on the sale of an asset is the sales price minus the book value. Book value is calculated as the historical cost minus accumulated\ndepreciation.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 28, "q": "A company reporting under IFRS elects to use the revaluation model for its equipment. The company purchases equipment for €10 million during 20X3. At the end of 20X3, the fair value of the equipment is €11 million. The company most likely records a €1 million: ", "opts": ["increase in equity.", "gain on the income statement.", "decrease in depreciation expense."], "ans": "A", "expl": "Financial statement treatment of revaluation of noncurrent assets—IFRS only\nUpward revaluation Downward revaluation\nGain recognized in other comprehensive income (OCI) as\nInitial Loss recognized on income statement\nrevaluation surplus\nRecognized on income statement to the extent of previous\nReduces revaluation surplus\nrecognized losses\nSubsequent If revaluation surplus = 0, recognized on income\nGain in excess of previous losses recognized as revaluation\nstatement as loss\nsurplus\nIFRS, but not US GAAP, allow companies to choose between the cost model and the revaluation model for valuing long-lived assets. Using the\nrevaluation model, an asset's carrying value is adjusted based on the asset's fair value. Revaluations adjust an asset's carrying value upward\nor downward. These adjustments may be made during the initial year of ownership and/or subsequently over the equipment's useful life.\nAn initial upward revaluation means that the company reports the asset at a higher value than its original cost. For an initial upward revaluation,\nthe increase in value bypasses the income statement and is reported as part of other comprehensive income; it is not recorded as a gain and\nhas no impact on expenses or net income (Choices B and C). The revaluation bypasses the income statement since the higher valuation is\noutside of management's control and so the company should not report increased profits from it.\nThe company may record an increase in profits only if there is a subsequent increase in fair value following previous reductions in value. Then the\nincrease in fair value—and profit—is limited to previous decreases in value. Any increase in value above previous losses is also recorded in other\ncomprehensive income.\nThings to remember:\nRevaluation of noncurrent assets is permitted under IFRS but not under US GAAP. Initial upward revaluations are recorded in other\ncomprehensive income; they bypass the income statement and do not impact expense or profit.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets", "qhtml": null}, {"n": 29, "q": "A decision to capitalize the purchase of a long-lived asset instead of expensing it will most likely result in a company reporting:", "opts": ["less net income in the first year.", "greater cash flow from investing activities in the first year.", "greater cash flow from operating activities in the first year."], "ans": "C", "expl": "Each method of recording an asset purchase (ie, capitalizing or expensing) initially impacts the company's reported financial results differently, but\nthe cumulative impact under either method is the same over the course of time. A comparison of capitalization versus expensing is shown:\nWhen a buyer capitalizes an expenditure, long-term assets increase by the amount capitalized on the balance sheet; that amount will then be\ndepreciated over the asset's useful life. Since the initial expenditure bypasses the income statement, net income will be greater initially compared\nwith expensing an asset, but will be less in future periods due to depreciation. Furthermore, capitalizing produces greater cash from operating\nactivities since the initial cash expenditure is classified as a cash outflow under investing activities (Choice B).\nWhen a company expenses an asset, the initial expenditure appears as an operating expense on the income statement, which produces a lower\nnet income initially and less cash from operating activities compared with capitalizing the asset (Choice A). However, since no long-term asset is\nrecognized on the balance sheet, there is no periodic depreciation, which leads to higher net income in future periods.\nAnalyze and interpret financial statement disclosures regarding property, plant, and equipment and intangible assets\n30. Company A purchases a patent from Company B and acquires Company C along with its customer list. The most appropriate way for\nCompany A to account for these purchases would be to:\n\nA. capitalize both the patent and the customer list.\nB. capitalize the patent and expense the customer list.\nC. expense the patent and capitalize the customer list.\nExplanation\nTreatment for intangible assets\nAcquisition method Treatment of costs\nPurchased on a stand-alone basis Fair value of assets capitalized on balance sheet\nResearch costs expensed immediately on income statement\nDeveloped internally through research\nDevelopment costs capitalized on balance sheet if product is developed for internal use (US\nand development\nGAAP) or has demonstrated technical feasibility (IFRS)\nAcquired through a business Fair value of assets capitalized on balance sheet\ncombination (eg, merger) Additional goodwill created on balance sheet\nIntangible assets (eg, patents, customer lists) lack physical form but are still expected to grant the holder future economic benefit. These assets\ncan be obtained through a stand-alone purchase, the acquisition of another company, or internal development.\nCompanies are required to account for these assets in different ways, depending on the means of acquisition. If intangible assets are acquired\nthrough a stand-alone purchase or as part of a larger business combination (eg, acquisition), both IFRS and US GAAP require capitalizing\nthe asset: recognizing its fair value on the company's balance sheet and subsequently amortizing that value over the asset's useful life. Note that\ngoodwill, although considered an intangible asset, is not identifiable and therefore not amortized but rather periodically tested for impairment.\nIn this scenario, one company acquires a customer list as a part of its acquisition of another company and also purchases a stand-alone patent.\nUnder IFRS and US GAAP, both intangible assets should be capitalized (Choices B and C).\nThings to remember:\nA company can obtain intangible assets through stand-alone purchases, the acquisition of other companies, or internal development. Under both\nIFRS and US GAAP, if an intangible asset is acquired through a stand-alone purchase or business combination (eg, acquisition), it is capitalized.\nCompare the financial reporting of the following types of intangible assets: purchased, internally developed, and acquired in a business\ncombination", "qhtml": null}, {"n": 30, "q": "Company A purchases a patent from Company B and acquires Company C along with its customer list. The most appropriate way for Company A to account for these purchases would be to: ", "opts": ["capitalize both the patent and the customer list.", "capitalize the patent and expense the customer list.", "expense the patent and capitalize the customer list."], "ans": "A", "expl": "Treatment for intangible assets\nAcquisition method Treatment of costs\nPurchased on a stand-alone basis Fair value of assets capitalized on balance sheet\nResearch costs expensed immediately on income statement\nDeveloped internally through research\nDevelopment costs capitalized on balance sheet if product is developed for internal use (US\nand development\nGAAP) or has demonstrated technical feasibility (IFRS)\nAcquired through a business Fair value of assets capitalized on balance sheet\ncombination (eg, merger) Additional goodwill created on balance sheet\nIntangible assets (eg, patents, customer lists) lack physical form but are still expected to grant the holder future economic benefit. These assets\ncan be obtained through a stand-alone purchase, the acquisition of another company, or internal development.\nCompanies are required to account for these assets in different ways, depending on the means of acquisition. If intangible assets are acquired\nthrough a stand-alone purchase or as part of a larger business combination (eg, acquisition), both IFRS and US GAAP require capitalizing\nthe asset: recognizing its fair value on the company's balance sheet and subsequently amortizing that value over the asset's useful life. Note that\ngoodwill, although considered an intangible asset, is not identifiable and therefore not amortized but rather periodically tested for impairment.\nIn this scenario, one company acquires a customer list as a part of its acquisition of another company and also purchases a stand-alone patent.\nUnder IFRS and US GAAP, both intangible assets should be capitalized (Choices B and C).\nThings to remember:\nA company can obtain intangible assets through stand-alone purchases, the acquisition of other companies, or internal development. Under both\nIFRS and US GAAP, if an intangible asset is acquired through a stand-alone purchase or business combination (eg, acquisition), it is capitalized.\nCompare the financial reporting of the following types of intangible assets: purchased, internally developed, and acquired in a business\ncombination", "qhtml": null}, {"n": 31, "q": "At the beginning of 20X7, a company acquires a trademark for $85 million; the trademark is considered held for use. At the end of 20X7, the company records an impairment charge of $20 million due to a pending lawsuit. In 20X8, the company receives a favorable ruling, and the trademark is fairly valued at $185 million at year end. If the company reports under US GAAP, the reported increase in the trademark's value for 20X8 is closest to: ", "opts": ["$0", "$20 million", "$100 million"], "ans": "A", "expl": "An impairment is an unanticipated decline in an asset's value. An asset is impaired when its carrying amount is greater than its recoverable\namount. Under US GAAP, the recoverable amount is the sum of the asset's undiscounted future cash flows (ie, total future economic benefit).\nAn asset is impaired if its expected future benefit is below its current book value.\nAfter its initial impairment, the asset's value may increase. However, under US GAAP, if the asset is considered held for use (ie, PPE), a\nreversal of the impairment is not allowed (Choices B and C). If the asset is considered held for sale, the company may record an increase in\nthe asset's carrying value limited to the amount of the initial impairment.\nUnder IFRS, there is no distinction between held for use and held for sale; all assets may increase in value after an initial impairment charge.\nHowever, the increase is limited to the original impairment, even if the recoverable amount is greater than the asset's carrying value before the\ninitial impairment.\nThings to remember:\nAfter an asset's initial impairment, the recoverable value may increase. Under US GAAP, if the asset is considered held for use, a reversal of the\nimpairment is not allowed. If an asset is deemed held for sale, the company may record an increase in the asset's carrying value limited to the\namount of the initial impairment.\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}, {"n": 32, "q": "With respect to impairment losses, the recoverable amount under IFRS is most likely defined as the greater of the asset's value in use or:", "opts": ["fair value minus selling cost.", "fair value.", "gross book value minus selling cost."], "ans": "A", "expl": "An asset is impaired when its carrying amount (book value) exceeds its recoverable amount. Under IFRS, the recoverable amount is the greater\nof the fair value minus selling costs (ie, net fair value) or the sum of the asset's discounted future cash flows (value in use). An impairment loss\nunder IFRS equals the difference between the carrying amount and the recoverable amount. Here is an example of the impairment loss\ncalculation under IFRS, using the appropriate recoverable amount:\nIn this example, the company reduces the asset by EUR 15,000 on the balance sheet and simultaneously records an impairment loss of EUR\n15,000 on the income statement. According to IFRS (unlike US GAAP), impairment charges can be reversed in the future if the recoverable\namount increases above the carrying value.\nThings to remember:\nAn asset is impaired when the carrying amount (book value) exceeds the recoverable amount. Under IFRS, the recoverable amount is the greater\nof the fair value minus selling costs or the sum of the asset's discounted future cash flows (value in use).\nExplain and evaluate how impairment and derecognition of property, plant, and equipment and intangible assets affect the financial statements\nand ratios", "qhtml": null}];
+const CFG = {"title": "Wiley · Analysis of Long-Term Assets", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Financial Statement Analysis · 32 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

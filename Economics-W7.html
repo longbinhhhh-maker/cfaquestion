@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "All else being equal, if the domestic price level decreases relative to the foreign price level, the real exchange rate between the two currencies, when quoted as domestic currency per unit of foreign currency, will most likely:", "opts": ["decrease.", "remain the same.", "increase."], "ans": "C", "expl": "Real exchange rates measure the relative purchasing power for the goods and services of two currencies and are typically created for\neconomic analysis. Nominal (ie, observed or spot) exchange rates show the price of one currency in terms of another currency and are the quotes\nused in currency markets for currency purchases and sales.\nThe real exchange rate is calculated by adjusting the nominal exchange rate by the ratio of price levels (ie, relative rate of inflation) in the\ncorresponding countries. By removing the effects of inflation, real exchange rates better represent economic changes to exchange rates over\ntime.\nThe formula shows that the direction of change in real exchange rates (when quoted as domestic currency per unit of foreign currency) is:\nDirectly related to\nthe direction of change in the nominal exchange rate and\nthe direction of change in the foreign price level\nInversely related to the direction of change in the domestic price level\nAs a result, if the domestic price level decreases, all else being equal, the real exchange rate will increase (Choices A and B).\nThings to remember:\nThe real exchange rate between two currencies measures the relative purchasing power of the currencies. Changes in the real exchange rate,\nwhen quoted as domestic currency per unit of foreign currency, are directly related to movements in the nominal exchange rate and the foreign\nprice level. The changes are inversely related to movements in the domestic price level.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 2, "q": "The exchange rate between the euro (EUR) and the Japanese yen (JPY) is quoted by the amount of JPY per EUR 1 (JPY/EUR). If JPY appreciates against EUR, the spot exchange rate quote will be for a(n): ", "opts": ["smaller amount of JPY.", "equal amount of JPY.", "greater amount of JPY."], "ans": "A", "expl": "Currency values are expressed as a ratio of exchange between currencies. In the question, Japanese yen (JPY) is the price currency and the\neuro (EUR) is the base currency. JPY appreciation against EUR means JPY 1 is worth a greater amount of EUR in Year 1 than it was in Year 0.\nSince the exchange rate quote is given as the number of JPY per EUR 1, the question requires the relationship between the currencies to be\nviewed from the opposite perspective, with EUR as the price currency and JPY as the base currency.\nAppreciation of JPY means the same thing as depreciation of EUR. The EUR depreciation means EUR 1 buys fewer JPY. Consequently,\nJPY/EUR will be quoted at a lower number since it will take a smaller amount of JPY to buy EUR 1.\nThings to remember:\nAn exchange rate is expressed in the number of units of the price currency per one unit of the base currency. Appreciation of the price currency\nmeans it will take less of the price currency to buy a unit of the base currency. This results in an exchange rate that is quoted for a smaller amount\nof the price currency.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 3, "q": "An investor wants to diversify into foreign currency-denominated securities while minimizing exchange rate risk. Which of the following currency regimes would expose the investor to the least exchange rate risk?", "opts": ["Target zone", "Managed float", "Currency board"], "ans": "C", "expl": "An investor looking to add foreign currency-denominated investments to a portfolio is exposed not only to asset price risk but also to exchange\nrate risk. The more potential fluctuation in the exchange rate, the higher the exchange rate risk.\nA currency regime broadly describes the policies of a country's monetary authority for managing domestic currency exchange rates. Between the\nextremes of dollarization and independent floating regimes, exchange rate risk increases as regimes allow greater exchange rate flexibility and\nsupport increased monetary policy independence. Of the regimes in this scenario, the order from lowest to highest exchange rate risk is:\nCurrency board, a legislative commitment to exchange the domestic currency for a specific foreign currency while holding full reserves\nagainst the foreign currency. Minor fluctuations in exchange rates may occur. Hong Kong SAR operates under this regime with the US\ndollar as the anchor currency.\nTarget zone, a commitment to maintain the exchange rate within a preset range. Syria operates under such a regime (Choice A).\nManaged float is similar to an independent float since exchange rates are market-determined. However, the monetary authority is more\nlikely to intervene to manage domestic economic measures (eg, the balance of payments). Russia operates under this type of regime\n(Choice B).\nThings to remember:\nExchange rate risk increases as currency regimes allow greater exchange rate flexibility and support increased monetary policy independence. A\ncurrency board regime is typically associated with a low level of exchange rate risk since it is a legislative commitment to fix the exchange rate to a\nspecific currency and is backed by full reserves.\nDescribe exchange rate regimes and explain the effects of exchange rates on countries’ international trade and capital flows", "qhtml": null}, {"n": 4, "q": "A country with a well-respected monetary authority maintains the domestic currency exchange rate within 1% of the US dollar through direct and indirect intervention in the currency markets. The country is most likely using which of the following currency regimes? ", "opts": ["Fixed parity", "Dollarization", "Currency board"], "ans": "A", "expl": "A currency regime broadly describes the policies of a country's monetary authority for managing domestic currency exchange rates. A country\nwith its own currency may choose either a fixed-type or floating-type regime. The various regimes reflect a spectrum of exchange rate flexibility\nand monetary policy independence.\nA fixed parity regime, often called a fixed peg regime, refers to a country maintaining the domestic currency exchange rate with a specific\nforeign currency or a basket of foreign currencies (typically from major trading partners) within a narrow range or \"band\" (typically +/− 1.0%).\nThe monetary authority keeps the exchange rate within this band by selling or buying the foreign currency.\nA fixed parity regime is often used to increase exchange rate predictability since the foreign currency selected for the peg is typically a more stable\nor more widely used currency than the domestic currency. The increased exchange rate stability facilitates trading and investment between the\ncountry and major foreign partners.\n(Choice B) Dollarization (a term that does not apply exclusively to the dollar) occurs when countries without their own currency adopt and use a\nforeign currency for all transactions.\n(Choice C) A currency board regime differs from a fixed parity regime in that the exchange rate is a legislative commitment to a set rate, and the\namount of foreign currency reserves held is nondiscretionary.\nThings to remember:\nA fixed parity regime refers to a country fixing the domestic currency exchange rate with a specific foreign currency or a basket of foreign\ncurrencies (typically from major trading partners) and maintaining that exchange rate within a narrow range (typically +/− 1.0%).\nDescribe exchange rate regimes and explain the effects of exchange rates on countries’ international trade and capital flows", "qhtml": null}, {"n": 5, "q": "A Canadian tourist in Hong Kong needs to exchange Canadian dollars (CAD) for Hong Kong dollars (HKD). A dealer provides a quote of 0.1799 CAD/HKD. Since the inverse of 0.1799 is 5.5586, from the perspective of the Canadian tourist, the dealer's quote is most appropriately described as a(n):", "opts": ["direct quote of 0.1799 CAD per HKD.", "direct quote of 5.5586 HKD per CAD.", "indirect quote of 0.1799 CAD per HKD."], "ans": "A", "expl": "Exchange rates show the price of one currency per unit of another currency. The two methods of quoting exchange rates are:\nDirect quotes, domestic currency per unit of foreign currency\nIndirect quotes, foreign currency per unit of domestic currency\nThinking of currency as a consumer good can be helpful. For example, the quote of 0.1799 CAD/HKD means that the Canadian must pay CAD\n0.1799 for HKD 1.000 (the good). From the Canadian perspective, this is a direct quote because the Canadian's domestic currency is in the\nnumerator.\n(Choice B) From the Canadian's perspective, the quote of 5.5586 HKD per CAD is an indirect quote because the foreign currency is in the\nnumerator. Note that this quote is the inverse of the direct quote 0.1799 CAD per HKD.\n(Choice C) Since indirect quotes have the domestic currency in the denominator, a quote of 0.1799 CAD per HKD is an indirect quote from a\nHong Kong resident's, not a Canadian's, perspective.\nThings to remember:\nIn the CFA Curriculum, direct currency exchange rate quotes are presented as domestic currency per unit of foreign currency, while indirect quotes\nare the reverse, presented as foreign currency per unit of domestic currency. The domestic currency is the currency of residence or operations.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 6, "q": "For this question, assume that GBP is the domestic currency and INR is the foreign currency. If the consumer price index (CPI) in the United Kingdom rises more than the CPI in India, the real INR/GBP exchange rate most likely: ", "opts": ["will decrease, and the purchasing power of the INR will increase.", "will increase, and the purchasing power of the INR will decrease.", "will decrease, and the purchasing power of the INR will decrease."], "ans": "A", "expl": "Purchasing power refers to the amount of goods or services a currency can purchase. Changes in purchasing power are inversely related to\nchanges in relative price levels, which are commonly measured by the consumer price index (CPI). As a country's price level (CPI) rises, its\ncurrency's purchasing power falls.\nReal exchange rates measure the purchasing power of one currency relative to another. All else equal, the real exchange rate moves as a\nfunction of changes in the ratio of the foreign CPI to the domestic CPI (assuming no movements in the nominal exchange rate). This is\ndemonstrated with a simple example:\nIf the nominal INR/GBP exchange rate = 10, and the Indian CPI rises by 2% while simultaneously the UK CPI rises by 5%, the expected real\nexchange rate will be 10 × (1.02 / 1.05) ≈ 9.7142. This means that fewer INR (9.7142 vs. 10) are needed to purchase GBP 1 worth of goods and\nservices: GBP purchasing power has decreased, and INR purchasing power has increased. The smaller increase in the Indian price level (relative\nto the UK increase) leads to a decrease in the INR/GBP real exchange rate, and thus an increase in the INR purchasing power relative to the GBP\npurchasing power (Choices B and C).\nThings to remember:\nChanges in price levels affect real exchange rates, which affect currency purchasing power. The real exchange rate moves in the same direction\nas changes in the ratio of the foreign price level to the domestic price level. When real exchange rates decrease, the purchasing power of the\ndomestic currency decreases, and vice versa.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 7, "q": "When a country uses dollarization as a currency regime, which of the following is the most likely consequence?", "opts": ["It loses the ability to set its own monetary policy.", "It maintains foreign currency reserves against its monetary base.", "Domestic bank interest rates are close to those of the adopted country."], "ans": "A", "expl": "A currency regime broadly describes the policies of a country's central bank for managing its currency's exchange rates. Some countries do not\nhave their own currency. Dollarization refers to those countries adopting and using another country's currency for all its transactions. The\nterm \"dollarization\" derives from the US dollar being the most often adopted currency, but the term does not apply exclusively to the dollar.\nThe main advantage of dollarization as a formal policy is that it imposes fiscal discipline on the adopting country. A country could theoretically print\nlimitless amounts of its own currency to pay its own government debt, but it cannot print the currency of another country. This prevents a country\nfrom taking on unsustainable debt loads. However, the trade-off is that the country can no longer set its own monetary policy since it cannot\nregulate its own money supply.\nAlthough a country may adopt the US dollar, there are no protections, such as FDIC deposit insurance, afforded to that country. This lack of\nprotection makes dollarized accounts riskier than accounts in the US, so interest rates for bank accounts in dollarized countries are higher than\nsimilar accounts in the US (Choice C).\n(Choice B) This is characteristic of a currency board system, where a country has its own currency but collateralizes it with foreign currency\nreserves. There is usually a fixed exchange rate between the domestic and foreign currencies.\nThings to remember:\nDollarization refers to a country without its own domestic currency adopting and using the currency of another country. This can result in better\nfiscal discipline for the dollarized country, but a dollarized country cannot establish its own monetary policy.\nDescribe exchange rate regimes and explain the effects of exchange rates on countries’ international trade and capital flows", "qhtml": null}, {"n": 8, "q": "A Singapore-based investor holds assets in New Zealand denominated in NZD. The investor forecasts the following changes over the next year: SGD/NZD spot exchange rate +6% SGD nominal inflation rate +3% NZD nominal inflation rate −2% Based on this information, the expected change in the SGD/NZD real exchange rate is closest to: ", "opts": ["1%", "5%", "11%"], "ans": "A", "expl": "The purchasing power of one currency versus another is measured by the real exchange rate between the two. The real exchange rate is a\nfunction of both the quoted (ie, nominal) exchange rate between the currencies and the price level in each currency; changes in real exchange\nrates result from changes in one or more of those factors.\nConsidered from the perspective of the price currency versus the base currency, a change in the real exchange rate reflects the cumulative impact\nof changes to the:\nspot exchange rate,\nthe net inflation rate in the base currency (ie, NZD), and\nthe net inflation rate in the price currency (ie, SGD).\n≈\nThe more precise measure of changes in real exchange rates is calculated as 0.85% 1%:\nHowever, the change in the SGD/NZD real exchange rate change may also be estimated using a second formula. This formula estimates the net\nchange in the real exchange rate as the expected change in the spot rate, adjusted for the difference between the expected change in the price\ncurrency's inflation and the expected change in the base currency's inflation; the three expected changes are expressed as percentage changes.\n%ΔR ≈ %ΔS + %ΔP − %ΔP = +6% + (−2%) − (+3%) = 1%\nSGD/NZD SGD/NZD NZD SGD\n(Choice B) 5% results from incorrectly treating NZD deflation as reinforcing, not offsetting, the impact of the increase in the SGD/NZD spot\nexchange rate.\n(Choice C) 11% results from incorrectly treating both NZD deflation and SGD inflation as factors that reinforce the impact of the increase in the\nSGD/NZD spot exchange rate.\nThings to remember:\nThe purchasing power of currency is measured by real exchange rates, which are a function of nominal exchange rates and price levels. Real\nexchange rate changes can be estimated from changes in the spot exchange rate between two currencies and changes in both currencies'\ninflation rates.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 9, "q": "According to the Marshall-Lerner condition, domestic currency devaluation is least likely to improve a country's trade balance if the mix of imports and exports primarily consists of:", "opts": ["luxury goods.", "goods with few available substitutes.", "goods that represent a large portion of a consumer's budget."], "ans": "B", "expl": "Goods with higher price elasticities\nHave many available substitutes\nTrade in competitive markets\nAre considered luxury or discretionary goods\nRepresent a significant portion of consumer spending\nRepresent a significant portion of input costs\nExchange rate movements affect a country's trade balance by influencing imports and exports. Devaluation of the domestic currency reduces the\ncost of a country's exports to foreign buyers and increases the cost of imports to domestic consumers. Therefore, in theory, the quantity of exports\ndemanded will increase and the quantity of imports demanded will decline.\nHowever, currency devaluation is just one factor influencing the change in quantity demanded. The Marshall-Lerner condition, part of the elasticity\napproach to understanding trade balances, asserts that total expenditures on imports and exports are driven by the price elasticities of the traded\ngoods. Under this approach, a devaluation of the domestic currency will be more successful at reducing a trade deficit if the price elasticity of\nthose goods is high.\nWhen a product has few substitutes (eg, petroleum, medications), demand may not change in proportion to a change in price. A lack of\nalternative goods that can satisfy the same desire or purpose results in price inelasticity. A country that exports or imports goods with\ninelastic demand will probably not improve its trade balance through currency devaluation since total expenditures are unlikely to be affected.\n(Choices A and C) In general, luxury goods and goods that represent a large portion of consumer budgets have higher price elasticities.\nConsumers are likely to purchase fewer of these goods when prices increase and more of them when prices decrease.\nThings to remember:\nThe elasticity approach to analyzing the impact of exchange rate changes on a country's trade balance focuses on the effect of price elasticity on\ntotal import and export expenditures. A devaluation of the domestic currency will be more successful at reducing a trade deficit if the price\nelasticity of the traded goods is high.\nDescribe exchange rate regimes and explain the effects of exchange rates on countries’ international trade and capital flows", "qhtml": null}, {"n": 10, "q": "If the Japanese yen/US dollar (JPY/USD) spot rate declines 5% from 120 to 114, the appreciation of JPY relative to USD is most likely:", "opts": ["A capital account deficit decrease", "A capital account surplus increase", "A capital account surplus decrease"], "ans": "B", "expl": "The balance of payments (BOP) includes the current account, capital account, and financial account. The net balance of all entries in a country's\nBOP accounts should theoretically always equal zero. A deficit in one or two of the components must be offset by an equivalent surplus in the\nother(s). Since initially there is a deficit in the current and financial accounts, the capital account must be in surplus.\nAppreciation of a country's currency reduces the cost of imports and increases the cost of exports and, as a result, adversely affects the country's\ntrade balance (ie, current account). Given no change in the financial account deficit, an increase in the current account deficit must be\ncounterbalanced by an equal increase in the capital account surplus (Choices A and C).\nThings to remember:\nIn the aggregate, the balance of payments (BOP) must net to zero. If currency appreciation causes the current account deficit to increase, given\nno change in the financial account, the capital account surplus must increase by an equal amount for the BOP to stay in balance.\nDescribe exchange rate regimes and explain the effects of exchange rates on countries’ international trade and capital flows", "qhtml": null}, {"n": 11, "q": "A country has deficits in both its current account and financial account. Its currency appreciates significantly, causing the current account deficit to increase. Assuming no change in the financial account, which of the following must occur to keep the balance of payments in balance?", "opts": ["A capital account deficit decrease", "A capital account surplus increase", "A capital account surplus decrease"], "ans": "B", "expl": "The balance of payments (BOP) includes the current account, capital account, and financial account. The net balance of all entries in a country's\nBOP accounts should theoretically always equal zero. A deficit in one or two of the components must be offset by an equivalent surplus in the\nother(s). Since initially there is a deficit in the current and financial accounts, the capital account must be in surplus.\nAppreciation of a country's currency reduces the cost of imports and increases the cost of exports and, as a result, adversely affects the country's\ntrade balance (ie, current account). Given no change in the financial account deficit, an increase in the current account deficit must be\ncounterbalanced by an equal increase in the capital account surplus (Choices A and C).\nThings to remember:\nIn the aggregate, the balance of payments (BOP) must net to zero. If currency appreciation causes the current account deficit to increase, given\nno change in the financial account, the capital account surplus must increase by an equal amount for the BOP to stay in balance.\nDescribe exchange rate regimes and explain the effects of exchange rates on countries’ international trade and capital flows", "qhtml": null}, {"n": 12, "q": "Conventionally, which of the following is most likely part of the sell side of the foreign currency market?", "opts": ["A large international bank that makes a market in all major currencies", "A multinational manufacturer generating revenues in multiple currencies", "A central bank that intervenes in currency markets to maintain a fixed exchange rate"], "ans": "A", "expl": "Identifying the buy side or the sell side in a currency trade may seem arbitrary since every trade entails a purchase and sale of different\ncurrencies by both trade counterparties. The foreign exchange (FX) market follows the conventions of other financial markets and designates the\nintermediaries as the sell side. The sell side is composed of the banks that trade currencies and provide related products.\nDue to economies of scale a preponderance of trading occurs at a handful of global money center banks (ie, first-tier banks). In addition to being\nmarket makers these banks sell currencies and provide related products (eg, currency derivatives, trade financing) to their clients. Although not\nmajor currency market players, regional and local banks (ie, second- and third-tier banks) provide similar currency-related products to their\ncustomers.\n(Choice B) Corporations other than banks are part of the buy side of the currency market.\n(Choice C) Central banks are part of the buy side of the currency market.\nThings to remember:\nThe sell side is composed of the banks that trade currencies and provide related products. Sell-side participants are categorized as first-tier (ie,\nmoney center banks making markets in currencies) and second- or third-tier (ie, regional and local banks). Banks in all categories sell currencies\nand provide related products to their clients.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 13, "q": "An analyst gathers the following information: Spot CAD/AUD 0.9434 AUD Consumer Price Index 119.7 Expected Australian inflation rate 2.0% CAD Consumer Price Index 144.4 Expected Canadian inflation rate 3.50% The real CAD/AUD exchange rate is closest to: ", "opts": ["0.7820", "0.9575", "1.1380"], "ans": "A", "expl": "Real exchange rates are used to measure the relative purchasing power between two currencies. Relative purchasing power is measured by\nadjusting the nominal exchange rate by the ratio of the aggregate price levels for similar goods in each currency.\nBased on the formula shown above, the real exchange rate:\nvaries directly with the nominal exchange rate and the foreign price level, and\nvaries inversely with the domestic price level (which itself is typically measured using a consumer price index.\nIn this case, CAD is the domestic currency and AUD is the foreign currency.\nIf the purchasing power of both currencies were the same, the real exchange rate would equal 1.0 and the nominal exchange rate would need to\nbe adjusted to offset the relative price level difference (ie, the nominal exchange rate would be the inverse of the ratio of price levels).\nAs the real exchange rate rises (falls), the relative purchasing power of the domestic currency declines (increases), such that imported foreign\ngoods become more expensive (cheaper). If the real exchange rate falls below zero (as in this case), the domestic currency's relative purchasing\npower has increased (ie, imported foreign-priced goods become more affordable).\n(Choice B) 0.9575 results from using the relative inflation rate, instead of price levels, to adjust the nominal exchange rate.\n(Choice C) 1.1380 results from mistakenly inverting the ratio of foreign to domestic price levels.\nThings to remember:\nReal exchange rates measure the relative purchasing power between two currencies. To calculate a real exchange rate, adjust the spot exchange\nrate by the ratio of foreign to domestic price levels (measured by the two currencies' consumer price indexes).\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 14, "q": "A lender is most likely to benefit when, over the life of a loan, actual inflation:", "opts": ["is less than expected inflation.", "equals expected inflation.", "is greater than expected inflation."], "ans": "A", "expl": "Impact of inflation differing from expectations\nGroup benefiting Rationale\nBorrowers\nPayments made have less purchasing\nInflation > expectations Purchasers under fixed-\npower than expected\nprice contracts\nLenders\nIncome received has more purchasing\nInflation < expectations Retirees with fixed pension\npower than expected\nbenefits\nInflation is a change in average nominal price levels over time and is characterized as either expected or unexpected:\nExpected: price level changes match expectations\nUnexpected: price level changes are above or below expectations\nLenders benefit when actual inflation is less than expected inflation. Interest rates reflect expected inflation. If the rise in price levels over the\nlife of a loan is less than the expected inflation rate reflected in the loan's interest rate, a lender's interest income has greater purchasing power\nthan expected at the loan's origination. There is a transfer of wealth from borrowers to lenders when actual inflation is less than expected inflation.\n(Choice B) Lenders are neither advantaged nor disadvantaged when actual inflation equals expected inflation since the interest income has the\nsame purchasing power (real value) as anticipated at loan origination.\n(Choice C) If actual inflation is greater than expected inflation, lenders earn interest with less purchasing power than originally expected, which is\na transfer of real wealth from lenders to borrowers.\nThings to remember:\nInflation is a change in average nominal price levels over time. Lenders benefit (suffer) when actual inflation is less (more) than expected inflation\nsince interest earned has greater (less) purchasing power than originally anticipated.\nDescribe common objectives of capital restrictions imposed by governments", "qhtml": null}, {"n": 15, "q": "After a 6% depreciation of the euro (EUR) versus the Japanese yen (JPY), the exchange rate between the currencies is JPY/EUR 120. Before EUR depreciation, the JPY/EUR exchange rate was closest to:", "opts": ["113.21", "127.20", "127.66"], "ans": "C", "expl": "Currency values are expressed as a ratio of exchange; they represent the amount of the price currency per one unit of the base currency.\nChanges in exchange rates are often expressed as a percentage change. If the current rate and the percentage change are known, the\npercentage change formula can be adjusted to calculate the original exchange rate, as shown:\nA 6% depreciation of EUR means it only buys 94% of the JPY that it could purchase before the depreciation. In the context of this currency\npair, EUR depreciation means the same thing as JPY appreciation.\n(Choice A) 113.21 is the original exchange rate if EUR had appreciated, not depreciated, by 6% against JPY.\n(Choice B) 127.20 would be the correct choice if JPY had appreciated by 6% instead of EUR depreciating by 6%. EUR depreciation of 6%\nresults in JPY appreciation of 6.38%.\nThings to remember:\nA percent change in the base currency's value reflects how much more or less of the price currency it buys compared with its previous value. For\nexample, a 5% depreciation of the base currency means it only buys 95% as much of the price currency as before. The original exchange rate is\nequal to the current spot rate divided by 1 plus percentage change in base currency.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 16, "q": "If the Canadian dollar (CAD) depreciates 3% against the Australian dollar (AUD) over a period, then the appreciation of the AUD against the CAD is most likely:", "opts": ["less than 3%.", "equal to 3%.", "greater than 3%."], "ans": "C", "expl": "Currency values are expressed in exchange rates as the amount of the price currency per one unit of the base currency. When an exchange rate\nchanges, the percentage change in each of the two currencies' values is inversely proportional. The absolute value of the changes must be the\nsame for both currencies, but the percentage changes cannot be equal. The percentage increase of one currency is always greater than the\npercentage decrease of the other currency.\nIn this scenario, the depreciation in the Canadian dollar (CAD) against the Australian dollar (AUD) must be converted to appreciation of the AUD\nagainst the CAD based on the above equation:\nThe appreciation of the AUD is 3.09%, which is greater than the depreciation of the CAD of 3% (Choices A and B).\nThings to remember:\nWhen an exchange rate changes, the percentage change in the two currencies' values are inversely proportional. Althoughthe absolute money\nvalue of the changes must be the same for both currencies, the percentage gain of one currency is always greater than the percentage loss of the\nother.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 17, "q": "If the Swiss franc (CHF) appreciated by 4% against the euro (EUR), the percentage decline of EUR is closest to:", "opts": ["3.85%", "4.00%", "4.17%"], "ans": "A", "expl": "Currency values are expressed as a ratio of exchange (ie, the amount of the price currency per one unit of the base currency). For any exchange\nrate change, as one currency appreciates, the other depreciates.\nThe absolute value of the changes must be the same for both currencies, but the percentage changes cannot be equal. An exchange quote in\neither currency is the reciprocal of the other: CHF/EUR = 1/(CHF/EUR = EUR/CHF). This remains true even as exchange rates move.\nConsequently, 1 + percentage changes in the two currencies are inversely proportional.\nGiven a percentage change in either the base or price currency, the percentage change in the other can always be calculated. Insert the\npercentage appreciation in CHF on the right-hand side of the equation and solve for the percentage depreciation in EUR.\n(Choice B) 4.00% is the percentage appreciation of CHF. The percentage decline in the depreciating currency is always smaller than the\npercentage increase in the appreciating currency.\n(Choice C) 4.17% would be the gain in the appreciating currency if the depreciating currency declined by 4%.\nThings to remember:\nThere is a reciprocal relationship between exchange rate changes for any currency pair. Consequently, an exchange rate change will result in a\ndiffering percentage change in value for each currency. The percentage change can be calculated as: 1 / [(1 + % change in other currency) – 1].\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 18, "q": "An analyst gathers the following information: Expected spot rates Spot rates in six months USD/CAD 0.8650 0.8740 JPY/USD 98.50 97.50 USD/EUR 1.2050 1.1950 Based on this information, which currency is most likely to show the greatest percentage appreciation versus USD? ", "opts": ["CAD", "JPY", "EUR"], "ans": "A", "expl": "The percentage change in an exchange rate is the percentage change in the amount of price currencyper one unit of base currency.\nIn this question, the expected change in CAD and EUR can be computed using the given exchange rates since both are stated as the base\ncurrency quoted against USD. However, EUR can be seen as an incorrect answer without any calculation: since one EUR is expected to convert\nto fewer USD in the future, the EUR is expected to depreciate, rather than appreciate, against the USD (Choice C).\nThe expected change in JPY is more easily compared to the other currencies if it is first converted to the base currency by inverting the exchange\nrate given:\nThen, the expected percentage change in each base currency's value, relative to USD, is:\nThings to remember:\nThe percentage change in an exchange rate is the percentage change in the amount of price currency per one unit of base currency. The change\nin value can be computed directly from given exchange values if measuring change for the base currency. When measuring change in value for a\nprice currency, the quoted exchange rate is inverted to directly calculate the percentage change.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 19, "q": "If a Brazilian converts BRL 781.25 to EUR 125, then the direct exchange rate from the Brazilian's perspective is closest to:", "opts": ["0.16 BRL/EUR", "6.25 EUR/BRL", "6.25 BRL/EUR"], "ans": "C", "expl": "Currency exchanges rates can be expressed as direct or indirect quotes:\nIn a direct quote, the domestic currency is the price currency in the numerator and expresses how many units of domestic currency are\nrequired to buy one unit of foreign currency.\nIn an indirect quote, the domestic currency is the base currency in the denominator and expresses how many units of foreign currency\ncan be bought with one unit of domestic currency.\nThis question asks for the direct quote from the Brazilian perspective, so BRL is the domestic currency and therefore the price currency in the\nnumerator:\n(Choice A) 0.16 is the ratio EUR to BRL, not BRL to EUR.\n(Choice B) 6.25 EUR/BRL results from inverting the currency ISO codes.\nThings to remember:\nCurrency exchanges rates can be expressed as direct or indirect quotes. Direct quotes include the domestic currency as the price currency in the\nnumerator. Indirect quotes include the domestic currency as the base currency in the denominator.\nDescribe the foreign exchange market, including its functions and participants, distinguish between nominal and real exchange rates, and\ncalculate and interpret the percentage change in a currency relative to another currency", "qhtml": null}, {"n": 20, "q": "A US investor receives a dividend payment from a French company. The dividend is most appropriately classified as a:", "opts": ["US current account debit.", "US financial account credit.", "French capital account debit."], "ans": "A", "expl": "The balance of payments (BOP) summarizes a country's international capital inflows and outflows. BOP accounting is based on a double-entry\nbookkeeping system.\nAll transactions are allocated to either the current account, the capital account, or the financial account. Broadly speaking, the current account\nreflects the net value of imported and exported goods and services but can be further subdivided into:\nMerchandise trade: Import and export of physical commodities and manufactured goods\nServices: Service industry imports and exports (eg, software, movies, legal services)\nIncome receipts: Income from foreign assets, such as dividend income or interest payments\nUnilateral transfers: One-way transfers, such as foreign aid or worker remittance\nIn each account, debits increase assets or decrease liabilities whereas credits decrease assets or increase liabilities. In this instance, a US\ninvestor receiving a dividend payment from a French company (which is an income receipt in the US) results in a debit (ie, increase in assets) to\nthe US current account.\n(Choice B) The financial account captures cross-border transfers of assets, not the income or interest received from owning an asset.\n(Choice C) The capital account captures sales and transfers of nonproduced and intangible assets, such as mineral rights or patents.\nThings to remember:\nIn the balance of payments, the current account records transactions from merchandise and services trade, income receipts, and unilateral\ntransfers. An income receipt would increase (ie, debit) the current account for the country in which it is received.\nDescribe common objectives of capital restrictions imposed by governments", "qhtml": null}, {"n": 21, "q": "A government would most likely impose capital restrictions in order to:", "opts": ["reduce imports that compete with domestic producers.", "limit foreign influence in strategically important sectors.", "restrict flight of foreign capital during economic expansions."], "ans": "B", "expl": "Government policies to place limits on foreign markets\nQuotas\nTariffs\nTrade restrictions\nVoluntary export restraints\n(limits on goods)\nExport subsidies\nDomestic content provisions\nCapital restrictions Restrictions on inflows from foreigners\n(limits on capital) Restrictions on outflows by citizens\nCapital restrictions are used by governments and other regulatory bodies to limit a country's openness to foreign markets. Unlike trade\nrestrictions, which limit the flow of international goods, capital restrictions limit the flow of capital to and from international sources.\nCapital restrictions can limit foreigners' ability to own domestic assets and can limit citizens' ability to own foreign assets. Restrictions on inflows\ninclude limiting how much foreigners can invest in an asset (eg, real estate) and imposing maximum levels on foreign ownership in strategic\nindustries (eg, defense). Restrictions on outflows include capping the amount domestic citizens can invest abroad and imposing deadlines for\nrepatriation of foreign capital and investments.\n(Choice A) Capital restrictions set conditions on the flow of capital to and from other countries and are not used to reduce imports of a good.\nTrade restrictions are policies that set conditions on trade with other countries.\n(Choice C) Capital restrictions may be imposed to restrict flight of foreign capital in times of macroeconomic crisis, when a rapid recall of foreign\nfunds could leave domestic companies more vulnerable. During times of economic expansion, the risk of a rapid recall of foreign funds is lower,\nso capital restrictions are unlikely to be needed.\nThings to remember:\nCapital restrictions limit a country's openness to foreign markets by restricting the flow of capital to and from international sources. Capital\nrestrictions can limit foreigners' ability to own domestic assets and limit citizens' ability to own foreign assets.\nDescribe common objectives of capital restrictions imposed by governments", "qhtml": null}];
+const CFG = {"title": "Wiley · Capital Flows and the FX Market", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Economics · 21 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

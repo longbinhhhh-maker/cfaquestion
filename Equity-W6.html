@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Within the context of strategic industry analysis, a global industry that is most likely benefiting from technological and demographic influences is:", "opts": ["gold mining.", "biotechnology.", "cargo shipping."], "ans": "B", "expl": "Within the context of strategic industry analysis, technological influences create new products or innovations that can disrupt an industry.\nDemographic influences such as aging populations can impact economic growth and the types of goods and services demanded by\nconsumers.\nWhen people live longer (ie, demographics), they tend to consume more medicinal drugs. Technological innovation and breakthroughs are\nessential in the development of new drug therapies and are a cornerstone of the success of the biotech industry.\n(Choice A) The gold mining industry does not directly benefit from demographic influences or technological development. In fact, the industry\nmay be negatively impacted by both demographics and technology. Technological advances have led a generation of younger individuals to digital\nalternatives to gold (eg, cryptocurrency).\n(Choice C) Although there may be some minor technological advances (eg, fuel efficiency) in the cargo shipping industry, the basics of the\nindustry have changed little in recent decades and the demographic influences are largely neutral. On the other hand, the industry has likely\nbenefitted from social, governmental, and macroeconomic influences that have propelled the globalization of trade.\nThings to remember:\nWithin the context of strategic industry analysis, technological influences create new products or innovations that can disrupt an industry.\nInnovations in computing, oil extraction, telecommunications, and drug development are recent examples. Demographic influences such as aging\npopulations can impact economic growth and the types of goods and services demanded by consumers.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 2, "q": "Which of the following is a limitation when applying business cycle sensitivity labels such as cyclical or noncyclical to global industry analysis?", "opts": ["Currency fluctuations make business cycle sensitivity difficult to predict.", "Industry classification labels are relative descriptors along a continuum.", "Different tax regimes among various countries make comparisons difficult."], "ans": "B", "expl": "Limitations of applying business cycle sensitivity analysis to global industries\nEconomic performance can vary significantly across countries and regions\nIndustry classification schemes are relative descriptions along a continuum\nCyclical, noncyclical, growth, and defensive are broad industry classification descriptors that convey certain attributes of business cycle sensitivity.\nThere are two primary limitations of applying business cycle sensitivity classification analysis to global industries.\nPhases of the business cycle occur at different times in different economies around the world. For example, a cyclical business in one\ncountry experiences weakening domestic demand, but operations in other countries remain robust (eg, unequal economic performance\nacross countries).\nBusiness cycle sensitivity classification (eg, cyclical versus noncyclical) runs along a continuum (eg, not black and white, but on a scale\nof economic sensitivity) and is a relative descriptor. For example, even noncyclical industries exhibit some cyclical variation during a\nrecession, but not as much as cyclical industries.\n(Choices A and C) Currency fluctuations are difficult to predict, and varying tax regimes around the world will impact businesses, but these are\nnot specifically considered limitations when applying business cycle sensitivity analysis to global industries.\nThings to remember:\nLimitations of applying business cycle analysis to global industries include differing stages of the business cycle in different economies around the\nworld and the continuous and relative nature of business cycle sensitivity descriptors.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 3, "q": "Which of the following would be the least appropriate data source for measuring the size of an industry by its total revenue?", "opts": ["Survey data from third-party consultants", "Investor presentations by publicly traded companies", "Reported total firm revenue from companies in the industry"], "ans": "C", "expl": "Sources of industry size estimates\nGovernment agencies\nThird-party consultants\nCompany presentations\nAs part of their research, analysts frequently estimate the size of an industry (eg, by revenue, units). This helps determine sales potential and\nmarket shares for companies within the industry. Size is often difficult to estimate accurately for industries since many companies are private\nand do not disclose sales. Given this limitation, analysts have optional data sources, including:\nGovernment agencies, which often collect data and make their own estimates\nThird-party consultants, which use surveys to collect data from private companies (Choice A)\nIn addition, many publicly traded companies disclose their own estimates in their investor presentations. Such estimates are often based on data\nfrom proprietary sources, which may be combined with third-party estimates (Choice B).\nWhen estimating industry size, analysts can sum the reported revenue from publicly traded companies to estimate part of the market. However,\ntotal revenue from the financial statements of public companies' filings (eg, annual reports, earnings presentations) should not be used for\ncompanies with multiple business lines; in those cases, only revenue from the segment(s) within that industry should be used in the estimate.\nUsing total revenue from all companies within an industry would likely overstate the size of that industry.\nThings to remember:\nIndustry size is often difficult to estimate accurately given that many companies are private. When estimating industry size, analysts can sum the\nrevenue from publicly traded companies in the industry to estimate part of the market. However, when a company has multiple business\nsegments, only revenue from the segment(s) within that industry—not total revenue—should be used.\nDetermine an industry’s size, growth characteristics, profitability, and market share trends", "qhtml": null}, {"n": 4, "q": "Which of the following is most likely a defining characteristic of a noncyclical industry?", "opts": ["High operating leverage.", "Inelastic demand for goods or services.", "Greater sensitivity to the business cycle."], "ans": "B", "expl": "Noncyclical industries tend to be unaffected by fluctuations in the business cycle. They are typically characterized by the following:\nInsensitivity to the business cycle: Stable demand that is not strongly correlated with the economy\nInelastic demand: Product offerings are often basic necessities (eg, food, health care, electricity)\nConsistent profitability: Predictable operating environment less subject to external shocks\n(Choices A and C) A cyclical industry is characterized by a heightened sensitivity to the business cycle, elastic demand for goods or services,\nand profit volatility. Cyclical industries often have heavy infrastructure investment requirements (eg, auto manufacturers), leading to higher fixed\ncosts and greater operating leverage.\nThings to remember:\nNoncyclical industries are generally unaffected by fluctuations in the business cycle. They typically offer basic consumable goods and services\n(eg, food, health care, electricity) that are necessary regardless of economic conditions.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 5, "q": "A pharmaceutical company's exclusive patent for a popular drug expires at the end of 20X1. All else equal, at the end of 20X2, the Herfindahl- Hirschman Index for the market for that drug will most likely be: ", "opts": ["smaller.", "unchanged.", "larger."], "ans": "A", "expl": "As part of an industry evaluation, analysts often examine the industry concentration and market shares of the largest competitors, which can\nindicate how competitive an industry is.\nHigh industry concentration usually indicates a smaller number of companies with greater market shares, suggesting less competition.\nLow industry concentration usually indicates a larger number of companies with smaller market shares and greater competition.\nExceptions are cases where companies do not compete with others, such as localized services (eg, hospitals) or differentiated products (eg,\nfood and beverage).\nIndustry concentration can be calculated in multiple ways. One common method is the Herfindahl-Hirschman Index (HHI), which sums the\nsquares of companies' market shares. Larger (smaller) HHI values indicate greater (lesser) industry concentration and less (more)\ncompetition. The largest HHI is 10,000 (= 1002) for a pure monopoly, as is the case in this scenario since a pharmaceutical company with a patent\nwould be the only producer of that drug. When the patent expires and new entrants enter the market, the HHI would be expected to shrink as\nindustry concentration declines (Choice B).\n(Choice C) The HHI for an industry typically increases when the biggest companies become even larger, such as through acquisitions.\nThings to remember:\nAs part of an industry or market evaluation, analysts often examine industry concentration, which can indicate how competitive an industry is. One\ncommon method to calculate industry concentration is the Herfindahl-Hirschman Index (HHI), which sums the squares of companies' market\nshares. Larger HHI values indicate higher industry concentration and less competition.\nDetermine an industry’s size, growth characteristics, profitability, and market share trends", "qhtml": null}, {"n": 6, "q": "Of the following, a defining characteristic of a cyclical industry is most likely?", "opts": ["High operating leverage", "Inelastic product demand", "Consistent profitability profile."], "ans": "A", "expl": "A cyclical industry is sensitive to fluctuations in the economic cycle. These companies are typically characterized by:\nhigh fixed costs: elevated costs due to heavy infrastructure investment\nelastic demand: sales dependent on the overall strength of the economy\nvolatile profitability: high operating leverage due to high fixed costs and economic sensitivity\nA noncyclical industry is characterized by reduced sensitivity to the economic cycle, more consistent profitability (Choice C) and inelastic demand\nfor its goods or services (Choice B). These industries tend to offer basic consumable goods and services that are needed regardless of economic\nconditions.\nThings to remember:\nA cyclical industry is sensitive to fluctuations in the economy. These industries are typically characterized by high fixed costs (ie, operating\nleverage), elastic demand for their goods and services, and a volatile profitability profile.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 7, "q": "Compared with noncyclical companies, cyclical companies most likely:", "opts": ["produce consumer staples.", "exhibit higher volatility in profits.", "have strong revenue during economic contractions."], "ans": "B", "expl": "Companies can be classified based on their sensitivities to the business cycle. Cyclical companies exhibit profits that strongly vary with the\nstate of the economy (ie, expansion or contraction). Whereas noncyclical companies exhibit stable profits independent of the state of the\neconomy.\nCyclical products (eg, high-end cars) tend to be expensive or discretionary, with demand directly tied to consumer disposable income. Since\ndisposable income is strongly correlated with the economy, product demand is high during economic expansion, which leads to higher sales and\nprofits. Product demand is low during economic contraction, which leads to lower sales and profits (Choice C). Furthermore, the generally\ncapital-intensive nature of cyclical companies (eg, manufacturing) translates to high fixed costs, which further amplifies profit fluctuation.\n(Choice A) Noncyclical products (eg, consumer staples such as food) exhibit relatively stable demand that is not strongly correlated with the\neconomy. These products are either inexpensive or necessities. Therefore, noncyclical companies have sales and profits that do not fluctuate\nsignificantly with periods of expansion or contraction.\nThings to remember:\nCyclical companies exhibit profits that are strongly linked to the state of the economy (ie, expansion or contraction), whereas noncyclical\ncompanies exhibit profits independent of the state of the economy.\nDescribe industry classification methods and compare methods by which companies can be grouped", "qhtml": null}, {"n": 8, "q": "Which of the following best describes a characteristic of industry life-cycle analysis?", "opts": ["The model is most useful when industries are in periods of rapid change.", "Companies in the same industry can be expected to exhibit similar performance.", "External factors can cause an industry to deviate from the expected progress of the cycle."], "ans": "C", "expl": "Industries usually evolve over time in a predictable pattern, allowing analysts to predict present and future expected performance based on the\nindustry life cycle. Each stage exhibits different characteristics that reflect the competitive dynamics (eg, product demand, intensity of competition)\nthat lead to varying levels of growth and profitability. Determining where an industry is in its life cycle can provide helpful context for analysis of a\ncompany in that industry as it almost certainly will affect investment returns.\nIndustry life-cycle analysis has limitations since it assumes all industries follow a predictable path. External factors (eg, technological,\nregulatory, social) can divert an industry's path along the cycle. For example, stages may become longer/shorter than expected and can be\nskipped or repeated. This makes industry life-cycle analysis most useful when an industry is relatively stable and less useful during periods of\nrapid change (Choice A).\n(Choice B) Not all companies in an industry will experience similar performance (eg, growth, profitability). Also, different companies, even within\nthe same industry, may be in various stages of the company life cycle.\nThings to remember:\nIndustry life-cycle analysis has limitations since it assumes all industries follow the same path. External factors can cause an industry to deviate\nfrom its expected path through the cycle. This makes industry life-cycle analysis most useful when an industry is relatively stable.\nDescribe industry classification methods and compare methods by which companies can be grouped", "qhtml": null}, {"n": 9, "q": "Over the last 20 years, a country's population has increased due to a sharp rise in its birth rate. Based only on this population growth, which industry is most likely experiencing the smallest increase in demand? ", "opts": ["Health care", "Food and beverage", "Personal care products"], "ans": "A", "expl": "External factors influencing industry/company sales and profits\nGDP growth trends\nMacroeconomic National/global business environment Stage of business cycle\nInflation and interest rates\nNew/improved products\nTechnological Product innovation New product categories\nImproved production methods\nCorrelation of population with demand\nDemographic Population size, growth, and age Age cohorts\nEducation and income levels\nRegulation/legal considerations\nGovernmental Policy impacts on industry Fiscal policy subsidies or taxes\nMonetary policy implementation\nDiscourage consumption\nSocial Attitudes toward business/consumption Encourage behavior\nEncourage production\nHealth-care spending is highly correlated with age. In general, health problems and susceptibility to disease increase with age. Consequently,\nolder people tend to consume proportionally more health-care products and services than people who are young or middle-aged.\nAn increase in the population tends to increase the demand for all goods and services. However, population growth due to an increase in the birth\nrate over the previous two decades would result in a lower average age. Thus, while there would likely be an increase in expenditures related\nto health care, it is most likely smaller than the increase in spending on consumer staples.\n(Choices B and C) Foods, beverages, and personal care products are consumer staples, which are goods used by all consumers. The demand\nfor consumer staples is highly correlated with the size of the population. The demand for foods, beverages, and personal care products usually\nexperiences strong increases during periods of rapid population growth.\nThings to remember:\nHealth-care spending is highly correlated with age, so older people tend to spend proportionally more on products and services related to health\ncare than people who are young or middle-aged. An increase in the population tends to increase the demand for all goods and services.\nHowever, a country where the average age is dropping due to a rise in the birth rate is likely to see a larger increase in demand for consumer\nstaples than for health-care products and services.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 10, "q": "Which of the following is least likely a characteristic of the shakeout stage in an industry's life cycle?", "opts": ["Slowing growth", "Moderate competition", "Frequent company restructuring"], "ans": "B", "expl": "Industries evolve over time and experience different levels of growth and profitability in each stage of their life cycle. Each stage exhibits different\ncharacteristics that affect the competitive dynamics of an industry, such as level of product demand, intensity of competition, and profitability. The\nshakeout stage is characterized by slowing growth, fierce competition, and diminishing profitability.\nIn the shakeout stage, growth in demand is slow since the overall industry can attract few new customers (Choice A). Companies are forced to\ntake existing market share away from competitors to grow, leading to fierce competition. The slowdown in demand also pressures many\ncompanies to reduce costs through restructuring (Choice C).\nThings to remember:\nIn the shakeout stage, growth in demand is slow since the overall industry can attract few new customers. Companies are forced to take existing\nmarket share away from competitors to grow, leading to fierce competition. The slowdown in demand also pressures many companies to reduce\ncosts through restructuring.\nDescribe industry classification methods and compare methods by which companies can be grouped", "qhtml": null}, {"n": 11, "q": "A company's equity securities are considered defensive stocks. The company most likely produces which of the following products?", "opts": ["Consumer staples", "Fashion accessories", "Manufacturing equipment"], "ans": "A", "expl": "Industry/company classifications\nDefining characteristic Nature of company/industry\nNew industry, growing product demand\nGrowth Rapid growth of sales\nProduct innovator in mature industry\nConsumer staples\nDefensive Demand for product stays strong in slowing economies\nGovernment regulated necessity (eg, utilities)\nDiscretionary consumer products\nCyclical Sales/profits very sensitive to business cycle Consumer durable products (eg, housing)\nBusinesses requiring large fixed investments\nGrowth industries less sensitive to cycles\nNoncyclical Sales/profits relatively insensitive to business cycle\nConsumer staples\nDefensive stocks are equities of individual companies or entire industries whose revenues are the least sensitive to business cycle downturns.\nThough not immune to recessions, their profits are not as adversely affected since the demand for their products holds up better. Products of\ncompanies in this category include:\nConsumer staples (eg, basic foodstuffs and beverages, household goods, hygiene products)\nBasic services (eg, food and drug retailing)\nGovernment regulated service providers (eg, electric power, water, sewage utilities)\nDue to the relatively better performance of defensive companies' sales and profits, defensive stocks hold their value better than cyclical stocks\nwhen the economy slows. In this way, defensive stocks protect (ie, defend) the value of investor portfolios.\n(Choices B and C) Fashion accessories (ie, consumer discretionary) and manufacturing equipment are cyclical businesses. Their revenues and\nprofits typically decline significantly during recessions. Consumer discretionary products are products consumers want but do not need.\nExpenditure for these products declines when incomes fall. Manufacturers buy equipment to expand output to meet demand. In recessions with\ndemand falling, manufacturers have little incentive to expand.\nThings to remember:\nDefensive stocks are equities of companies and industries whose revenues are the least sensitive to business cycle downturns. Since demand for\ntheir products holds up better during recessions, their profits are not as adversely affected. Revenue and profits of cyclical companies are very\nsensitive to the business cycle and typically decline significantly during recessions.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 12, "q": "Which of the following industries will most likely experience revenue declines in a recession?", "opts": ["Electric power generation", "Automobile manufacturing", "Pharmaceutical production"], "ans": "B", "expl": "External factors influencing industry/company sales and profits\nGDP growth trends\nMacroeconomic National/global business environment Stage of business cycle\nInflation and interest rates\nNew/improved products\nTechnological Product innovation New product categories\nImproved production methods\nCorrelation of population with demand\nDemographic Population size, growth, and age Age cohorts\nEducation and income levels\nRegulation/legal considerations\nGovernmental Policy impacts on industry Fiscal policy subsidies or taxes\nMonetary policy implementation\nDiscourage consumption\nSocial Attitudes toward business/consumption Encourage behavior\nEncourage production\nBusiness cycle impacts are among the macroeconomic factors considered in industry and company analysis. Cyclical products' sales are\nsensitive to fluctuations in the level of business activity; in general, such products are expensive, and their purchase can be deferred. Thus, as\nincome growth slows or income declines, revenues of cyclical companies decline more than the contraction of economic activity.\nAlthough spending on many consumer cyclical products is nondiscretionary (eg, automobiles for transportation), most individuals who can afford\nthe product already own one. Concerns about future income related to a weak economy cause many potential buyers to delay purchases, causing\nsales to decline.\n(Choice A) The cost per unit of electric power is low, and it is essential for many aspects of living. Electric power sales generally grow over the\nentire course of the business cycle.\n(Choice C) Pharmaceutical sales are driven by the introduction of new drugs and consumers' medical needs, so sales are influenced little by the\nstage of the business cycle. The cost of many drugs represents a small portion of most consumers' budgets.\nThings to remember:\nCyclical products' sales are sensitive to fluctuations in the level of business activity and usually experience large declines during recessions.\nAlthough spending on many consumer cyclical products such as automobiles is nondiscretionary, most individuals who can afford the product\nalready own one. Concerns about future income related to a weak economy causes many potential buyers to delay purchases, causing\nautomobile sales to decline.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 13, "q": "An industry is characterized by high bargaining power of suppliers and low barriers to entry. Based on strategic analysis from Porter's five forces, this industry most likely exhibits:", "opts": ["strong pricing power.", "stable market shares.", "small economic profits."], "ans": "C", "expl": "Porter's five forces is a framework for strategic analysis that examines an industry's competitive environment to assess whether the conditions\nfavor economic profits. An increase to any of the forces can potentially intensify competition within the industry and threaten economic profits.\nIn this scenario, the combination of high bargaining power of suppliers and low barriers to entry will most likely drive down the industry's economic\nprofits. High supplier power will drive up costs and shrink profit margins since suppliers are better able to maintain or increase the prices to their\ncustomers. Low barriers to entry allow new entrants easier access to the market, potentially luring customers from incumbent companies.\n(Choice A) Strong pricing power would more likely characterize an industry with high barriers to entry since the threat of new entrants would be\nlower.\n(Choice B) Stable market shares are more common in industries with less competition. Low barriers to entry would likely characterize a highly\ncompetitive industry.\nThings to remember:\nPorter's five forces is a framework for strategic analysis that assesses the threat of new entrants and substitutes, bargaining power of suppliers\nand buyers, and rivalry between competitors within an industry. A strengthening of any of these forces threatens the industry's potential economic\nprofits.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 14, "q": "A cost leadership strategy would best defend against which of the following competitive forces?", "opts": ["Threat of substitutes", "Bargaining power of suppliers", "Bargaining power of customers"], "ans": "C", "expl": "Popular operating strategies: defense against competitive forces\nCost leadership Differentiation Focus\nThreat of new entrants X X X\nThreat of substitutions X X\nBargaining power of suppliers X\nBargaining power of customers X X X\nIndustry rivalry X\nA company will typically use a certain strategy to grow the business and shield itself from specific competitive forces. A company that operates a\ncost leadership strategy aims to produce its product or service at a lower cost than competitors. Even if the price is set by the market, the\ncompany can usually generate economic returns since it will have lower costs. This strategy helps protect against:\nThreat of new entrants: Cost leaders typically create their advantage with scale, favorable supplier relationships, or cost management\nexpertise, which would be difficult for new entrants to duplicate.\nBargaining power of customers: Price-sensitive customers can reduce the amount they purchase. However, even at lower volumes,\ncompanies producing at a lower-than-average cost can still generate an economic profit while those with higher costs may not.\nIndustry rivalry: Price wars are less likely since cost leaders will have a lower average cost than competitors and therefore could\ntheoretically price their products or services lower while maintaining an economic profit.\nCost leadership does not, however, protect as well against the threat of substitutes and the bargaining power of suppliers. If substitutes emerge at\nlower prices than the company's goods or services, even a cost leader will not be able to compete on price. If a company relies too heavily on a\nparticular supplier, the supplier could increase the prices it charges for the company's inputs (Choices A and B).\nThings to remember:\nA company that operates a cost leadership strategy aims to produce its product or service at a lower cost than competitors. Cost leadership helps\nprotect against the threat of new entrants, bargaining power of customers, and industry rivalry. It is less effective against the threat of substitutes\nand the bargaining power of suppliers.\nEvaluate the competitive strategy and position of a company", "qhtml": null}, {"n": 15, "q": "When preparing a thorough industry life cycle stage analysis, the experience curve is most appropriate for which type of industries?", "opts": ["Service industries.", "High fixed cost industries.", "Embryonic-stage industries."], "ans": "B", "expl": "A key component of a comprehensive industry analysis, the experience curve displays the direct cost per unit of a good produced or service\ndelivered relative to the quantity produced. The curve declines with an increase in asset utilization as fixed overhead costs are spread over an\nincreasing number of units produced. The cost of production can also decline due to efficiency gains in labor, production, or design.\nThe experience curve is a particularly important concept for industries with high fixed costs or industries that can take advantage of\neconomies of scale. Examples include heavy machinery, auto, and aircraft manufacturing and could also include consumer electronics\nmanufacturers.\n(Choice A) Service industries tend to be asset-light businesses that do not have high fixed overhead infrastructure costs to overcome; therefore,\nthe cost of production does not change much with each unit or service produced.\n(Choice C) The experience curve is unlikely to be useful for an embryonic-stage (ie, early life cycle) industry that is just beginning to develop.\nMany companies in the industry are likely to be start-ups, which have significant investment needs and high failure rates.\nThings to remember:\nThe experience curve is a key component of a comprehensive industry analysis. The experience curve is particularly important for high fixed\noverhead industries and displays the direct cost per unit of a good produced or service delivered.\nDescribe the purposes of, and steps involved in, industry and competitive analysis", "qhtml": null}, {"n": 16, "q": "Highly fragmented industries most likely exhibit high price competition due to:", "opts": ["firms' desire to increase profit margins.", "the difficulty of firms coordinating strategically.", "firms viewing themselves as members of large group."], "ans": "B", "expl": "Industry concentration is a key component of strategic industry analysis and refers to the concentration of market share among firms in an\nindustry. Concentrated industries consist of a few big players with relatively large shares of the market whereas fragmented industries consist of\nmany small players with relatively small shares of the market. Fragmented industries often exhibit high price competition since:\nit is difficult for a large number of firms to coordinate on strategy effectively,\nsmall firms aim for market share gains by undercutting competitors' prices, and\nfirms tend to view themselves as individual companies rather than as members of a larger group.\nInvestors should pay close attention to industry concentration since it may ultimately affect an industry's economic profits.\n(Choice A) Firms aggressively compete to gain market share in highly fragmented industries by lowering prices (ie, price competition), which\ndecreases company profit margin. Small companies are often willing to sacrifice profit margins to gain market share.\n(Choice C) Firms tend to view themselves individualistically rather than as members of a group. This attitude will cause firms to adjust prices\nwithout thinking about how the collective industry will react.\nThings to remember:\nFragmented industries consist of many small players with relatively small market shares. Fragmented industries exhibit high price competition\nsince price coordination is difficult, undercutting prices for market share gains is common, and firms tend to view themselves individualistically.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 17, "q": "In an industry operating near capacity, which of the following types of companies is most likely to be able to rapidly increase capacity?", "opts": ["Reinsurance", "Pharmaceutical", "Dry-bulk shipping"], "ans": "A", "expl": "When an industry is at or near capacity, an increase in demand may create pricing power and enhance profitability for firms within that industry.\nThe duration of the pricing power depends on the ability of firms to increase capacity: The more rapidly capacity is added, the sooner price\ncompetition will return with a resulting loss of pricing power.\nThe lead time to add capacity depends on the industry's critical input. The critical input needed for providers of professional or financial\nservices to expand capacity is productive employees. In contrast, goods producers and manufacturing or transportation service providers\nneed to acquire fixed capital (Choices B and C). Reinsurers can hire and train employees more rapidly than companies can add fixed capital.\nThings to remember:\nThe lead time for industries to add capacity depends on the critical input. The critical input for providers of professional or financial services is\nproductive employees. Those companies can hire and train employees more rapidly than goods producers and manufacturing or transportation\nservice providers, which require fixed capital as the critical input.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 18, "q": "An industry experiencing the growth phase in the industry life cycle is most likely characterized by:", "opts": ["rising prices.", "low competition.", "falling economics of scale."], "ans": "B", "expl": "Industries evolve over time and experience different levels of growth and profitability in each stage of their life cycle. Each stage exhibits different\ncharacteristics that affect the competitive dynamics of an industry, such as the level of product demand and intensity of competition. The growth\nphase, which is the second stage, is characterized by rapidly growing demand, rising profitability, and limited competition.\nDuring the growth stage, customers become familiar with an industry's product. As such, the industry attracts new customers, which drives higher\nproduct demand. The growing market draws many new entrants (companies) while the barriers to entry are still low. Despite the influx of entrants,\ncompetition among companies is low (or limited) since the vast market allows companies to grow without having to take market share from\ncompetitors.\n(Choices A and C) In the growth stage, companies within the industry achieve economies of scale and better distribution channels, which allow\nthem to reduce prices to further increase product demand. The combination of increased sales volume and economies of scale results in higher\nindustry profitability.\nThings to remember:\nDuring the growth stage, companies within the industry benefit from rising demand with low levels of competition due to a rapidly growing\ncustomer base. In this stage, the industry achieves economies of scale and improves its distribution channels.\nDescribe industry classification methods and compare methods by which companies can be grouped", "qhtml": null}, {"n": 19, "q": "In equity analysis, market share instability is most likely linked with:", "opts": ["high entry barriers.", "rapid product innovation.", "high customer switching costs."], "ans": "B", "expl": "Market share instability is primarily determined by the degree of competition and the expense customers must incur to switch suppliers. Market\nshare instability is increased by:\nLow barriers to entry that allow new competitors to enter an industry and take market share from incumbents\nRapid rates of product innovation that make competition more intense and increase the likelihood of customers changing to suppliers whose\nproducts offer new features or higher quality\nLow switching costs that allow customers to shift their purchases to new suppliers without incurring significant extra expense\n(Choice A) High barriers to entry reduce the threat posed by firms entering an industry and upending the existing competitive balance, which\nresults in greater market share stability.\n(Choice C) High switching costs (eg, the cost of creating new supply chains, new software when a company upgrades its computer system)\nmean substantial additional expense for customers. The greater such costs are, the less likely customers will change to new suppliers, which\nleads to more market share stability.\nThings to remember:\nMarket share instability is primarily determined by the degree of competition and the costs for customers switching to new suppliers. Low entry\nbarriers and high rates of product innovation result in more intense competition between firms. Low switching costs increase market share\ninstability by reducing the expense incurred by customers in redirecting their purchases.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 20, "q": "Expecting a recession, a portfolio manager changes the allocation in a client's equity portfolio by overweighting consumer staples and utilities while underweighting industrials. The portfolio manager's action is best described as:", "opts": ["risk budgeting.", "sector rotation strategy.", "tactical asset allocation."], "ans": "B", "expl": "Sector rotation is a timing strategy used to reallocate a portfolio based on an investor's perception of the business cycle or other macro\nvariables (eg, oil prices, yield curve shifts). Sector rotation is a common technique used by practitioners in an attempt to outperform their\nbenchmarks and is a common application of industry analysis.\nA cyclical industry is highly correlated to the strength of the overall economy, while a noncyclical industry is more insulated from economic\nfluctuations. By shifting away from cyclical stocks (eg, industrials) and into noncyclical stocks (eg, consumer staples, utilities), the manager is\nattempting to reduce the negative effects of a recession on the portfolio.\n(Choice A) Risk budgeting measures and allocates risks by specific portfolio metrics (eg, beta), often limiting the total risk of the portfolio to a\npredetermined \"budget.\" Although the portfolio's overall risk was likely reduced by the sector shifts, it was done on an ad hoc basis and nothing in\nthe question implied that the portfolio was adhering to or constrained by a risk budget.\n(Choice C) Tactical asset allocation refers to tactical shifts among various asset classes (eg, equities, fixed income), not within an asset class.\nThings to remember:\nSector rotation is a timing strategy used to reallocate a portfolio based on an investor's perception of the business cycle or other macro variables.\nIt is a common application of industry analysis.\nDescribe the purposes of, and steps involved in, industry and competitive analysis", "qhtml": null}, {"n": 21, "q": "An industry has high barriers to exit. According to Porter's \"five forces\" framework, which of the following is most likely to be present in this industry? ", "opts": ["Threat of substitutes is high", "Threat of new entrants is high", "Bargaining power of buyers is low"], "ans": "A", "expl": "Porter's \"five forces\" analysis is a key strategic framework for assessing an industry's competitive environment. Structural attributes can vary\ndramatically between industries, generating vastly different economic return profiles. Some industries generate consistent profits throughout an\neconomic cycle, whereas other industries struggle even during a sustained economic expansion.\nPricing power is often a key aspect of generating economic profit. Pricing power is usually robust in an industry with high barriers to entry since\nthe threat of new entrants is low, but there are exceptions, such as auto manufacturers, oil refiners, and semiconductor memory manufacturers\n(eg, DRAM, flash), that also have high barriers to exit (Choice B).\nPricing power will be weak if the bargaining power of buyers is high. When industries produce products that are commodities (eg, DRAM,\ngasoline) or high priced and easily interchangeable (eg, autos), a high threat of substitutes exists, contributing to weak pricing power (Choice\nC).\nIndustries with these characteristics are said to have high barriers to exit. They are also characterized by large investment in fixed assets that\ncannot be easily converted to another purpose, making them prone to overcapacity.\nThings to remember:\nIndustries with high barriers to entry and weak pricing power also often have high barriers to exit. Within Porter's \"five forces\" framework,\nindustries with high barriers to entry and exit are characterized by a low threat of new entrants, high bargaining power of buyers, and high threat of\nsubstitutes.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 22, "q": "An analyst collects the following data on a company and its peers: Current Market Share 20X1 (20X4) Company 53% 50% Peer 1 14% 18% Peer 2 12% 15% Peer 3 13% 12% Peer 4 8% 5% If the company chooses to acquire its smallest peer, the analyst's most appropriate conclusion will be that: ", "opts": ["the Herfindahl-Hirschman Index will increase by more than 200.", "5% will be added to the company's organic market share growth.", "the company is acquiring a product that is superior to other competitors'."], "ans": "A", "expl": "Measures of industry concentration assess the number and relative sizes of companies competing within a market. Industry concentration can\nprovide insight into how competitive a market might be, with greater (lesser) concentrations typically associated with less (more) competition.\nRegulators often view less competition as unfavorable since companies can use pricing power to the detriment of consumers and to create higher\nbarriers to entry.\nOne common method of calculating industry concentration is the Herfindahl-Hirschman Index (HHI), which sums the squares of company\nmarket shares. Larger HHI values indicate greater industry concentration and less competition; the maximum HHI of 10,000 indicates a\nmonopoly with 100% market share. Regulators typically consider an industry highly concentrated if its HHI is above 2,500. When an industry is\nconcentrated, regulators will often challenge deals that increase the HHI by more than 200.\nIn this scenario, the HHI of the industry before and after the acquisition is:\nBefore acquisition After acquisition\n3,218 = 502 + 182 + 152 + 122 + 52 3,718 = 552 + 182 + 152 + 122\nThe acquisition would increase the industry's HHI by 500 (= 3,718 − 3,218).\n(Choice B) Organic growth and market share gains exclude the impact of acquisitions. Acquiring a company would not increase organic market\nshare growth.\n(Choice C) Market share gains are typically associated with customers believing that a company's products are superior. The company's\nsmallest competitor reported a smaller market share in 20X4 (5%) than 20X1 (8%), suggesting consumers do not believe it has a superior product.\nThings to remember:\nOne common method of calculating industry concentration is HHI, which sums the squares of company market shares. Larger HHI values indicate\nhigher industry concentration. Regulators typically consider an industry highly competitive when its HHI is above 2,500 and will often challenge\ndeals that increase the HHI by more than 200. Organic growth and market share gains exclude the impact of acquisitions.\nDetermine an industry’s size, growth characteristics, profitability, and market share trends", "qhtml": null}, {"n": 23, "q": "An industry with high barriers to entry and widespread consumer adoption is most likely characterized by:", "opts": ["high pricing power for new entrants.", "low pricing power for existing companies.", "high pricing power for existing companies."], "ans": "C", "expl": "The threat of entry is a key component of strategic industry analysis and refers to the ease with which new entrants can enter an existing\nindustry. In less competitive industries, high barriers to entry bar new entrants from challenging incumbent companies. This allows incumbent\ncompanies to maintain economic profits due to the greater pricing power that results from low competition. For example, massive infrastructure\nstartup costs prevent new entrants from challenging existing telecom giants, which allows the existing companies to dictate prices.\nIn contrast, an industry with low barriers to entry will attract an influx of new competitors, which raises competition and diminishes the pricing\npower of existing firms. For example, it is cheap to open a hot dog stand anywhere, so there are numerous hot dog stands throughout the city. An\nexisting hot dog stand cannot substantially raise its prices since doing so will drive consumers to buy from another competitor.\n(Choices A and B) High barriers to entry result in greater pricing power for existing companies (ie, incumbents).\nThings to remember:\nHigh barriers to entry bar new entrants from challenging incumbent companies. This allows incumbent companies to maintain economic profits\ndue to the greater pricing power that results from low competition.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 24, "q": "According to CFA Institute curriculum, Michael Porter's \"five forces\" framework forms the basis of strategic industry analysis. One purpose of this analysis is most likely to identify an industry's: ", "opts": ["ability to generate economic profits.", "diversification benefits for an investment portfolio.", "assignment to the appropriate sector classification."], "ans": "A", "expl": "Porter's five forces of strategic industry analysis provide an understanding of the underlying drivers and context that an industry operates\nin. The purpose of the analysis is not only to understand the competitive dynamics but also to recognize the fundamental investment merits of the\nindustry.\nStructural industry attributes can vary dramatically, generating vastly different economic return profiles. Some industries generate consistent\nprofits through an economic cycle whereas other industries struggle to generate economic profits, even during a sustained economic expansion.\nIndustries that are forecasted to generate above-average economic profits over an economic cycle are good candidates for additional investment\nresearch. Economic profit in this context is broadly defined as generating returns above the cost of capital.\n(Choice B) Porter's five forces of strategic industry analysis provide an understanding of the underlying drivers and context in which an industry\noperates and are not directly used in portfolio construction (ie, for their diversification benefits).\n(Choice C) Sector and industry classification schemes are generally a useful starting place for assessing industries, but strategic industry\nanalysis would include a much deeper and more thorough examination of the industry.\nThings to remember:\nStrategic industry analysis provides an understanding of the underlying drivers and context in which an industry operates. Industries that are\nforecasted to generate above average economic profits over an economic cycle are good candidates for additional investment research.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 25, "q": "According to Porter's \"five forces\" analysis, and all else being equal, high switching costs for goods and services are most likely to increase the:", "opts": ["threat of new entrants.", "bargaining power of buyers.", "bargaining power of suppliers."], "ans": "C", "expl": "Porter's Five Forces\nForce Description Factors\nEconomies of scale\nIncreased competition\nBrand loyalty\nThreat of new can lower profits, but\nSwitching costs\nentrants barriers to entry can\nFixed costs\nprotect them\nRegulation\nEase of product\nsubstitution\nBargaining power of Increased input costs Concentration of\nsuppliers lower profit margins suppliers\nCosts to switch\nsuppliers\nCustomer\nBargaining power of Limited prices lower concentration\nbuyers (customers) profit margins Switching costs\nVertical integration\nSimilarities in\nIncreased competition\nfunction\ncan lower sales\nThreat of substitutes Utility of\nquantities and/or\nsubstitutable\nprices\nproducts\nIndustry\nIncreased competition fragmentation\nRivalry among\nlowers prices and Degree of product\nexisting competitors\nprofit margins differentiation\nBarriers to exit\nPorter's \"five forces\" analysis is a key strategic framework for assessing an industry's competitive environment. Favorable competitive\nenvironments may allow existing companies to protect and grow economic profits. Investors can use strategic analysis to identify industries with\nhigh profit potential that might generate a positive return on investment.\nThe level of switching costs impacts several of the forces. High switching costs (eg, mobile phone plan cancellation fees) discourage customers\nfrom canceling existing services (Choice B). Therefore, these costs:\nincrease the bargaining power of suppliers and\ndecrease the bargaining power of buyers (ie, customers).\nIn addition, high switching costs lower the threat of new entrants by making it harder for new companies entering the market to successfully\ndraw existing customers away from competitors (Choice A).\nThings to remember:\nPorter's \"five forces\" analysis is a key strategic framework for assessing an industry's competitive environment. High switching costs impact\nseveral of the forces. Such costs increase the bargaining power of suppliers while decreasing the bargaining power of customers and the threat of\nnew entrants in a market.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 26, "q": "An industry is characterized by excess capacity, frequent price wars, and technological substitutions. This industry is most likely in which of the following life-cycle stages?", "opts": ["Mature", "Decline", "Shakeout"], "ans": "B", "expl": "Industries evolve over time and experience different levels of growth and profitability in each stage of their life cycle. Each stage exhibits different\ncharacteristics that affect the competitive dynamics of an industry, such as level of product demand, intensity of competition, and excess capacity.\nThe decline stage is the last phase in the life cycle and features negative growth, excess capacity, and frequent price wars.\nIn the decline stage, demand shrinks due to technological substitution (eg, consumers stream entertainment digitally instead of physically renting\nDVDs), global competition, and social changes. Lower demand results in excess capacity (ie, potential oversupply), which drives down prices.\nMany companies exit the industry or consolidate with others. The surviving companies wage fierce price wars to maintain market share with a\nshrinking customer base.\nInvestors should consider the relevant industry's life-cycle position prior to investing in a company since it may affect investment returns.\n(Choice A) Companies in a mature industry generally tend to avoid price wars given the oligopolistic nature of the industry. Any price cut from\none company will be met with prompt responses from its competitors, which will result in lower profits for all participants.\n(Choice C) Technological substitutions generally do not occur in the shakeout phase.\nThings to remember:\nThe decline stage is the last phase in the industry life cycle and features negative growth, excess capacity, and increased competition. The\nsurviving companies wage fierce price wars to maintain market share with a shrinking customer base.\nDescribe industry classification methods and compare methods by which companies can be grouped", "qhtml": null}, {"n": 27, "q": "Which of the following is most likely a limitation of grouping companies based on their sensitivity to the business cycle?", "opts": ["Some countries will be in recession while others are expanding", "Certain companies grow revenue during all phases of the business cycle", "Classifications run along a continuum although business cycle sensitivity is discrete"], "ans": "A", "expl": "Limitations of applying business cycle sensitivity analysis to global industries\nEconomic performance can vary significantly across countries and regions\nIndustry classification schemes are relative descriptions along a continuum\nInvestors sometimes group companies based on the relative sensitivity of their revenues and profits to the business cycle. However, such\ngroupings have limitations, especially for companies with operations in multiple countries or regions. Two of the primary limitations of business\ncycle sensitivity classification are:\nPhases of the business cycle occur at different times in different countries. Therefore, a multinational company may be exposed\nsimultaneously to different phases (eg, economic expansion in one country, recession in another). For that reason, creating an industry\nbenchmark of combined company financials to measure business cycle sensitivity would be misleading.\nThe classification labels are discrete (cyclical or noncyclical), but not all companies exhibit the same degree of revenue and profit fluctuation\nin response to business cycle changes. Instead, sensitivity runs along a continuum. For example, some cyclical industries may face larger\nrevenue and profit variations than others with the same label (Choice C).\n(Choice B) Although certain companies grow revenue during all phases of the business cycle, this is not a limitation of the groupings since it does\nnot affect the sensitivity of a company's revenue and profits to the cycle. For example, both cyclical and noncyclical companies can be considered\ngrowth companies.\nThings to remember:\nInvestors sometimes group companies based on the sensitivity of their revenues and profits to the business cycle. One factor limiting such\ngroupings is the exposure of multinational companies to different phases of the business cycle occurring simultaneously in countries where they\nhave operations (eg, economic expansion in one country, recession in another).\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 28, "q": "Which of the following is the most appropriate conclusion regarding industry growth categorization?", "opts": ["Defensive companies typically experience modest revenue growth even during recessions.", "Companies within the same industry may have differing growth and cyclicality characteristics.", "Investors that agree on a company's degree of cyclicality will typically have similar valuations."], "ans": "B", "expl": "One common approach to the categorization of industry growth is a matrix that identifies companies by their pace of growth and sensitivity to\nthe business cycle (ie, cyclicality).\nFor pace of growth, industries are broken into:\nGrowth industries, which have not fully penetrated their addressable market and therefore have growth factors specific to both the\nindustry and the overall market\nMature industries, which have saturated their market and are growing at the same pace as the economy or even declining (eg,\nwhen companies that have developed substitutes take market share)\nFor cyclicality, industries are broken into:\nCyclical industries, which are highly sensitive to the business cycle\nDefensive industries, which are less sensitive to the business cycle\nOne drawback of this categorization system is that a company operating within an industry may not be categorized the same as that industry or\nother companies within it. For instance, a new entrant into a mature, defensive industry may have faster growth and more cyclicality than its\nestablished competitors.\n(Choice A) Although defensive companies are less sensitive to business cycles, they are usually still affected by slowdowns in spending.\nTherefore, even defensive companies' revenues often decline during recessions.\n(Choice C) Investors who agree on a company's degree of cyclicality can still value the company differently if they have different expectations\nregarding the severity and length of the business cycle.\nThings to remember:\nOne common approach to the categorization of industry growth is a matrix that identifies companies by their pace of growth and sensitivity to the\nbusiness cycle. One drawback of this categorization system is that a company operating within an industry may not be categorized the same as\nthe industry or other companies operating within it.\nDetermine an industry’s size, growth characteristics, profitability, and market share trends", "qhtml": null}, {"n": 29, "q": "An industry that is in the mature life-cycle stage most likely exhibits:", "opts": ["low barriers to entry.", "interdependence among companies.", "growth rates significantly higher than GDP growth."], "ans": "B", "expl": "Industries evolve over time and experience different levels of growth and profitability in each stage of their life cycle. Each stage exhibits different\ncharacteristics that affect the competitive dynamics of an industry, such as level of product demand, intensity of competition, and excess capacity.\nThe mature phase is characterized by minimal growth, high barriers to entry, and interdependence among companies.\nA mature industry experiences very low growth due to market saturation. Any growth is attributed to population growth or product replacements.\nMany companies consolidate within the industry, which results in higher barriers to entry. The major industry players are aware of their\ninterdependence and avoid price wars since any price change may trigger a strong response from competitors.\n(Choice A) Barriers to entry are typically high during the mature life-cycle stage due to heavy industry concentration. The presence of dominating\nfirms makes entry difficult for new companies.\n(Choice C) There is little to no growth in a mature industry. Overall industry growth rate is driven by replacement demand or population growth\n(which is close to GDP growth rate).\nThings to remember:\nThe mature phase is characterized by minimal growth, high barriers to entry, and interdependence among companies. Many companies\nconsolidate within this phase, leading to oligopolies.\nDescribe industry classification methods and compare methods by which companies can be grouped", "qhtml": null}, {"n": 30, "q": "An incumbent company with strong pricing power is most likely to be in an industry that exhibits a:", "opts": ["low degree of industry concentration and stable market share.", "high degree of industry concentration and stable market share.", "high degree of industry concentration and unstable market share."], "ans": "B", "expl": "Investors use strategic industry analysis to understand and assess the competitiveness of an industry. Strategic industry analysis includes\nanalyzing the following:\nBarriers to entry: how easy it is for new competitors to enter the industry\nConcentration: number of players in an industry and their relative market shares\nCapacity: quantity of goods or services that can be delivered based on existing investment compared with industry demand\nMarket share stability: degree of fluctuation in competitors' market shares\nStrong pricing power for incumbents is most associated (with exceptions) with industries that exhibit greater barriers to entry, high industry\nconcentration, limited industry capacity, and stable market share distribution.\nIn highly concentrated industries (eg, soft drinks), competitors typically are better able to coordinate pricing movements and have more to lose\nthan gain from price competition. Stable market share distribution typically indicates that competitors have differentiated products or \"sticky\"\ncustomer bases due to brand loyalty or high customer switching costs (eg, wireless telecom carriers). This allows competitors to maintain prices.\n(Choice A) Industries with low degrees of industry concentration typically have fierce competition (especially among smaller firms looking to gain\nmarket shares), which weakens incumbents' pricing power.\n(Choice C) Unstable market shares typically indicate low customer switching costs, which force incumbents to match competitors' prices, or a\nhigh threat of new entrants with technological advantages. These qualities weaken incumbents' pricing power.\nThings to remember:\nInvestors use strategic industry analysis to understand and assess the competitiveness of an industry. Greater pricing power for incumbents is\nmost associated with industries with greater barriers to entry, high industry concentration, low industry capacity, and stable market shares.\nAnalyze an industry’s structure and external influences using Porter’s Five Forces and PESTLE frameworks", "qhtml": null}, {"n": 31, "q": "Which of the following would most effectively support execution of a differentiation strategy?", "opts": ["Closer proximity to customers", "Using higher-quality materials", "Gaining cheaper access to raw materials"], "ans": "B", "expl": "Means of executing strategy\nCost leadership Differentiation Focus\nReducing costs below competitors' Making products stand out from competitors' Concentrating on a section of the market\nEconomies of scale Advertising, brand, customer service Proximity to customers\nEconomies of scope Trademarks, patents, copyrights Knowledge of customer needs\nCulture of cost control Superior quality Focus on market niche\nLow-cost supply chain Unique features or integration\nPremium pricing\nCustomer experience\nCompanies can utilize one, or several, strategies to grow their business and generate economic profit. Companies with successful strategies\ntend to outperform those without. Three common strategies, based on Michael Porter's research, are:\nCost leadership\nDifferentiation\nFocus\nThe differentiation strategy involves a company making its products or services stand out from those of its competitors in the broad market.\nThere are many ways for companies to accomplish this. One is investing more heavily into the product or service itself. A company that uses\nhigher-quality materials for its product will stand out from its peers in the market. The goal is for consumers to associate the company with\nsuperior products and unique features.\n(Choice A) Closer proximity to customers provides focus on a niche of customers, but this strategy would not necessarily differentiate the product\nor service at a broad level and is therefore more accurately associated with the focus strategy.\n(Choice C) Gaining access to cheaper raw materials would allow a company to reduce its costs, but this strategy would not necessarily\ndifferentiate the product or service and is therefore more accurately associated with the cost-leadership strategy.\nThings to remember:\nThe differentiation strategy involves a company making its products or services stand out from those of its competitors in the broad market. Using\nhigher-quality materials than peers is one method of differentiation that will help a company stand out from peers.\nEvaluate the competitive strategy and position of a company", "qhtml": null}, {"n": 32, "q": "With regard to forming an appropriate equity peer group, which of the following statements is most accurate?", "opts": ["Standard industry classification systems are adequate.", "Named competitors in an annual report are an important consideration.", "Total revenue, operating margins, and debt levels are the most important considerations."], "ans": "B", "expl": "A peer group is a collection of companies with similar business activities and economics, making their equity valuation comparable.\nIdeally, a company's peer group should consist only of companies with similar business models, who share similar customer demand drivers, cost\nstructures, and access to capital. Companies that share these attributes provide a good basis for comparing equity valuations of peer group\nmembers.\nAnalysts can find management's comments in the annual report. The commentary may provide valuable insight into the competitive environment\nor industry dynamics. It is an essential step in the process of constructing a peer group.\n(Choice A) A common starting place for peer group creation is the various standard industry classification systems (eg, GICS, RGS, ICB), but\nconstructing a well-defined peer group for equity valuation requires further analysis.\n(Choice C) Although total revenue, operating margins, and debt levels are important considerations, information regarding business models and\nthe drivers of economic performance is necessary for making an informed judgment on peer group inclusion.\nThings to remember:\nA peer group is a collection of companies with similar business activities and economics, making their equity valuation comparable. Companies\nthat share similar business characteristics provide a good basis for comparing equity valuations of peer group members.\nDescribe industry classification methods and compare methods by which companies can be grouped", "qhtml": null}, {"n": 33, "q": "Which of the following is least likely a major approach to industry classification?", "opts": ["Statistical similarities", "Geographical concentration", "Products and/or services supplied"], "ans": "B", "expl": "Industry classification approaches allow analysts to group companies based on similar factors. The three major classification methodologies are\ndescribed in the table below:\nGeographical concentration is not one of the three major approaches. Companies that operate within the same geographical area may sell very\ndifferent products and have different business cycle sensitivities. Therefore, grouping those companies together will not allow for appropriate\ncomparison.\nThings to remember:\nIndustry classification approaches allow analysts to group companies based on similar factors. The three major classification methodologies are\nproducts/services supplied, business cycle sensitivities, and statistical similarities.\nDescribe industry classification methods and compare methods by which companies can be grouped", "qhtml": null}];
+const CFG = {"title": "Wiley · Industry and Competitive Analysis", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Equity Investments · 33 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

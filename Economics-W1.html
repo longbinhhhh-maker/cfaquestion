@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "The current market share information for the top 10 firms in an industry is shown in the image below: The industry's four-firm Herfindahl-Hirschman Index is closest to: ", "opts": ["Oligopoly", "Monopoly", "Pure competition"], "ans": "A", "expl": "Oligopolistic markets are characterized by a small number of competitors selling nondifferentiated products. Kinked demand curves reflect the\nway competitors respond to any firm's attempts to increase market share or profitability. The dotted black demand curve shows the hypothetical\nquantities demanded for a single oligopolist's product assuming naïve responses by competitors to different pricing strategies.\nThe adverse outcomes likely confronting oligopolists are reflected in the red and blue segments of the kinked demand curve (DED). Price cuts by\none firm will likely be matched by competitors acting to defend their market shares. The result is less elastic demand (ie, red demand curve\nsegment, D) at price levels below the initial equilibrium (E).\nCompetitor reaction is quite different if oligopolists attempt to increase profitability by raising prices. The greater elasticity of demand (ie, the blue\ndemand curve segment, D) at prices above the initial equilibrium results from competitors not matching a price increase. Some of the price-\nraising firm's customers switch suppliers to avoid the price hike.\nThe unit sales decrease after a price hike will proportionally be greater compared with the unit sales increase if prices were cut. For example,\nwhereas a 1% price cut might have resulted in a unit sales increase of 3%, a 1% price increase might cause a 5% decrease in unit sales.\n(Choice B) A monopolist is the only seller in their market segment. Monopolists are free to raise or lower price in search of profit maximization.\n(Choice C) Firms in purely competitive markets are price-takers. Each is so small relative to the total market that their actions cannot impact the\nequilibrium price; these firms therefore face flat (ie, infinitely elastic) demand curves.\nThings to remember:\nOligopolists' actions are constrained by the competitive responses of other firms. Competitors will usually match price cuts to avoid market-share\nlosses but often will not match price increases to gain market share from price-raising firms.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 2, "q": "Kinked demand curves are most likely associated with which type of market structure?", "opts": ["Oligopoly", "Monopoly", "Pure competition"], "ans": "A", "expl": "Oligopolistic markets are characterized by a small number of competitors selling nondifferentiated products. Kinked demand curves reflect the\nway competitors respond to any firm's attempts to increase market share or profitability. The dotted black demand curve shows the hypothetical\nquantities demanded for a single oligopolist's product assuming naïve responses by competitors to different pricing strategies.\nThe adverse outcomes likely confronting oligopolists are reflected in the red and blue segments of the kinked demand curve (DED). Price cuts by\none firm will likely be matched by competitors acting to defend their market shares. The result is less elastic demand (ie, red demand curve\nsegment, D) at price levels below the initial equilibrium (E).\nCompetitor reaction is quite different if oligopolists attempt to increase profitability by raising prices. The greater elasticity of demand (ie, the blue\ndemand curve segment, D) at prices above the initial equilibrium results from competitors not matching a price increase. Some of the price-\nraising firm's customers switch suppliers to avoid the price hike.\nThe unit sales decrease after a price hike will proportionally be greater compared with the unit sales increase if prices were cut. For example,\nwhereas a 1% price cut might have resulted in a unit sales increase of 3%, a 1% price increase might cause a 5% decrease in unit sales.\n(Choice B) A monopolist is the only seller in their market segment. Monopolists are free to raise or lower price in search of profit maximization.\n(Choice C) Firms in purely competitive markets are price-takers. Each is so small relative to the total market that their actions cannot impact the\nequilibrium price; these firms therefore face flat (ie, infinitely elastic) demand curves.\nThings to remember:\nOligopolists' actions are constrained by the competitive responses of other firms. Competitors will usually match price cuts to avoid market-share\nlosses but often will not match price increases to gain market share from price-raising firms.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 3, "q": "Two firms, A and B, are the only manufacturers of Product X. Each firm can choose whether to charge a high or low price for X; currently both charge a low price. Each firm controls 50% of the market. The table shows the expected profit (in USD) for both companies at both prices: Based on this information, the Nash equilibrium for these firms:", "opts": ["does not exist.", "exists when A charges a high price and B charges a low price.", "exists when A charges a high price and B charges a high price."], "ans": "B", "expl": "In an oligopoly, a Nash equilibrium refers to a set of optimal strategies by two (or more) market participants to maximize their profits. Although\nit assumes that each participant acts in its own best interest, it also assumes that firms will consider the response of competitors to some action.\nFor instance, a firm could try to increase profits by raising prices but may also consider the loss market share to competitors that do not raise their\nprices.\nIn this question, Firm B always earns more when it sells at a lower price, so it has no incentive to sell at a higher price, regardless of Firm A's\nstrategy. Therefore, since A will act in its best interest, it charges a high price. By doing so, A earns $350 instead of $200. Therefore, a Nash\nequilibrium exists when Firm B sells at a low price and Firm A sells at a high price (Choice A). Note that B earns less if it responds by charging a\nhigh price: it will earn either $375 (if Firm A charges a low price) or $380 (if A charges a high price). Both are lower than what it earns by charging\na low price ($390 if A charges a high price and $400 if A charges a low price).\n(Choice C) Participants act in their own self-interest to maximize profits and do not adopt strategies that maximize the industry's profits to the\ndetriment of their own profitability. Although total profits are maximized when both firms charge a high price, in the absence of collusion, Firm B is\nbetter off charging a low price.\nExplain supply and demand relationships under oligopoly, including the optimal price and output for firms as well as pricing strategy", "qhtml": null}, {"n": 4, "q": "An analyst gathers current price and cost information about a firm operating in a perfectly competitive market: Based only on this information, which of the following is the firm's optimal course of action in the long run?", "opts": ["Increase price", "Exit the market", "Continue to operate as is"], "ans": "B", "expl": "A firm's cost structure drives the decision to continue operating or exit the market. In the long run, the focus is on the relationship between the\nmarket price and average (total) cost (ATC). ATC is calculated as the total cost per unit, including fixed costs and variable costs, to produce a\ncertain volume of units.\nIn general, a firm should operate as long as it is earning at least a zero economic profit, which means price must equal or exceed ATC. If price is\nbelow ATC, as in this scenario, the firm has essentially \"locked in an economic loss\" and should exit the market (see the exhibit).\nIn the short run, the relationship between price and the average variable cost (AVC) (eg, labor, raw material) per unit is the decision driver.\nTypically, fixed costs are assumed to be irrelevant in the short run. Therefore, as long as price is above AVC, the firm is covering some portion of\nfixed costs and is better off operating than shutting down. However, in the long run, operating with price above AVC but below ATC is not\nsustainable (Choice C).\n(Choice A) Firms operating in a perfectly competitive environment cannot raise their prices since any firm's individual demand curve is perfectly\nelastic and the firms will sell nothing at a price above the market price.\nThings to remember:\nIn general, a firm should operate as long as it is earning at least a zero economic profit. Therefore, in the long run, a firm should exit the market if\nprice is less than the average total cost (ATC). ATC is the per-unit total cost, including fixed, variable, and opportunity costs, to produce a certain\nvolume of units.\nDetermine and interpret breakeven and shutdown points of production, as well as how economies and diseconomies of scale affect costs under\nperfect and imperfect competition", "qhtml": null}, {"n": 5, "q": "For a duopoly (ie, two-firm market that is a special form of oligopoly) in equilibrium, which of the following choices best describes a characteristic of the Cournot assumption?", "opts": ["Firms act sequentially.", "Firms cooperate to set output and price.", "A firm's output is constant in the long run."], "ans": "C", "expl": "Oligopoly pricing theories\nTheory Description\nCompete on price\nKinked demand curve\nDifferentiate with advertising and branding\nFirms act independently and simultaneously\nCournot assumption\nEquilibrium (ie, stable price and output quantity)\nNo cooperation (ie, collusion)\nNash equilibrium\nFirms act in their own best interest\nFirms act dependently and sequentially\nStackelberg (ie, first mover)\nLeader (ie, top dog) sets quantity, others respond\nFirms cooperate to set quantity and price\nCollusion\nFirms act in the industry's best interest\nOligopoly is a market structure in which a small number of firms sell similar products, with nonprice competition varying by market. For example,\nmany consumer goods companies compete by differentiating products through advertising and branding. High barriers to entry typically protect\nexisting firms from new entrants.\nOligopolistic firms may adopt various pricing strategies. Since the Cournot assumption supposes a competitive market, demand and marginal\nrevenue curves are downward sloping (ie, firms are not price takers). Supply and prices adjust naturally until, at long-run equilibrium, output\nquantity and price stabilize for each firm.\n(Choice A) The Stackelberg (ie, first-mover) pricing theory, not the Cournot assumption, supposes that firms act sequentially, with the market\nleader moving first.\n(Choice B) The Cournot assumption, applied to a duopoly (ie, two-firm market) in equilibrium, supposes that both firms act simultaneously and\nindependently, without collusion (ie, cooperation), to determine production quantities to maximize profits.\nThings to remember:\nThe Cournot assumption, applied to a duopoly (ie, two-firm market) in equilibrium, supposes that both firms act simultaneously and independently,\nwithout collusion (ie, cooperation), to determine production quantities to maximize profits. Supply and prices adjust naturally until, at long-run\nequilibrium, output quantity and price stabilize for each firm.\nExplain supply and demand relationships under oligopoly, including the optimal price and output for firms as well as pricing strategy", "qhtml": null}, {"n": 6, "q": "If a firm is currently breaking even, it is most likely producing at the point where average revenue is equal to:", "opts": ["average total costs.", "average fixed costs.", "average variable costs."], "ans": "A", "expl": "A firm breaks even when total revenues are equal to total economic costs, and the firm earns an economic profit of zero. This condition holds for\nboth perfect competition and imperfect competition (eg, monopolist competition, oligopoly, and monopoly).\nEconomic profit is typically lower than accounting profit since economic costs include both accounting and opportunity costs (eg, owner's required\nreturn). Thus, a company may earn a positive accounting profit even if the economic profit is zero or negative.\nThe breakeven point can also be expressed as when average revenue per unit equals average total costs per unit, which also results in an\neconomic profit of zero:\n(Choices B and C) Firms incur both variable and fixed costs. Operating at a price equal to average fixed costs or average variable costs would\nmean that the firm was taking in revenue equal to its fixed costs or variable costs, thus not covering total costs. As noted, breakeven occurs when\ntotal revenue equals total costs.\nThings to remember:\nIn economics, firms break even when total revenues are equal to economic costs, which results in zero economic profit. When a firm produces at\nthat breakeven quantity, average revenue is equal to average total costs.\nDetermine and interpret breakeven and shutdown points of production, as well as how economies and diseconomies of scale affect costs under\nperfect and imperfect competition", "qhtml": null}, {"n": 7, "q": "Characteristics for three oligopoly markets are as follows: Based only on this information, which of the markets has the highest probability of successful collusion? ", "opts": ["Market A", "Market B", "Market C"], "ans": "A", "expl": "Collusion occurs when competing firms work together, either informally or by formal agreement (ie, a cartel), to maximize industry profits by\nreducing output and/or raising prices. For example, airlines may agree to charge the same price for specific routes, or oil producers may set\noutput quotas. Collusion can be hard to maintain, however, as competitors have incentive to agree but then \"cheat\" and increase output and/or\nundercut the oligopoly price.\nCertain market characteristics tend to support successful collusion:\nA smaller number of firms means that coordination and monitoring are easier, and profits from any collusion will be divided among fewer\nfirms.\nWhere firms have similar cost structures, the firms face similar profitability hurdles, making it easier to agree on the oligopoly price.\nIf products are homogeneous, the potential to compete through product differentiation is limited and collusion is more attractive.\nIn this case, all four characteristics for Market A indicate a higher probability of successful collusion; only two characteristics of Market B and one\nof Market C suggest collusion would be successful (Choices B and C).\nThings to remember:\nCollusion occurs when competing firms work together, either informally or by formal agreement (ie, a cartel), to maximize industry profits by\ninfluencing industry production levels and/or market prices. Factors that contribute to successful collusion include a small number of firms in the\nindustry and firms with dissimilar market shares, homogeneous products, and similar cost structures.\nExplain supply and demand relationships under monopolistic competition, including the optimal price and output for firms as well as pricing\nstrategy", "qhtml": null}, {"n": 8, "q": "A firm in a perfectly competitive industry increases production capacity, but then experiences an increase in its average total cost of production. To counteract the diseconomies of scale, the firm should most appropriately: ", "opts": ["scale down operations.", "diversify into a different industry.", "increase marketing expenditures."], "ans": "A", "expl": "Diseconomies of scale (ie, higher unit costs) typically result from a firm becoming too complex or too geographically dispersed to manage\neffectively. Higher unit costs also can result from excessive capacity relative to demand. This means that fixed costs are spread over small\nvolumes.\nAverage cost curves show the cost per unit at various levels of output. Each short-run average cost (SAC) curve reflects a different level of fixed\ncosts. All possible SAC curves determine the long-run average cost (LAC) curve. Decreasing returns to scale (ie, diseconomies of scale) are\nillustrated by the upward sloping portion of the LAC curve to the right of Q . LAC is minimized at the level of capacity implied by SAC .\n2 2\nThe situation posited in the question implies a firm that has expanded excessively, reaching too large a scale of operations to manage effectively\n(SAC ). The firm should scale down (eg, close or sell off factories) to achieve lower average costs per unit of output. Inversely, a firm operating\n3\nat a lower level of capacity (SAC ) could reduce costs (ie, realize economies of scale) by expanding.\n1\n(Choice B) Diseconomies of scale often result from excessive size or complexity. Diversifying into other industries increases the complexity of\noperations and doesn't directly address the problem of excessive unit cost.\n(Choice C) Increased marketing expenditures add to costs, exacerbating the problem of excessive costs. Increased marketing might be a\nsolution in market structures where prices can be raised but is not a viable alternative in a perfectly competitive market.\nThings to remember:\nRising average costs of production as capacity increases implies diseconomies of scale. Expansion has created a firm too large or complex to\nmanage effectively. Average cost could be reduced by scaling down operations.\nDetermine and interpret breakeven and shutdown points of production, as well as how economies and diseconomies of scale affect costs under\nperfect and imperfect competition", "qhtml": null}, {"n": 9, "q": "In the short run, a company maximizing profit in a market with perfect competition produces at a quantity that most likely results in:", "opts": ["economic profits equal to zero.", "marginal revenue equal to marginal cost.", "market price greater than marginal revenue."], "ans": "B", "expl": "A firm operating under perfect competition maximizes economic profit by producing and selling at the quantity where marginal revenue (MR)\nequals marginal cost (MC). Cost in this context includes opportunity costs (eg, the owners' required return from the business). Perfectly\ncompetitive firms can earn economic profits in the short run, but even if economic profits are zero or negative, a firm may be earning an\naccounting profit.\nMR, the incremental revenue from selling one additional unit, depends on the firm's demand curve. In the case of perfect competition, the demand\ncurve for any individual firm is a horizontal line at the market equilibrium price, since demand is perfectly elastic. Therefore, market price equals\nMR at all quantities (Choice C).\nMC, the incremental cost to produce one additional unit, depends on the firm's cost structure. Producing at a quantity greater than where MR =\nMC means that the incremental cost for each unit exceeds the incremental revenue generated by that unit and the firm generates a loss on each\nadditional unit sold. Producing at a lower quantity means that the firm forgoes economic profit (in the short run) since the additional revenue from\na unit sold would exceed the cost of the unit.\n(Choice A) Perfectly competitive firms can earn economic profits in the short run. However, in the long-run, the positive economic profits will\nattract new firms, which will increase supply/lower price until economic profit is zero.\nNote: Although this question specifically addresses perfect competition, the condition that firms optimally produce when MR = MC applies to all\nmarket structures. It is likely that the exam will have questions on this topic.\nThings to remember:\nUnder perfect competition, a firm maximizes short-run economic profit by producing and selling at the quantity where marginal revenue (MR)\nequals marginal cost (MC). Since there is perfectly elastic demand, price also equals MR for all quantities. Short-run, but not long-run, economic\nprofits are possible. However, a firm may earn an accounting profit even if economic profits are zero or negative.\nExplain supply and demand relationships under oligopoly, including the optimal price and output for firms as well as pricing strategy", "qhtml": null}, {"n": 10, "q": "In the short term, for a firm operating under perfect competition, the most appropriate point for a shutdown is when:", "opts": ["marginal cost falls below average total cost.", "market price falls below average variable cost.", "average total cost equals average variable cost."], "ans": "B", "expl": "From an economic perspective, a firm breaks even when total revenues equal total economic costs and economic profit is zero, or (per unit) when\naverage revenue equals average total cost (ATC). Total costs include both fixed and variable costs. Marginal revenue (MR) is the additional\nrevenue generated from selling one additional unit, and marginal cost (MC) is the cost of producing one additional unit.\nWith perfect competition, the firm has a horizontal demand curve, and therefore MR and average revenue are both equal to the market price. The\nbreakeven point is when MR = ATC = MC; at this point, MR \"covers\" ATC, including fixed and variable costs.\nIn the short term, fixed costs are sunk costs since fixed costs are independent of quantity produced. If the price falls so that MR < MC, the firm\ncan continue to produce as long as MR is greater than or equal to average variable cost (AVC): since variable costs are still covered, there is still\nsome profit from production (Choice A). However, if the price falls such that MR < MC < AVC, then the firm is not covering either its fixed or\nvariable costs and should shut down.\n(Choice C) AVC is a component of ATC and therefore will never be equal, no matter how many units are produced.\nThings to remember:\nWith perfect competition, if the price falls below the breakeven so that marginal revenue (MR) is less than marginal cost (MC), a firm can continue\nto produce in the short term as long as MR is greater than or equal to average variable cost (AVC): since variable costs are still covered (and fixed\ncosts are sunk costs), there is still some profit from production. However, if the price falls such that MR < AVC, the firm should shut down.\nDetermine and interpret breakeven and shutdown points of production, as well as how economies and diseconomies of scale affect costs under\nperfect and imperfect competition", "qhtml": null}, {"n": 11, "q": "In a perfect competition market structure, the industry demand curve is best described as:", "opts": ["negatively sloped.", "perfectly price-elastic.", "perfectly price-inelastic."], "ans": "A", "expl": "A perfect competition market structure has many sellers, all of whom sell an identical product. Each seller's individual demand function (ie,\ndemand curve) is perfectly elastic, meaning each can sell as many units of the product as it desires, but only at the market price. No seller in this\nmarket structure has the power to change the price.\nAlthough each seller's own demand function in a perfectly competitive industry is perfectly elastic, this is not the case for the industry's demand\nfunction. For nearly all products, as the price changes, the quantity demanded moves in the opposite direction, so the industry demand curve is\nnegatively sloped.\n(Choice B) A perfectly price-elastic demand curve is horizontal. A perfectly elastic demand curve is the curve for each seller in a perfectly\ncompetitive industry.\n(Choice C) A perfectly price-inelastic demand curve is vertical. This means that there is a specific quantity demanded for the product that does\nnot change, regardless of any change in price.\nThings to remember:\nIn a perfect competition market structure, each seller's individual demand curve is perfectly elastic, so each can sell as much as desired at the\nmarket price but has no power to change the price. The demand curve for the industry is negatively sloped since total quantity demanded\nchanges inversely to changes in product.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 12, "q": "A firm operating in a perfectly competitive market has average variable costs of KRW 80,000 and average total costs of KRW 100,000. The market equilibrium price is KRW 75,000. Based only on this information, in the short run, the firm should most likely: ", "opts": ["exit the market.", "increase advertising.", "continue to operate as is."], "ans": "A", "expl": "A firm's cost structure drives the decision to continue operating or exit the market. In the short run, the relationship between price and average\nvariable cost (AVC) is the decision driver. AVC is the average variable cost per unit to make a product (eg, labor, raw material).\nWhen the market price (KWR 75,000) is below AVC (KWR 80,000), the revenue per unit does not cover the cost of production. If the firm is not\ncovering variable costs, it is also not covering any of its fixed costs, which strengthens the argument that it should exit the market.\n(Choice B) Since firms operating in a perfectly competitive environment are price takers (face a horizontal demand curve) and sell products that\nare perfect substitutes for each other, increasing advertising will have no effect on units sold (or revenue per unit).\n(Choice C) Continuing to operate is an appropriate short-run decision if the market price is at or above AVC. In that case, the firm would be\ncovering all variable costs and some fixed costs (eg, rent, interest payments) and is better off operating instead of shutting down.\nThings to remember:\nIn the short run, firms should exit the market (ie, shut down) if the market price is less than the average variable cost. In that case, the firm is not\ncovering the variable costs needed to produce a unit, which means it is also making no contribution toward fixed costs.\nDetermine and interpret breakeven and shutdown points of production, as well as how economies and diseconomies of scale affect costs under\nperfect and imperfect competition", "qhtml": null}, {"n": 13, "q": "In perfectly competitive markets, each individual firm's demand curve is:", "opts": ["unitary elastic.", "infinitely elastic.", "perfectly inelastic."], "ans": "B", "expl": "Perfectly competitive markets are characterized by numerous competitors selling an undifferentiated (homogenous) product. All firms are small\nrelative to the total market for the product. Each can sell as much as they could produce at the market (ie, equilibrium) price. Additional output by\none firm cannot impact the equilibrium price. Consequently, each faces an infinitely elastic or flat demand curve.\nNothing prevents a firm from cutting the price of its output; however, doing so would not benefit the company. Unlike other industry structures, a\nfirm operating in a perfectly competitive market could sell all it can produce at the market price. Selling at a below-market price implies forgoing\nprofits.\n(Choice A) Unitary elastic refers to downward-sloping demand curves that reflect equal percentage changes in quantity and price (ie, a 1:1 ratio).\nUnitary elasticity means that the sensitivity of quantity demanded to changes in unit price varies across price levels. Trade-offs between price and\nquantity are typical for firms operating outside of purely competitive industries. Such firms can impact the demand for their product by raising or\nlowering price.\n(Choice C) Perfectly inelastic or vertical demand curves imply that the quantity demanded is unaffected by price. An example is demand for a\ndrug that is currently the only effective treatment for a life-threatening disease. Perfectly inelastic demand is not a likely characteristic of any\nmarket in the long run.\n14. If firms' supply curves can be used to determine the optimal, profit-maximizing price, those firms are most likely operating in:\nA. a monopoly.\n\nB. perfect competition.\nC. monopolistic competition.\nExplanation\nA firm's supply function reflects the quantities it will produce at various prices. All firms maximize profits at the level of output at which marginal\ncost (MC) = marginal revenue (MR); therefore, a firm's MC curve can be used to determine the optimal quantity of output. In a market with perfect\ncompetition, where a firm has perfectly elastic demand (ie, it is a price taker) and price (P) = MR, MC can also be used to determine the price that\nmaximizes profit (ie, price at which MC = MR = P). Thus, the MC curve reflects the firm's willingness to supply and defines its supply curve.\nIn other market structures, such as oligopoly, monopoly, and monopolistic competition, P ≠ MR due to inelasticity of demand. The optimal price is\ndetermined by the demand curve, which reflects the inelastic demand. Although MC can be used to determine the optimal quantity of output, the\nMC curve does not reflect the firm's willingness to supply at various prices and does not define the supply curve (Choices A and C).\nFor a firm in perfect competition, long-run equilibrium means producing a quantity of output that minimizes the firm's average total cost, which\nequals the market price for its product. At this level of output economic profit is zero, so Total cost = Total revenue, or Price per unit × Quantity of\nunits sold = Average total cost per unit × Units sold.\nUnder the monopoly and monopolistic competition structures, firms have some pricing power, but any new price must be offered to all customers;\ntherefore, MR ≠ Change in price multiplied × Change in quantity sold. Although the relationship between the average revenue and MR is similar\nunder both structures, in general, the demand curve for monopolistic competitors is flatter (ie, more elastic).\nThings to remember:\nUnder perfect competition, individual firms have flat demand curves, so price (P) = marginal revenue (MR). Since a firm's profit is maximized by\nproducing the quantity at which marginal cost (MC) = MR, the MC curve determines the optimal price (at which MC = MR = P) and, therefore, the\nfirm's supply function. In other market structures, inelastic demand means that P ≠ MR, so MC does not determine P and the MC curve does not\ndefine the supply function.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 14, "q": "If firms' supply curves can be used to determine the optimal, profit-maximizing price, those firms are most likely operating in:", "opts": ["a monopoly.", "perfect competition.", "monopolistic competition."], "ans": "B", "expl": "A firm's supply function reflects the quantities it will produce at various prices. All firms maximize profits at the level of output at which marginal\ncost (MC) = marginal revenue (MR); therefore, a firm's MC curve can be used to determine the optimal quantity of output. In a market with perfect\ncompetition, where a firm has perfectly elastic demand (ie, it is a price taker) and price (P) = MR, MC can also be used to determine the price that\nmaximizes profit (ie, price at which MC = MR = P). Thus, the MC curve reflects the firm's willingness to supply and defines its supply curve.\nIn other market structures, such as oligopoly, monopoly, and monopolistic competition, P ≠ MR due to inelasticity of demand. The optimal price is\ndetermined by the demand curve, which reflects the inelastic demand. Although MC can be used to determine the optimal quantity of output, the\nMC curve does not reflect the firm's willingness to supply at various prices and does not define the supply curve (Choices A and C).\nFor a firm in perfect competition, long-run equilibrium means producing a quantity of output that minimizes the firm's average total cost, which\nequals the market price for its product. At this level of output economic profit is zero, so Total cost = Total revenue, or Price per unit × Quantity of\nunits sold = Average total cost per unit × Units sold.\nUnder the monopoly and monopolistic competition structures, firms have some pricing power, but any new price must be offered to all customers;\ntherefore, MR ≠ Change in price multiplied × Change in quantity sold. Although the relationship between the average revenue and MR is similar\nunder both structures, in general, the demand curve for monopolistic competitors is flatter (ie, more elastic).\nThings to remember:\nUnder perfect competition, individual firms have flat demand curves, so price (P) = marginal revenue (MR). Since a firm's profit is maximized by\nproducing the quantity at which marginal cost (MC) = MR, the MC curve determines the optimal price (at which MC = MR = P) and, therefore, the\nfirm's supply function. In other market structures, inelastic demand means that P ≠ MR, so MC does not determine P and the MC curve does not\ndefine the supply function.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 15, "q": "For a firm operating under perfect competition, the short-run supply function is best described as the:", "opts": ["variable cost curve.", "marginal cost curve.", "average total cost curve."], "ans": "B", "expl": "A firm's supply function reflects the quantities it will produce at various price (P) levels. Profit-maximizing firms produce output such that the\nincremental costs of the last unit produced (ie, marginal cost [MC]) equals the revenue received for that unit (ie, marginal revenue [MR]).\nUnder perfect competition, individual firms cannot affect equilibrium (ie, market) price—they are \"price takers\"—so they face perfectly elastic\ndemand curves. Therefore, the market equilibrium price is the firm's MR (ie, P = MR). All else equal, starting from equilibrium, if demand:\nincreases and the equilibrium price rises, firms increase output, despite a rise in MCs, if the increase in cost does not exceed the additional\nrevenue, or\ndecreases and the equilibrium price falls, firms decrease output, thereby reducing MC to the point that the cost of the last item produced is\nno longer greater than the revenue from that unit.\nIn the image, the quantities of output (Q and Q ) for two levels of demand (D and D ) also reflect the market equilibrium prices under perfect\n1 2 1 2\ncompetition, since P = MR. The bolded portion of the MC curve indicates how output varies between those price levels, or in other words, the\nquantities the firm is willing to produce (ie, its supply function) over that price range.\n(Choice A) Although the changes in variable cost are reflected in MC, it is the MC curve, not the variable cost curve, that is a firm's supply\nfunction.\n(Choice C) The average total cost (ATC) curve indicates average costs per unit as output varies but does not reflect how output changes as\nprices change.\nThings to remember:\nFor a profit-maximizing firm operating under perfect competition, (ie, a price taker), the marginal cost (MC) curve reflects how it varies output as\nthe market equilibrium price changes. Therefore, a firm's MC curve is its supply function.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 16, "q": "A cheese producer competes by creating a differentiated, high-quality cheese that sells for a premium price in the very crowded local retail cheese market. The market structure that this cheese producer operates in is best described as:", "opts": ["oligopoly.", "perfect competition.", "monopolistic competition."], "ans": "C", "expl": "Monopolistic competition is a market structure characterized by numerous competitors selling differentiated products and by low barriers to\nentry. These companies compete on price, quality, marketing, and/or location.\nInnovative products or strategies can allow firms in monopolistic competition to temporarily achieve above-average levels of profitability. These\nabove-average earnings are known as economic profits. In monopolistically competitive markets, economic profits are quickly erased by the\nnumerous existing competitors or by new competitors, allowed by the low barriers to entry.\n(Choice A) Oligopolies have few competitors, deliver homogenous products (eg, crude oils), and have high barriers to entry.\n(Choice B) Perfect competition markets are characterized by homogenous products, low barriers to entry, and firms with no control over the\nmarket price (ie, price takers).\nThings to remember:\nMonopolistic competition is a market structure characterized by numerous competitors selling differentiated products and by low barriers to entry.\nThese companies compete on price, quality, marketing, and/or location.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 17, "q": "As a firm expands production capacity for a product, the average cost per unit produced declines. The firm is most likely experiencing:", "opts": ["economies of scale.", "diseconomies of scale.", "constant returns to scale."], "ans": "A", "expl": "Economies of scale describes situations in which unit costs decrease as production capacity increases. A firm in that situation realizes\nincreasing returns to scale by producing more output per unit of input. Lower costs per unit (the source of the increasing returns) reflect\nincreasing efficiency of production. Production on a larger scale facilitates division of labor, increasing productivity as workers specialize.\nVolume discounts on bulk purchases are attainable.\nEconomies of scale applies to firms with production output below (to the left of) Q on the x-axis of the above chart. The downward (negative)\na\nslope of the long-run average cost curve below Q reflects the decrease in unit costs as the size (scale) of operations increases up to that level. In\na\nsuch circumstances, firms expand production capacity (ie, scale up) to take advantage of scale economies.\n(Choice B) Diseconomies of scale describes situations in which firms incur increasing unit costs as production capacity expands. In these\nsituations, firms experience decreasing returns to scale.\n(Choice C) Constant returns to scale implies no change in production cost over a given range of capacity.\nThings to remember:\nIf unit costs decrease as a firm increases its production capacity (ie, scales up), the firm experiences increasing returns to scale. Such economies\nof scale result from increasing efficiency up to some level of capacity.\nDetermine and interpret breakeven and shutdown points of production, as well as how economies and diseconomies of scale affect costs under\nperfect and imperfect competition", "qhtml": null}, {"n": 18, "q": "Profit-maximizing monopolists most likely attempt to produce a level of output at which marginal cost equals:", "opts": ["average revenue.", "marginal revenue.", "average total cost."], "ans": "B", "expl": "Marginal cost (MC) is the increase in total expenditure for each additional unit produced. Marginal revenue (MR) is the increase in total revenue\nfor each additional unit sold. Monopolists can offer products at a higher price, as demand allows, to increase total revenues, or at a lower\nprice to expand unit sales. If there is no ability to engage in price discrimination, the lower price must be offered to all customers. MR accounts\nfor the impact on total revenue of all units being sold at a new price.\nAs shown in the image above, if monopolists produce and sell at quantities:\nbetween 0 and Q , MC is decreasing faster than MR, which increases profit margins and total profits.\n1\nbetween Q and Q , MC is increasing, which decreases profit margins; however, since MC is less than MR, total profits are still\n1 pmax\nincreasing.\ngreater than Q , MC is greater than MR and total profits are reduced.\npmax\nTherefore, total profit is maximized at the level of production at which MC equals MR.\n(Choices A and C) A marginal cost that equals either the average revenue or average total cost implies that production and sales levels are\nexceeding the profit-maximizing level of output (Q ). Cutting prices to expand sales beyond Q would increase revenue by less than the\npmax pmax\nadditional costs, thus reducing total profit.\nThings to remember:\nProfit is maximized at the level of output at which marginal cost (MC) equals marginal revenue (MR). Monopolists can increase profit by either\ncutting prices to expand unit sales or raising prices (as demand allows) to increase total revenue, as long as MC remains less than MR. Sales\nbeyond that level result in incremental revenues that are less than the increase in costs, thus reducing profit.\nExplain supply and demand relationships under monopolistic competition, including the optimal price and output for firms as well as pricing\nstrategy", "qhtml": null}, {"n": 19, "q": "The following data is for a firm operating under perfect competition: Quantity produced Total economic cost (€) 100 510 101 511 102 513 103 516 104 520 105 525 106 531 If the price per unit is €5, economic profits are maximized when the firm produces:", "opts": ["104 units.", "105 units.", "106 units."], "ans": "B", "expl": "Under perfect competition, firms face a horizontal demand curve with the market price equal to marginal revenue. The level of output that\nmaximizes economic profit is also the economic breakeven, where marginal revenue (MR) equals marginal cost (MC) and average total cost\n(ATC): MR = MC = ATC. At that point, production of:\nadditional units would result in an economic loss, wherein MR < MC and ATC, and\nfewer units would result in a missed profit, wherein MR > MC.\nIn this case, profit is maximized at 105 units, the point at which MR per unit (ie, €5 market price), MC, and ATC are all equal.\nProduction data at a unit price of €5\nQuantity produced Total cost MC per unit MR per unit ATC per unit\n100 510 − 5 5.10\n101 511 1 5 5.07\n102 513 2 5 5.03\n103 516 3 5 5.01\n104 520 4 5 5.00\n105 525 5 5 5.00\n106 531 6 5 5.03\nNote: Although this question specifically addresses perfect competition, the condition that firms maximize profits when MR = MC applies to all\nmarket structures.\n(Choice A) At 104 units of production, ATC per unit is the same as for 105 units (€5.00). However, MC (€4) is less than MR (€5) and still rising,\nso the firm has not yet reached maximum economic profit.\n(Choice C) At 106 units of production, both MC (€6) and ATC (€5.03) are greater than MR (€5), so the production of the 106th unit would result in\nan economic loss.\nThings to remember:\nIn a market under perfect competition, economic profits are maximized when marginal revenue equals marginal cost and marginal cost equals\naverage total cost.\nExplain supply and demand relationships under monopolistic competition, including the optimal price and output for firms as well as pricing\nstrategy", "qhtml": null}, {"n": 20, "q": "For a firm operating in a monopolistic competition market structure, which of the following statements is most accurate?", "opts": ["In the long run, the firm's economic profit equals zero.", "In the long run, the optimal quantity produced is that at which average cost is lowest.", "In the short run, the firm should produce the quantity at which marginal cost is lowest."], "ans": "A", "expl": "In the short run, firms in a monopolistic competition structure can earn an economic profit. Economic profit brings new entrants; the new entrants\nattract customers from existing firms. In the long run, this reduces demand for all firms that produce similar products, so the price falls until per-\nunit price equals per-unit cost. \"Cost\" in this context includes opportunity costs, and since the owners' return from the business is one type of\nopportunity cost, all firms' economic profit equals zero in the long run.\nIn monopolistic competition, a firm maximizes profit when producing a quantity at which marginal revenue (MR) = marginal cost (MC). Producing a\nhigher quantity means that the incremental cost for each unit exceeds the incremental revenue generated by that unit; the firm generates a loss on\neach additional unit sold. Producing a lower quantity (ie, minimizing marginal cost) means that the firm not only fails to maximize its economic\nprofit in the short run, but actually incurs an economic loss (Choice C).\nNote: Although this question specifically addresses monopolistic competition, the condition that firms optimally produce when MR = MC applies to\nall market structures. It is likely that the exam will have questions on this topic.\n(Choice B) In monopolistic competition, profit maximization in the long run occurs when MR = MC, not when average cost is lowest.\nThings to remember:\nIn monopolistic competition, firms can earn an economic profit in the short run. This attracts competitors, which results in the price being reduced\nto the point where long-run economic profit equals zero.\nExplain supply and demand relationships under monopolistic competition, including the optimal price and output for firms as well as pricing\nstrategy", "qhtml": null}, {"n": 21, "q": "A firm is facing market prices that are below average total cost but above average variable cost. The optimal action for the firm in the short run is most likely to:", "opts": ["exit the market.", "continue to operate.", "shut down temporarily."], "ans": "B", "expl": "Average total cost is the cost, including fixed costs and variable costs, to produce the units. To be viable in the long run, firms must sell their\nproducts at a price at least equal to average total cost. In the short run, it is optimal to sell at prices below average total cost if price exceeds\naverage variable cost. Price above variable cost means that the revenue per unit is greater than the added costs of producing it. Therefore, the\nlosses are smaller if the firm continues to operate rather than shut down. Any excess of price above variable cost is applied to fixed costs.\nThe graph above illustrates the consequences of the two short-run choices: Scenario A (continuing to operate), and Scenario B (shutting down).\nThe loss is greater if the firm shuts down instead of continuing operations.\n(Choice A) Exiting a market is only likely if the price is expected to remain below average total cost for a long time.\n(Choice C) Shutting down temporarily reduces revenue and variables costs to zero. Fixed costs are still incurred, resulting in a loss equal to fixed\ncosts. Sales at prices above variable costs means that there is some recovery of fixed costs, which results in a smaller loss than exiting the\nmarket.\nThings to remember:\nPrices above variable costs means that the revenue from additional sales is greater than the cost of producing those units. Even if the price is\nbelow average total cost, it is optimal to continue operating in the short run. The excess of price above variable cost recovers some of the fixed\ncosts, which results in smaller operating losses.\nDetermine and interpret breakeven and shutdown points of production, as well as how economies and diseconomies of scale affect costs under\nperfect and imperfect competition", "qhtml": null}, {"n": 22, "q": "The income statement of a firm that earns a small economic profit would mostly likely show an accounting:", "opts": ["profit that is less than the economic profit.", "loss equal to the opportunity cost of capital.", "profit that is greater than the economic profit."], "ans": "C", "expl": "Accounting profits refers to the results reported on a company's income statement. Accounting profits usually exceed economic profits. This\ndivergence results from real costs of doing business that are not recognized as expenses. Most of these items are referred to as opportunity\ncosts. An opportunity cost is the return that could have been earned on an item if it had been employed in its highest return (equivalent risk)\nalternative use.\nAbsent or understated costs are the cause of accounting profit being overstated relative to economic profit. Economic profits are earned only to\nthe extent that accounting profits exceed opportunity costs not recognized as expenses in a company's financial reports.\n(Choice A) A firm reporting a low level of accounting profits is probably experiencing an economic loss. The amount of economic loss depends\non the amount by which unrecognized opportunity costs (eg, cost of equity capital) exceeded costs recognized as expenses on the income\nstatement.\n(Choice B) A firm reporting losses (ie, accounting losses on its income statements) would be experiencing commensurately larger economic\nlosses due to the opportunity costs not reflected on the income statement.\nThings to remember:\nAccounting profits are revenues that exceed expenses allowable under financial reporting rules. Because some economic costs are not allowable\nexpenses for financial reporting (ie, accounting) purposes, accounting profits usually exceed economic profits.\nExplain supply and demand relationships under monopolistic competition, including the optimal price and output for firms as well as pricing\nstrategy", "qhtml": null}, {"n": 23, "q": "Characteristics of three market structures are shown in the image below: Based only on the information provided, which market structure is most likely an oligopoly?", "opts": ["Structure A", "Structure B", "Structure C"], "ans": "B", "expl": "Oligopoly is a market structure characterized by a small number of firms (eg, airlines, beverage companies) selling similar products that are\ndifferentiated by advertising and branding. High barriers to entry (eg, initial capital investments, proprietary technology, patents, economies of\nscale) provide the firms with some or considerable pricing power.\nIn an oligopoly, the small number of firms and their interdependence often results in economic profits, at least in the short term, which would\ntypically attract other firms to enter the market. However, the existing firms are protected by the high barriers to entry.\n(Choice A) Structure A is a monopoly market, as indicated by high barriers to entry and a unique product.\n(Choice C) Structure C represents monopolistic competition, as indicated by many firms, low barriers to entry, and differentiated products.\nThings to remember:\nOligopoly is a market structure characterized by a small number of firms selling similar products differentiated by advertising and branding. High\nbarriers to entry provide the firms with some or considerable pricing power.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 24, "q": "For a firm operating in perfect competition, which of the following statements is most accurate with respect to long-run equilibrium?", "opts": ["The firm can expect to earn zero economic profit.", "Zero economic profit means that the firm generated an accounting loss.", "The firm should produce goods at a level at which marginal revenue exceeds average total cost."], "ans": "A", "expl": "Economic profit is the difference between a firm's total revenue, which is price (P) × quantity sold (Q ), and its total cost, which is cost (C) ×\nE\nQ . Total cost consists of accounting expenses plus opportunity costs; opportunity costs include the owner's expected return from the\nE\nbusiness.\nAny firm in a perfectly competitive industry should always produce the quantity of goods at which marginal revenue equals marginal cost. In the\nshort run, a firm can earn an economic profit; this is reflected in the yellow rectangle shown above. However, since there are no barriers to entry\nin perfect competition, additional sellers are attracted by the potential economic profit and enter the industry.\nThe increased supply from these new entrants causes the market price to fall to the point where marginal revenue, marginal cost, and average\ncost meet (Choice C). The new equilibrium quantity is at Q', which represents the point at which TR equals TC and economic profit equals zero.\n(Choice B) Economic profit equals accounting profit (ie, total revenue − accounting expenses) minus opportunity costs. Opportunity costs include\na rate of return to the business owner. If economic profit equals zero, then the formula can be rearranged so that accounting profit = owner's\nreturn. This means that accounting profit is positive, not negative.\nThings to remember:\nEconomic profit equals accounting profit minus opportunity costs; one opportunity cost is the owner's expected return on the business. In the short\nrun, a firm in a perfectly competitive industry may be able to earn an economic profit, but in the long run, all firms in such an industry can expect to\nearn zero economic profit.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 25, "q": "A producer in a monopolistic competition industry sells 375 units of a product when its price is $20 per unit. Demand for the product at that price is own-price elastic. Based only on the information provided, if the producer raises the price to $25 per unit, this will most likely:", "opts": ["maximize revenue.", "increase producer surplus.", "decrease consumer surplus."], "ans": "C", "expl": "When demand for a product is own-price elastic, raising the price lowers the total amount spent by all consumers for the product. Since total\nconsumer expenditure equals the producer's total revenue, raising the price to $25 would decrease, rather than maximize, revenue. At $20 per\nunit, the producer generates 375 × $20 = $7,500 in revenue. As the graph above shows, raising the price to $25 results in revenue of\napproximately 200 × $25 = $5,000 (Choice A). However, it is likely that raising the price would also decrease the consumer surplus.\nConsumer surplus relates to demand. It refers to the difference between what a consumer pays for a product (ie, consumer's cost) and what\nthat same consumer would be willing to pay for the same product. In this question, a consumer who would pay $25 for a product priced at $20\nreceives a $5 surplus. Whenever possible, producers try to capture some or all the surplus. This might happen if the producer can practice price\ndiscrimination by charging a different price for each consumer based on what the consumer will pay.\n(Choice B) The producer surplus relates to the supply curve and refers to the difference between the actual sales price and a lower price at which\nthe producer would be willing to sell. A producer who charges $20 for a product but would be willing to sell it for $12 has a producer surplus of $8\nper unit sold.\nThings to remember:\nConsumer surplus is the difference between the price of a product and the price that a consumer would be willing to pay for the same product. If\ndemand for a product is own-price elastic, raising the price will decrease the producer's total revenue, but it will also reduce the consumer surplus.\nExplain supply and demand relationships under oligopoly, including the optimal price and output for firms as well as pricing strategy", "qhtml": null}, {"n": 26, "q": "A pharmaceutical company has developed a new drug to cure a previously incurable and widespread disease. The company has received regulatory approval to begin selling the drug and has 15 years of patent protection and no competitors. The marginal cost to produce the drug is INR 80, its average total cost is INR 150, and the projected price elasticity of demand is 1.2. The profit maximizing price (in INR) is closest to:", "opts": ["180", "480", "900"], "ans": "B", "expl": "This question describes a monopoly market structure, in which a single seller offers a product with no close substitutes, that firm has considerable\npricing power, and barriers to entry are very high. However, monopolists rarely have complete and total independence in determining price, which\nis dependent on elasticity of demand. In addition, government regulation and control in setting prices is common, allowing companies to earn a\nreasonable return without allowing price gouging.\nOptimal pricing (ie, maximum profit) in a monopoly is determined by applying the relationship between marginal revenue (MR), marginal cost\n(MC), and the price elasticity of demand (E ), as shown in the image above. To calculate the profit-maximizing (ie, optimal) price in a monopoly,\nP\ninput the given amounts for those variables:\n(Choice A) INR 180 results from inappropriately multiplying the price elasticity of demand by the average total cost.\n(Choice C) INR 900 results from inappropriately dividing the average total cost by the price elasticity of demand (150 / 0.1667).\nThings to remember:\nA monopoly market structure involves a single seller offering a product with no close substitutes; that firm has considerable pricing power, and\nbarriers to entry are very high. Optimal pricing in a monopoly is determined by applying the relationship between marginal revenue, marginal cost,\nand the price elasticity of demand.\nExplain supply and demand relationships under oligopoly, including the optimal price and output for firms as well as pricing strategy", "qhtml": null}, {"n": 27, "q": "Which of the following is most likely characteristic of monopolistic competition?", "opts": ["Low barriers to entry", "Undifferentiated product", "Small number of competitors"], "ans": "A", "expl": "Monopolistic competition is a market structure characterized by numerous producers selling differentiated products. Differentiated products\nallow firms in such markets to compete on price, quality, marketing, and/or location. Innovative products or strategies occasionally allow firms in\nthese industries to temporarily achieve above average levels of profitability. The above-average earnings are called excess or economic profits.\nIn monopolistically competitive markets, any economic profits are erased quickly by competitors. This is possible due to low barriers to entry. The\nlack of entry barriers is the reason for the large number of competitors.\n(Choice B) An undifferentiated (homogeneous) product is a characteristic of perfect competition and oligopoly. Monopolistic competition is a\nmarket structure in which firms offer differentiated products.\n(Choice C) A small number of competitors would be a characteristic of oligopolies. Monopolistic competition is characterized by many firms.\nThings to remember:\nMonopolistic competition is a market structure characterized by numerous firms selling differentiated products. Product or strategy innovation will\nsometimes enable firms to temporarily earn economic profits. That will draw in new entrants due to a lack of significant barriers to entry.\nDescribe characteristics of perfect competition, monopolistic competition, oligopoly, and pure monopoly", "qhtml": null}, {"n": 28, "q": "An oligopolist's pricing strategy includes anticipating competitor reactions and acting in the firm's self-interest. This firm is most likely pursuing which of the following pricing strategies?", "opts": ["Collusion", "Nash equilibrium", "Cournot assumption"], "ans": "B", "expl": "Oligopoly pricing theories\nTheory Description\nCompete on price\nKinked demand curve\nDifferentiate with advertising and branding\nFirms act independently and simultaneously\nCournot assumption\nEquilibrium: stable price and output quantity\nNo cooperation (ie, no collusion)\nNash equilibrium\nFirms act in own best interest\nFirms act dependently and sequentially\nStackelberg (\"first mover\")\nLeader (ie, \"top dog\") sets quantity and others respond\nFirms cooperate to set quantity/price\nCollusion\nFirms act in industry's best interest\nOligopolistic firms may adopt various pricing strategies. Nash equilibrium is perhaps best known as \"game theory\" in reference to a set of optimal\nstrategies used by two or more market participants to maximize their profits. Although this theory assumes that each firm acts in its own best\ninterest, it also assumes that firms will consider their competitors' responses to an action. For example, a firm could try to increase profits by\nraising prices but may also consider the loss of market share to competitors that do not raise their prices.\n(Choice A) Under the collusion pricing theory, firms seek to maximize industry profits, not firm profits. Also, as the name suggests, market firms\ncooperate to manipulate the market equilibrium; under Nash equilibrium, firms do not collude, even though they might benefit from doing so.\n(Choice C) The Cournot assumption, applied to a duopoly (ie, two-firm market) in equilibrium, assumes that both competitive firms act\nindependently and simultaneously. Firms act to determine production quantities and maximize profits, without collusion and without anticipating\neach other's actions.\nThings to remember:\nA Nash equilibrium represents a set of optimal strategies used by oligopolists to maximize firm profits. Nash equilibria assume that there is no\ncollusion between firms but, rather, that each firm acts in its own interest and anticipates its competitors' responses.\nExplain supply and demand relationships under monopolistic competition, including the optimal price and output for firms as well as pricing\nstrategy", "qhtml": null}, {"n": 29, "q": "The Herfindahl-Hirschman Index (HHI) is most likely considered an improvement on the concentration ratio since the HHI better reflects the:", "opts": ["effect of mergers.", "elasticity of demand.", "threat of new entrants."], "ans": "A", "expl": "The market power of monopolists typically results in higher prices and lower quantity produced (which may disadvantage consumers) as\ncompared with other market structures. As a result, regulators need a way to measure market power and determine the potential effect on\nconsumers when enforcing laws (eg, when determining whether a proposed merger violates anti-trust laws).\nMarket power may be measured with either econometric approaches, such as regression analysis, or with noneconometric measures, such as\nthe concentration ratio and Herfindahl-Hirschman Index (HHI). The noneconometric approaches are more common since they are simpler to\nuse than complex and data-intensive econometric approaches.\nThe concentration ratio is the sum of the market share of N largest firms. The HHI is calculated by squaring market shares: it improves on the\nconcentration ratio by amplifying the impact of market share and better reflecting the effect of mergers (see exhibit).\n(Choice B) Neither the concentration ratio nor the HHI directly measures the elasticity of demand (inelastic demand signals high market power;\nelastic demand signals low market power).\n(Choice C) Neither the concentration ratio nor the HHI ratio considers the threat of new entrants (eg, barriers to entry or exit). When barriers to\nentry are low, existing firms have less power to raise prices without attracting new entrants.\nThings to remember:\nBoth the concentration ratio and Herfindahl-Hirschman Index (HHI) may be used to measure market power. The HHI improves on the\nconcentration ratio by better showing the effect of mergers. Neither measure considers the threat of new entrants or directly measures the\nelasticity of demand.\nIdentify the type of market structure within which a firm operates and describe the use and limitations of concentration measures", "qhtml": null}, {"n": 30, "q": "If a market has low barriers to entry and numerous competitors selling differentiated products, the market's structure is best described as:", "opts": ["oligopoly.", "perfect competition.", "monopolistic competition."], "ans": "C", "expl": "Different market structures are set apart by factors that impact competitors' pricing power. Those factors are reflected in the slope and shape of\nthe demand curves for individual firms. Monopolistic competition is characterized by low entry barriers and numerous firms selling\ndifferentiated products.\nProduct differentiation can take a variety of forms:\nAdvertising to create brand loyalty\nPrice competition\nLocational differences (eg, fueling station near highway versus low-traffic areas)\nSuccessful product differentiation gives firms pricing power. This implies that there is price elasticity of demand for the firm's product (ie,\ndownward-sloping demand curve), allowing the firm to earn economic profits. However, since there are low barriers, the firm's pricing power is\noften short-lived, as competition from new entrants decreases excess profits.\n(Choice A) Oligopolies (eg, oil industry) have a small number of competitors, high barriers to entry, and undifferentiated (ie, homogeneous)\nproducts. Production costs in these markets tend to decline substantially as company size increases (ie, economies of scale). The capital\ninvestment needed to achieve scale economies contributes to the high entry barriers.\n(Choice B) Perfect competition shares with monopolistic competition the features of numerous competing firms and low barriers to entry;\ntherefore, both market structures are subject to intense price competition. The two structures differ in that perfectly competitive markets are\ncharacterized by homogeneous products and monopolistically competitive markets offer differentiated products.\nThings to remember:\nMonopolistic competition is characterized by low entry barriers and numerous firms selling differentiated products.\nIdentify the type of market structure within which a firm operates and describe the use and limitations of concentration measures", "qhtml": null}];
+const CFG = {"title": "Wiley · Firms and Market Structures", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Economics · 30 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

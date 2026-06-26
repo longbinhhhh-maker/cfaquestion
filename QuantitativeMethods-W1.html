@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "An analyst compares portfolios in which the amount invested changes each year. Which of the following is the most appropriate measure for the analyst to use in comparing the portfolios' returns over a multiyear period?", "opts": ["Holding period return", "Arithmetic mean return", "Geometric mean return"], "ans": "C", "expl": "A portfolio's value can change during a period due to contributions, withdrawals, and/or income earned. Changes in portfolio value should be\nincluded in the beginning value in each subsequent period so that those changes are compounded.\nThe geometric mean return (G in the image above) provides a better representation of a portfolio's return since it allows for the compounding\nof returns and the varying amounts invested. The geometric mean return produces an average periodic return from actual periodic returns (eg,\nthree-year average annual return from annual returns over three years). Analysts prefer the geometric mean return since it allows for better\nperformance comparisons between investments with different amounts invested each year.\n(Choice A) A holding period return is an asset's return earned over a specific period of time such as a day, week, or year. However, this return\nwill be inaccurate if the amounts invested change during the period. It is best used as a periodic return when the amount invested remains the\nsame.\n(Choice B) An arithmetic mean return (ie, simple average return) assumes an equal base amount invested at the beginning of each period.\nThings to remember:\nThe geometric mean return converts performance data from multiple periods into a comparable format and produces a constant periodic return. It\nprovides a better representation of an portfolio's return since it allows for the compounding of returns and the varying base amounts invested.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 2, "q": "At year end, a bondholder reviews performance records of a INR 1,000 par value bond. The holding period return of the security is 3.0%. If the beginning price of the bond was INR 998 and the ending price of the bond was INR 1,008, the bond's interest income for the period was closest to: ", "opts": ["INR 19.94", "INR 29.94", "INR 39.94"], "ans": "A", "expl": "A holding period return (HPR) is a single-period return, where the single period can represent any timeframe. There are two sources of\ninvestment returns to the HPR: capital changes and income. The capital changes reflect the security's market value difference from the beginning\nto the end of the period. Income during the period is either the result of dividends from stocks or of interest earned from bonds.\nFor example, a stock or bond's price may move up or down during the period, which creates a capital gain or loss. In addition, most bondholders\nearn interest income during the period, and some stockholders earn dividend income. HPR compares these combined sources (gain or loss plus\nincome) to the value the security had at the beginning of the period.\nTo find the interest income of a bond, use the HPR formula and input all but the missing interest income.\n(Choice B) This incorrect answer of INR 29.94 is obtained by calculating interest as the HPR multiplied by the beginning price. This ignores the\ncapital gain part of the return and assumes all return is generated from income.\n(Choice C) This answer of INR 39.94 incorrectly uses the ending price, rather than the beginning price, in the dominator to find the interest. This\nis flawed since the interest found is greater than the holding period return.\nThings to remember:\nA holding period return compares the change in investment value plus interest to the beginning value of the investment to determine performance.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 3, "q": "A hedge fund manager invested in three investments, A, B, and C, with differing holding periods. The manager collected the following information: Investment performance A B C Holding period return 0.5% 50.0% 350.0% Holding period return 5 days 23 months 6.7 years Which of the three investments has the lowest annualized rate of return?", "opts": ["Investment A", "Investment B", "Investment C"], "ans": "B", "expl": "The annualized rate of return is an application of the geometric mean return. It converts a holding period return to an equivalent annualized\nreturn. To find the annualized rate of return, determine the time unit (eg, days, months, or years). Identify how many time units occur in one year\n(eg, days = 365, months = 12, year = 1). Express the time in years. Apply this standardized unit of time to the geometric mean return formula.\nWhen the annualized returns of all investments are compared, Investment B has the lowest return, 23.56%.\nThe annualized returns of Investment A (Choice A) and Investment C (Choice C) both show higher annualized returns than Investment B's\nannualized return.\nThings to remember:\nIn all performance calculations, match the time unit of the return (eg. annual, monthly or daily), r, with the corresponding time, t (ie, how many\nperiods in the time unit). Apply this standardized unit of time to the geometric mean return formula.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 4, "q": "An analyst records the price of an asset over a two-year period: Time (years) Price (AUD) 0 99 1 105 2 113 Based only on price, the asset's Year 1 continuously compounded return is closest to: ", "opts": ["5.88%", "6.06%", "6.41%"], "ans": "A", "expl": "An infinite number of infinitesimally small compounding periods during a holding period is known as continuous compounding. The continuously\ncompounded return is related to the holding period return; it is the natural log of the ratio of the ending value to the beginning value of the\ninvestment.\nIn this scenario, solve to determine the Year 1 continuously compounded return using the price at the beginning (S) and price at the end (S ) of\nt t+1\nthe one-year holding period, which are both given.\nNote that the continuously compounded return in this scenario is lower than the holding period return (6.06%). This makes sense due to the fact\nthat compounding at a lower rate more frequently results in the same return as compounding at a higher rate less frequently.\n(Choice B) 6.06% is the Year 1 holding period return.\n(Choice C) 6.41% is the geometric mean of the two-year, continuously compounded return.\nThings to remember:\nAn infinite number of infinitesimally small compounding periods during a holding period is known as continuous compounding. The continuously\ncompounded return is related to the holding period return; it is the natural log of the ratio of the ending value to the beginning value of the\ninvestment.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 5, "q": "A lender gathers data on three different loans in its portfolio: Stated Annual Compounding Loan Interest Rate Frequency (r ) s X 10.40% weekly Y 10.45% monthly Z 10.50% quarterly Based on the data above, the loan with the highest effective annual rate is:", "opts": ["Loan X.", "Loan Y.", "Loan Z."], "ans": "B", "expl": "With interest-bearing investments, lenders (investors) earn interest periodically (eg, monthly, quarterly) based on a specific periodic rate over time.\nWhen interest is compounded, interest income is reinvested each period at the periodic rate, so additional interest is earned on previous interest.\nTherefore, the total value of the investment (including principal and interest) grows at the periodic rate. The investment's percentage growth in\nannual terms, accounting for periodic compounding, is known as the effective annual rate (EAR).\nThe EAR is derived from the periodic rate. Since the periodic rate is not given, it must be derived from the stated annual rate (r ). The r is an\ns s\nannualized quotation convention (used by financial institutions) that equals the periodic rate multiplied by the number of compounding periods per\nyear (m). To derive the periodic rate, divide the r by m.\ns\nCalculate EAR for the three loans:\nThe EAR for Loan Y is 10.97%. An EAR example illustrates how $1 invested today in Loan Y will result in an annual return of 10.97%.\nThings to remember:\nAn investment that generates compounded interest will grow in value at the periodic rate each period until maturity. The investment's percentage\ngrowth, in annual terms, is known as the effective annual rate (EAR), which accounts for the effect of periodic compounding. Greater\ncompounding frequency or periodic rates can lead to higher EAR.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 6, "q": "For a manager reporting historical performance of an open-end mutual fund, the most appropriate measure of return is the:", "opts": ["arithmetic mean return.", "time-weighted rate of return.", "money-weighted rate of return."], "ans": "B", "expl": "Money-weighted rate of return (MWR) Time-weighted rate of return (TWR)\nInternal rate of return (IRR) of a portfolio; accounts for all Compound growth rate (geometric mean) of a portfolio; excludes\ncontributions and withdrawals contributions and withdrawals\nAppropriate for measuring an investor's change in wealth Preferred return measure for evaluating investment performance\nAffected by amount and timing of cash flows Unaffected by amount and timing of cash flows\nThe time-weighted rate of return (TWR) is used to calculate the compound growth rate for each dollar (or other currency unit) invested in the\nportfolio. It defines subperiods based on cash flows and compounds the return of each subperiod as the geometric mean return. As a result, the\nsize of cash additions and withdrawals and of the portfolio do not figure into the calculated return.\nOpen-end mutual fund managers generally do not control the amount and timing of their clients' additions and withdrawals, so TWR provides\nthe best view of investment performance without any distorting effects from cash flows; it is the preferred way for managers to present\nhistorical performance. Therefore, the most appropriate choice in this case is the TWR.\n(Choice A) The arithmetic mean return is not suitable since it ignores compounding. It is generally used for forecasting or modeling purposes, not\nfor reporting actual performance.\n(Choice C) The money-weighted rate of return is inappropriate in this scenario since its calculation is affected by the amount and timing of cash\nflows.\nThings to remember:\nThe time-weighted rate of return (ie, geometric mean return) is not influenced by timing and amount of investor cash flows, making it the best\nchoice for fund managers reporting on their performance.\ncompare the money-weighted and time-weighted rates of return and evaluate the performance of portfolios based on these measures", "qhtml": null}, {"n": 7, "q": "The following table shows a company's sales growth over a five-year period: Year Sales Growth Rate 2008 6.8% 2009 12.2% 2010 4.3% 2011 −6.9% 2012 14.7% The company's geometric mean for sales from 2008 to 2012 is closest to: ", "opts": ["5.9%", "6.2%", "6.8%"], "ans": "A", "expl": "Calculating an average growth rate for an asset over multiple periods requires the use of compounding, since the growth rate each year is\naffected by the growth rates in previous years. In Year 2, the asset will have already grown by the rate in Year 1. In Year 3, the asset will have\nalready grown by the rate in both Years 1 and 2. This is true for asset returns and financial figures like sales growth and earnings per share\ngrowth.\nThe geometric mean calculates the average growth rate over multiple periods of time by taking compounding into account. Because of this, the\ngeometric mean is used for the time series for the company's sales growth since sales each year are affected by the growth in previous years.\nThe geometric mean helps to calculate the terminal value of an asset or, in this case, sales.\nThe company's five-year compounding annual growth rate rounds to 5.9%.\n(Choice B) The arithmetic mean, or simple average, of the company's sales growth is 6.2%. The arithmetic mean does not take compounding\ninto consideration.\n(Choice C) The median of the company's sales growth is 6.8%. Since there is an odd number of years being calculated, the median is the middle\ndata point.\nThings to remember:\nThe geometric mean calculates the average growth rate over multiple periods of time by taking compounding into account.\nCalculate and interpret different approaches to return measurement over time and describe their appropriate uses", "qhtml": null}, {"n": 8, "q": "The rate on a US Treasury bill (T-bill) is least likely to include a(n):", "opts": ["risk-free rate.", "inflation premium.", "liquidity premium."], "ans": "C", "expl": "An interest rate (r) can be viewed as the risk-adjusted rate of return required by investors. It reflects the real risk-free rate adjusted for different\nrisk premiums. A completely risk-free security with no expected inflation has a real risk-free rate of return. The return of a riskier security includes\nadditional risk premiums to compensate investors for accepting various risks, which include:\nInflation: expected inflation over the term of the investment\nDefault risk: potential failure on behalf of the borrower to make promised timely payments\nLiquidity risk: potential losses related to the sale of securities at below fair value due to illiquidity (eg, thinly traded securities)\nMaturity risk: greater sensitivity of a longer-termed security's value to changes in market interest rates\nTreasury bills (T-bills) are issued and guaranteed by the US government. They are the most liquid of securities, so investors do not require a\nliquidity premium.\nA T-bill rate captures the nominal risk-free rate, which includes the real risk-free rate and the inflation premium (Choices A and B). The nominal\nrisk-free rate can be thought of as the return expected for the least risky investment.\nThings to remember:\nThe interest rate is the risk-free rate plus the inflation risk premium, default risk premium, liquidity premium, and maturity risk premium. A US\nTreasury bill captures the nominal risk-free rate (real risk-free rate plus inflation premium). Treasury bills are the most liquid of securites, and their\nrates do not require a liquidity premium.\nInterpret interest rates as required rates of return, discount rates, or opportunity costs and explain an interest rate as the sum of a real risk-free\nrate and premiums that compensate investors for bearing distinct types of risk", "qhtml": null}, {"n": 9, "q": "An analyst reviews the performance of three exchange-traded funds (ETFs): ETF Annual Returns Large-cap Mid-cap Small-cap Year 1 13.0% 17.0% 10.0% Year 2 14.0% −1.5% 18.5% Year 3 −0.1% 9.6% −5.3% Which ETF had the highest three-year annual geometric mean return? ", "opts": ["Large-cap ETF", "Mid-cap ETF", "Small-cap ETF"], "ans": "A", "expl": "The geometric mean return (GMR) formula is used to convert actual performance data over multiple periods into a comparable format. The\nGMR produces a constant periodic return, usually annual, from actual periodic returns. The actual periodic returns, which are geometrically\nlinked, produce an actual total return. The GMR breaks this multiperiod total return into a conforming time period.\nAdvantages of the GMR include allowing for varying investment levels and comparability. The simple arithmetic mean assumes that each\nperiod's level of investment is constant. The GMR is independent of levels of investment, which allows for better performance comparisons\nbetween securities such as large-, mid-, and small-cap exchange-traded funds (ETFs).\nTo calculate the GMR, link the annual returns to produce a three-year total return. Link the returns geometrically (by multiplying), not arithmetically\n(by adding), then convert the three-year total return to an annualized one-year return. Use the total number of years (3) as the root number when\nreconstructing the GMR. The large-cap ETF has the highest annual GMR at 8.8%.\nAdd 1 to the ETF return to represent the initial investment. Subtracting 1 after calculating the GMR removes the effect of the initial investment.\nScaling all initial investments of any dollar amount to a base of 1 allows for comparable performance figures.\n(Choice B) This option incorrectly employs the arithmetic mean to find each of the ETFs' returns. The arithmetic mean is dependent on the level\nof investment. It assumes a constant investment.\n(Choice C) In this calculation, +1.5% instead of −1.5% is used in Year 2 for the mid-cap ETF. Omitting the minus sign for negative returns is a\ncommon computational error.\nThings to remember:\nThe geometric mean return (GMR) is used to convert a security's total return over multiple periods to a more comparable constant return. Use the\ntotal number of years, which can be whole or fractional, when reconstructing the GMR. A common mistake is to enter negative returns incorrectly.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 10, "q": "An asset's present value is £1,150 and its annual continuously compounded rate of return is 5.9%. Assuming no income, if the asset is sold in 4 years, its value (in £) is closest to:", "opts": ["1,220", "1,446", "1,456"], "ans": "C", "expl": "The return an investor receives on an investment depends on the rate of return and number of compounding periods. All else being equal, for a\ngiven investment holding period many shorter compounding periods (ie, more frequent compounding) result in a greater return than a smaller\nnumber of longer compounding periods (ie, less frequent compounding). An infinite number of infinitesimally small compounding periods during a\nholding period is known as continuous compounding.\nIn this scenario, the number of years (T) and the asset's present value (S ) and annual continuously compounded return (r ) are given, so the\n0 0,1\nfuture price after 4 years can be determined by substituting as follows:\n(Choice A) £1,219.89 results from incorrectly treating 5.9% as the continuously compounded return for the entire period, not the annual\ncontinuously compounded return.\n(Choice B) £1446.38 results from incorrectly treating 5.9% as an annually compounded return and compounding for 4 years.\nThings to remember:\nAn infinite number of infinitesimally small compounding periods during a holding period is known as continuous compounding. With continuous\ncompounding, an ending value is equal to its beginning value multiplied by erT, where r is the annual continuously compounded return and T is the\nnumber of years.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 11, "q": "A mutual fund has the following annual rates of return: Year 20X1 20X2 20X3 Returns −10% 5% 16% The mutual fund's annual geometric mean return (%) is closest to: ", "opts": ["3.1", "3.7", "9.6"], "ans": "A", "expl": "The geometric mean return captures the impact of compounding over multiple periods. Compounding involves multiplying (ie, \"chaining\") the\nreturns for each of n periods and then taking the nth root of the result. The calculation convention is to add 1 to each return before multiplying the\nseries and then subtract 1 from the calculated nth root.\nIn this scenario, the geometric mean is calculated as follows:\n(Choice B) 3.7 is the arithmetic mean (ie, simple average) and does not take into account multiperiod compounding.\n(Choice C) 9.6 is the total holding period return, not an annual return.\nThings to remember:\nThe geometric mean return measures a compounded return over multiple periods. Compounding involves multiplying the returns for each of n\nperiods and then taking the nth root of the result. The calculation convention is to add 1 to each return before multiplying the series and then\nsubtract 1 from the calculated nth root.\ncompare the money-weighted and time-weighted rates of return and evaluate the performance of portfolios based on these measures", "qhtml": null}, {"n": 12, "q": "An analyst gathers monthly investment returns for a 9-month period: Monthly Portfolio Returns Month Return January 5% February 6% March −4% April 16% May 8% June 6% July 8% August 5% September 13% The analyst notes that the data set has outliers and decides to calculate the average considering all nine observations while limiting the range of returns to be between the 20th and 80th percentile. Using these parameters, the mean is closest to:", "opts": ["7.00%", "7.29%", "7.67%"], "ans": "C", "expl": "Outliers can significantly distort the accuracy of statistical measures used to summarize a data set of observations. They can be treated in three\ndifferent ways when calculating the mean:\nThe arithmetic mean reflects the entire data set, including outliers.\nThe trimmed mean eliminates all outliers from the data set.\nThe winsorized mean includes outliers but \"corrects\" their values to fall within an acceptable range.\nThe winsorized mean thus reflects the total number of observations without allowing distortion by outliers. In this scenario, the analyst specifies\nthat the acceptable range of values is between the 20th and 80th percentiles. The winsorized mean is calculated as follows:\nStep 1: Find the range of acceptable values by locating the observations at the 20th and 80th percentiles:\nL = (9 + 1) × (20 / 100) = 2: the lower limit is the 2nd observed value\n20\nL = (9 + 1) × (80 / 100) = 8: the upper limit is the 8th observed value\n80\nStep 2: With the data in ascending order, find the values of the 2nd and 8th observations, which are 5% and 13%, respectively:\nStep 3: Adjust the values of observations below the specified range (ie, 1st observation) to the lower bound of 5%, and observations above\n(ie, 10th observation) to the upper bound, 13%.\nStep 4: Calculate the simple average of the adjusted data set:\n(5% + 6% + 5% + 13% + 8% + 6% + 8% + 5% + 13%) / 9\n= 7.67%\n(Choice A) 7.00% is the arithmetic mean, which accounts in its calculation for the values of all observations. By including outliers, it may be\nmisleading as a measure of central tendency.\n(Choice B) 7.29% is the trimmed mean that is calculated as the average of the middle seven observations and excludes outliers.\nThings to remember:\nThe winsorized mean is a measure of central tendency that \"corrects\" outlier values to fall within an acceptable outcome range, so that the actual\nnumber of observations is reflected in the mean without allowing distortion by outliers.\nCalculate and interpret different approaches to return measurement over time and describe their appropriate uses", "qhtml": null}, {"n": 13, "q": "If an asset's two-year continuously compounded return is 13.42%, then its holding period return for the same period is closest to:", "opts": ["13.00%", "13.87%", "14.36%"], "ans": "C", "expl": "In a discretely compounded return, an investment's return compounds periodically (eg, monthly, quarterly) for a defined number of periods within a\ncertain time frame. In a continuously compounded return, returns compound over infinite periods within a certain time frame. The\ncontinuously compounded return is the natural log of (1 + Holding period return).\nIn this scenario, the holding period return is calculated as follows:\n(Choice A) 13.00% results from incorrectly multiplying the annual geometric return by 2.\n(Choice B) 13.87% results from incorrectly dividing the two-year continuously compounded return by 2, and then annually compounding it for 2\nyears.\nThings to remember:\nWith a continuously compounded return, returns compound over infinite periods within a certain time frame. The continuously compounded return\nequals the natural log of (1 + Holding period return (HPR). The HPR is the change in price (ie, Ending price − Beginning price + Income) as a\npercentage of the beginning price.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 14, "q": "The following table shows an investment's closing price on each day: Date Closing Price March 1 50 April 1 74 May 1 65 Based only on this information, the continuously compounded return of the investment from March 1 to May 1 is closest to:", "opts": ["23.1%", "26.2%", "30.0%"], "ans": "B", "expl": "A continuously compounded rate of return is one way to measure an asset's change in value over a holding period, assuming that changes in\nvalue are compounded continuously. This differs from discrete compounding, which assumes that compounding occurs at evenly spaced\nintervals, such as weekly or annually. The asset's change in value has two elements:\nChange in price over the period (ie, gain, loss)\nIncome received from the asset over the period\nThese two elements are used to calculate the asset's total return. The formula for calculating total return is:\nThe total return is used to calculate the holding period return (HPR), which is (Total return − 1).\nIn this scenario, the investment does not pay interest or a dividend, so its HPR from March 1 to May 1 is (65 / 50) − 1 = 0.3, or 30%. The\ncontinuously compounded return over this period is the natural logarithm of (1 + HPR) = the natural logarithm of (Total return), or ln(1 + 0.3) ≈\n26.2%.\n(Choice A) 23.1% is the approximate result incorrectly calculating the HPR as the average of the three prices divided by the beginning price, and\nthen calculating the natural logarithm of (1 + result), as shown above.\n(Choice C) 30.0% is the HPR, not the continuously compounded return, for the asset over the time period.\nThings to remember:\nAn asset's continuously compounded return is the natural logarithm of [1 + Holding period return (HPR)]. The HPR is the asset's (Total return −\n1). When an asset does not pay income (eg, interest, dividends) over the period, total return is the ending price divided by the beginning price.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 15, "q": "An investment fund holds investments X, Y, and Z. An analyst reviews the following information: The geometric mean return for the fund over two years is closest to: ", "opts": ["12.5%", "13.0%", "14.0%"], "ans": "A", "expl": "To find the two-year geometric mean return, first determine the portfolio returns for 20X8 and 20X9. The portfolio return is the weighted\naverage return of the holdings of the portfolio. It is based on each holding's weight and return. Using the portfolio return formula, find the fund's\nannual return for 20X8 and 20X9.\nLink these annual returns to determine the two-year geometric mean return using the geometric mean formula. Time-weighted returns nullify the\ninfluences created from cash flows and improve comparability of returns.\nThe geometric mean return for the fund over two years is 12.51%.\n(Choice B) This choice correctly finds the portfolio return for 20X8 and 20X9 but uses the arithmetic mean instead of the geometric mean to find\nthe two-year mean return.\n(Choice C) This option correctly uses the geometric mean formula but mistakenly applies a simple arithmetic return (arithmetic mean), not a\nweighted average return, for the components of the portfolio return.\nThings to remember:\nThe geometric mean return, derived from a total or holding period return, creates a periodic performance measure. Unlike to other performance\nmeasures, it provides comparability of different portfolios.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 16, "q": "A bank offers a certificate of deposit (CD) with a stated annual rate of 7% compounded continuously. The CD's effective annual rate is closest to:", "opts": ["6.77%", "7.00%", "7.25%"], "ans": "C", "expl": "If an investment's returns are compounded more than once per year—such that the number of compounding periods in a year is greater than 1—\nthen the stated annual rate of return does not accurately reflect the investor's effective annual rate (EAR) of return: the investor's EAR is greater\nthan the stated annual rate.\nA rate of return is considered continuously compounded when the number of discrete compounding periods is infinite and each\ncompounding period is infinitesimally small. In this scenario, the stated rate is 7%, which is continuously compounded. Solve for the EAR using\nthe continuously compounded rate of return:\nNote that this question could be answered without doing the math since 7.25% is the only choice greater than the APR of 7% and so must be the\ncorrect answer.\n(Choice A) 6.77% is the result of substituting the continuously compounded rate of return as the EAR.\n(Choice B) 7.00% is the result of incorrectly assuming the EAR is equal to the annual continuously compounded rate of return.\nThings to remember:\nThe effect of compounding over a certain number of discrete periods during the year causes the investor to realize a higher effective annual rate\n(EAR) of return than the stated rate. A rate of return is considered continuously compounded when the number of discrete compounding periods\nis infinite, and each is infinitesimally small. EAR = er − 1, where the stated annual rate r is continuously compounded.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 17, "q": "An investor purchases stock for $20 and sells it for $14. On the date of sale, the stock paid a $1 dividend. The investor's continuously compounded rate of return for the investment is closest to:", "opts": ["−25.0%", "−28.8%", "−35.7%"], "ans": "B", "expl": "Continuously compounded rate of return\nr = ln(1 + Holding period return)\n0,t\nA continuously compounded rate of return measures an asset's change in value over a holding period. The assumption is that the changes\nare compounded continuously over the period. This differs from discrete compounding, which assumes that compounding occurs at evenly\nspaced intervals, such as weekly or annually. The change in value has two elements:\nChange in price over the period (ie, gain, loss); and/or\nIncome received from the asset over the period\nThe combination of these two elements is known as the total return. The formula for calculating total return is given as:\nThe total return for an investment is also its holding period return (HPR).\nIn this question, the ending price is less than the beginning price, so the investor incurs a loss; even after adding in the dividend income, the HPR\nis negative:\nThe investor's continuously compounded rate of return is the natural logarithm (ln) of (1 + HPR), or ln(0.75), which is approximately −0.2877.\n(Choice A) −25.0% is the holding period loss for the investment.\n(Choice C) −35.7% is the approximate continuously compounded return when neglecting to account for the dividend. Although the investment\ngenerated an overall loss, the dividend reduced the loss.\nThings to remember:\nThe holding period return (HPR) for an investment is its total return. Total return is the sum of price appreciation plus income received on the\ninvestment. The continuously compounded return is the natural logarithm of (1 + HPR).\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 18, "q": "In portfolio management, it is assumed that the expected return is:", "opts": ["never equal to the historical mean return.", "equal to the historical mean return over the next 30 years.", "equal to the historical mean return over a future period of unknown length."], "ans": "C", "expl": "The historical mean return is the actual return that an investor earned in the past. Since assets are risky, it is unlikely that this exact return will be\nearned again over a specific period in the future.\nHowever, in portfolio management it is assumed that given a long enough, although unspecified, period, it is reasonable to expect that a future\nreturn will be equal to the historical mean return. Although this assumption may not prove accurate, in practice the historical mean return is\noften used as a reasonable estimate of an asset's expected return (Choice A).\n(Choice B) It is incorrect to say that historical mean return is equal to expected return over any specific period, be it 30, 50, or 100 years, since\nthe period may not be long enough.\nThings to remember:\nGiven a long enough, although unspecified, period, it is reasonable to expect that a future return will be equal to the historical mean return.\nAlthough this assumption may not prove accurate, in practice the historical mean return is often used as a reasonable estimate of an asset's\nexpected return.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 19, "q": "An investor is reviewing investment performance and collects the following information: (AUD millions) Year 1 Year 2 Year 3 Beginning value of investment 0 1,150 1,285 Beginning of year contributions 1,000 500 0 Total investment at beginning of year 1,000 1,650 1,285 Portfolio performance (%) 15% −10% 20% Portfolio performance 150 (165) 257 Portfolio withdrawals 0 (200) 0 Ending value of investment 1,150 1,285 1,542 If withdrawals only occur at year-end, the investor's money-weighted return over the three years is closest to: ", "opts": ["6.03%", "7.49%", "8.28%"], "ans": "A", "expl": "The money-weighted return (MWR), an application of the internal rate of return (IRR), measures investment performance based on an\ninvestor's cash flows. The net present value (NPV) represents the sum of all discounted investor cash flows. When cash flows are discounted\nby the MWR, the NPV = 0 and the initial investment is equal to the future discounted contributions and withdrawals.\nThe relevant cash flows for calculating MWR are the:\ninvestor's contributions (ie, investor's outflows)\ninvestor's withdrawals (ie, investor's inflows), and\ninvestment's value at the end of the measuring period.\nThe investment's ending value is an inflow; as if the investor liquidated the entire investment at the end of the measuring period.\nDiscount the investor's cash flows over the appropriate time period. The initial investment (AUD 1,000) occurs at time zero, so it is not\ndiscounted. Consider the beginning of the year contributions as occurring at the end of the previous period. When withdrawals occur at the end of\nthe year, as in this question, they are discounted over that year as well as all prior periods.\nAfter the cash flows have been identified, solve for the MWR using a financial calculator. Enter positive values for cash inflows and negative\nvalues for cash outflows.\n( )\n(Choice B) 7.49% is the time-weighted return, which uses the geometric mean and is based on investment performance, not cash flows. MWR\nuses cash flows to determine the return.\n(Choice C) 8.28% results from discounting both the initial contribution and the beginning of Year 2 contribution over one year.\nThings to remember:\nThe money-weighted return is an application of the internal rate of return. It measures an investor's return based on the amount of contributions to\nand withdrawals from the investment, as well as when those cash flows occur.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 20, "q": "An analyst gathers the following information on three investments with a two-year holding period: Which investment most likely has the highest continuously compounded return over the two-year period?", "opts": ["Investment X", "Investment Y", "Investment Z"], "ans": "C", "expl": "For a given holding period, different frequencies of compounding affect an investment's returns. Many shorter compounding periods (ie,\ngreater frequecy) result in a greater return than a smaller number of longer compounding periods for the same investment period, all else\nbeing equal. An infinite number of infinitesimally small compounding periods during an investment holding period is known as continuous\ncompounding.\nA holding period return, R , can be converted into an equivalent continuously compounded return using the formula Continuously compounded\nt,t+1\nreturn = ln(1 + holding period return):\nConvert Investment X's two-year holding period return to a continuously compounded return. Investment Y is stated in terms of a one-year holding\nperiod return and is held for two years. Calculate the two-year holding period return of Investment Y by compounding the one-year holding period\nreturn for two years using R = (1 + R )2 − 1. Then use the formula for continuously compounded return to convert the two-year holding period\n0,2 0,1\nreturn to a continuously compounded return. All else being equal, Investment Z has the highest continuously compounded return (Choices A\nand B).\nThings to remember:\nContinuously compounded return involves compounding with infinitesimally small compounding periods over an investment period. Continuously\ncompounded return is equal to the natural log of (1 + holding period return): r = ln(1 + R ).\nt, t+1 t, t+1\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 21, "q": "A student chooses to spend $100 today on a concert ticket instead of investing that money in a savings account that earns interest. The interest that could have been earned can be best interpreted as this student's:", "opts": ["sunk cost.", "opportunity cost.", "required rate of return."], "ans": "B", "expl": "An interest rate can be used to express the percentage growth in money between two different points in time. For example, $100 invested today\nat an annual interest rate of 5% will grow to $105 in a year. Depending on the circumstances, an interest rate can be interpreted in many ways: as\na required rate of return, as a discount rate, or as an opportunity cost.\nThe student forgoes the future investment return (ie, the interest rate) by choosing to spend the money today. The foregone return is the\nopportunity cost of current consumption.\n(Choice A) A sunk cost is an actual cost that has already been incurred. In this question, the $100 spent on the purchase, not the foregone\ninterest, is the sunk cost.\n(Choice C) The required rate of return is the minimum return percentage that an investor requires for accepting an investment. Since the student\ndid not accept the investment, the interest rate offered on the account is not the student's required rate of return.\nThings to remember:\nOpportunity cost in terms of an interest rate relates to a return that an investor forgoes by choosing consumption today over investing for the\nfuture. Sunk cost is an actual expense that has already been incurred.\nInterpret interest rates as required rates of return, discount rates, or opportunity costs and explain an interest rate as the sum of a real risk-free\nrate and premiums that compensate investors for bearing distinct types of risk", "qhtml": null}, {"n": 22, "q": "An investor deposits $5,000 into an account with a stated interest rate of 10%. The bank will compound interest using annual compounding for the first year and continuous compounding thereafter. If all interest is reinvested and there are no withdrawals from the account, the number of years needed for the account to grow from $5,000 to $10,000 is closest to:", "opts": ["6.0", "7.0", "7.3"], "ans": "B", "expl": "This scenario requires calculating the total time in months needed for an initial deposit of $5,000 to grow to $10,000 given a stated interest rate of\n10%. The compounding periods change during the investment's time horizon, although the stated interest rate does not. All things equal, more\nfrequent compounding results in faster growth of a lump sum.\nFirst, calculate the amount on deposit at the end of Year 1, when the funds are compounded annually. The initial $5,000 deposit grows to $5,500\nin one year. Then, calculate the number of years required for $5,500 to grow to $10,000 assuming continuous compounding. The formula for\ncalculating the future value of a lump sum using continuous compounding is as follows:\nThe solution is shown below:\nThings to remember:\nA lump sum grows more quickly with more frequent compounding periods.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses\nCopyright©UWorld CopyrightCFAInstitute Allrightsreserved\n23.A university receives contributions to its endowment fund at the beginning of each year. The fund generates the returns displayed in the chart\nbelow:\nReturn during\nYear of Contributions\nyear of\ninvestment ($ millions)\ninvestment\n1 20 12%\n2 50 16%\n3 70 18%\n4 200 −2%\nOver the four-year period, the measure that shows the highest return is the:\nA. internal rate of return.\n\nB. time-weighted rate of return.\nC. money-weighted rate of return.\nExplanation\nThe time-weighted rate of return (TWR) and the money-weighted rate of return (MWR) are both portfolio return measures. The TWR measures\nthe compound growth rate of a portfolio and excludes impact from contributions and withdrawals. The MWR is the internal rate of return on a\nportfolio and accounts for the impact of contributions and withdrawals.\nThe MWR equates the present value of the cash outflows to the present value of the investor's cash inflows. The outflows (contributions) are\nprovided in the question. The value of the fund at the end of Year 4 should be treated as the only inflow for the purpose of calculating MWR.\nSolve for MWR:\nDetermine cash inflows:\nCalculate MWR:\nThe TWR is the geometric growth of the portfolio without considering the impact of contributions and withdrawals. To solve for TWR, find the\nannual geometric mean of annual returns over all four years.\nSolve for TWR:\nThe TWR of 10.71% is greater than the MWR of 5.77%. Note that the MWR being less than the TWR is attributed to the timing and size of cash\nflows. Since Year 4 had a negative return, the significant addition of $200 million at the beginning of Year 4 significantly reduces the overall MWR.\n(Choice A) The internal rate of return is the MWR.\n(Choice C) The MWR is lower than the TWR in this question.\nThings to remember:\nThe time weighted-rate of return (TWR) and the money-weighted rate of return (MWR) measure portfolio returns over time. The TWR measures\nthe compound growth rate of a portfolio and excludes the impact from contributions and withdrawals. The MWR is the internal rate of return on a\nportfolio and accounts for impact of contributions and withdrawals.\ncompare the money-weighted and time-weighted rates of return and evaluate the performance of portfolios based on these measures", "qhtml": null}, {"n": 23, "q": "A university receives contributions to its endowment fund at the beginning of each year. The fund generates the returns displayed in the chart below: Return during Year of Contributions year of investment ($ millions) investment 1 20 12% 2 50 16% 3 70 18% 4 200 −2% Over the four-year period, the measure that shows the highest return is the:", "opts": ["internal rate of return.", "time-weighted rate of return.", "money-weighted rate of return."], "ans": "B", "expl": "The time-weighted rate of return (TWR) and the money-weighted rate of return (MWR) are both portfolio return measures. The TWR measures\nthe compound growth rate of a portfolio and excludes impact from contributions and withdrawals. The MWR is the internal rate of return on a\nportfolio and accounts for the impact of contributions and withdrawals.\nThe MWR equates the present value of the cash outflows to the present value of the investor's cash inflows. The outflows (contributions) are\nprovided in the question. The value of the fund at the end of Year 4 should be treated as the only inflow for the purpose of calculating MWR.\nSolve for MWR:\nDetermine cash inflows:\nCalculate MWR:\nThe TWR is the geometric growth of the portfolio without considering the impact of contributions and withdrawals. To solve for TWR, find the\nannual geometric mean of annual returns over all four years.\nSolve for TWR:\nThe TWR of 10.71% is greater than the MWR of 5.77%. Note that the MWR being less than the TWR is attributed to the timing and size of cash\nflows. Since Year 4 had a negative return, the significant addition of $200 million at the beginning of Year 4 significantly reduces the overall MWR.\n(Choice A) The internal rate of return is the MWR.\n(Choice C) The MWR is lower than the TWR in this question.\nThings to remember:\nThe time weighted-rate of return (TWR) and the money-weighted rate of return (MWR) measure portfolio returns over time. The TWR measures\nthe compound growth rate of a portfolio and excludes the impact from contributions and withdrawals. The MWR is the internal rate of return on a\nportfolio and accounts for impact of contributions and withdrawals.\ncompare the money-weighted and time-weighted rates of return and evaluate the performance of portfolios based on these measures", "qhtml": null}, {"n": 24, "q": "An analyst is comparing three investments: Frequency of Stated Investment Compounding Annual Rate X Semiannually 6.1% Y Quarterly 6.0% Z Continuously 5.9% The investment with the greatest effective annual rate is: ", "opts": ["Investment X", "Investment Y", "Investment Z"], "ans": "A", "expl": "If an investment's return is compounded more than once per year, then a stated annual rate of return does not accurately reflect the investor's\neffective annual rate (EAR) of return. The effect of compounding over a certain number of discrete periods during the year causes the investor to\nreceive more than the stated rate. All else equal, a greater number of compounding periods means a greater return for the investor.\nThe EAR can be used to compare investments with different compounding frequencies and therefore different numbers of compounding periods\nper year. The periodic rate is the stated annual rate per compounding period.\nIn this scenario, the EAR of each investment is calculated as follows:\nThings to remember:\nThe effective annual rate (EAR) reflects the actual return that an investor receives. The EAR can be used to compare investments with different\nnumbers of compounding periods per year. It can be calculated as EAR = (1 + periodic interest rate)m − 1 or, if the stated annual return is\ncontinuously compounded, as EAR = er − 1.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 25, "q": "A credit union offers an investment that pays interest quarterly. If the investment's effective annual rate is 5.93%, then its stated annual rate (r ) quoted by the credit union is closest to: s", "opts": ["5.76%", "5.80%", "6.06%"], "ans": "B", "expl": "With interest-bearing investments, investors earn interest periodically (eg, monthly, quarterly) over time based on a specific periodic rate. When\ninterest is compounded, interest income is reinvested each period at the periodic rate, so additional interest is earned on previous interest.\nTherefore, the total value of the investment (including principal and interest) grows at the periodic rate. The effective annual rate (EAR), which\nreflects periodic compounding, is the investment's effective annual return.\nFor the sake of simplicity, financial institutions usually quote a stated annual interest rate (r ) instead of an EAR. The r equals the periodic rate\ns s\nmultiplied by the number of compounding periods per year (m). This rate does not reflect periodic compounding. The r is always less than\ns\nthe EAR when interest is paid more than once a year. The candidate can derive r from EAR and m.\ns\n(Choice A) This results from finding the natural log of 1 + EAR. This is the continuously compounded rate that would generate the same return\nas an EAR of 5.93%.\n(Choice C) This results from mistakenly swapping the placement of r and EAR in the original equation.\ns\nThings to remember:\nThe stated annual rate (r ) equals the periodic rate multiplied by the number of compounding periods per year. The r can be found from the\ns s\neffective annual rate (EAR) and the number of compounding periods per year. The stated annual rate does not capture the effect of compounded\ninterest; EAR does. The r is always less than the EAR when interest is paid more than once a year.\ns\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 26, "q": "The price of silver is $14.00 per ounce at the beginning of the year and $14.50 at the end of the year. The continuously compounded rate of return for silver is closest to: ", "opts": ["3.51%", "3.57%", "3.64%"], "ans": "A", "expl": "In a discretely compounded return, an investment's return compounds periodically (eg, monthly, quarterly, semiannually) for a defined number of\nperiods within a certain timeframe. In a continuously compounded return, an investment's return compounds over infinite periods within a\ncertain time frame. The continuously compounded return equals the natural log of ending price over beginning price.\nNote that S /S is the same as (1 + holding period return)\nT 0\nThe beginning price of $14.00 grown continuously over one year at 0.0351 equals $14.50 at year-end.\n(Choice B) 3.57% is the holding period return (14.5/14 − 1), not the continuously compounded rate of return.\n(Choice C) 3.64% results from dividing the holding period return by 365 and compounding that daily.\nThings to remember:\nWith continuously compounded return, an investment's return compounds over infinite periods within a certain time frame. The continuously\ncompounded return equals the natural log of the ending price over the beginning price (or the natural log of [1 + holding period return]).\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 27, "q": "An analyst compares the performance of portfolios that receive annual contributions in addition to earning returns. The analyst most appropriately uses a(n):", "opts": ["internal rate of return.", "time-weighted rate of return", "money-weighted rate of return."], "ans": "B", "expl": "A time-weighted rate of return (TWR) is more appropriate for comparing portfolios since its calculation neutralizes the impact on performance\nwhen the portfolio's market value changes due to investor contributions or withdrawals rather than the returns that the investment itself generates.\nContributions increase the market value of the investment but should not be included as part of the investment's performance. The TWR\nneutralizes contributions by splitting a performance period into smaller sub-periods each time contributions are made.\nA TWR is found by geometrically linking each sub-period's holding period return. This results in a compounded growth rate.\n(Choices A and C) A money-weighted rate of return (MWR) is an application of the internal rate of return. The MWR includes all the cash flows,\nincluding contributions to and withdrawals from a portfolio, by equating the present value of the investor's cash outflows to the present value of the\ninvestor's cash inflows. Therefore, it does not calculate just the return from the portfolio's actual earnings.\nThings to remember:\nAnalysts prefer the time-weighted rate of return to compare the performance of portfolios since its calculation neutralizes the impact on\nperformance when there are changes in the portfolio's market value due to contributions rather than returns. It neutralizes the impact of\ncontributions by splitting a performance period into smaller sub-periods each time there is a contribution.\ncompare the money-weighted and time-weighted rates of return and evaluate the performance of portfolios based on these measures", "qhtml": null}, {"n": 28, "q": "An initial investment of $9,520 grows to $15,000 in five years with quarterly compounding. If there are no withdrawals or deposits during those five years, the investment's effective annual rate is closest to:", "opts": ["9.2%", "9.5%", "11.5%"], "ans": "B", "expl": "The effective annual rate (EAR) is the annual compounded growth rate. Since the EAR accounts for compounding, it connects the present value\nof a lump sum to its future value for a given time period. Using the formula shown, the compounded annual growth rate needed to grow $9,520 to\n$15,000 within five years is:\nIf the stated interest rate and the number of compounding periods are known, those variables can be used to derive the EAR. The EAR relates to\nthe stated interest rate and the number of compounding periods per year (m) as follows:\nIn this scenario, the stated rate is not known but the calculation can be solved using the future value relationship.\n(Choice A) Since the stated interest rate is not given, the compounding convention is irrelevant. A common error is to use the financial calculator\nto generate the periodic rate by using 20 as the number of periods (ie, 5 years × 4 periods per year). This results in a quarterly rate of\napproximately 2.3%, which when multiplied by 4 equals 9.2%. 9.2% is not the effective rate; it is the stated rate that produces an effective rate of\n9.52%:\n(Choice C) 11.5% results from first calculating [(15,000/9,520) − 1], which generates the cumulative growth for the five-year period, and then\ndividing that by 5 (years). This is not the EAR.\nThings to remember:\nThe effective annual rate (EAR) is the investment's compounded annual growth rate. When no stated interest rate is provided, the EAR is\ncalculated as the quotient of the ending value divided by the beginning value, raised to the power of (1 ÷ number of years of the investment),\nminus 1.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 29, "q": "A charity foundation invests donations it has received at the beginning of each year. The foundation has had the following yearly returns: Year of Contributions Return During Investment ($ millions) Year of Investment 1 40 10% 2 45 4% 3 40 12% 4 60 5% Over the four years, the fund most likely had an annual:", "opts": ["time-weighted return of 7.75%.", "money-weighted return of 7.27%.", "money-weighted return of 7.70%."], "ans": "B", "expl": "Money-weighted rate of return (MWR) Time-weighted rate of return (TWR)\nInternal rate of return (IRR) of a portfolio; accounts for all Compound growth rate (geometric mean) of a portfolio; excludes\ncontributions and withdrawals contributions and withdrawals\nAppropriate for measuring an investor's change in wealth Preferred return measure for evaluating investment performance\nAffected by amount and timing of cash flows Unaffected by amount and timing of cash flows\nThe time-weighted rate of return (TWR) and money-weighted rate of return (MWR) are measures of portfolio return.\nTWR is:\nthe geometric mean return (a compound growth rate) and\nis not impacted by interim cash flows, such as deposits and withdrawals.\nMWR is:\nthe IRR and\nis impacted by interim cash flows.\nTherefore, MWR is affected by the timing and size of cash flows.\nMWR equates the present value of cash outflows to the present value of cash inflows. Deposits into the fund are treated as outflows from the\ninvestor (eg, charity). In this scenario, the value of the fund at the end of Year 4 should be treated as the only inflow (since it could be withdrawn\nby the charity) for the purpose of calculating MWR. To solve for MWR:\n1. Determine fund value at end of Year 4:\n2. Calculate MWR (r):\n(Choice A) 7.75% is the simple average of returns over four years.\n(Choice C) 7.70% is the time-weighted return and excludes the impact of contributions and withdrawals.\nThings to remember:\nThe time-weighted rate of return (TWR) and money-weighted rate of return (MWR) measure portfolio returns over time. TWR measures a\nportfolio's compound growth rate and excludes the impact from contributions and withdrawals. MWR is a portfolio's IRR and accounts for the\nimpact of contributions and withdrawals.\ncompare the money-weighted and time-weighted rates of return and evaluate the performance of portfolios based on these measures", "qhtml": null}, {"n": 30, "q": "Two AUD 50,000 investments have a 3-year term. One compounds quarterly at a stated annual rate of 2.00%. The other compounds at a continuous rate of 1.75%. The difference in their future values (in AUD) at the end of 3 years is closest to:", "opts": ["364", "389", "540"], "ans": "B", "expl": "The future value of the first investment can be solved using the formula for multiple compounding periods per year. The present value is AUD\n50,000 and the stated annual rate is 2.00%. Quarterly compounding implies 4 per year × 3 years = 12 compounding periods (N = 3 and m = 4).\nThe other investment's future value can be solved using the continuous compounding formula. The stated annual rate is 1.75% and all other\nvalues are the same as those of the first investment. The two values and the difference between them are calculated as follows:\nThe difference between the future values is 388.76, which can be rounded to 389.\n(Choice A) 364 is the result of solving for the future value of the first investment without adjusting for the number of compounding periods—in\neffect, assuming annual compounding.\n(Choice C) 540 results from mistakenly assuming continuous compounding has discrete compounding periods and then using the same\nfrequency of compounding for both investments.\nThings to remember:\nThe future value of an initial investment depends on whether the rate of compounding is continuous or discrete. In the case of discrete\ncompounding, adjust for the frequency of compounding.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 31, "q": "A manager buys 500 shares of a stock at $15.00 per share at the beginning of the year. At the end of the year, the stock's price appreciates to $18.50. If this stock pays its annual dividend of $0.50 at the end of the year, then the manager's holding period return is closest to:", "opts": ["21.6%", "23.3%", "26.7%"], "ans": "C", "expl": "A holding period return (HPR) is a single-period measurement of return. The period can represent a day, a year, or any other timeframe. The\ndifference between the security's ending price and its beginning price is its capital gain or loss during the holding period. Also affecting the HPR\nare company distributions to bondholders (interest) or shareholders (dividends). These distributions are the income part of a security's return and\nincrease HPR.\n(Choice A) This answer incorrectly applies the HPR using the ending price, rather than the beginning price, to find the HPR.\n(Choice B) This incorrect choice does not include the stock's dividend and therefore results in an understatement of HPR.\nThings to remember:\nA holding period return is a performance measurement that compares the beginning and ending values of an investment and includes any income\nearned.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 32, "q": "Two investors each initially invest ¥6 million in the same fund, which earns 5% during Year 1. At the beginning of Year 2: Investor X invests an additional ¥8 million to the fund, and Investor Y invests an additional ¥9 million to the fund. The fund's return is −2% in Year 2. After two years, which of the following best describes the investors' returns?", "opts": ["Investor Y will have a greater money-weighted return", "Both investors will have equal geometric mean returns", "Both investors will have negative time-weighted returns"], "ans": "B", "expl": "Money-weighted rate of return (MWR) Time-weighted rate of return (TWR)\nInternal rate of return (IRR) of a portfolio; accounts for all Compound growth rate (geometric mean) of a portfolio; excludes\ncontributions and withdrawals contributions and withdrawals\nAppropriate for measuring an investor's change in wealth Preferred return measure for evaluating investment performance\nAffected by amount and timing of cash flows Unaffected by amount and timing of cash flows\nA time-weighted rate of return (TWR) is calculated by linking periodic returns without consideration for the investment's size. This way, the\nimpact of cash additions or withdrawals does not skew reported returns. This method of linking returns sets subperiods based on cash flows and\nthen links them using the same calculation as the geometric mean return.\nIn this case, since the investors invest in the same fund and thus have the same returns in each period, the two investors have TWRs (ie,\ngeometric mean returns) that are equal, and the returns are positive (Choice C):\nA money-weighted return (MWR) accounts for all cash flows, in effect weighting each periodic return by the amount invested during that period. In\nthis scenario, the investors have different MWRs since they invest different amounts in Year 2. Investor Y's MWR will be less due to the larger\ninvestment during a period of lower returns (Choice A).\nThings to remember:\nA time-weighted rate of return excludes effects from multiple cash additions or withdrawals; a money-weighted return accounts for all cash flows.\nTherefore, investors with the same periodic returns but unequal cash flows will have equal time-weighted returns but different money-weighted\nreturns.\ncompare the money-weighted and time-weighted rates of return and evaluate the performance of portfolios based on these measures", "qhtml": null}, {"n": 33, "q": "A manager is concerned about the current inflation rate and gathers the following information: Expected annual return (%) Certificates of deposit 1.8 Treasury bills 2.3 Commercial paper 2.8 Equities 8.0 If the equity risk premium is 3.5%, what is the current inflation rate?", "opts": ["1.5%", "2.0%", "2.5%"], "ans": "B", "expl": "Nominal return is the expected return on an asset. Three factors influence nominal return: the risk-free rate, the inflation rate, and the risk\npremium. Most investors estimate these factors, resulting in varying nominal return figures. The risk-free rate is the return received by investors\nwho take no risk. The risk premium is the additional return an investor receives for investing in a risky asset. The inflation rate is the percent\nchange in the cost of a basket of goods over time.\nThe nominal return (expected annual return) of equities is given at 8%. Since the return on short-term government bonds is the optimal proxy for\nthe risk-free rate, it can be used here to find the current inflation rate. Using the other given information, rearrange the nominal return formula to\nsolve for the missing variable.\n(Choice A) This option incorrectly calculates inflation using the expected return on certificates of deposit as a proxy for the risk-free rate.\nCertificates of deposit are bank-issued investments; they do not have the full faith and credit of the United States. This is not the best proxy for the\nrisk-free rate.\n(Choice C) This choice calculates the inflation rate using the expected return on commercial paper. Commercial paper is a company-issued,\nshort-term fixed income investment. This investment is subject to more risks than affect government securities. The expected return of\ncommercial paper is not the best proxy for the risk-free rate and overstates the inflation rate.\nThings to remember:\nTo calculate the nominal return, an investor must approximate the inflation rate, risk-free rate, and risk premium. Most often, government-based\nsecurities are used as a proxy for the risk-free rate.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 34, "q": "An investment has an effective annual rate of 7.7% with monthly compounding. Its stated annual rate is closest to:", "opts": ["7.44%", "7.70%", "7.97%"], "ans": "A", "expl": "If an investment's return is compounded more than once per year, then the investor's effective annual rate (EAR) of return is greater than the\nstated annual rate of return. All else being equal, the more frequently a return is compounded, the greater the return for the investor, as\nmeasured by the EAR.\nIn this scenario, since 7.44% is less than the EAR, it is the only possible correct answer. To calculate the stated annual rate associated with an\nEAR of 7.7% with monthly compounding, rearrange the EAR formula and substitute as follows:\nTo convert a monthly periodic rate to a stated annual rate, multiply the monthly rate by 12. Therefore, the annual stated rate is 12 × 0.62% =\n7.44%\n(Choice B) 7.70% is the EAR. If the periodic rate is compounded more than once per year, the EAR must be greater than, not equal to, the\nstated annual rate.\n(Choice C) 7.97% results from mistakenly swapping the EAR and the periodic rate in the formula.\nThings to remember:\nIf an investment's return is compounded more than once per year, then the investor's effective annual rate of return is greater than the stated\nannual rate of return. All else being equal, a greater number of compounding periods means a greater return for the investor, based on a given\nstated annual rate.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 35, "q": "An investor buys a share of stock for €50 today. At the end of the Year 1, the investor buys another share of the same stock for €60 and receives a dividend of €2. At the end of Year 2, the investor receives total dividends of €4 and then sells both shares for €130. The money- weighted rate of return is closest to:", "opts": ["12.05%", "13.05%", "15.68%"], "ans": "C", "expl": "The money-weighted rate of return (MWR) and the time weighted-rated of return (TWR) are two methods used to calculate portfolio return over\ntime. The TWR is often used to measure an investment manager's return performance. The MWR is often used to measure an investor's change\nin wealth when an investor has control over cash flows.\nThe MWR is the internal rate of return on a portfolio. The MWR is the rate that equates the present value of the investor's cash outflows\n(contributions) to the investor's cash inflows (withdrawals). Due to this relationship, MWR is determined by the timing and amount of cash flows.\nTo solve for the MWR, first determine net cash flow for each period:\nThen, input net cash flows into a financial calculator:\n(Choice A) This results from excluding dividends when solving for MWR.\n(Choice B) This results from incorrectly treating the dividend as a cash outflow to the investor at T = 1.\nThings to remember:\nThe money-weighted rate of return (MWR) is the internal rate of return on a portfolio. It equates the present value of the investor's cash outflows\n(contributions) to the investor's cash inflows (withdrawals). MWR is heavily influenced by the timing and amount of cash flows. MWR is\nappropriate when an investor has control over withdrawals and contributions.\ncompare the money-weighted and time-weighted rates of return and evaluate the performance of portfolios based on these measures", "qhtml": null}, {"n": 36, "q": "An analyst has gathered the following data to calculate the expected return of an asset: The asset's expected return is closest to:", "opts": ["7.99%", "8.80%", "9.05%"], "ans": "C", "expl": "An investment's return is the investor's compensation for delaying consumption and bearing risk. Therefore, expected return is a function of:\nReal risk-free rate (ie, compensation for delaying consumption)\nExpected inflation rate (ie, compensation for the loss of purchasing power)\nExpected risk premium (ie, compensation for bearing the risks of an investment)\nThe expected return in this scenario is calculated as:\n(Choice A) 7.99% is the result of incorrectly using the economic growth rate instead of the real rate of return to calculate expected inflation.\n(Choice B) 8.80% is the result of adding the real risk-free rate, expected risk premium, and expected inflation. Although that is one way to\napproximate expected return, it does not result in the exact expected return.\nThings to remember:\nThe expected return of an asset is the investor's compensation for postponing consumption and bearing risks. Expected return = [(1 + real risk-\nfree rate) ⨯ (1 + expected inflation) ⨯ (1 + expected risk premium)] − 1.\nCalculate and interpret major return measures and describe their appropriate uses", "qhtml": null}, {"n": 37, "q": "An asset's one-year continuously compounded return is 9.2%. Assuming no income from the asset, if its beginning price is BRL 136.50, then its price at the end of one year (in BRL) is closest to:", "opts": ["149.06", "149.65", "150.33"], "ans": "B", "expl": "In a discretely compounded return, an investment's return compounds periodically (eg, monthly, quarterly) for a defined number of periods within a\ncertain time frame. In a continuously compounded return, an investment's return compounds over infinite periods within a certain time frame.\nThe continuously compounded return equals the natural log of the ratio of ending price to beginning price. It should be noted that the ratio of the\nending price to the beginning price is equivalent to 1 + Holding period return.\nIn this scenario, the asset's ending price is calculated through the following steps:\n(Choice A) 149.06 is the result of treating 9.2% as the asset's holding period return. The incorrect setup would have been r = In(1 + 0.092).\nt,t+1\n(Choice C) 150.33 is the result of treating 9.2% as the asset's discount yield. The incorrect setup would have been: (Face value − Purchase\nprice) / Face value = 0.092.\nThings to remember:\nIn a continuously compounded return, an investment's return compounds over infinite periods within a certain time frame. The continuously\ncompounded return is the natural log of the ratio of the ending price to the beginning price. This ratio is equivalent to (1 + Holding period return).\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 38, "q": "A portfolio manager has compiled an investment's annual returns for three years: Time Period Return (%) Year 1 −3% Year 2 11% Year 3 −5% The average annual compounded return on the investment over the three-year holding period is closest to: ", "opts": ["0.76%", "1.00%", "2.29%"], "ans": "A", "expl": "The compounded periodic rate of return for an asset is the geometric mean return. It is used to measure the periodic average of investment\nperformance over multiple consecutive periods.\nCompounding assumes that one period's ending investment value is the next period's beginning value (ie, that returns accumulate). The\ngeometric mean is the average periodic rate of return that accounts for compounding and includes accumulated returns in subsequent periods. In\nthis instance, there are three annual periods (ie, N = 3), so the geometric mean is:\n(Choice B) 1.00% is the arithmetic mean, which is calculated as the simple average of multiple periodic returns and does not reflect\ncompounding.\n(Choice C) 2.29% is the holding period return, which is the total cumulative return received over the three-year period, not the annual return.\nThings to remember:\nThe geometric mean is the average periodic rate of return that accounts for compounding and includes accumulated returns in subsequent\nperiods. It is used to measure investment performance over multiple consecutive periods.\nCalculate and interpret different approaches to return measurement over time and describe their appropriate uses", "qhtml": null}, {"n": 39, "q": "An investor deposits ¥100 million into a fund at the beginning of Year 1 and deposits another ¥50 million at the beginning of Year 2. At the beginning of Year 3, the investor withdraws ¥15 million. The fund has the following returns: Year Return (%) 1 20 2 10 3 −20 The investor's money-weighted annual rate of return over the three-year period is closest to: ", "opts": ["0.7%", "1.0%", "1.8%"], "ans": "A", "expl": "The money-weighted return (MWR), an application of the internal rate of return (IRR), measures investment performance based on an\ninvestor's cash flows (ie, deposits and withdrawals). By contrast, the arithmetic mean and time-weighted return do not account for cash flows into\nand out of the portfolio.\nAs an application of the IRR, the MWR discounts cash flows so that their net present value (NPV) is equal to zero and the initial investment is\nequal to the future discounted deposits and withdrawals. For the investor, deposits are outflows and withdrawals are inflows.\nWhen calculating MWR, the investment's ending value is assumed to be the final cash inflow (if positive) or outflow (if negative). Therefore, to\ncalculate the MWR, the ending balance must be calculated first, using the investor's deposits and withdrawals and the return on the investment\nover each period.\n(¥ millions) Year 1 Year 2 Year 3\nBalance at beginning of year 0 120 187\nInvestor's deposits (withdrawals) 100 50 −15\nNet balance after deposits (withdrawals) 100 170 172\nReturn for the year 20% 10% −20%\nInvestment gain (loss) 20 17 −34.4\nBalance at end of year [= Net balance + Investment gain (loss)] 120 187 137.6\nAfter the cash flows have been identified, solve for the MWR using a financial calculator. Enter positive values for cash inflows and negative\nvalues for cash outflows.\nThings to remember:\nThe money-weighted return is an application of the internal rate of return. It measures the actual return on an investment based on the amount of\ncontributions and withdrawals and the periodic returns on the investment.\nCalculate and interpret major return measures and describe their appropriate uses\n40.An individual makes the following deposits, one every six months with the first deposit beginning today:\nIf the stated interest rate is 5.4% compounded monthly, the value of the account (in SGD) six months after the last deposit is made is closest to:\nA. 46,540\nB. 47,779\n\nC. 47,811\nExplanation\nThis time value of money question requires the candidate to calculate the future value of a bank account that is funded by a series of three\nunequal cash flows. The first deposit is made today, and subsequent deposits occur every six months.\nEach deposit is a different amount, so the future value cannot be calculated as an annuity. Instead, each deposit's future value must be\ncalculated separately as the amount of the deposit (ie, its present value) multiplied by a future value factor:\nThe stated rate of 5.4% is compounded monthly, so there are 12 compounding periods per year. To account for monthly compounding, the stated\nrate must be converted to a monthly rate: 0.054 ÷ 12 = 0.0045.\n(Choice A) SGD 46,540 results from forgetting to compound for the 6-month period following the last deposit or from incorrectly assuming that all\ndeposits occur at the end of the period rather than at the beginning.\n(Choice B) SGD 47,779 results from assuming semiannual, rather than monthly, compounding. It may be useful to remember that if two series\nare identical with respect to the stated rate, amount, and timing of cash flows, the series with the more frequent compounding always produces a\nhigher future value.\nThings to remember:\nThe future value of a series of uneven cash flows is the sum of the cash flows' future values. The series cannot be calculated as an annuity since\neach deposit is a different amount.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 40, "q": "An individual makes the following deposits, one every six months with the first deposit beginning today: If the stated interest rate is 5.4% compounded monthly, the value of the account (in SGD) six months after the last deposit is made is closest to:", "opts": ["46,540", "47,779", "47,811"], "ans": "C", "expl": "This time value of money question requires the candidate to calculate the future value of a bank account that is funded by a series of three\nunequal cash flows. The first deposit is made today, and subsequent deposits occur every six months.\nEach deposit is a different amount, so the future value cannot be calculated as an annuity. Instead, each deposit's future value must be\ncalculated separately as the amount of the deposit (ie, its present value) multiplied by a future value factor:\nThe stated rate of 5.4% is compounded monthly, so there are 12 compounding periods per year. To account for monthly compounding, the stated\nrate must be converted to a monthly rate: 0.054 ÷ 12 = 0.0045.\n(Choice A) SGD 46,540 results from forgetting to compound for the 6-month period following the last deposit or from incorrectly assuming that all\ndeposits occur at the end of the period rather than at the beginning.\n(Choice B) SGD 47,779 results from assuming semiannual, rather than monthly, compounding. It may be useful to remember that if two series\nare identical with respect to the stated rate, amount, and timing of cash flows, the series with the more frequent compounding always produces a\nhigher future value.\nThings to remember:\nThe future value of a series of uneven cash flows is the sum of the cash flows' future values. The series cannot be calculated as an annuity since\neach deposit is a different amount.\nCalculate and interpret annualized return measures and continuously compounded returns, and describe their appropriate uses", "qhtml": null}, {"n": 41, "q": "Country A and Country B are both large issuers of government debt, and each country issues approximately the same amount of debt. The interest rate for one-year government debt is 3% in Country A and 3.5% in Country B. With respect to variables such as credit rating and issuance in multiple maturities, the characteristics of each country's government debt are similar. Based only on the information given, which of the following risk premiums most likely accounts for the difference in the interest rates?", "opts": ["Default premium", "Inflation premium", "Liquidity premium"], "ans": "B", "expl": "Interest rates are based on a real risk-free rate, which is the return that investors demand for a bond with no default risk or inflation expectations.\nThe other premiums shown above compensate investors who hold riskier bonds. Interest rates are influenced by supply and demand for\nborrowed funds; therefore, each premium quantifies the additional compensation investors demand for lending when specific risks are present.\nIn this scenario, both countries issue approximately the same amount of debt, so both countries' bonds should be similarly liquid. A liquidity\npremium most likely applies when a country issues fewer bonds since smaller issues tend to trade less frequently (Choice C). Less trading\nmeans less liquidity since the supply and demand forces that contribute to market prices are absent.\n(Choice A) The countries' similar credit ratings indicate a similar default risk; however, a default risk premium does not apply to this scenario.\nThis leaves only the possibility that lenders anticipate higher inflation in Country B and demand an appropriate premium to compensate for the\nrisk.\nThings to remember:\nInterest rates are based on a real risk-free rate, which is the return that investors demand for a bond with no default risk or inflation expectations.\nPremiums for specific risks such as liquidity, default, and inflation are added to the real risk-free rate to compensate investors for assuming those\nrisks.\nInterpret interest rates as required rates of return, discount rates, or opportunity costs and explain an interest rate as the sum of a real risk-free\nrate and premiums that compensate investors for bearing distinct types of risk", "qhtml": null}, {"n": 42, "q": "An investor creates a portfolio by buying one share of stock for CAD 100 today. At the end of the Year 1, the investor buys another share of the same stock for CAD 105. At the end of Year 2, the investor sells both shares for CAD 115 each. The stock paid a dividend of CAD 10 at the end of Year 1 and paid total dividends of CAD 20 at the end of Year 2. The dividend at the end of Year 1 was reinvested in the portfolio. The time- weighted rate of return is closest to:", "opts": ["9.23%", "14.32%", "17.01%"], "ans": "B", "expl": "The time-weighted rate of return (TWR) and the money-weighted rate of return (MWR) are two methods used to calculate portfolio returns over\ntime. The MWR is often used to measure an investor's increase in wealth. The TWR is often used to measure an investment return performance;\nit is the preferred measure of the two.\nThe TWR measures a portfolio's compounded rate of growth over time. The main advantage of the TWR is that unlike the MWR, the TWR is\nnot affected by the investor's own contributions or withdrawals—both of which may alter portfolio returns.\nTo calculate the TWR, divide the portfolio's overall time horizon into sub-periods based on the dates of contributions or withdrawals. Value the\nportfolio right before these cash flows. Determine the holding period return (HPR) for each sub-period. Finally, link the HPR of each holding sub-\nperiod.\nDetermine activities and calculate HPR (amounts in CAD):\nInput HPR:\nA TWR of 14.32% means that a dollar initially invested into this portfolio grew at a compound annual rate of 14.32% over the two years.\n(Choice A) 9.23% results from excluding dividends received of $10 from the HPR calculation for the first sub-period.\n(Choice C) 17.01% results from not including the reinvested dividends in P when calculating the HPR for the second sub-period.\n1\nThings to remember:\nThe time-weighted rate of return (TWR) is the preferred method for calculating portfolio returns. The TWR measures a portfolio's compound rate\nof growth over time. Its main advantage is that it is not impacted by contributions and withdrawals.\ncompare the money-weighted and time-weighted rates of return and evaluate the performance of portfolios based on these measures", "qhtml": null}];
+const CFG = {"title": "Wiley · Rates and Returns", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Quantitative Methods · 42 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

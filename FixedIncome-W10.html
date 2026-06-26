@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A coupon bond's Macaulay duration is most accurately described as the holding period over which:", "opts": ["the value of cash flows received equal the cost of buying the bond.", "changes in reinvestment income offset changes in the bond's price.", "the bond earns a risk-free return if hedged by shorting a government bond."], "ans": "B", "expl": "Noncallable coupon bonds contain two types of interest rate risk: reinvestment risk and price risk. Reinvestment risk dominates in the long run\nand price risk dominates in the short run. Logically, somewhere in between the short run and the long run, there should be a balance point.\nThat point is the Macaulay duration: the holding period to the point where changes in reinvestment income and changes in price offset one\nanother exactly.\nInterest rates increase: additional reinvestment income and bond price decreases\nInterest rates decrease: reduced reinvestment income and bond price increases\nNo matter the direction, the impact of a rate change is positive for one source of return, but negative for the other. In the short run, price risk\ndominates. Interest rate changes affect bond prices immediately. In the long run, reinvestment risk dominates since its impact builds over time as\nmore coupons are reinvested. A bond's Macaulay duration is the holding period over which those risks balance each other.\n(Choice A) Market price equals the present value of the coupon and principal, so a bond must be held to maturity to receive cash flows with a\nvalue equal to the cost of the bond. Since Macaulay duration is the present value weighted average time of the cash flows, a coupon bond's\nMacaulay duration is shorter than its time to maturity.\n(Choice C) Although it is a type of hedge, the strategy is not riskless and therefore does not lock in a risk-free rate of return.\nThings to remember:\nThe Macaulay duration is the holding period of a bond to the point where changes in reinvestment income and changes in price offset one another\nexactly.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 2, "q": "Five years ago, an investor purchased a 10-year, 7% semiannual coupon paying bond for 98. Today the bond is sold for 98.25. The capital gain or loss per 100 of par value is closest to:", "opts": ["−1.75", "−0.57", "0.25"], "ans": "B", "expl": "An investor's capital gain or loss equals the selling price minus the carrying value at the time of the sale. At any point in time, the bond's\ncarrying value is the initial price adjusted for the accumulated amortization of the discount or premium.\nFor a bond initially issued at a discount, carrying value increases over time until it reaches par value at maturity.\nFor a bond initially issued at a premium, carrying value decreases over time until it reaches par value at maturity.\nIn this question, the bond was initially purchased at a discount. To find the capital gain or loss:\n(Choice A) −1.75 capital loss results from subtracting the par value 100 from the sales price 98.25.\n(Choice C) 0.25 capital gain results from subtracting the initial price 98 from the sales price 98.25.\nThings to remember:\nAn investor's capital gain or loss equals the selling price minus the carrying value at the time of the sale. For a bond, the carrying value is the\nbond's initial price adjusted for the accumulated amortization of the discount or premium over time.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 3, "q": "A 10-year, zero-coupon bond is priced at 64.3928 per 100 of par value and is trading at a 4.50% yield-to-maturity using annual compounding. Assuming a 10-basis point change in yield-to-maturity, the approximate modified duration of the bond is closest to: ", "opts": ["9.57", "9.62", "10.00"], "ans": "A", "expl": "The solution requires determining the price of the zero-coupon bond twice: at the initial yield minus 10 basis points (price ) and at the\nlower yield\ninitial yield plus 10 basis points (price ). The price of a zero-coupon bond is the present value of its face amount. After obtaining the two\nhigher yield\nprices, use the formula in the first exhibit to calculate the approximate modified duration. Be sure to enter the yield change in its decimal form (ie,\n10 basis points = 0.10% = 0.001).\nThe question specifies using a 10-basis point change in the bond's yield. The choice of yield change is somewhat arbitrary. Using too large or too\nsmall a yield change (eg, 100 basis points or 1 basis point) is likely to result in a less useful value for duration. Typically, yield changes of between\n5 and 25 basis points might be used. The calculated value for duration will vary a bit depending on the basis point change being used.\n(Choice B) 9.62 results from calculating the price of the zero-coupon bond at only a 4.40% yield. The difference between the price at a 4.40%\nyield and the initial price is divided by the initial price multiplied by 0.001.\n(Choice C) 10.00 is the Macaulay, not the modified, duration for the 10-year zero-coupon bond.\nThings to remember:\nDetermining a bond's approximate modified duration requires calculating its price twice, once each at a specified yield difference above and below\n× ×\nits initial yield. The difference between those two prices is divided by 2 yield change (in decimal form) initial price.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 4, "q": "An investor with a 10-year investment horizon purchases a noncallable 10-year, 7% annual coupon bond. The bond purchase price is 107.360087 per 100 of par value, with a 6% YTM. The bond's annual modified duration is 7.180. The duration gap at the time of the investment is closest to:", "opts": ["−2.82", "−2.39", "0.00"], "ans": "B", "expl": "Bond investor exposure to reinvestment risk or price risk results from any divergence between intended investment horizon and a bond's\nMacaulay duration. The difference is referred to as a duration gap and calculated as: Macaulay duration minus investment horizon. A positive\nduration gap means the investor has greater exposure to price risk; a negative gap results in greater exposure to reinvestment risk.\nSince the bond's modified duration was provided, the Macaulay duration must be calculated before the duration gap can be determined. Macaulay\nduration is found by multiplying the modified duration by 1 + YTM expressed as a periodic rate. Since the bond in question is an annual coupon\nbond, the periodic rate is the same as the given YTM. Since the duration gap is negative, the investor has exposure to reinvestment risk.\n(Choice A) −2.82 results from subtracting the investment horizon from the bond's modified duration rather than its Macaulay duration.\n(Choice C) 0.00 would be the correct answer if the investor had purchased a zero-coupon bond. Since zeros have a Macaulay duration equal to\ntheir maturity, buying a 10-year zero-coupon bond would result in the investment having a Macaulay duration equal to the investment horizon.\nThings to remember:\nBond investor net exposure to interest rate risk results from divergences between investment horizon and Macaulay duration, which is defined as\nthe duration gap. A duration gap equals Macaulay duration minus investment horizon. Positive gaps mean exposure to price risk; negative gaps\nmean exposure to reinvestment risk.\nDescribe the relationships among a bond’s holding period return, its Macaulay duration, and the investment horizon.", "qhtml": null}, {"n": 5, "q": "An investor buys a newly issued 20-year bond at par. The bond pays a 6% annual coupon. Shortly after purchase, the bond's YTM falls to 5% and stays at that level until the bond is sold at the end of three years. If the reinvestment rate over the period is 5%, the investor's annualized rate of return over the three-year investment horizon is closest to:", "opts": ["8.94%", "9.19%", "10.06%"], "ans": "B", "expl": "The rate of return (or horizon return) is the geometric average annual rate that equates the initial investment with the value accumulated by\nthe end of the holding period (ie, investment horizon). The accumulated value, or total money return, is the sum of:\nprice at which the bond is sold\ncumulative coupon payments\nreinvestment income on any coupons received before the end of the holding period\nThese three components can be computed in two steps. The bond must be priced at a 5% yield three years in the future (when 17 years remain\nuntil maturity). The coupon payments plus reinvestment income are calculated simultaneously by solving for the future value of an annuity.\nThe total money return divided by the initial investment is equal to 1 + the total rate of return. That outcome is annualized by raising it to the power\nof (1/holding period) and subtracting 1 (ie, removing the value of the initial investment).\n(Choice A) 8.94% uses a total money return reflecting only the bond price and the three coupons received over the investment horizon. This\nsolution omits the reinvestment income on the first two coupons.\n(Choice C) 10.06% is the arithmetic (rather than the standard geometric) average annual return. 10.06% is based on the accurate total rate of\nreturn (30.19%) divided by 3, rather than (1 + total rate of return)1/3 – 1.\nThings to remember:\nThe horizon return is the geometric average annual rate that equates the initial investment to the total money return. The total money return is the\nselling price plus coupons received plus reinvestment income on the coupons received before the end of the holding period.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 6, "q": "An investor buys a bond that matures in 22 years. The bond has a 7% coupon rate and pays semiannually. The investor's price was 112.1271 when the bond's YTM was 6%. Before the next coupon date, the bond's YTM rises to 8% and stays at that level until the bond is sold at the end of 6 years. If the reinvestment rate over the period is 8%, the investor's annualized rate of return over the 6-year investment horizon is closest to:", "opts": ["−3.41%", "+2.89%", "+4.22%"], "ans": "C", "expl": "The rate of return (ie, horizon yield) is the geometric average annual rate that equates the initial investment to the value accumulated by the\nend of the holding period (ie, investment horizon). The accumulated value, or total money return, is the sum of the:\nprice at which the bond is sold\ncumulative coupon payments\nreinvestment income on any coupons received before the end of the holding period\nThose three components can be calculated in two steps. The bond must be priced at an 8% YTM, 6 years in the future when 16 years (ie, 32\ncoupon periods) remain until maturity. The coupon payments plus reinvestment income are calculated simultaneously by solving for the future\nvalue of an annuity.\nThe total money return divided by the initial investment equals 1 + the total rate of return. Annualize that outcome by raising it to the power of (1 /\nholding period), then subtract 1 (removing the value of the initial investment).\nNote: The capital loss (ie, difference between selling price and carrying value) does not have to be determined to calculate the horizon return.\n(Choice A) −3.41% is the annualized return taking account only of the selling price and purchase price, ignoring both coupons and reinvestment\nincome.\n(Choice B) +2.89% uses a total money return reflecting only the bond price and the 12 coupons received over the investment horizon. This\nsolution omits the reinvestment income on the first 11 coupons.\nThings to remember:\nThe horizon return is the geometric average annual rate that equates the total money return to the initial investment. The total money return is the\nselling price plus coupons received plus reinvestment income on the coupons received before the end of the holding period.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 7, "q": "If the bond is priced with a 10.2% YTM, the bond's annual Macaulay duration is closest to:", "opts": ["7.1", "7.6", "15.2"], "ans": "B", "expl": "Macaulay duration is a type of yield duration that measures the sensitivity of a bond's full price to changes in its own YTM. The Macaulay duration\nis the weighted average time to receipt of the bond's payments. The weights are the portions of the bond's full price that correspond to each of the\nfuture payments. Macaulay duration can also be thought of as the average time to receipt of the bond's payments that will result in realization of\nthe bond's initial, stated YTM.\nIn this scenario:\nt/T = 0/T = 0 since the bond settles on its July 11, 2023 coupon payment date\nYTM is 10.2% and YTM per period is r = (0.102 / 2) = 0.051\nCoupon per period is c = (0.07 / 2) = 0.035\nN = 23 = (11.5 years × 2 semiannual periods per year)\nSubstitute these values into the formula to calculate the bond's Macaulay duration per period:\nThe result of this calculation is the bond's Macaulay duration per period. Dividing by the number of periods per year results in the bond's annual\nMacaulay duration: 15.18 ÷ 2 = 7.59.\n(Choice A) 7.1 is the result of incorrectly interpreting the fact that the bond's settlement is on the coupon payment date to mean that t = T, so that\nt/T = 1. The correct value of t/T in this question is 0/T = 0.\n(Choice C) 15.2 is the result of failing to convert Macaulay duration per period into annual Macaulay duration.\nThings to remember:\nMacaulay duration is a type of yield duration, a measure of sensitivity of a bond's full price to changes in its own YTM. The Macaulay duration is\nthe weighted average time to receipt of the bond's payments.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 8, "q": "A bond matures in 3 years and pays a 7% annual coupon. The bond is currently trading at 104.0469 per 100 par value with a 5.50% yield-to- maturity. The Macaulay duration of the bond is closest to:", "opts": ["2.64", "2.81", "2.93"], "ans": "B", "expl": "The Macaulay duration is a function of maturity, coupon, and yield. It is the weighted average time until the coupons and principal are due.\nThe timing of each payment is weighted by its present value as a percent of the bond's full price. Another way to calculate the Macaulay duration\nis to use the formula:\n(Choice A) 2.64 results from using only the par value for the final cash flow (ie, failing to include the last coupon).\n(Choice C) 2.93 results from dividing the time weighted present value of the cash flows (the numerator in the calculation) by the par value of 100\nrather than the market price of 104.0469.\nThings to remember:\nThe Macaulay duration is the present value–weighted average time until the coupons and principal are due. Calculate the present value of each\ncash flow and divide each by the bond's price to find the percentage of the total price each represents (ie, the weight). Multiply the weight of each\ncash flow by the time until it's due and sum the results.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 9, "q": "An investor purchases a bond for a price of 111.62. The bond is a 10-year callable bond with a 7% coupon paid annually. If the bond's benchmark yield curve shifts by 30 basis points and its YTM changes by 25 basis points, the bond's price is expected to be: 110.23 if interest rates rise, or 112.99 if interest rates fall. Based on only this information and using the most appropriate measure of duration, the bond's duration is closest to:", "opts": ["4.12", "4.95", "−19.91"], "ans": "A", "expl": "A bond's interest rate risk is measured by duration and convexity. Together, these two measurements are used to estimate the change in a bond's\nprice due to a given change in interest rates. Interest rate changes can be represented as changes in the bond's yield-to-maturity or shifts in a\nbenchmark yield curve.\nAn embedded call option creates uncertainty in a bond's cash flows and, therefore in its YTM, since the bond may be called (ie, redeemed) before\nmaturity. Thus, for a callable bond, it makes sense to estimate price changes based on a shift in the benchmark yield curve instead of the\nYTM.\nApproximate modified duration and convexity measure changes in a bond's price based on changes in its YTM.\nEffective duration and convexity measure changes in a bond's price based on shifts in its benchmark yield curve.\nIn this scenario, since the bond is callable, interest rate changes are represented by a shift in the benchmark yield curve, and therefore effective\nduration is appropriate. Substitute the bond price and benchmark rate change data into the formula to calculate effective duration:\n(Choice B) 4.95 is the approximate modified duration of the bond. Approximate modified duration is not appropriate for use with callable bonds.\n(Choice C) −19.91 is the effective convexity of the bond based on the given data, not the effective duration.\nThings to remember:\nA bond's interest rate risk can be measured by viewing price changes as a function of changes in the bond's yield-to-maturity or of shifts in a\nbenchmark yield curve. For a bond with an embedded option, price changes should be based on shifts in a benchmark yield curve and measured\nusing effective duration.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 10, "q": "An investor purchases a bond with 5 years until maturity, a 4% annual coupon payment, and a YTM of 4.25%. The investor holds the bond until maturity. After purchase and before the first coupon, if the YTM for similar bonds increases to 4.5% due to a rise in interest rates and remains at that level for the life of the bond, then the value of the investor's reinvested coupons at maturity is closest to:", "opts": ["21.67", "21.77", "21.88"], "ans": "C", "expl": "Assuming no default, sources of return for a bond investor include:\ncoupon and principal payments received on the dates agreed upon in the contract;\ninterest on reinvestment (ie, interest on interest) of coupons between the time each one is received and the end of the bond's holding\nperiod; and\ncapital losses or gains from any sale of the bond prior to maturity.\nOne assumption made in calculating the YTM is that the bond's coupon payments are reinvested at the YTM rate. However, that may not be\npossible if interest rates change, which often happens (ie, interest rate risk). If so, the investor's rate of return will likely not be equal to the bond's\ninitial YTM.\nA change in the YTM for similar bonds affects the rate at which the coupons can be reinvested. In this scenario, interest rates rise, which\nincreases the reinvestment rate. The future value of the reinvested coupons is calculated as follows:\nSince interest rates have risen, the investor's reinvested coupons are worth $21.88 at maturity.\n(Choice A) $21.67 is the value of the reinvested coupon if one incorrectly assumes that the coupons are reinvested at the coupon rate of 4%.\n(Choice B) $21.77 results from assuming that the coupons are reinvested at the bond's YTM rate at purchase (ie, 4.25%).\nThings to remember:\nSources of return for a bond investor include coupon and principal payments received, interest on coupon reinvestment, and capital losses or\ngains from any sale in the market prior to maturity. A change in the YTM for similar bonds affects the reinvestment rate and, thus, the value of the\nreinvested coupons at maturity.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 11, "q": "An investor buys a bond at a price below 100% of par value. The investor later sells the bond prior to maturity. The gain or loss on sale will most likely be the difference between the sale price and the:", "opts": ["original purchase price.", "carrying value based on straight-line amortization of the original discount.", "carrying value based on the YTM at purchase and the time remaining to maturity."], "ans": "C", "expl": "The capital gain or loss on a bond is usually not the difference between the purchase and sale price. The gain or loss is the difference between\nthe selling price and the bond's carrying value. If the purchase price is any value other than 100% of par value, the carrying value changes\nover time.\nFor bonds purchased at a price above or below 100% of par value, the premium or discount must be amortized over the time-to-maturity. The\nschedule of carrying values (ie, present values) is a trajectory of prices at which the bond would trade if its YTM were constant over the time to\nmaturity.\nThere cannot be a capital gain or loss on a bond held to maturity as the original purchase price adjusted for cumulative amortization converges\nwith par value (ie, pull to par). For bonds sold prior to maturity, the carrying value is determined by using the YTM at which the bond was trading\nwhen purchased to discount the coupons and principal over the remaining time to maturity when the sale occurred.\nThings to remember:\nCapital gain or loss on bonds is based on selling price minus carrying value, not the original purchase price. Any discount or premium at purchase\nis amortized. There is no capital gain or loss on bonds held- to-maturity. For bonds sold prior to maturity, the carrying value is determined by\ndiscounting the coupons and principal over the remaining time-to-maturity by the YTM at purchase.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 12, "q": "A manager is concerned with identifying a noncallable coupon bond that minimizes the risk of funding a future liability. Which type of duration is most appropriate for this manager to use?", "opts": ["Key rate duration", "Modified duration", "Macaulay duration"], "ans": "C", "expl": "Noncallable coupon bonds contain two types of interest rate risk: price risk and reinvestment risk. Interest rate changes have opposite effects on\nthese two risks and on the components of bond returns. Interest rate changes are:\ninversely related to price since higher (lower) rates cause bond prices to decrease (increase), and\ndirectly related to reinvestment income since higher (lower) rates cause reinvestment income to increase (decrease).\nMacaulay duration is the holding period (ie, investment horizon) over which a bond's price change is equal to a change in reinvestment income,\nallowing those changes to offset each other. Holding the bond over that period will balance reinvestment risk and price risk and minimize total\nrisk. Therefore, the return on a bond held over its Macaulay duration is equal to the bond's market discount rate (ie, YTM) when it was\npurchased. Buying a bond with a Macaulay duration equal to the time until a liability is due minimizes the risk that the bond's issuer will be unable\nto fund that liability.\n(Choice A) Key rate duration measures the effect on bond prices of a change in one (or more) specific-term interest rate(s).\n(Choice B) Modified duration measures a bond's approximate percentage price change due to a 100-basis-point change in its YTM, ignoring the\nimpact of convexity.\nThings to remember:\nMacaulay duration is the holding period (ie, investment horizon) over which a bond's price change equals a change in reinvestment income. A\nbond held over its Macaulay duration earns a return equal to the YTM when the bond was purchased. Buying a bond with a Macaulay duration\nequal to the time until a liability is due minimizes the risk that the bond's issuer will be unable to fund that liability.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 13, "q": "An investor buys a 20-year bond at par value. The bond pays a 4% semiannual coupon and has an approximate modified duration of 13.68. The investor sells the bond one year later after interest rates have risen by 100 basis points. Which of the following sources most likely accounts for the largest portion of the investor's holding period return?", "opts": ["Coupon income", "Capital gain or loss", "Interest on interest income"], "ans": "B", "expl": "The largest component of short time horizon (eg, quarterly or annual) returns on long-maturity bonds is usually capital gains or losses driven by\nchanges in their yields-to-maturity. Long-maturity bonds have long durations, so their prices are highly sensitive to changes in interest rates.\nUnless interest rate changes are very small (eg, 20 basis points), capital gains or losses are the largest portion of return.\nInterest on interest (ie, reinvestment of coupon) income is relatively insignificant over short time horizons. Reinvestment income is earned only on\ncash flows received during the holding period, and then only for the remainder of the period. In this scenario, the first coupon earns reinvestment\nincome over the second half of the year. Even at high reinvestment rates, reinvestment income is a small fraction of coupon income (Choice C).\nDuration is a measure of a bond's price sensitivity to a change in its yield-to-maturity. Due to this bond's long approximate duration (13.68%), the\nyield increase of 100 basis points (1%) would result in a capital loss of about three times the coupon income (4%). The estimated price decline is\nshown in the bottom row of the table (Choice A).\nNaturally, outcomes depend on specific circumstances. Coupon rates vary from 0% to over 10%. Some securities (eg, US mortgage-backed) pay\nprincipal and interest monthly, allowing for a bigger contribution from reinvestment income. Nonetheless, in all but the most stable interest rate\nenvironments, price changes are likely to be the largest contributor to return for long-dated bonds over short horizons.\nThings to remember:\nThe largest component of period returns on long-maturity bonds is usually capital gains or losses. Long-maturity bonds have long durations, so\ntheir prices are very sensitive to interest rate changes. A large rate change results in price gains or losses that exceed the coupon income, which\nin turn is greater than the reinvestment income.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 14, "q": "An investor buys a previously issued bond that has 12 years remaining to maturity at a price of 92.4639 per 100 par value. The bond has an 8.0% YTM and pays a 7.0% annual coupon. Two years later the bond is sold for 96.5680 at a YTM of 7.5%. The carrying value used to determine the capital gain is closest to:", "opts": ["93.2048", "93.2899", "93.7199"], "ans": "B", "expl": "The capital gain or loss on a bond is usually not the difference between the purchase and sale price. The gain or loss is the difference between\nthe selling price and the bond's carrying value. If the purchase price is at any value other than 100% of par value, the carrying value will\nchange over time.\nFor bonds purchased at a price above or below 100% of par, the premium or discount must be amortized over the time to maturity. This process\nresults in carrying value at maturity equal to 100% of par. Thus, for bonds held to maturity, there will never be a capital gain or loss.\nFor bonds sold prior to maturity, the carrying value is based on the YTM at the bond's purchase. The carrying value is determined by using the\nYTM at the bond's purchase to discount the coupons and principal over the remaining time to maturity.\n(Choice A) 93.2048 would be the carrying value if the bond paid coupons semiannually.\n(Choice C) 93.7199 is the result of using straight-line amortization of the discount rather than the constant yield method.\nThings to remember:\nCapital gain or loss on bonds is based on carrying value, not the original purchase price. Purchase at any price other than 100% of par requires\nthe premium or discount to be amortized. There is no capital gain or loss on bonds held until maturity. For bonds sold prior to maturity, the\ncarrying value is determined by using the purchase YTM to discount the coupons and principal over the remaining time-to-maturity.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 15, "q": "An investor purchases a 20-year 6% annual coupon bond at 100% of par value. 10 years later the bond has a YTM of 10% and is trading at 75.42 per 100 of par value. Assuming a reinvestment rate of 10% since purchase, the largest effect on the bond's holding period rate of return is most likely the:", "opts": ["capital loss.", "coupon income.", "reinvestment income."], "ans": "B", "expl": "There are three sources of return on coupon-bearing fixed-income securities:\nCoupon income: annual coupon payments over the holding period\nCapital gain or loss: difference between purchase price and current market value or sale price\nReinvestment income: interest earned from reinvesting the coupons received over the holding period\nIn this scenario, the coupon income over the holding period provides the greatest source of return (Choices A and C).\nThe source that has the largest impact on rate of return depends on the specific circumstances. Capital gain or loss, typically the largest factor in\nthe short run, results from change in a bond's YTM and, therefore, its price. Coupon income accrues at a constant rate over time and often\nexceeds the price change in the long run.\nReinvestment income is not earned until after the receipt of the first coupon and therefore has a negligible impact in the short run. However, due\nto compounding, reinvestment income can be the biggest factor in the long run if the reinvestment rate and coupon income are high enough.\nIt should be noted that reinvestment income is most efficiently calculated indirectly by calculating the future value of the coupons then subtracting\nthe coupon income. The calculation is illustrated using the formula for the future value of an ordinary annuity but is best solved using the time\nvalue of money functions on a calculator.\nThings to remember:\nThere are three sources of total money return on coupon bonds: coupon income, capital gain or loss, and reinvestment income on the coupons\nreceived during the holding period. The proportion of return from each source depends on price change, length of holding period, coupon rate,\nand reinvestment rate.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 16, "q": "A 20-year zero-coupon bond has a YTM of 4%. Assuming semi-annual compounding, its modified duration is closest to:", "opts": ["19.23", "19.61", "20.00"], "ans": "B", "expl": "Macaulay duration is the weighted average time (in years) to receive all the future expected cash flows from a bond. Macaulay duration allows\ninvestors to compare their exposure to reinvestment risk and price risk. Modified duration, derived from Macaulay duration, measures the\nsensitivity of bond prices to changes in interest rates and is widely used to assess the interest rate risk of bonds.\nFor a zero-coupon bond, the Macaulay duration is simply the bond's maturity since it has only one cash flow: the principal repayment at maturity,\nin this case at the end of Year 20. Since the Macaulay duration (20) is known, modified duration can be calculated as:\nThe denominator is the periodicity yield, the YTM divided by the coupon periodicity, which is semi-annual (ie, 2) in this instance. While it is very\nlikely on the exam that the question will state a periodicity, the standard convention for most zero-coupon bonds is to assume semi-annual\ncoupons with a periodicity of 2. Doing so allows a direct yield comparison to the vast majority of government and corporate coupon bonds, which\npay semi-annually.\n(Choice A) 19.23 results from not accounting for the semiannual coupon convention.\n(Choice C) 20.00 is the bond's Macaulay duration.\nThings to remember:\nMacaulay duration is the weighted average time (in years) it takes to receive all the future expected cash flows from a bond. For a zero-coupon\nbond, the Macaulay duration is simply the bond's maturity since it has only one cash flow. Modified duration, which is derived from Macaulay\nduration, can be calculated as Macaulay duration divided by one plus the periodicity yield.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 17, "q": "An investor with a 2-year investment horizon buys a 10-year government bond that pays a 3% annual coupon. The resulting mismatch between the 10-year bond's duration and the investment horizon results in the investor having the greatest exposure to: ", "opts": ["price risk.", "liquidity risk.", "reinvestment risk."], "ans": "A", "expl": "A mismatch between an investor's holding period (or investment horizon) and a bond's Macaulay duration results in exposure to two types of\ninterest rate risk: price risk and reinvestment risk. An investment horizon that is longer than the Macaulay duration results in exposure to\nreinvestment risk. An investment horizon shorter than the Macaulay duration creates price risk.\nA 10-year coupon bond will have a Macaulay duration of less than 10 years, but significantly longer than 2 years. At the end of the investment\nhorizon, the bond will still have 8 years until its maturity. If the bond's YTM has increased or decreased by even a relatively modest amount (eg,\n0.50%), the price change will be much greater than the reinvestment income on 2 years of coupon income.\nThe duration mismatch can work to the investor's advantage. If yields decline, the investor's 2-year horizon return will be greater than the bond's\nYTM at purchase. However, the mismatch becomes a disadvantage for the investor if yields rise since the price decrease will exceed the\nadditional reinvestment income.\n(Choice B) Liquidity risk refers to the ability to convert an investment into cash at a price close to the bond's fair value. The investment would not\ncreate significant exposure to liquidity risk since government bonds are typically more liquid than other fixed income securities.\n(Choice C) Investors have exposure to reinvestment risk when their investment horizons are longer than the Macaulay durations of their bond\nholdings.\nThings to remember:\nMismatches between an investment horizon and a Macaulay duration result in exposure to interest rate risk. An investment horizon longer than\nthe Macaulay duration results in exposure to reinvestment risk. An investment horizon shorter than the Macaulay duration creates price risk.\nDescribe the relationships among a bond’s holding period return, its Macaulay duration, and the investment horizon.", "qhtml": null}, {"n": 18, "q": "A noncallable bond that pays a 6% annual coupon has exactly 4 years until maturity. The bond is priced at 98.2871 per 100 par value and has a 6.50% YTM. Assuming a 10–basis point change in YTM, the bond's approximate modified duration is closest to: ", "opts": ["3.45", "3.50", "6.89"], "ans": "A", "expl": "The solution requires determining the price of the bond twice: at the initial yield minus 10 basis points (price ) and at the initial yield plus\nlower yield\n10 basis points (price ). After obtaining the two prices, use the formula in the exhibit to calculate the approximate modified duration. Be\nhigher yield\nsure to enter the yield change in its decimal form (ie, 10 basis points = 0.10% = 0.001).\nThe question specifies using a 10–basis point change in the bond's yield. The choice of yield change is somewhat arbitrary. The calculated value\nfor duration will vary somewhat depending on the basis point change used.\n(Choice B) 3.50 results from calculating the approximate duration as if the bond paid coupons semiannually instead of annually.\n(Choice C) 6.89 results from failing to include 2 in the denominator of the calculation.\nThings to remember:\nDetermining a bond's approximate modified duration requires calculating its price twice: once at a specified yield difference above its initial yield\n× ×\nand once below. The difference between those two prices is divided by 2 yield change (in decimal form) initial price.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 19, "q": "A callable bond's coupon rate is 100 basis points (bps) below yields-to-maturity on noncallable bonds having the same time to maturity and credit risk. If market yields decline by 200 bps, the callable bond's effective duration most likely: ", "opts": ["decreases.", "remains unchanged.", "increases."], "ans": "A", "expl": "Duration measures bond price sensitivity to changes in interest rates. Graphically, duration is the slope of the price/yield function. The effective\nduration of a callable bond decreases as market interest rates decline below its coupon rate. Callable and noncallable bond prices behave\nsimilarly when interest rates rise (purple curve segment), but their prices and durations diverge significantly as yields fall below bond coupon rates.\nA callable bond has an embedded option giving the issuer the right to purchase (ie, call) the bond prior to maturity. The further market rates drop\nbelow a bond's coupon, the greater the likelihood it will be called. As a result, no matter how low rates fall, the potential appreciation of a callable\nbond is limited. That is reflected by the flattening slope (ie, decreasing duration) of the red segment of the callable bond price/yield curve.\nThings to remember:\nAs market yields decrease from higher levels to below a callable bond's coupon rate, the effective duration of the bond decreases. The more rates\ndecline, the less sensitive callable bond prices are to interest rate changes.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 20, "q": "A corporation buys a 5-year default-risk-free government bond to fund a lump-sum liability due in five years. The bond is noncallable and pays coupons semiannually. Which of the following types of risk does the corporation most likely have the greatest exposure to?", "opts": ["Inflation risk", "Market price risk", "Reinvestment risk"], "ans": "C", "expl": "Macaulay duration is the weighted average time until receipt of the coupon and principal payments. The investment application of that insight is\nthat a bond's Macaulay duration is the holding period (investment horizon) over which changes in price and in reinvestment income exactly offset\none another. Thus, for holding periods equal to Macaulay duration, an investor's return is the YTM at which the bond was purchased.\nInvestment horizons shorter than Macaulay duration result in exposure to price risk. Investment horizons longer than Macaulay duration result\nin exposure to reinvestment risk.\nFor coupon bonds, the Macaulay duration is always shorter than the bond's maturity. Since a liability due in five years is being funded with a\nbond that has a duration of less than five years, the corporation has exposure to reinvestment risk.\n(Choice A) Since the bond matures when the liability comes due, inflation will impact both equally, so the corporation has no exposure to inflation\nrisk.\n(Choice B) Market price risk results from changes in credit quality and market yields. Buying a default risk-free security removes credit quality\nconcerns. Owning a security that matures at the time the liability comes due eliminates interest rate–related price risk. No matter how much\ninterest rates change over five years, the bond will be worth its par value at that time.\nThings to remember:\nIf an investor's horizon return equals the bond's Macaulay duration, the bond's reinvestment risk will equal its price risk. An investment horizon\nshorter than a bond's Macaulay duration results in exposure to greater price risk. An investment horizon longer than a bond's Macaulay duration\nresults in exposure to greater reinvestment risk.\nDescribe the relationships among a bond’s holding period return, its Macaulay duration, and the investment horizon.", "qhtml": null}, {"n": 21, "q": "An investor buys a bond for 115.443470 per 100 par value. The bond has 10 years left until maturity, a 5% YTM, and a 7% annual coupon. Four years later, the bond is sold for 112.894681 at a YTM of 4.5%. The capital gain or loss is closest to a:", "opts": ["2.5488 loss.", "2.7433 gain.", "3.6286 gain."], "ans": "B", "expl": "The capital gain or loss on a bond trade is the difference between the selling price and the bond's carrying value, not the purchase price.\nFor bonds sold prior to maturity, the carrying value is the present value of the remaining cash flows, using the YTM at purchase, not the current\nYTM, to discount those remaining cash flows.\nSince they must converge with par value by maturity, the carrying values for bonds purchased at a premium decline over time. Although the bond\nin this instance sold for less than its purchase price, its sale price was higher than its carrying value, so there is a capital gain.\n(Choice A) A 2.5488 loss is the result of using the original purchase price rather than the carrying value.\n(Choice C) A 3.6286 gain results from using straight-line amortization of the purchase premium to determine the carrying value.\nThings to remember:\nThe capital gain or loss on bonds is based on the selling price versus the carrying value, not the original purchase price. The carrying value for\nbonds sold prior to maturity is determined by discounting the remaining cash flows by the YTM at the time of purchase, not the current YTM.\nSince any discount or premium at purchase is amortized, there is no capital gain or loss on bonds held until maturity.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 22, "q": "An investor buys a bond that matures in exactly 20 years. The bond pays a 6% annual coupon, is trading at an 8% YTM, and is priced at 80.3637 per 100 par value. Assuming a constant reinvestment rate of 8%, if the bond is held until maturity which of the following sources most likely contributes the largest portion of the investor's total return?", "opts": ["Coupon payments", "Principal repayment", "Reinvestment income"], "ans": "C", "expl": "Total money returns on most fixed income securities come from three sources:\nProceeds on disposition (price received for secondary market sale or par value at maturity)\nTotal coupon payments received during holding period\nReinvestment income on cash flows received before the end of the holding period\nFor bonds held to maturity, three variables impact their relative contributions: time to maturity, coupon rate, and the interest rate at which coupon\npayments are reinvested.\nPar (principal or face) value is known. At maturity, the investor will receive the full par value, 100. The coupon contribution to total money return\n× ×\nis: 0.06 100 20 = 120 (Choices A and B).\nThe reinvestment income is the future value of the coupons (ie, coupons plus reinvestment income) less the coupon payments. Use time value of\nmoney functions on the calculator to compute reinvestment income:\nFor short- and intermediate-terms bonds, principal will be the largest component of total money return to maturity. As time to maturity lengthens,\nboth the cumulative coupon payments and the amount of reinvestment income increase. For bonds with long enough maturities, the largest\nsource of return depends on bond contract terms and reinvestment rate and must be determined by computing the money amount of each\nsource.\nThings to remember:\nThere are three sources of total money return on coupon bonds held-to-maturity: total coupon payments, reinvestment income on the coupons\nreceived prior to maturity, and the par value. The proportion of return from each source depends on coupon rate, reinvestment rate, and time-to-\nmaturity.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 23, "q": "An analyst has collected information on three bonds, each of which matures in 10 years and uses an annual compounding convention: Which of the bonds most likely has the shortest Macaulay duration? ", "opts": ["Bond A", "Bond B", "Bond C"], "ans": "A", "expl": "Macaulay duration is a function of maturity, coupon, and yield. It is the weighted average time until the coupons and principal are due. Each\npayment is weighted by its present value as a percentage of the bond's full price.\nMacaulay duration is positively related to maturity: the longer the maturity, the longer the average time to a bond's cash flows. Duration is\ninversely related to coupon rate and yield. The higher the coupon, the shorter the average time until receipt of all cash flows. Higher yields\nreduce present values, and that impact increases with time due to compounding over more periods, shortening the weighted average time.\nAn illustration of the Macaulay duration for each bond is shown below. The bonds' cash flows can be envisioned as being stacked on a weightless\nbalance beam whose length equals the time to maturity. The present value weighted average time is where a fulcrum would have to be located so\nthat the balance beam would not tilt left or right. That balance point (location of the fulcrum) is the bonds' Macaulay duration.\nSince all the bonds have the same maturity and are trading at the same yield, the highest coupon bond has the shortest Macaulay duration\n(Choices B and C).\nThings to remember:\nMacaulay duration is the weighted average time until the coupon and principal payments are due. It is positively related to maturity (ie, longer\nmaturity = greater duration) and inversely related to coupon rate and yield (ie, higher coupon or yield = shorter duration).\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 24, "q": "A noncallable bond's approximate duration is closest to its effective duration when:", "opts": ["it has a long time to maturity.", "its benchmark curve is relatively flat.", "it is priced at a significant premium to its par value."], "ans": "B", "expl": "Duration measures a bond's price sensitivity to changes in interest rates. Approximate duration (ie, approximate modified duration)\nmeasures price sensitivity with respect to changes in a bond's YTM. Effective duration measures price sensitivity based on an identical change\nin all rates of a benchmark curve. Effective duration is typically used for callable bonds, but it can also be used for noncallable bonds.\nAlthough the formulas for approximate and effective duration are similar, they often produce different results. For an upward-sloped benchmark\ncurve, changing each yield by the same amount causes the corresponding spot rate to change by more than the benchmark yield. The price\nobtained by discounting the bond's cash flows by the appropriate spot rates is different than the price obtained by changing the YTM, even if the\nYTM and the benchmark curve are shifted by the same amount.\nApproximate duration and effective duration are identical only when the benchmark curve is completely flat, which rarely occurs. Approximate\nduration is closest to effective duration when:\nthe bond's price is close to par,\nthe bond has a short maturity, and/or\nthe benchmark curve is relatively flat.\n(Choice A) When a bond's maturity is shorter, there are fewer cash flows to discount, so the difference in prices from using spot rates versus\nYTM will be less than for a bond with a longer time to maturity. The smaller price differences result in the approximate duration being closer than\nthe effective duration.\n(Choice C) When a bond's price is closer to par, it implies a smaller difference between the YTM and the spot rates constructed from a\nbenchmark curve. The smaller difference indicates it is likely that the curve is flatter, so the effective duration is closer to the approximate duration.\nThings to remember:\nThe formulas for calculating approximate duration and effective duration are similar but often produce different results. The two duration measures\nfor a noncallable bond are likely to be closest when the bond is priced close to par, has a short maturity, and/or the benchmark yield curve is\nrelatively flat.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 25, "q": "Investor X and Investor Y purchase identical bonds with 3 years until maturity, a YTM of 8.88%, an annual coupon of 6%, and a price of 92.7. After purchase and before the first coupon, the YTM for the bonds drops to 7.9% and remains at that level for the life of the bonds. Investor X's time horizon is 2 years, and Investor Y's time horizon is 3 years. Investor X's annual rate of return on investment is most likely:", "opts": ["less than Investor Y's rate of return.", "equal to Investor Y's rate of return.", "greater than Investor Y's rate of return."], "ans": "C", "expl": "A bond investor's rate of return is equal to the bond's YTM if:\nthe issuer does not default,\nthe bond is held until maturity, and\nthe coupons are reinvested at the initial YTM.\nIn this scenario, since the YTM on the identical bonds changes and the investors have different time horizons, the rates of return differ. A bond's\nannual rate of return is its annualized holding period return based on the sum of its reinvested coupons and its sale price:\nA change in YTM affects both the coupon reinvestment rate and the price of the bond prior to maturity. In this scenario, interest rates fall,\nnegatively impacting the rate at which coupons can be reinvested. This disproportionately disadvantages Investor Y, who has a longer holding\nperiod (3 years) and redeems at par; therefore, Investor Y depends more on the coupon reinvestment portion of the return. Investor Y's rate of\nreturn (8.82%) is less than the bond's initial YTM (8.88%).\nInvestor X, who sells the bond before maturity and therefore has a shorter holding period, is more affected by the bond's price than the rate of\ncoupon reinvestment. Since interest rates decrease, the bond's price rises; therefore, Investor X is positively impacted. Investor X's rate of return\n(9.28%) is greater than the bond's initial YTM (8.88%).\nInvestor X's rate of return is about 0.46% (9.28% − 8.82%) greater than Investor Y's rate of return (Choices A and B). The effect of a change\nin interest rates on bond prices and coupon reinvestments is summarized in a table.\nThings to remember:\nA change in YTM affects both the coupon reinvestment rate and the price of the bond prior to maturity. Changes in the coupon reinvestment rate\nimpact long-term investors more, and changes in the bond price impact short-term investors more.\nCalculate and interpret the sources of return from investing in a fixed-rate bond", "qhtml": null}, {"n": 26, "q": "The modified duration of a fixed-rate coupon bond with no embedded options most likely quantifies the:", "opts": ["sensitivity of the bond's price to a change in its YTM.", "weighted average time to receipt of the bond's cash flows.", "expected standard deviation of returns over the life of the bond."], "ans": "A", "expl": "Modified duration quantifies the sensitivity of a bond's price to a change in its yield. Therefore, modified duration can be used to estimate a\nbond's percentage price change using the formula in the exhibit. The calculated percentage price change is only an approximation. Errors in\nestimates of price change arise as a result of the curvilinear relationship between price and yield (green function); duration assumes a linear\nrelationship.\nDuration, the slope of the blue tangent line, measures the sensitivity of price to yield changes at current market values, allowing the use of\nduration as a measure of risk. Duration's primary application is quantifying the sensitivity of bond prices and the value of bond portfolios to interest\nrate changes.\nConsider the consequence for two bonds with different durations. For equal declines in their YTM, the bond with the longer duration would have a\nlarger percentage price increase. If their yields rose by the same number of basis points, the longer-duration bond would have a larger\npercentage price decrease.\n(Choice B) Macaulay duration is usually interpreted as a measure of a bond's life. It is the present value–weighted average time until the receipt\nof a bond's remaining contractual cash flows.\n(Choice C) Duration is sometimes mistakenly believed to quantify bond price volatility. Volatility quantifies dispersion of outcomes (eg, returns).\nDuration quantifies sensitivity, not volatility.\nThings to remember:\nModified duration quantifies the sensitivity of a bond's price to a change in its YTM. The longer a bond's duration, the more sensitive its price to\nchanges in the YTM, and vice versa.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}, {"n": 27, "q": "A 20-year 8% semiannual pay coupon bond is trading at a 7% yield-to-maturity. It has an annual Macaulay duration of 10.76. The bond's annual modified duration is closest to:", "opts": ["10.06", "10.35", "10.40"], "ans": "C", "expl": "A bond's modified duration is calculated by modifying the Macaulay duration, specifically by dividing the Macaulay duration by one plus the\nYTM expressed as a periodic rate. Both Macaulay and modified durations measure aspects of interest rate risk.\nMacaulay duration is the weighted average time until the receipt of coupon and principal payments. This measure allows investors to assess their\nrelative exposure to reinvestment risk versus price risk. Modified duration measures the sensitivity of bond prices to changes in interest rates. It is\nwidely used to assess the interest rate risk of bonds and is employed in quantifying and managing the risk of bond portfolios relative to their\nbenchmark indexes.\n(Choice A) 10.06 results from dividing the Macaulay duration by one plus the YTM. The proper calculation requires using the YTM, but it needs\nto be adjusted for the compounding frequency so that it is expressed as a periodic discount rate.\n(Choice B) 10.35 results from dividing the Macaulay duration by one plus the periodic coupon rate rather than one plus the periodic discount rate.\nThings to remember:\nModified duration is calculated by dividing the Macaulay duration by one plus the YTM expressed as a periodic rate. Modified duration measures\nthe sensitivity of bond prices to changes in interest rates, which enables it to be used to measure the interest rate risk of bonds and bond\nportfolios.\nDefine, calculate, and interpret Macaulay duration.", "qhtml": null}];
+const CFG = {"title": "Wiley · Interest Rate Risk and Return", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Fixed Income · 27 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

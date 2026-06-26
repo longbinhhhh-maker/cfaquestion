@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "The following price-weighted index data is for one year: Asset Beginning Price (€) Ending Price (€) Income (€) X 20 15 1 Y 40 50 3 Z 60 62 4 The total return of the index is closest to:", "opts": ["5.8%", "7.5%", "12.5%"], "ans": "C", "expl": "Total return of an index is the weighted average of the total returns of each asset in the index. The total return of each asset is the change in\noverall investment value as a percentage of beginning value, accounting for both price changes and income. The income component of total\nreturn may be dividends, interest, or another form of distribution.\nIn this scenario, the index is price-weighted. In a price-weighted index, the amount of each asset in the index is determined in proportion to\nits price. Thus, the initial percentages of each asset are:\nThe total return of the index is calculated using the initial weights of the assets as follows:\nCalculate and analyze the value and return of an index given its weighting method\n2.A fundamentally weighted index is constructed using the following data, with earnings yield as the weighting factor:\nBeginning Earnings per\nAsset\nprice (€) share (€)\nX 100.00 3.00\nY 48.00 4.80\nZ 80.00 4.00\nIf the initial value of the index is €1,000, the value of Asset Z in the index is closest to:\n\nA. €277\nB. €333\nC. €351\nExplanation\nFundamental weighting uses some fundamental measure of a company, such as earnings, to weight the assets in the index. Other usable\nmeasures include dividends, revenues, or book value.\nSince fundamental weighting uses these types of measures instead of market cap or share price, it tends to favor assets normally associated with\nvalue investing. To find the weight of an asset, divide the fundamental measure of the asset by the sum of the measures of every asset in the\nindex. In this example, the fundamental value is earnings yield, which is found by dividing earnings by share price.\nUse the price at the beginning of the period and the earnings per share to find the fundamental weight of Asset Z. Then multiply the weight of the\nasset by the initial value of the index to find the value of Asset Z in the index:\n(Choice B) €333 is the value of Asset Z in the index using equal weighting: €1,000 ÷ 3 = €333.\n(Choice C) €351 is the value in the index of Asset Z based on its price weight. The price weight of an asset is found by dividing the price of the\nasset by the sum of all the asset prices in the index.\nThings to remember:\nTo find the fundamental weight of an asset, divide the fundamental measure of the asset by the sum of the fundamental measures of all the assets\nin the index. Earnings yield is calculated as earnings per share divided by share price.\nCalculate and analyze the value and return of an index given its weighting method", "qhtml": null}, {"n": 2, "q": "A fundamentally weighted index is constructed using the following data, with earnings yield as the weighting factor: Beginning Earnings per Asset price (€) share (€) X 100.00 3.00 Y 48.00 4.80 Z 80.00 4.00 If the initial value of the index is €1,000, the value of Asset Z in the index is closest to: ", "opts": ["€277", "€333", "€351"], "ans": "A", "expl": "Fundamental weighting uses some fundamental measure of a company, such as earnings, to weight the assets in the index. Other usable\nmeasures include dividends, revenues, or book value.\nSince fundamental weighting uses these types of measures instead of market cap or share price, it tends to favor assets normally associated with\nvalue investing. To find the weight of an asset, divide the fundamental measure of the asset by the sum of the measures of every asset in the\nindex. In this example, the fundamental value is earnings yield, which is found by dividing earnings by share price.\nUse the price at the beginning of the period and the earnings per share to find the fundamental weight of Asset Z. Then multiply the weight of the\nasset by the initial value of the index to find the value of Asset Z in the index:\n(Choice B) €333 is the value of Asset Z in the index using equal weighting: €1,000 ÷ 3 = €333.\n(Choice C) €351 is the value in the index of Asset Z based on its price weight. The price weight of an asset is found by dividing the price of the\nasset by the sum of all the asset prices in the index.\nThings to remember:\nTo find the fundamental weight of an asset, divide the fundamental measure of the asset by the sum of the fundamental measures of all the assets\nin the index. Earnings yield is calculated as earnings per share divided by share price.\nCalculate and analyze the value and return of an index given its weighting method", "qhtml": null}, {"n": 3, "q": "An analyst compiles the following data about a market-capitalization-weighted index with a beginning index value of €1,000: Beginning Ending Dividends Outstanding Asset price (€) price (€) per share (€) shares X 100 112 3 100 Y 48 60 1 200 Z 80 92 2 300 The value of Asset X in the index at the beginning of the period is closest to: ", "opts": ["€230", "€333", "€439"], "ans": "A", "expl": "The weight of an asset in a market-capitalization-weighted (ie, market-cap-weighted) index is the market cap of the individual asset divided by\nthe sum of the market caps of all the assets in the index. The market cap of an asset is the product of the price of the asset and the number of\nshares outstanding. Dividends and end of period prices are not used in the calculation of an asset's weight in a market-cap-weighted index at the\nbeginning of the period.\nSubstituting the above values into the formula:\nThe value of Asset X in the index is the product of its weight in the index and the index value:\n(Choice B) €333 is the value of Asset X in an equal-weighted index.\n(Choice C) €439 is the value of Asset X in a price-weighted index: €100 ÷ (€100 + €48 + €80) × €1,000 = €439.\nThings to remember:\nIn a market-capitalization-weighted index, weight is apportioned to each asset based on market capitalization. Market cap is the product of shares\noutstanding and share price. The value of an asset in the index is the product of its weight in the index and the index value.\nCalculate and analyze the value and return of an index given its weighting method", "qhtml": null}, {"n": 4, "q": "Which of the following is most likely characteristic of fixed income index construction?", "opts": ["Fixed income indexes are more costly and difficult to replicate than equity indexes.", "A small number of securities can precisely replicate a given fixed income universe.", "Due to the size and liquidity of the bond market, there is ample price transparency."], "ans": "A", "expl": "Each bond issue has unique characteristics (eg, coupon, maturity, call features), resulting in thousands more individual securities than the equity\nmarkets. For example, the Bloomberg Barclays U.S. Aggregate Bond Index includes roughly 8,000 US-issued securities, combining various bond\ntypes and credit ratings that range from Treasury and agency debt to mortgage- and asset-backed securities and corporate bonds.\nThe lack of daily transactions and the general illiquidity for many of these bonds create a burdensome and expensive pricing process compared\nwith exchange-traded equities. These factors combine to make fixed income index construction more costly and difficult for an investor to replicate\nthan equity indexes.\n(Choice B) Due to the vast variety and characteristics of bonds outstanding, it is difficult for an index to precisely replicate the composition of a\nbond universe with a small sample of securities.\n(Choice C) Although the bond markets are much larger than equity markets and there are some issues that are very liquid and actively traded,\nthe vast majority of bond pricing occurs through dealer quotes or a matrix pricing process, making price transparency more burdensome and less\nclear.\nThings to remember:\nThe key challenges in fixed income index construction are the vast number of securities outstanding, limited availability of pricing data, and bond\nilliquidity. These factors combine to make fixed income index construction more costly and difficult for an investor to replicate than equity indexes.\nDescribe types of fixed-income indexes", "qhtml": null}, {"n": 5, "q": "An analyst gathers the following data about a value-weighted index: Selected Data (AUD) Asset Beginning Price Ending Price Dividend Shares Outstanding A 13.50 11.50 0.30 700,000 B 56.50 55.00 0.25 450,000 C 67.00 69.00 0.00 400,000 The price return of the index is closest to: ", "opts": ["−2.1%", "−1.5%", "−1.1%"], "ans": "A", "expl": "The price return of an index is the weighted average return of the asset prices of the index's constituents. An asset's price return is the\npercent change in its price over a given period. Unlike an index or asset's total return, the price return excludes any dividend or interest income\nfrom the assets since investors anticipate such income and adjust asset prices accordingly.\nTo find the price return of an index, multiply each asset's price return by its weighting in the index. The weighting depends on the type of index.\nFor a value-weighted (market cap–weighted) index, each asset's weight in the index is its beginning market capitalization as a percentage of the\ntotal beginning market cap in the index. This can be calculated as follows:\nWith the asset's weightings calculated, the index's price return can be calculated from the individual asset's price returns as follows:\nTherefore, the price return of the index is −2.1%.\n(Choice B) −1.5% results from weighting the assets by their prices, not their market caps.\n(Choice C) −1.1% results from including the asset's dividend income in the return calculation. Price returns exclude income from dividends.\nThings to remember:\nThe price return of an index is the weighted average return of the prices of the index's constituent assets. An asset's price return is the percent\nchange in its price over a certain period.\nCalculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 6, "q": "An analyst has gathered the following information about a market-capitalization-weighted index: The price return of the index is closest to:", "opts": ["33%", "35%", "55%"], "ans": "B", "expl": "The weight of an asset in a market-capitalization-weighted (ie, market-cap-weighted) index is the market cap of the individual asset divided by\nthe sum of the market caps of all the assets in the index. The market cap of an asset is the product of the price of the asset and its number of\nshares outstanding.\nThe price return of an asset or index is found by subtracting the beginning price from the ending price, then dividing the quantity by the\nbeginning price. Dividends are not used in the calculation of price return.\nTo find the price return of the index, first find the market-cap weight of each asset in the index. Next, find the price return of each asset. Multiply\nthe weight of each asset by its price return. Finally, find the sum of the products of the weight of each asset and its price return. This is the price\nreturn of the index.\nThings to remember:\nThe market-cap weight of an asset in an index is the market cap of the individual asset divided by the sum of the market caps of all the index\nassets. The price return of an asset is found by subtracting the beginning price from the ending price and dividing that quantity by the beginning\nprice.\nCalculate and analyze the value and return of an index given its weighting method LOS\n7. Of the following, one disadvantage of price weighting a security index is that price weighting:\nA. leads to indexes with an inherent value tilt.\n\nB. does not reflect securities' market capitalization.\nC. is complex and difficult to apply to index creation.\nExplanation\nIn a price-weighted index, the weight of each constituent security is its price as a proportion of the sum of all the securities' prices in the index.\nOne advantage of this weighting method is the simplicity of its construction, since it requires only the price of each security (Choice C).\nOne disadvantage of a price-weighted index is that each company's weight may not correlate to the proportion of its total market value. This can\nresult in index returns that do not reflect the market since small companies with a high stock price but low market capitalization can have an\noversized impact on index returns compared to their impact in the market.\nIn addition, if a company splits its stock, the weighting of every security in the index must be revalued, although stock splits do not affect a\ncompany's total market value.\n(Choice A) Price-weighted indexes have no inherent value tilt. Value tilt is an issue for fundamentally weighted indexes since their weights are\nbased on fundamental factors (eg, sales, earnings). Compared to growth stocks, value stocks have higher ratios of such factors relative to their\nmarket values.\nThings to remember:\nOne disadvantage of a price-weighted index is that each company's weight may not correlate to the proportion of its total market value. In\naddition, if a company splits its stock, the weighting of every security in the index must be revalued, although stock splits do not affect a company's\ntotal market value.\nCompare the different weighting methods used in index construction", "qhtml": null}, {"n": 7, "q": "Of the following, one disadvantage of price weighting a security index is that price weighting:", "opts": ["leads to indexes with an inherent value tilt.", "does not reflect securities' market capitalization.", "is complex and difficult to apply to index creation."], "ans": "B", "expl": "In a price-weighted index, the weight of each constituent security is its price as a proportion of the sum of all the securities' prices in the index.\nOne advantage of this weighting method is the simplicity of its construction, since it requires only the price of each security (Choice C).\nOne disadvantage of a price-weighted index is that each company's weight may not correlate to the proportion of its total market value. This can\nresult in index returns that do not reflect the market since small companies with a high stock price but low market capitalization can have an\noversized impact on index returns compared to their impact in the market.\nIn addition, if a company splits its stock, the weighting of every security in the index must be revalued, although stock splits do not affect a\ncompany's total market value.\n(Choice A) Price-weighted indexes have no inherent value tilt. Value tilt is an issue for fundamentally weighted indexes since their weights are\nbased on fundamental factors (eg, sales, earnings). Compared to growth stocks, value stocks have higher ratios of such factors relative to their\nmarket values.\nThings to remember:\nOne disadvantage of a price-weighted index is that each company's weight may not correlate to the proportion of its total market value. In\naddition, if a company splits its stock, the weighting of every security in the index must be revalued, although stock splits do not affect a company's\ntotal market value.\nCompare the different weighting methods used in index construction", "qhtml": null}, {"n": 8, "q": "Reconstituting an index most likely causes the highest turnover of securities in a(n):", "opts": ["price-weighted index.", "equal-weighted index.", "market-cap-weighted index."], "ans": "C", "expl": "A securities index contains a variety of securities based on common criteria, such as asset class (eg, equity, fixed income), sector, or geographical\nlocation. However, securities may be added or deleted from an index, a process known as reconstitution. Reasons for reconstitution include:\nA security no longer exists due to merger or bankruptcy.\nThe index changes the criteria for inclusion, so certain securities no longer qualify (or newly qualify).\nA security no longer meets the criteria for inclusion (or newly meets it).\nThe weight of each security in a market-cap-weighted index is a percentage of the index's total market cap. Adding new securities or deleting\nexisting ones changes the total market cap, so each security has a new weight in the reconstituted index. After the index is reconstituted, the\nsecurities are rebalanced to achieve the correct weight.\nSince reconstitution causes turnover both for the added/deleted securities as well as the securities that remain after the reconstitution, market-cap\nweighted indexes tend to have the highest turnover. An equal-weighted index can experience high turnover, but usually securities are not added\nor deleted; instead they are bought or sold to maintain equal weighting (Choice B). A price-weighted index is not rebalanced since the weight of\neach security is determined by its price. A price-weighted index is only altered through reconstitution, so its turnover is less than that of a market-\ncap weighted index (Choice A).\nThings to remember:\nReconstitution alters an index by adding or deleting securities from it. Reconstitution can have the greatest impact on turnover for securities in\nmarket-cap-weighted indexes, compared with those of equal- and price-weighted indexes, since all securities in the index must be bought and sold\nto maintain each security's proper weight in the index.\nDescribe rebalancing and reconstitution of an index", "qhtml": null}, {"n": 9, "q": "An analyst has gathered the following data about the stocks included in an equal-weighted index with a beginning value of €1,200: Beginning Ending Dividends per Asset price (€) price (€) share (€) X 80 100 1 Y 40 44 2 Z 20 23 1 The price return for the equal-weighted index during the period is closest to: ", "opts": ["16.7%", "19.3%", "20.4%"], "ans": "A", "expl": "An equal-weighted index assigns the same weight to each asset. Since the beginning value of the index is €1,200 and there are three assets,\neach asset is weighted at 1/3 of the total index value: €1,200 ÷ 3 = €400.\nNext, use the asset prices to find the share amounts that equal €400. This is €400 divided by each share price; it is the number of shares that will\ngive each company equal weight in the index at the beginning of the period.\nFind the ending index value by multiplying the ending value of each asset by each asset's number of shares. Finally, calculate the price return of\nthe index by subtracting the beginning price of the index from the ending price, then dividing by the beginning price:\n(Choice B) 19.3% is the result of calculating the price return of the index as if it were price-weighted. However, this question asks for the price\nreturn of the equal-weighted index. If this index were price-weighted, then the initial number of shares of each asset would be the number needed\nto make each asset's weight the ratio of its price to the total prices of the assets in the index. For example, the price weighting of Asset X would\nbe 80/(80 + 40 + 20) = 0.5714, instead of 1/3, the equal weighting.\n(Choice C) 20.4% is the total return, not the price return, of the equal-weighted index. The dividends given in the table above are included in the\ncalculation of the total return of an index but not in its price return calculation.\nThings to remember:\nAn equal-weighted index allocates an equal amount of value to each asset. The price return of any asset is calculated by first subtracting the\nbeginning price from the ending price, then dividing the result by the beginning price. Total return also includes dividends.\nCalculate and analyze the value and return of an index given its weighting method", "qhtml": null}, {"n": 10, "q": "An analyst gathers the following data about an equal-weighted index: Beginning Ending Asset (€) Dividends price price X 10.00 11.00 0.50 Y 8.00 7.00 0.30 Z 5.00 7.00 0.20 The price return of the index is closest to:", "opts": ["7.8%", "12.5%", "16.8%"], "ans": "B", "expl": "Price return of an index is equal to the weighted average of the price returns of each asset in the index. The price return of each asset is the\nchange in price as a percentage of the beginning value; it excludes return from dividends, interest, and other distributions. A total return index\nincludes such income from the asset. To find the price return of any asset, first subtract the beginning price for a period from the ending price of\nthat period. Divide the result by the asset's beginning price. To find the price return of an index, take the weighted average of the price returns of\nthe individual assets in the index. In an equal-weighted index of three securities, the weight of each security is 1/3.\nFind the price return of the index:\nThe S&P 500 is a well-known price index of large capitalization US equities. Changes in its price level are reflective of changes in its component\nstock prices. Its counterpart is the S&P 500 Total Return Index (SPXT). The price level of SPXT indicates both changes in stock prices\ncomprising the index and reinvested income from dividends.\n(Choice A) 7.8% results from incorrectly dividing by P instead of P to find the price return of each asset before solving for the price\ni END i BEGIN\nreturn of the index.\n(Choice C) 16.8% results from incorrectly including income and thus finding the total return of the index. In finding price return, dividends are\nirrelevant.\nThings to remember:\nThe price return of any asset is found by subtracting a period's beginning price from its ending price and dividing that quantity by its beginning\nprice. The price return of an index is the weighted average of the price returns of the individual assets in the index. Dividends, interest, and other\nincome are excluded from price return.\nCalculate and interpret the value price return and total return of an index LOS\n11.A given equity index consists of stocks of consumer durable companies. The companies represented in this index are from different countries\nand include large-, mid-, and small-cap companies. This type of index is most appropriately categorized as a:\nA. style index.\n B. sector index.\nC. broad market index.\nExplanation\nCategories of equity indexes\nMost securities of an entire equity Russell 3000, Wilshire 5000\nBroad market\nmarket (both cover US equities)\nBlends indexes from different countries MSCI All Country World Index\nMulti-market\nProxy for regional or global investing and MSCI EAFE Index\nBased on same sector (eg, finance,\nhealth care)\nCan be different sizes (eg, large cap,\nSector European energy index\nsmall cap) and different styles (ie, value\nvs. growth)\nCan be national, regional, or global\nCan be different sectors\nBased on same size (eg, large cap) or\nStyle Asian large-cap index\nstyle (ie, value vs. growth)\nCan be national, regional, or global\nAn equity index is a collection of stocks based on common criteria such as sector or geographical location. It is intended to indicate the\nperformance of the wider market from which the index is constructed.\nA sector index is composed of companies that operate or compete in the same general type of business, regardless of the companies' size or\ngeographical location. For instance, a large-cap pharmaceutical company in Japan and a small-cap medical supply company in France could both\nbe included in a health care sector index. By contrast, a style index includes companies across sectors with common attributes such as size or\nclassification as a growth or value company. A mid-cap health care company and a mid-cap electricity utility could both be part of the same style\nindex, but not the same sector index (Choice A).\n(Choice C) A broad market index typically includes companies of different sizes and/or sectors. The common element is that the included\ncompanies are from a specific country or region.\nThings to remember:\nAn equity index groups stocks based on common criteria. A sector index consists of companies that operate or compete in the same business.\nThe companies included in a sector index can be different sizes (eg, large-cap vs. small-cap), styles, and/or from different countries or regions.\nDescribe types of equity indexes", "qhtml": null}, {"n": 11, "q": "A given equity index consists of stocks of consumer durable companies. The companies represented in this index are from different countries and include large-, mid-, and small-cap companies. This type of index is most appropriately categorized as a:", "opts": ["style index.", "sector index.", "broad market index."], "ans": "B", "expl": "Categories of equity indexes\nMost securities of an entire equity Russell 3000, Wilshire 5000\nBroad market\nmarket (both cover US equities)\nBlends indexes from different countries MSCI All Country World Index\nMulti-market\nProxy for regional or global investing and MSCI EAFE Index\nBased on same sector (eg, finance,\nhealth care)\nCan be different sizes (eg, large cap,\nSector European energy index\nsmall cap) and different styles (ie, value\nvs. growth)\nCan be national, regional, or global\nCan be different sectors\nBased on same size (eg, large cap) or\nStyle Asian large-cap index\nstyle (ie, value vs. growth)\nCan be national, regional, or global\nAn equity index is a collection of stocks based on common criteria such as sector or geographical location. It is intended to indicate the\nperformance of the wider market from which the index is constructed.\nA sector index is composed of companies that operate or compete in the same general type of business, regardless of the companies' size or\ngeographical location. For instance, a large-cap pharmaceutical company in Japan and a small-cap medical supply company in France could both\nbe included in a health care sector index. By contrast, a style index includes companies across sectors with common attributes such as size or\nclassification as a growth or value company. A mid-cap health care company and a mid-cap electricity utility could both be part of the same style\nindex, but not the same sector index (Choice A).\n(Choice C) A broad market index typically includes companies of different sizes and/or sectors. The common element is that the included\ncompanies are from a specific country or region.\nThings to remember:\nAn equity index groups stocks based on common criteria. A sector index consists of companies that operate or compete in the same business.\nThe companies included in a sector index can be different sizes (eg, large-cap vs. small-cap), styles, and/or from different countries or regions.\nDescribe types of equity indexes", "qhtml": null}, {"n": 12, "q": "Which of the following best describes an aggregate fixed-income index? The index includes:", "opts": ["all bonds outstanding regardless of type, maturity, or credit quality.", "only exchange-traded bonds regardless of type, maturity, or credit quality.", "a representative sample of bonds regardless of type, maturity, or credit quality."], "ans": "C", "expl": "An aggregate index combines securities with disparate characteristics. The index includes a representative market sample of bonds that\nhave a range of geographic focus, type, maturities, and credit ratings. Aggregate indexes can be further refined to create more specialized\nindexes that focus on a subset of the market, such as by type, maturity, or credit quality.\nThe Bloomberg Barclays US Aggregate Bond Index is a widely followed aggregate index that includes roughly 8,000 U.S. issued securities. It\ncombines various bond types and credit ratings that range from Treasury and agency debt to mortgage- and asset-backed securities and\ncorporate bonds.\n(Choice A) Index providers have minimum criteria for determining inclusion in an index and exclude issues that don't meet these requirements\n(eg, minimum issue size).\n(Choice B) The vast majority of bonds trade over the counter (OTC). Including only exchange-traded bonds would severely limit the ability of\nindex providers to accurately represent the selected fixed income universe.\nThings to remember:\nAn aggregate index combines various bond types that range from Treasury and agency debt to mortgage- and asset-backed securities and\ncorporate bonds. The index includes a representative market sample of bonds that have a range of geographic focus, type, maturities, and credit\nratings.\nDescribe types of fixed-income indexes", "qhtml": null}, {"n": 13, "q": "The following market-capitalization-weighted index data is for one year: Beginning Ending Dividends Shares Asset Price (£) Price (£) Per Share (£) Outstanding X 10 14 1 6,000 Y 18 20 2 7,500 Z 22 21 1 10,000 The index's total return for the year is closest to:", "opts": ["hedge funds.", "commodities.", "real estate investment trusts."], "ans": "A", "expl": "Analysts use alternative investment indexes to understand risk and return characteristics based on historical performance. If the assets in the\nindex do not include those that were originally in the index but which performed poorly or failed, the index will be inaccurate and upwardly biased.\nTherefore, the index will report better performance than the assets it represents. This is known as survivorship bias.\nSince hedge funds are only required to report performance to their investors and no one else (ie, they are not required to report to hedge fund\nindexes), funds that perform poorly or fail may not be reflected in index performance, thereby leading to survivorship bias in the index. An\nadditional problem stemming from lax reporting requirements is that differences in the composition of hedge fund indexes precludes their use as\nrepresentatives of the hedge fund asset class.\n(Choices B and C) Commodity indexes are based on publicly traded commodity futures contracts. Real estate investment trust (REIT) indexes\nare made up of publicly traded REIT shares. Since both instruments have reporting requirements, survivorship bias is less likely.\nThings to remember:\nSince hedge funds are required to report only performance to their investors, funds that perform poorly or fail may not report results to the index,\nthereby leading to survivorship bias.\nDescribe indexes representing alternative investments", "qhtml": null}, {"n": 14, "q": "Survivorship bias is most likely a concern when analyzing indexes of:", "opts": ["hedge funds.", "commodities.", "real estate investment trusts."], "ans": "A", "expl": "Analysts use alternative investment indexes to understand risk and return characteristics based on historical performance. If the assets in the\nindex do not include those that were originally in the index but which performed poorly or failed, the index will be inaccurate and upwardly biased.\nTherefore, the index will report better performance than the assets it represents. This is known as survivorship bias.\nSince hedge funds are only required to report performance to their investors and no one else (ie, they are not required to report to hedge fund\nindexes), funds that perform poorly or fail may not be reflected in index performance, thereby leading to survivorship bias in the index. An\nadditional problem stemming from lax reporting requirements is that differences in the composition of hedge fund indexes precludes their use as\nrepresentatives of the hedge fund asset class.\n(Choices B and C) Commodity indexes are based on publicly traded commodity futures contracts. Real estate investment trust (REIT) indexes\nare made up of publicly traded REIT shares. Since both instruments have reporting requirements, survivorship bias is less likely.\nThings to remember:\nSince hedge funds are required to report only performance to their investors, funds that perform poorly or fail may not report results to the index,\nthereby leading to survivorship bias.\nDescribe indexes representing alternative investments", "qhtml": null}, {"n": 15, "q": "An equal-weighted index is constructed using the following three assets: Beginning Ending Asset price (€) price (€) X 120 112 Y 80 86 Z 40 50 The initial value of the index is €1,200. The number of shares of Asset Z initially included in the index is closest to:", "opts": ["5 shares.", "8 shares.", "10 shares."], "ans": "C", "expl": "In an equal-weighted index, each asset is assigned an equal weight of 1/N, at the time of construction and periodically thereafter. N is the\nnumber of assets in the index. In this example, the weight of each asset is 1/3. Since the initial value of the index is €1,200, the value allocated to\neach asset is:\nDivide the value allocated to Asset Z by the price of Asset Z to find the number of shares of the asset in the index:\nAs asset prices change, an equal-weighted index becomes no longer equally weighted. Therefore, a disadvantage of this weighting method is the\nneed for periodic rebalancing. Also, companies with high stock prices may not be given appropriate importance within the index.\n(Choice A) Five shares is the result of finding the number of shares of Asset Z in the index using price weighting instead of equal weighting: €40 ÷\n(€120 + €80 + €40) = 0.1666 × €1,200 = €200 / 40 = 5 shares.\n(Choice B) Eight shares is the result of incorrectly using the ending price for the asset during the time period to determine the number of shares:\n€400 ÷ 50 = 8 shares.\nThings to remember:\nIn an equal weighted index, each asset is assigned an equal weight of 1/N, where N is the number of assets in the index.\nCalculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 16, "q": "A global index includes both growth and value technology stocks, with constituent companies that range in size from small to large cap. This index is best described as a:", "opts": ["style index.", "sector index.", "multimarket index."], "ans": "B", "expl": "Categories of equity indexes\nMost securities of an entire equity Russell 3000, Wilshire 5000\nBroad market\nmarket (both cover US equities)\nBlends indexes from different countries MSCI All Country World Index\nMulti-market\nProxy for regional or global investing and MSCI EAFE Index\nBased on same sector (eg, finance,\nhealth care)\nCan be different sizes (eg, large cap,\nSector European energy index\nsmall cap) and different styles (ie, value\nvs. growth)\nCan be national, regional, or global\nCan be different sectors\nBased on same size (eg, large cap) or\nStyle Asian large-cap index\nstyle (ie, value vs. growth)\nCan be national, regional, or global\nSector indexes are used to track the investment performance of a given sector and may include stocks from a single industry (eg,\nsemiconductors) or a group of related industries (eg, technology: software, hardware, internet). Consequently, sector indexes include all\ncompanies or a representative sample of companies in the sector without regard to size or style (eg, growth, value). Sector funds may be\nstructured for a single country, a geographic region, or on a global basis.\nThe relative performance of different sectors of the economy differs during the course of the business cycle. Investment products that track sector\nindexes allow investors to overweight or underweight various sectors to outperform market averages.\n(Choice A) Style indexes consist of stocks of a single investment style (eg, growth, value), of similar size (eg, large cap, small cap), or a\ncombination of both factors (eg, small-cap growth). Style indexes can be regional or global.\n(Choice C) Multimarket indexes are composites that combine indexes from different countries (eg, Argentina, Brazil) or regions (eg, Europe, the\nMiddle East, Africa [EMEA]). Multimarket indexes may represent specific geographic zones, stages of economic development (eg, emerging\nmarket), or global financial markets.\nThings to remember:\nSector indexes include stocks from a single industry or a group of related industries. Since they are used to track the investment performance of a\ngiven sector, they are constructed without regard to company size or style. Sector funds may be structured for a country, a geographic region, or\non a global basis.\nDescribe types of equity indexes", "qhtml": null}, {"n": 17, "q": "The following securities make up a price-weighted index: Beginning Price Security price (€) return X 101 12% Y 62 20% Z 85 15% If the divisor is 2.5, the index value at the beginning of the period is closest to:", "opts": ["€82.67", "€85.76", "€99.20"], "ans": "C", "expl": "Price weighting is one of the simplest methods of index weighting. The value of a price-weighted index is found by dividing the sum of the\nindividual securities' prices by the divisor. In a price-weighted index, higher priced securities have a greater impact on the index's value than\nlower priced securities. Price return is not needed in the calculation of the value of a price weighted index; but it is necessary for the price return\nof an index. Only the price of each security and the divisor are needed.\nSubstitute values for the price of each security and the divisor:\nBecause the divisor changes over time, it is important to remember that the divisor is not usually the same as the number of securities in the\nindex. Corporate actions like stock splits change the prices of the securities in the index, and the divisor must be adjusted when such actions\noccur to keep the value of the index consistent.\n(Choice A) €82.67 is the result of incorrectly taking the average of the three securities' prices. This would be the result under an equal-weighted\nindex, not a price-weighted index.\n(Choice B) €85.76 is the result of incorrectly finding the sum of the products of each security's price and weight.\nThings to remember:\nThe value of a price weighted index is the sum of the prices of the index divided by the divisor. The value of the divisor is not normally the same\nas the number of securities in the index after inception.\nCalculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 18, "q": "In managing a security market index, reconstitution most likely refers to changing:", "opts": ["the index's weighting method.", "the securities that make up the index.", "the weights of the securities in the index."], "ans": "B", "expl": "The reconstitution of an index is performed periodically by the index provider as part of the index's rebalancing cycle. The index provider reviews\nthe securities in the index, reapplies the criteria for inclusion in the index, decides which securities no longer meet the requirements, and replaces\nsecurities as appropriate.\nAfter reconstitution, the weighting method of the index is reapplied to determine the weight of each security in the index (ie, the index is\nrebalanced). Reconstitution and rebalancing typically take place on a quarterly basis.\n(Choice A) An index's weighting method is normally established during index construction and is not changed subsequently.\n(Choice C) Rebalancing, not reconstitution, is the process of changing the weights of the securities in the index.\nThings to remember:\nReconstitution means the index provider reviews the index securities, reapplies the criteria for inclusion in the index, and replaces securities as\nappropriate. Rebalancing means adjusting the weights of the securities in the index according to the index's weighting method.\nDescribe the choices and issues in index construction and management", "qhtml": null}, {"n": 19, "q": "Three equity indexes hold the same 30 securities, but they are weighted differently in each index. Over the past year, the total returns of the indexes were: Index Weighting Return % Fundamental 6 Equal 10 Market capitalization 2 The best explanation for this performance difference is:", "opts": ["large-cap and value outperformance.", "small-cap and value outperformance.", "large-cap and momentum outperformance."], "ans": "B", "expl": "Equity index weighting styles\nType of index Key performance drivers\nMarket capitalization Large-cap, momentum\nEqual Small-cap, value\nFundamental Value\nPrice High-priced stocks\nIndex weighting methodology can have a substantial impact on the underlying performance of an index. Understanding the underlying biases\npresent in each approach helps analyze index performance more effectively. Three key index weighting methods are:\nEqual: Equal weight is assigned to each asset.\nMarket capitalization: Weight is based on the market value of the asset as a percentage of the total market value of assets in the index.\nFundamental: Weight is based on a company metric (eg, revenues, book value, number of employees relative to the sum of the total for all\nconstituents, earnings yields ) to determine the weight in the index.\nCompared to a market capitalization approach, fundamentally and equally weighted indexes emphasize assets normally associated with a value\ntilt. In equally weighted indexes, small-capitalization stocks have an outsized effect on performance. In this scenario, the equal-weighted index\nwas the clear outperformer, indicating small-cap and value outperformance.\n(Choices A and C) Market capitalization-weighted index performance is heavily influenced by large-capitalization stocks and the momentum\neffect. Capitalization-weighted indexes are based on market value, so high-momentum stocks have increasing weight and performance impact.\nThings to remember:\nCompared to a market capitalization approach, equally weighted indexes give emphasis to small-capitalization stocks and assets normally\nassociated with a value tilt.\nCalculate and analyze the value and return of an index given its weighting method", "qhtml": null}, {"n": 20, "q": "Once a security market index has been established, rebalancing is most likely a concern for a(n):", "opts": ["price-weighted index.", "equal-weighted index.", "market-cap-weighted index."], "ans": "B", "expl": "In an equal-weighted index, the weight assigned to each asset at index construction is 1 / N, with N being the number of securities in the index.\nFor example, if an index contains four assets, it includes enough shares of each asset to equal 1/4 of the value of the index. Since price\nmovements cause the weights of the securities in an index to deviate from an equal weighting over time, the index must be rebalanced\nperiodically. Therefore, rebalancing is of greatest concern for an equal-weighted index.\n(Choice A) Since a price-weighted index is weighted based on each asset's price, its weighting changes proportionately when an asset's price\nchanges. Therefore, a price-weighted index is not rebalanced.\n(Choice C) In a market-capitalization-weighted index, the market capitalization changes daily based on the assets' prices; therefore, rebalancing\ndue to price changes is not needed. However, corporate actions such as liquidations, mergers, and acquisitions require rebalancing to maintain\nthe continuity of the index's price.\nThings to remember:\nSince price movements cause the weights of the assets in an index to deviate from an equal weighting over time, rebalancing is of greatest\nconcern for an equal-weighted index. Rebalancing is of less concern for price-weighted and market-cap-weighted indexes.\nDescribe the choices and issues in index construction and management", "qhtml": null}, {"n": 21, "q": "In comparison to equity indexes, fixed-income indexes are most likely harder to construct and replicate since fixed-income securities:", "opts": ["are less liquid than equity securities.", "need to be tracked with futures contracts.", "do not accurately track styles and sectors."], "ans": "A", "expl": "Challenges in fixed-income index construction\nVast number of bonds outstanding\nLack of market-derived pricing information\nGeneral illiquidity of many bonds\nEach bond issue, even from the same issuer, will have different characteristics (eg, maturity, seniority), resulting in thousands more bond\nsecurities outstanding than equity securities. For example, AT&T has one type of common stock and three series of preferred stock, but about 200\nbonds outstanding. The volume of bonds outstanding leads to each specific issue trading less frequently, reducing bond liquidity.\nThe absence of a central secondary market (eg, the New York Stock Exchange) also contributes to illiquidity of bonds compared to equity\ninvestments, since investors will often have to trade with dealers instead of trading directly with an exchange.\nThis illiquidity can easily become an issue for fixed-income index construction and replication, given the larger number of securities needed to\naccurately track the represented market. Illiquidity can also make it difficult and expensive to regularly update the price of bonds in an index since\ncurrent pricing may need to be ascertained from dealers or estimated from the prices of similar securities. Equity securities are more liquid and\nequity markets are typically more transparent, making index construction and replication easier and less costly.\n(Choice B) It is possible to price and track fixed-income securities for use in an index; futures contracts are not needed. Index creation with\nfutures contracts is a characteristic of commodity indexes.\n(Choice C) Accurately tracking styles and sectors with indexes is possible with fixed-income securities, though it may take a larger number of\nsecurities than for equity indexes due to the larger number of securities outstanding.\nThings to remember:\nFixed-income securities are typically less liquid than equity securities. This relative illiquidity is one reason that construction and replication are\nmore difficult and costly for fixed-income indexes than for equity indexes.\nCompare types of security market indexes", "qhtml": null}, {"n": 22, "q": "An analyst gathers the following information on the constituents of a price-weighted index: Beginning Ending Dividends Shares Stock price (¥) price (¥) per share (¥) outstanding A 150 180 12,000 B 250 270 10 10,000 C 200 180 5 14,000 Based on this information, the index's price return is closest to: ", "opts": ["5.0%", "6.3%", "7.5%"], "ans": "A", "expl": "The price return of an index is equal to the weighted average of the price returns of each constituent security in the index. The price return\nof each security is the change in price as a percentage of the beginning value; it excludes dividends, interest, and other distributions.\nIn a price-weighted index, each security's weighting is the ratio of its beginning price to the total beginning price of the index. For example,\nin this scenario Stock A's beginning price is ¥150. The total beginning price of all three stocks is ¥600, so Stock A's weight in the index is ¥150 /\n¥600, or 25%.\nThe price return of the index is calculated as follows:\nIt should be noted that since there were no stock splits during the period, the price return can also be calculated as (630 − 600) / 600 = 5.0%.\n(Choice B) 6.3% would be the price return of the index if it were market cap-weighted, instead of price-weighted.\n(Choice C) 7.5% is the total return of the index, which includes income from securities (eg, dividends, interest).\nThings to remember:\nThe price return of a security is the change in its price as a percentage of its beginning value. The price return of an index is the weighted average\nof the price returns of the individual assets in the index. Dividends, interest, and other distributions are excluded from price return.\nCalculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 23, "q": "An analyst wants to calculate the total return of an index comprising the following assets: Beginning Ending Income Asset (€) Weight price (€) price (€) (€) X 101.00 109.00 1.00 10% Y 10.00 9.00 0.50 30% Z 6.00 7.00 0.10 60% The total return of the index is closest to:", "opts": ["7.4%", "8.6%", "10.4%"], "ans": "C", "expl": "Total return of an index is equal to the weighted average of the total returns of each asset in the index. The total return of each asset is the\nchange in overall investment value as a percentage of beginning value, accounting for both price changes and income. Depending on the index\ntype, the income component of total return may be dividends, interest, or another form of distribution.\nFind the total return:\nThe total return of an index reflects both the price change and the income of assets comprising the index. Note that the total return and the\nholding period return are the same concept.\n(Choice A) 7.4% is the result of incorrectly taking an equal-weighted return of the assets. This index is not equal-weighted.\n(Choice B) 8.6% is the result of incorrectly dividing by ending prices (P ) instead of by beginning prices (P ) to find the total return of each\niEnd iBeg\nasset.\nThings to remember:\nThe total return of an asset is found by subtracting beginning value from ending value, adding income, and then dividing that entire quantity by the\nbeginning value. Total return of an index is the weighted average of the total returns of the assets comprising the index.\nCalculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 24, "q": "Value tilt is most likely to impact equity indexes that are:", "opts": ["price weighted.", "fundamentally weighted.", "market capitalization weighted."], "ans": "B", "expl": "Equity indexes are portfolios of stocks designed to represent an asset class, sector, or market. One of the choices in constructing an index is the\nweighting of its component securities. Fundamental indexes weight component stocks using measures of size distinct from market capitalization\n(market cap), such as sales, book value, and number of employees.\nFundamental weighting addresses an inherent skew in market cap–weighted indexes, which are subject to a momentum effect: securities with the\nlargest increases in market value have more weight in and more impact on the index. Therefore, in a cap-weighted index, growth stocks' weights\nare disproportionate to their current earnings or sales, compared with the index average, since their stock prices and market caps reflect the much\nhigher level of expected future earnings.\nValue stock prices are much lower relative to current earnings or sales (ie, lower P/E and price/sales ratios), reflecting their more modest growth\nexpectations. Inverting those valuation multiples, value stocks have much higher ratios of earnings or sales to their market values. Therefore,\nfundamental weighting using such metrics results in a value tilt: value stocks have higher weights in fundamental indexes than in indexes\nweighted by market cap.\n(Choice A) Price-weighted indexes have no inherent value or growth tilts. The highest price shares have the biggest impact on index\nperformance.\n(Choice C) Market cap-weighted indexes are subject to growth tilts, not value tilts. The outsized impact of growth stocks is due to high market\ncaps relative to current earnings.\nThings to remember:\nFundamental indexes weight component stocks using factors such as sales, book value, and number of employees. Value stocks have much\nhigher ratios of such factors to their market values compared with growth stocks. Therefore, fundamental weighting results in a value tilt: value\nstocks have higher weights in fundamental indexes.\nCompare the different weighting methods used in index construction", "qhtml": null}, {"n": 25, "q": "Assume that a capitalization-weighted (cap-weighted) equity index and an equal-weighted equity index have the same constituent stocks. All else being equal, if the cap-weighted index had a greater one-year price return, the most appropriate conclusion is that large-cap stocks: ", "opts": ["outperformed small-cap stocks.", "underperformed small-cap stocks only.", "underperformed small- and medium-cap stocks."], "ans": "A", "expl": "The effect of constituent returns on an index is determined by how the index is weighted:\nWeighted equally: Each constituent's return has an equal effect on the index.\nWeighted by size: Each constituent's return affects the index in proportion to the constituent's size.\nEqual-weighted indexes understate the impact of large companies' returns and overstate the impact of small companies' returns compared with a\ncapitalization-weighted (cap-weighted) index. In an equal-weighted index, small-cap stocks, which account for a relatively small portion of the total\nmarket value of all the constituent companies, are overrepresented (and large-cap stocks are underrepresented) compared with a cap-weighted\nindex.\nFor example, consider how two stocks affect the returns on equal- and value-weighted indexes constructed with the same constituent stocks.\nGiven no change in the other stocks, assume the largest-cap stock is up 1% and smallest-cap stock is down 1%.\nEqual-weighted index: No net change due to equal but opposite percentage changes in the two stocks since the stocks are equally\nweighted.\nCap-weighted index: The index would increase since the 1% loss of the small-cap stock offsets only a portion of the 1% gain of the large-\ncap stock due to the large-cap stock's greater weight.\n(Choices B and C) If small-cap stocks outperform large-cap stocks, an equal-weighted index should outperform a cap-weighted index. This is\ndue to the equal-weighting magnifying the impact of small-cap returns and reducing the impact of large-cap returns relative to the impact those\nsectors would have on a cap-weighted index. The same is generally true when both small- and mid-cap stocks outperform large-cap stocks.\nThings to remember:\nEqual-weighted indexes understate the impact of large companies and overstate the impact of small companies relative to the way their returns\naffect capitalization-weighted (cap-weighted) index performance. Cap-weighted index returns are directly related to constituents' size, so a cap-\nweighted index will outperform an equal-weighted index of the same stocks when large-cap stocks outperform small-cap stocks.\nCompare the different weighting methods used in index construction", "qhtml": null}, {"n": 26, "q": "All else being equal, a decrease in the value of a price-weighted stock index most likely results when the value of its constituent company shares decreases due to a:", "opts": ["reconstitution.", "constituent company's stock splits.", "constituent company decreasing its cash dividend."], "ans": "C", "expl": "The value of a price-weighted index equals the sum of the market prices of the constituent stocks divided by the index divisor. Price returns on\na portfolio of index shares match index returns only when price changes reflect changes in the fundamental values of the constituent\ncompanies.\nA share price decline due to fundamental factors such as cash dividend reductions or lower expected earnings decreases a company's market\nvaluation and causes a lower index value. This is illustrated by the decrease in Stock X from index inception until the split in Stock Z, leaving the\nother stock prices unchanged.\nEvents that cause a lower sum of the index share prices but do not reduce the index value include:\nStock splits\nStock dividends (not cash dividends)\nIndex reconstitutions when the share price of the stock newly included in the index is lower than the share price of the stock being removed\nThese events are not connected to a decrease in the fundamental value of constituent companies. The index value is kept constant by a\nproportional reduction in the index divisor as illustrated above for a 4-for-1 split. The same process is used for reconstitutions (Choices A and B).\nThings to remember:\nDecreases in price-weighted index values should reflect decreases in the fundamental values of constituent companies. Stock (not cash)\ndividends and splits do not affect those values. Share price declines due to reduced cash dividends or lower expected earnings imply lower\ncompany valuations and result in lower index values.\nCalculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 27, "q": "An index starts with a value of 100 and has the following returns over 3 years: Price Appreciation Income Year 1 4.0% 2.0% Year 2 8.0% 1.5% Year 3 −4.0% 2.0% If the index value is based on its total return, then its value at the end of Year 3 is closest to:", "opts": ["113.50", "113.75", "113.87"], "ans": "B", "expl": "The initial value of an index is decided at the index's initiation. Over time, the index's value will change with its returns. The return on an index\ncan be calculated using its price return or total return.\nPrice return reflects the price change of each constituent security.\nTotal return reflects both the price change and dividend or interest income of each constituent security.\nThe value of an index following multiple periods of returns is calculated as the geometrically linked (ie, compounded) return, since its value in\neach period is dependent on its value and return in prior periods. When calculating total return, price appreciation and income are added (not\ncompounded) for a given period since they occur over the same period.\nIn this question, the value of the index at the end of Year 3 is 113.75: 100(1.06)(1.095)(0.98). The value over time is shown in the image below:\n(Choice A) 113.50 results from summing, instead of compounding, the annual returns.\n(Choice C) 113.87 results from compounding, instead of adding, the annual returns from price appreciation and income.\nThings to remember:\nThe value of an index following multiple periods of returns must be calculated as the geometrically linked (ie, compounded) return. A total return\nindex reflects both the returns from price appreciation and income. These are added, not compounded, for a given period since they occur over\nthe same period.\nCalculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 28, "q": "A mutual fund whose holdings are selected from a wide range of small-cap stocks compares its performance each year with that of the Russell 2000 Index. This is most likely an example of using a market index as a: ", "opts": ["benchmark for an actively managed portfolio.", "proxy for the small-cap asset class in an asset allocation model.", "way to understand market sentiment regarding small-cap stocks."], "ans": "A", "expl": "A market index is a collection of assets drawn from and intended to represent a larger group of assets; for example, the Russell 2000 Index\nconsists of 2,000 small-cap stocks that represent the stock of US small-cap companies. Initially, market indexes served as indicators of market\nsentiment, but their uses have evolved over time. Currently, indexes are used in five ways, as shown in the image above.\nA market index can be used as a benchmark for an actively managed portfolio. The performance of the portfolio over time is compared to the\nbenchmark index. Using the correct benchmark index is important. In this scenario, the actively managed mutual fund invests broadly in small-\ncap US companies; therefore, the Russell 2000 Index, which represents all US small-cap stocks, is an appropriate benchmark.\n(Choice B) When a market index is used as a proxy for an asset class in an asset allocation model, the index's historical returns are compared to\nthe historical returns of other indexes to determine the overall portfolio risk of a given allocation model. Allocation models (ie, blueprints for actual\nportfolios) are tailored for clients with a particular risk tolerance. In contrast, a benchmark is used to judge the performance of a similar portfolio\nafter an investment period is completed and the results are known.\n(Choice C) Using a market index to gauge market sentiment involves interpreting the performance of an index as a reflection of how investors\nfeel about the market. The index in this scenario is not used for that purpose.\nThings to remember:\nMarket indexes are used in five ways, including being used as benchmarks for actively managed portfolios.\nDescribe uses of security market indexes", "qhtml": null}, {"n": 29, "q": "A style index would most likely contain which of the following constituents?", "opts": ["The smallest 200 stocks in a region", "All consumer goods companies within a country", "A representation of indexes from countries deemed emerging markets"], "ans": "A", "expl": "Categories of equity indexes\nMost securities of an entire equity Russell 3000, Wilshire 5000\nBroad market\nmarket (both cover US equities)\nBlends indexes from different countries MSCI All Country World Index\nMulti-market\nProxy for regional or global investing and MSCI EAFE Index\nBased on same sector (eg, finance,\nhealth care)\nCan be different sizes (eg, large cap,\nSector European energy index\nsmall cap) and different styles (ie, value\nvs. growth)\nCan be national, regional, or global\nCan be different sectors\nBased on same size (eg, large cap) or\nStyle Asian large-cap index\nstyle (ie, value vs. growth)\nCan be national, regional, or global\nAn equity index is a collection of stocks based on a common element such as their style, sector, or geographical location. Multimarket indexes\ncan also be based on other indexes. An index is intended to indicate the aggregate performance of the category that it benchmarks.\nStyle indexes contain stocks of a single investment factor (eg, growth, value), similar size (eg, large cap, small cap), or combination of the two\n(eg, small-cap growth). These indexes can be regional or global and are intended to replicate common investing styles.\nStyle indexes based on size can use either an absolute size (eg, less than €1 billion market cap) or relative size (eg, smallest 100 public\ncompanies in the eurozone). In this question, a style index would most appropriately contain the smallest 200 stocks in a region since that is the\nonly constituent based on size or investment factor.\n(Choice B) All consumer goods companies within a country would be in a sector index, which is composed of companies that operate or compete\nin the same general type of business.\n(Choice C) A representation of indexes from countries deemed emerging markets would be in a multimarket index. Indexes of this type can be\nbased on specific geographic zones, stages of economic development (eg, emerging market), or global financial markets.\nThings to remember:\nStyle indexes contain stocks of a single investment factor, similar size, or combination of the two. These indexes are intended to replicate\ncommon investing styles. Style indexes based on size can use either absolute or relative size.\nDescribe types of equity indexes", "qhtml": null}, {"n": 30, "q": "Which of the following best describes the difference between the returns of a commodity index based on futures prices and the returns of the same commodities based on spot prices? ", "opts": ["The difference can be substantial.", "The difference is the risk-free rate.", "There is no effective difference due to arbitrage."], "ans": "A", "expl": "Commodity indexes as barometers of price changes\nIndex returns ≠ returns based on spot price\nchanges\nFutures and spot prices differ by benefits and\nVersus underlying cost of holding commodity\nspot price Prices must converge by expiration (ie,\ndelivery)\nReturns over time diverge due to initial\ndifference\nDifferent commodity price changes implied by\ndifferent indexes\nVersus other index Each index uses a different group of\nvalues commodities\nIndexes do not use the same weighting\nmethods\nMost commodity indexes' values are based on futures prices, not spot prices. Futures contracts have a limited life since they expire. As futures\ncontracts approach expiration, they are removed from the index and replaced by contracts with later expirations. Since longer-lived contracts\ntrade at different prices than those approaching expiration, the shift (ie, rolling over) of index positions results in price gains or losses not incurred\non a position in the underlying commodity (Choice C).\nFutures prices for different expirations diverge by the costs (eg, storage) and benefits (eg, convenience yield) of holding a position in the\nunderlying commodity over the time between expirations. Indexes do not have uniform rules for when positions are rolled over or the length of\ncontracts that replace those being removed. This causes the returns on the index to differ from the return implied by the underlying spot price due\nto:\nfutures price changes,\nrisk-free interest rates, and\nroll yield (ie, impact of different prices when positions are rolled over).\n(Choice B) The risk-free interest rate is only one of the factors that lead to the difference between index performance and returns implied by spot\nprice changes.\nThings to remember:\nMost commodity indexes' values are based on futures prices, not spot prices. Index returns differ from returns implied by spot price changes due\nto futures price changes, risk-free interest rates, and the roll yield.\nDescribe indexes representing alternative investments", "qhtml": null}, {"n": 31, "q": "The divisor used to calculate the value of a price-weighted stock index is most appropriately adjusted if a constituent company's stock:", "opts": ["splits.", "appreciates.", "pays a cash dividend."], "ans": "A", "expl": "The value of a price-weighted index is the sum of the market prices of the constituent stocks divided by the index divisor. The initial divisor is\nusually either the number of stocks in the index or a divisor that results in a round number (eg, 1,000) as the initial index value. Use of a round\nnumber makes the index return since inception easier to quantify. In the example above, an initial divisor of 0.87 would cause the three-stock\nsample index to have an initial value of 100.\nPrice-weighted index divisors are adjusted to prevent the index value from being impacted by stock price changes that do not reflect changes\nin the fundamental values of the component companies. This makes an index's value over time more easily comparable. Divisors are adjusted\nfor:\nStock splits\nStock dividends\nIndex reconstitutions (ie, changes to constituent stocks).\nThe divisor adjustment for stock splits is illustrated above. A similar process is followed when adjusting for stock dividends and index\nreconstitutions.\n(Choice B) Price appreciation of a constituent stock increases the value of a price-weighted stock index but does not impact the index divisor.\n(Choice C) All else equal, stock prices fall by the amount of cash dividends paid; therefore, cash dividends impact the value of a price-weighted\nindex but do not affect the divisor.\nThings to remember:\nPrice-weighted index divisors are adjusted for stock splits, stock dividends, and index reconstitutions (ie, changes to constituent stocks). The\nadjustments prevent the index value from being impacted by stock price changes that do not reflect changes in the fundamental values of the\ncomponent companies, improving comparability over time.\nCompare the different weighting methods used in index construction", "qhtml": null}, {"n": 32, "q": "Which of the following best describes security market indexes? Security market indexes:", "opts": ["are valued no more often than daily.", "can only be valued using actual asset prices.", "represent a security market, market segment, or asset class."], "ans": "C", "expl": "Characteristics of security market indexes\nRepresent and track the value of a given security market, market\nsegment, or asset class\nTypically constructed as a portfolio of marketable securities\nValued on a regular basis using actual or estimated prices of\nconstituent securities\nA security market index (eg, S&P 500, Hang Seng) is a representation of specified security market, a market segment, or an asset class.\nIndexes can be designed to represent a broad universe of securities (eg, the equity market) or a narrow subsection of a specific security market\n(eg, U.S. mid-cap growth stocks).\nAn index is usually constructed and managed as a portfolio of individual marketable securities (ie, constituent securities). The value of an\nindex is the combination of the value of the constituent securities, weighted by the creator of the index. The securities may represent nearly all of\nthe index's universe or just a sample.\n(Choice A) Security market indexes are valued on a regular basis. Most high-profile indexes are updated in real time as the prices of the\nunderlying securities update.\n(Choice B) Security market indexes can be valued using constituent securities' estimated prices when actual prices are not available. Estimated\nprices are more likely to be used for assets that are not priced regularly or are illiquid (eg, bonds).\nThings to remember:\nA security market index is usually constructed as a portfolio of individual marketable securities to represent a security market, a market segment,\nor an asset class. It can represent a broad security market or a narrow subsection of a market.\nDescribe a security market index", "qhtml": null}, {"n": 33, "q": "An exchange-traded fund (ETF) has been created to replicate the performance of a broad market index. In the design of the ETF, the index was most likely used as a: ", "opts": ["model portfolio.", "asset class proxy.", "performance benchmark."], "ans": "A", "expl": "Investment management companies create index funds, including mutual funds and exchange-traded funds (ETFs), to track indexes. ETFs and\nmutual funds contain similar index-based portfolios, but ETFs are more liquid since they trade like equities.\nBy design, the ETF in this scenario uses the index as a model portfolio. It either holds all securities in proportion to their index weights or uses\nstatistical techniques to identify a subset of securities whose returns will replicate index returns. Once established, the ETF attempts to match the\nreturns on its model index.\n(Choice B) Indexes are used as asset class proxies in asset allocation models, providing historical data for model inputs.\n(Choice C) Indexes are used as performance benchmarks to assess actively managed portfolio returns. Index funds are passive investments;\nmanagers try to minimize any divergence between portfolio and model index returns (ie, tracking error).\nThings to remember:\nInvestment management companies create index funds, including mutual funds and exchange-traded funds (ETFs), to track indexes. By design,\nthe ETF in this scenario uses the index as a model portfolio. Once established, an ETF attempts to match the returns on its model index.\nDescribe uses of security market indexes", "qhtml": null}, {"n": 34, "q": "An analyst uses the return on the Tokyo Stock Price Index over the last 10 years as an input to the CAPM to determine the expected return of a stock. This is an example of using a securities market index as a(n):", "opts": ["indicator of market sentiment.", "model portfolio for investment products.", "proxy to model risk, return, or risk-adjusted performance."], "ans": "C", "expl": "A market index is a collection of assets intended to represent a larger group of assets. The Tokyo Stock Price Index (TOPIX) is a group of nearly\n2,000 stocks that represents the entire Japanese stock market. Initially, market indexes served as indicators of market sentiment, but their uses\nhave evolved over time. Currently, indexes are used in five different ways, listed above.\nOne such use is to model risk, return, or risk-adjusted performance. The CAPM is used to model the expected return of a stock based on its beta,\nthe market portfolio's expected return, and the risk-free rate. Since the market portfolio consists of every risky asset, measuring its return is not\npossible. The analyst in this scenario uses the return on the TOPIX as a proxy for the market portfolio return. This allows the analyst to model\nthe expected return of the stock.\n(Choice A) Market indexes are often used as indicators of market sentiment; analysts look at up or down trends to understand how most\ninvestors feel about the overall market or a particular asset class. However, in this scenario, the index return is used as a proxy for the return on\nthe market to calculate a stock's expected return using the CAPM.\n(Choice B) Some mutual funds and exchange-traded funds (ETFs) are designed to mimic the performance of indexes. For example, the iShares\nTOPIX ETF aims to track the performance of the TOPIX. However, in this scenario, there is no product being created to perform like the index.\nThings to remember:\nThere are five uses of market indexes. An analyst may use a broad market index as an input to a pricing model to calculate a stock's expected\nreturn. This scenario is an example of using a market index as a proxy to model risk, return, or risk-adjusted performance.\nDescribe uses of security market indexes", "qhtml": null}, {"n": 35, "q": "Two market-cap weighted indexes are created with the same stocks and stock weights, one as a total return index and one as a price return index. If the stocks repurchase shares instead of paying dividends, after 1 year, which index will most likely have the greater return?", "opts": ["The total return index", "The price return index", "The indexes will have the same return"], "ans": "C", "expl": "Return indexes\nPrice return Total return\nReflects only prices of securities Reflects both prices and income of securities\nEqual to total return if no securities Greater than price return if securities generate\ngenerate income income\nThe return on an index can be calculated as a price return index or a total return index.\nA price return index reflects the price change of each constituent security.\nA total return index reflects both the price change of each constituent security and any dividend and/or interest income from that security.\nThe difference between a total return index and a price return index is the return on dividend and/or interest income.\nThe value of share repurchases is reflected in a stock's price. Repurchases have the same effect on both types of return index since they both\ncapture price changes. In this scenario, the two indexes have the same constituent stocks held in the same proportions, and no dividends are\npaid; therefore, they will have the same return (Choices A and B).\nThings to remember:\nA price return index reflects the change in price of each constituent security, while a total return index also includes any income (eg, dividends,\ninterest) from the securities. Share repurchases are reflected in a stock's price and price changes are captured by both price return and total\nreturn, repurchases would have the same effect on both return measures.\nCalculate and interpret the value, price return, and total return of an index", "qhtml": null}, {"n": 36, "q": "Changing the constituent stocks in a broad market index to reflect changes in the relative economic importance of different industry sectors is best described as a:", "opts": ["rebalancing.", "reconstitution.", "reorganization."], "ans": "B", "expl": "Index construction requires decisions regarding three characteristics: target market (eg, sector or asset class), security selection (eg,\nrepresentative stocks), and weighting (ie, portion of index in each security). Once created, the index must be managed over time to maintain\nconsistency with the characteristics established at index construction. Index management actions are categorized as:\nRebalancing: adjusting the weights of constituent securities to maintain consistency with index weighting methodology\nReconstitution: adding and/or removing securities to maintain consistency with the target market\nSecurities are added or removed for a variety of reasons: new exchange listings or delistings, whether securities newly meet or no longer meet\nindex criteria, or companies no longer existing due to acquisitions or bankruptcies. Some indexes (eg, S&P 500) are designed to reflect the\nrelative importance of different industry sectors. Selection committees sometimes alter index composition to reflect shifts in economic\nsignificance. Changes in the constituent stocks for these reasons are characterized as a reconstitution.\n(Choice A) Rebalancing refers to changes in the weights given to the constituent securities. Index reconstitution sometimes necessitates\nrebalancing, but the two are separate aspects of index management.\n(Choice C) Reorganization is not used to describe actions related to index management. It describes certain corporate restructurings related to\nbankruptcies.\nThings to remember:\nRebalancing and reconstitution are two aspects of index management. Rebalancing is adjusting the weights of constituent securities.\nReconstitution is adding and/or removing securities to maintain consistency with the target market.\nDescribe rebalancing and reconstitution of an index", "qhtml": null}, {"n": 37, "q": "An analyst designing a security market index who wants to minimize the need to actively rebalance the index would most appropriately choose: ", "opts": ["price weighting.", "equal weighting.", "float-adjusted market-capitalization weighting."], "ans": "A", "expl": "Security index rebalancing\nActive rebalancing\nIndex weighting method Rationale\nfrequency\nWeights adjust as asset prices\nPrice weighting Never\nchange\nAny price changes result in\nEqual weighing Periodically\nunequal weights\nFloat-adjusted market- Adjusted to reflect holdings of\nPeriodically\ncapitalization weighting controlling shareholders\nIndex design entails assigning weights to constituent securities. Price weighting, equal weighting, and float-adjusted market-capitalization\nweighing are the three most common methods. As index constituents and prices change over time, an index may need to be rebalanced to\nmaintain its weighting. Each weighting method has different rebalancing requirements to maintain consistency with the index's weighting.\nPrice-weighted indexes require no active rebalancing. The weight of each constituent security is based on its price, so weights automatically\nadjust as prices change. Ease of maintaining the index over time (ie, managing the index) is a major advantage of price weighting.\n(Choice B) Equal weighting assumes an equal value is invested in each constituent security at index inception. Any price changes result in the\nweights no longer being equal. Equal weighting generally requires the most frequent rebalancing.\n(Choice C) Float-adjusted market-capitalization weighting is based on the market value (ie, number of shares × market price per share) of the\nshares available to public investors. Those are the shares not held by controlling shareholders or other corporations. Periodic adjustments are\nmade to the number of shares to account for transactions by controlling shareholders.\nThings to remember:\nPrice weighting, equal weighting, and float-adjusted market-capitalization weighing are three common index weighting methods. Price-weighted\nindexes require no active rebalancing. The weight of each constituent security is based on its price, so weights automatically adjust as prices\nchange.\nDescribe the choices and issues in index construction and management", "qhtml": null}, {"n": 38, "q": "The weight of individual stocks in a float-adjusted market capitalization–weighted index is most likely based on:", "opts": ["shares sold to investors through public offerings.", "issued shares less shares repurchased by the company.", "outstanding shares less shares owned by controlling shareholders."], "ans": "C", "expl": "Market capitalization weighting accurately reflects the relative market values of an index's constituent stocks. It also accurately captures the\nchange in the market value of the entire index when constituent stock prices change. However, market capitalization–weighted indexes may not\nbe best for measuring changes in value of shares available for investors to trade. Float-adjusted market capitalization weighting attempts to\naddress this issue.\nControlling shareholders are individual or institutional investors with significant holdings of a company's stock. These are not passive investments\nbut are used to influence a company's strategic direction or to exercise outright control (eg, elect members of the board, select senior managers).\nConsequently, controlling shareholders are unlikely to sell their holdings. Float-adjusted market capitalization weighting uses the shares available\nto public investors (ie, outstanding shares less shares owned by controlling shareholders) to establish the weights of constituent stocks. Most\nmajor market capitalization–weighted indexes are float adjusted.\n(Choice A) Shares sold to investors through public offerings are only a portion of issued shares and are not the basis for float-adjusted market\ncapitalization weighting. Adjustments for other share distributions (eg, private placements), treasury stock, and controlling shares are used to\ndetermine the float-adjusted market capitalization.\n(Choice B) Issued shares less shares repurchased by the company (ie, treasury stock) equals the number of shares outstanding. The market\nvalue of the outstanding shares is a company's market capitalization and the basis for weighting market capitalization–weighted indexes, not float-\nadjusted market capitalization–weighted indexes.\nThings to remember:\nFloat-adjusted market capitalization weighting uses the shares available to public investors (ie, outstanding shares less shares owned by\ncontrolling shareholders) to establish the weights of constituent stocks in an index.\nCompare the different weighting methods used in index construction", "qhtml": null}, {"n": 39, "q": "The performance of which of the following indexes for alternative investments is most likely to reflect the spot prices of the asset class it represents?", "opts": ["Hedge fund index", "Commodities index", "Real estate investment trust index"], "ans": "C", "expl": "Although the larger category of real estate indexes (ie, indexes that include directly owned real estate) can suffer from pricing problems due to\ninfrequent transaction information and illiquid assets, real estate investment trust (REIT) indexes are based on publicly traded securities and\ntherefore reflect current prices.\n(Choice A) Since hedge funds are required to report performance only to their investors, funds that perform poorly or fail may not report results to\nthe index. This leads to survivorship bias. Moreover, differences in the composition of hedge fund indexes precludes their use as a representative\nof the hedge fund asset class.\n(Choice B) Commodities indexes are based on futures contracts, which differ from commodities' spot prices. The result is that index returns do\nnot reflect changes in commodity spot prices.\nThings to remember:\nReal estate investment trust (REIT) indexes reflect the prices of publicly traded REITs. Hedge fund indexes and commodities indexes may reflect\nperformance that diverges greatly from the prices of their represented asset classes.\nDescribe indexes representing alternative investments", "qhtml": null}];
+const CFG = {"title": "Wiley · Security Market Indexes", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Equity Investments · 39 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

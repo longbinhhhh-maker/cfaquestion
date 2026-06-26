@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A company reported a goodwill impairment of USD 800 million for the first quarter ending 20X2. Based on only this information, it is most likely that:", "opts": ["net income was unaffected by the impairment.", "investing cash flow was reduced by the amount of impairment.", "management overpaid for one or more acquisitions in the past."], "ans": "C", "expl": "Goodwill is the difference between the price an acquiring company pays for a target company and the fair market value of the target company's\nidentifiable net assets (ie, fair value of assets minus fair value of liabilities). Goodwill impairments result from the loss of value of those assets,\nwhich ultimately did not live up to initial expectations and must be written down. There may be many reasons (eg, a decline in competitiveness,\npolitical instability) why the acquisition, and thus the goodwill it generated, has not maintained its value. In hindsight, the assets have proven to be\nless valuable than expected, and it is likely that management overpaid for them.\nGoodwill is capitalized on the acquiring company's balance sheet as a noncurrent intangible asset. Since it has no finite life, it is not amortized;\ninstead, it is evaluated annually for possible impairment. If an impairment is deemed appropriate, an impairment loss affects the financial\nstatements in the period when it is identified, reducing total assets and flowing through the income statement, impacting earnings as a noncash\ncharge.\n(Choice A) Net income is directly affected by goodwill impairment since a charge must be taken against income in the current period.\n(Choice B) Goodwill impairment is a noncash charge and therefore does not impact the cash flow statement.\nThings to remember:\nGoodwill impairments may result from overpaying for assets that do not live up to initial expectations and must be written down.\nExplain the financial reporting and disclosures related to goodwill", "qhtml": null}, {"n": 2, "q": "An analyst compiles the following common-size balance sheet items for a company: 20X9 20X8 Cash and cash equivalents 4 5 Accounts receivable 15 14 Inventory 28 25 Total current assets 47 44 Property, plant & equipment 50 56 Goodwill 3 0 Total assets 100 100 Accounts payable 12 9 Short-term debt 8 10 Total current liabilities 20 19 Long-term debt 57 59 Total liabilities 77 78 Total shareholders' equity 23 22 Total liabilities and shareholders' equity 100 100 Based only on the data above, the most appropriate conclusion the analyst can draw is that compared to 20X8, in 20X9 the company has:", "opts": ["increasing solvency risk.", "a more liquid asset base.", "not made any acquisitions."], "ans": "B", "expl": "A common-size balance sheet shows all a company's assets and liabilities as a percentage of its total assets. Converting to a common-size\nbalance sheet can be useful for analyzing trends for a single company over time, as well as comparing companies of different sizes to each other.\nSince common-size balance sheet items are proportional to a company's asset value, an analyst could determine whether the company is shifting\nits asset base to become more liquid. In this scenario, the company's current assets have increased from 44% of the company's asset base to\n47%, indicating that it may be shifting to a greater proportion of more liquid assets.\n(Choice A) Based on the company's common-size balance sheet, its solvency risk measures are declining, suggesting decreasing solvency risk.\n(Choice C) The company has goodwill on its balance sheet in 20X9 and none in 20X8, suggesting that it made an acquisition during 20X9.\nThings to remember:\nCommon-size balance sheets show a company's assets and liabilities as a percentage of its total assets. This can be useful for analyzing trends\nfor a single company over time or comparing companies to each other at a specific point in time.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 3, "q": "An analyst gathers the following data: Which of the following companies most likely has the greatest ability to pay its current liabilities based on the quick ratio?", "opts": ["Company A", "Company B", "Company C"], "ans": "C", "expl": "The quick ratio is a liquidity ratio that measures a company's ability to meet its short-term obligations (ie, due within a year). It is a conservative\nliquidity measure because it includes only cash, marketable securities, and accounts receivable.\nIn the context of calculating the quick ratio, marketable securities are considered short-term. Inventory, excluded from the quick ratio, is a less\nliquid current asset as it takes longer to convert to cash. Prepaid expenses are not included in the quick ratio since they are rarely converted to\ncash.\nHere, add the quick assets and divide this sum by total current liabilities. Company C has the greatest ability to pay with a quick ratio of 0.778.\nThings to remember:\nThe quick ratio is equal to the sum of cash, marketable securities, and accounts receivable divided by the current liabilities (ie, due within a year).\nInventory is excluded from the quick ratio since it takes longer to convert to cash than other current assets (eg, lower liquidity). A company that\nhas a greater quick ratio has a greater ability to meet its short-term obligations.\nCalculate and interpret common-size balance sheets and related financial ratios\n4.An analyst forecasts the upcoming year's fixed charge coverage ratio (FCCR) to be 2. Within the forecast:\nEBIT is AUD 10 million,\ntax expense is AUD 1.5 million, and\ninterest expense is AUD 4 million.\nThe forecasted lease amount (in AUD millions) is closest to:\nA. 1.0\n\nB. 2.0\nC. 3.5\nExplanation\nA fixed charge coverage ratio (FCCR) is a coverage ratio that measures a company's ability to cover its interest and lease (ie, rent) obligations\nwith its profits. In the numerator, EBIT (earnings before interest and taxes) is sometimes called EBITDAR (earnings before interest, taxes,\ndepreciation, amortization, and rent), since it captures profits before interest and lease amounts. Lease amounts are added to EBIT in the\nnumerator, and the denominator contains both the interest and lease amounts.\n(Choice A) 1.0 results from not including the lease variable in the numerator.\n(Choice C) 3.5 results from including taxes in the numerator.\nThings to remember:\nA fixed charge coverage ratio (FCCR) measures a company's ability to cover its interest and lease (ie, rent) obligations with its profits. The\nnumerator equals EBIT (earnings before interest and taxes) plus the lease amounts. The denominator equals interest plus the lease amounts.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 4, "q": "An analyst forecasts the upcoming year's fixed charge coverage ratio (FCCR) to be 2. Within the forecast: EBIT is AUD 10 million, tax expense is AUD 1.5 million, and interest expense is AUD 4 million. The forecasted lease amount (in AUD millions) is closest to:", "opts": ["1.0", "2.0", "3.5"], "ans": "B", "expl": "A fixed charge coverage ratio (FCCR) is a coverage ratio that measures a company's ability to cover its interest and lease (ie, rent) obligations\nwith its profits. In the numerator, EBIT (earnings before interest and taxes) is sometimes called EBITDAR (earnings before interest, taxes,\ndepreciation, amortization, and rent), since it captures profits before interest and lease amounts. Lease amounts are added to EBIT in the\nnumerator, and the denominator contains both the interest and lease amounts.\n(Choice A) 1.0 results from not including the lease variable in the numerator.\n(Choice C) 3.5 results from including taxes in the numerator.\nThings to remember:\nA fixed charge coverage ratio (FCCR) measures a company's ability to cover its interest and lease (ie, rent) obligations with its profits. The\nnumerator equals EBIT (earnings before interest and taxes) plus the lease amounts. The denominator equals interest plus the lease amounts.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 5, "q": "An analyst collects the following year-end information on three companies: On its common-size balance sheet, which company most likely reports the highest percentage of inventory?", "opts": ["Company X", "Company Y", "Company Z"], "ans": "C", "expl": "A common-size balance sheet reports accounts (ie, assets and liabilities) on the balance sheet as a percentage of total assets. It is a useful\ntool for comparing companies of various sizes at the same point in time. To convert a balance sheet to a common-size balance sheet, divide each\nasset account balance by the company's total assets.\nHere, divide each company's inventory by its total assets to determine which company has the highest percentage of inventory on its common-size\nbalance sheet. Company Z's inventory as a percentage of total assets is 38.1%, the greatest of the three companies.\n(Choice A) Company X would have the highest percentage of inventory if common-size balance sheets were based on current assets, not total\nassets.\n(Choice B) Company Y has the highest amount of inventory in currency terms, but not as a percentage of total assets.\nThings to remember:\nA common-size balance sheet reports each asset as a percentage of total assets. To convert a balance sheet to a common-size balance sheet,\ndivide each account balance by the total assets.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 6, "q": "Which of the following is most likely a disclosure for PPE that is required under IFRS but not under US GAAP?", "opts": ["Useful lives", "Gross carrying amounts", "Estimated depreciation over the next five years"], "ans": "A", "expl": "Required disclosures of property, plant, and equipment (PPE) vary between IFRS and US GAAP. Under US GAAP, required disclosures are\nmuch less detailed as compared to IFRS. PPE includes tangible assets with useful lives of greater than one year. The costs (ie, measurement\nbase) to obtain them are capitalized. Each year, part of the PPE cost is expensed as depreciation. Disclosures help analysts identify how different\ncompanies determine original costs and calculate depreciation expenses.\nThe disclosure of assets' useful lives is required exclusively under IFRS. Useful life is an estimate of the time remaining in which an asset\ncontinues to provide economic benefit (eg, generate revenue).\n(Choice B) Both IFRS and US GAAP require the disclosure of the gross carrying amount. The gross carrying amount is the value of an asset\nprior to accounting for deprecation.\n(Choice C) The disclosure of estimated depreciation over the next five years is required under US GAAP, not IFRS.\nThings to remember:\nRequired disclosures of PPE vary between IFRS and US GAAP. The disclosure of assets' useful lives is required exclusively under IFRS. Useful\nlife is the time remaining in which an asset continues to provide economic benefit.\nExplain the financial reporting and disclosures related to intangible assets", "qhtml": null}, {"n": 7, "q": "An airline company reports the following information for 20X8: £ thousands Gross profit 2,900 Finance lease payments (900) Other operating expenses (500) Interest payments (800) Earnings before tax (EBT) 700 Tax (30%) (210) Net income 490 The fixed charge coverage ratio for 20X8 is closest to:", "opts": ["1.29", "1.41", "1.88"], "ans": "B", "expl": "Solvency ratios evaluate a company's ability to satisfy its long-term debt obligations. Coverage ratios such as the fixed charge coverage ratio\nare one category of solvency ratios. Coverage ratios focus on income statement items and cash from operations (CFO) and illustrate a company's\nability to satisfy periodic payments related to debt and debt-like obligations such as leases.\nLease payments and interest on debt are two common types of fixed charges. The fixed charge coverage ratio measures the company's ability to\nsatisfy its fixed obligations from operating earnings. The company's fixed charge coverage ratio is shown below:\n(Choice A) 1.29 results from using net income instead of EBIT to calculate the fixed charge coverage ratio.\n(Choice C) 1.88 is the interest coverage ratio, which does not include lease payments.\nThings to remember:\nThe fixed charge coverage ratio is a solvency ratio that measures a company's ability to pay interest and lease payments from operating earnings.\nIt is a more conservative measure than the interest coverage ratio when the company acquires operating assets through leases.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 8, "q": "An analyst compiles the following financial data for two companies: Selected Financial Data Company A ($ millions) Cash and cash equivalents 300 Accounts payable 140 Marketable securities 60 Taxes payable 40 Accounts receivable 90 Short-term debt 420 Inventories 240 Company B Cash ratio 0.56 Quick ratio 0.85 Current ratio 1.09 Based only on this data, which ratio indicates that Company A has a greater risk of being unable to meet its short-term obligations than Company B?", "opts": ["Cash ratio", "Quick ratio", "Current ratio"], "ans": "B", "expl": "Balance sheet ratios such as liquidity ratios can provide some insights into a company's short-term and long-term financial health. Liquidity\nratios address a company's ability to meet its short-term liabilities using its short-term assets.\nIn this scenario, two companies' liquidity ratios are being compared. Lower ratios indicate greater risk that a company may struggle to meet its\nshort-term obligations (ie, the company has more liquidity risk since it has fewer assets available to \"cover\" its liabilities). Company A's ratios can\nbe calculated as:\nCompany A's quick ratio of 0.75 is less than Company B's quick ratio of 0.85. This suggests Company A has less short-term asset value relative to\nits short-term obligations and greater risk of being unable to meet its short-term obligations than Company B.\nCalculate and interpret common-size balance sheets and related financial ratios\n9. Over multiple fiscal years, a company's historical common-size balance sheets most likely reflect a change in:\n A. financial leverage.\nB. operating cash flow.\nC. cross-sectional profitability.\nExplanation\nA time series of data based on common-size balance sheets shows changes in the composition of all balance sheet items over time. Since a\nbalance sheet reports assets, liabilities (ie, debt), and equity, it is a useful tool for analyzing how a company's leverage changes over time.\nLeverage is the amount of debt the company uses to obtain assets. By examining total debt as a percentage of total assets, analysts can\nidentify changes in leverage over many periods.\n(Choice B) While a common-size balance sheet does show cash as a percentage of total assets, that amount is the company's total cash from\noperating, investing, and financing activities. A common-size cash flow statement, not a balance sheet, discloses information regarding historical\noperating cash flow.\n(Choice C) Cross-sectional analysis is a comparison of one company against many of its competitors. Comparisons of profitability can be made\nwhen examining historical common-size income statements from a company and its competitors.\nThings to remember:\nA common-size balance sheet reports all balance sheet items as a percentage of total assets. Since a balance sheet reports assets, liabilities (ie,\ndebt), and equity, it is a useful tool for analyzing how a company's leverage changes over time.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 9, "q": "Over multiple fiscal years, a company's historical common-size balance sheets most likely reflect a change in:", "opts": ["financial leverage.", "operating cash flow.", "cross-sectional profitability."], "ans": "A", "expl": "A time series of data based on common-size balance sheets shows changes in the composition of all balance sheet items over time. Since a\nbalance sheet reports assets, liabilities (ie, debt), and equity, it is a useful tool for analyzing how a company's leverage changes over time.\nLeverage is the amount of debt the company uses to obtain assets. By examining total debt as a percentage of total assets, analysts can\nidentify changes in leverage over many periods.\n(Choice B) While a common-size balance sheet does show cash as a percentage of total assets, that amount is the company's total cash from\noperating, investing, and financing activities. A common-size cash flow statement, not a balance sheet, discloses information regarding historical\noperating cash flow.\n(Choice C) Cross-sectional analysis is a comparison of one company against many of its competitors. Comparisons of profitability can be made\nwhen examining historical common-size income statements from a company and its competitors.\nThings to remember:\nA common-size balance sheet reports all balance sheet items as a percentage of total assets. Since a balance sheet reports assets, liabilities (ie,\ndebt), and equity, it is a useful tool for analyzing how a company's leverage changes over time.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 10, "q": "A portfolio manager gathers the following data: If the company has no other long-term debts, its long-term debt-to-equity ratio is closest to: ", "opts": ["0.38", "0.48", "1.08"], "ans": "A", "expl": "Long-term-debt to equity is a solvency ratio that measures a company's ability to pay its long-term obligations and helps gauge a company's\nfinancial risk. The long-term debt-to-equity ratio signifies the level of long-term, interest-bearing debt relative to the amount of equity. The greater\na company's ratio, the weaker the company's solvency. In this scenario:\nLong-term debt includes bonds payable but does not include noncurrent deferred revenue. Bonds payable is considered long-term since payment\nis due in more than 12 months. Some analysts include all long-term liabilities, which would include noncurrent deferred revenue, but CFAI limits\n\"liabilities\" to those that are interest-bearing. In this case, noncurrent deferred revenue is not included since it is not interest-bearing.\nEquity includes common stock and retained earnings. Retained earnings represents the accumulated portion of net income (after paying for\ndividends) that is reinvested back into the company each year.\n(Choice B) 0.48 results from including the noncurrent deferred revenue as part of long-term debt.\n(Choice C) 0.68 results from incorrectly including interest payable as part of long-term debt. Interest payable is a current liability that is due in\nless than 12 months and is not included in long-term debt.\nThings to remember:\nLong-term debt to equity measures a company's ability to pay its long-term obligations. The greater the company's ratio, the more leverage it has\nand the weaker the company's solvency.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 11, "q": "An acquiring company purchases a target company. The goodwill created from the transaction is best described as the difference between the acquirer's purchase price and the target company's:", "opts": ["book value of equity.", "fair value of net assets.", "market value of common stock."], "ans": "B", "expl": "Goodwill is the difference between the price the acquiring company pays for the target company and the fair value of identifiable (eg, tangible,\nintangible) net assets of the target company (ie, fair value of assets minus fair value of liabilities). It is recorded on the acquiring company's\nbalance sheet as a long-term intangible asset. Goodwill represents the additional value management believes it can generate in the future by\npurchasing the target company now.\nEstimates of fair value are based on management's judgment. Corroborating the fair value of some assets may prove to be difficult. Management\nbases the purchase price on its expectations and estimates, but the value of goodwill may or may not be realized in the future. Each year\nsubsequent to the acquisition, management reassesses the current value of goodwill.\n(Choices A and C) The initial value of goodwill is the difference between the price paid by the acquiring company and the fair value of the target\ncompany's net assets, not the book or market value of the target company's common stock (equity).\nThings to remember:\nGoodwill is the difference between the price paid by the acquiring company and the fair value of identifiable net assets of the target company. It\nrepresents the additional value the company believes it can generate.\nExplain the financial reporting and disclosures related to goodwill", "qhtml": null}, {"n": 12, "q": "An analyst gathers the following information for a company: 20X8 (€ thousands) Assets 5,000 Short-term debt 500 Long-term debt 2,000 Deferred tax liabilities 300 Deferred revenue 100 Accounts payable 100 Based on this information, the company's debt-to-capital ratio for 20X8 is closest to:", "opts": ["0.50", "0.56", "0.60"], "ans": "B", "expl": "Solvency ratios evaluate a company's ability to satisfy its long-term debt obligations. Leverage ratios are one category of solvency ratios and\nshow how much debt a company uses to finance its assets. Analysts use these ratios for side-by-side comparisons among companies, as well\nas changes in a company's ability to pay debt over time.\nThe debt-to-capital ratio is a leverage ratio that shows the percentage of a company's debt relative to all its capital sources. \"Debt\" includes both\nshort- and long-term debt obligations but excludes liabilities such as accounts payable, deferred tax liabilities, and deferred revenue, which are not\ninterest-bearing. The calculation is shown below:\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 13, "q": "A company provides the following balance sheet information: Compared to the prior year, a current year common-size balance sheet would most likely show a(n):", "opts": ["increase in current assets.", "increase in common stock.", "decrease in current liabilities."], "ans": "C", "expl": "Common-size balance sheets display each line item as a percentage of total assets. Analysts often construct common-size balance sheets to\ncompare the composition of items over time or across companies.\nIn this question, the respective percentages are determined by dividing the items by total assets. The output shows that current liabilities\ndecreased from the prior year as a percentage of total assets from 13.8% to 12.5% despite increasing in amount. Similarly, current assets and\ncommon stock increased from the prior year on an absolute basis but decreased as a percentage of total assets (Choices A and B).\nThings to remember:\nCommon-size balance sheets display each item as a percentage of total assets. Analysts often construct common-size balance sheets to\ncompare the composition of items over time or across companies.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 14, "q": "An analyst collects the following information (in ¥ millions) for a company: Cash 1,900 Marketable securities 500 Accounts receivable 200 Accounts payable 6,000 If there are no other current liabilities, compared with the industry average cash ratio of 0.4, the company's cash ratio is most likely:", "opts": ["less than the industry average.", "equal to the industry average.", "greater than the industry average."], "ans": "B", "expl": "Liquidity refers to how quickly and easily an asset can be converted to cash at its current value. Liquidity ratios assess a company's ability to\nsatisfy its current liabilities. The cash ratio is the most conservative liquidity ratio since it includes only the most liquid assets.\nThe cash ratio is the sum of cash (including cash equivalents) and marketable securities as a percentage of the company's current liabilities.\nCurrent liabilities are debts due within 12 months. A higher cash ratio suggests better liquidity. In this scenario, the cash ratio is calculated as\nfollows:\n(Choice A) The cash ratio is less than the industry average when it excludes marketable securities from the numerator.\n(Choice C) The cash ratio is greater than the industry average when it erroneously includes accounts receivable in the numerator. Accounts\nreceivable is not considered as liquid as cash or marketable securities.\nThings to remember:\nThe cash ratio is the most conservative liquidity ratio since it includes only the most liquid current assets. The cash ratio is cash (including cash\nequivalents) plus marketable securities as a percentage of current liabilities.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 15, "q": "An analyst collects the following selected financial statement items for a company: Based on this information, and assuming straight-line depreciation, the estimated remaining useful life of the company's noncurrent assets is closest to:", "opts": ["3 years.", "13 years.", "16 years."], "ans": "B", "expl": "From a company's age of noncurrent assets, analysts can determine if, and by how much, the company is reinvesting in noncurrent assets.\nAlthough neither US GAAP nor IFRS require that companies disclose the age of their noncurrent assets, the diagram allows analysts to estimate it\nbased on income statement and balance sheet entries. The one caveat is that the equation can only be used for straight-line depreciation.\nThe variables used to calculate the remaining useful life are as follows:\nHistoric cost is the amount paid for an asset, shown above as the gross amount for property, plant, and equipment. Accumulated depreciation is\nthe total depreciation expense since the asset was acquired, and the net book value is the difference between the historic cost and accumulated\ndepreciation. The steps for calculating the total asset life, current age, and remaining asset life are as follows:\nExplain the financial reporting and disclosures related to intangible assets\n16.An analyst gathers the following information about a company:\nIn 20X1, the company borrowed using a 20-year mortgage.\nIn May 20X3, the company received cash for services to be delivered in 20X5.\nIn November 20X3, the company purchased inventory and will pay suppliers in February 20X4.\nIn 20X3, which of the following is most likely classified as a long-term liability?\n A. The unearned revenue\nB. The current portion of long-term debt\nC. The debt payable from the inventory purchase\nExplanation\nLiabilities are debts that a company owes to others. Noncurrent liabilities are debts due in more than 12 months. If a debt is due to be paid in\n12 months or less, it is classified as a current liability.\nUnearned revenue is a liability recorded when a company receives cash in advance of the delivery of goods or services; only when the company\ndelivers the goods can it consider the revenue earned. In this scenario, since the company received cash in 20X3 and will not deliver the goods\nuntil 20X5, the time elapsed between cash received and delivery is greater than 12 months.\n(Choice B) The current portion of long-term debt represents the amount of repayment due (in less than 12 months) in the current period, so it is a\ncurrent, not a noncurrent, liability.\n(Choice C) If a company buys inventory in the second half of the year and repays it in the first half of the following year, the debt is considered\ncurrent, not noncurrent, since it is paid within 12 months.\nThings to remember:\nLiabilities are debts that a company owes to others. Noncurrent liabilities are debts due in more than 12 months. Current liabilities are debts due\nin 12 months or less.\nExplain the financial reporting and disclosures related to non-current liabilities", "qhtml": null}, {"n": 16, "q": "An analyst gathers the following information about a company: In 20X1, the company borrowed using a 20-year mortgage. In May 20X3, the company received cash for services to be delivered in 20X5. In November 20X3, the company purchased inventory and will pay suppliers in February 20X4. In 20X3, which of the following is most likely classified as a long-term liability?", "opts": ["The unearned revenue", "The current portion of long-term debt", "The debt payable from the inventory purchase"], "ans": "A", "expl": "Liabilities are debts that a company owes to others. Noncurrent liabilities are debts due in more than 12 months. If a debt is due to be paid in\n12 months or less, it is classified as a current liability.\nUnearned revenue is a liability recorded when a company receives cash in advance of the delivery of goods or services; only when the company\ndelivers the goods can it consider the revenue earned. In this scenario, since the company received cash in 20X3 and will not deliver the goods\nuntil 20X5, the time elapsed between cash received and delivery is greater than 12 months.\n(Choice B) The current portion of long-term debt represents the amount of repayment due (in less than 12 months) in the current period, so it is a\ncurrent, not a noncurrent, liability.\n(Choice C) If a company buys inventory in the second half of the year and repays it in the first half of the following year, the debt is considered\ncurrent, not noncurrent, since it is paid within 12 months.\nThings to remember:\nLiabilities are debts that a company owes to others. Noncurrent liabilities are debts due in more than 12 months. Current liabilities are debts due\nin 12 months or less.\nExplain the financial reporting and disclosures related to non-current liabilities", "qhtml": null}, {"n": 17, "q": "An analyst evaluates the solvency of three companies and gathers the following information: Company X Company Y Company Z Total assets 6,340 3,460 7,030 Common stock 750 140 470 Additional paid-in capital 2,800 1,890 3,900 Retained earnings 900 310 110 Treasury stock (50) (100) (110) Based on the companies' financial leverage ratios, which company has the greatest ability to meet long-term obligations? ", "opts": ["Company X", "Company Y", "Company Z"], "ans": "A", "expl": "The financial leverage ratio (ie, total assets to total equity) is one of several solvency ratios analysts use to measure a company's ability to\nmeet its long-term obligations and understand its financial risk. The greater the ratio, the more the company uses debt to finance its assets.\nTherefore, a lower financial ratio implies greater solvency, and vice versa.\nIn this scenario, calculate the financial leverage ratios of each company as follows:\nCompany X has the lowest financial leverage ratio and therefore the greatest ability to meet long-term obligations.\n(Choice B) Company Y has the least amount of total assets. However, compared with Company X, its total equity is lower in relation to its total\nassets; therefore, Company Y has a higher financial leverage ratio than Company X.\n(Choice C) Company Z has the highest financial leverage ratio; therefore, of the three companies, it is least able to meet its long-term obligations.\nThings to remember:\nThe financial leverage ratio (ie, total assets to total equity) is a solvency ratio that analysts use to measure a company's ability to meet its long-\nterm obligations. The greater the ratio, the more the company uses debt to finance its assets. Therefore, a lower financial ratio implies greater\nsolvency and ability to meet obligations.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 18, "q": "A bank examiner collects the following data: Which company has the greatest value of assets?", "opts": ["Company X", "Company Y", "Company Z"], "ans": "C", "expl": "Solvency ratios, such as the long-term debt-to-equity and financial leverage ratios, assess a company's ability to pay its long-term obligations and\ngauge financial risk. The long-term debt-to-equity ratio measures long-term debt with respect to equity. The financial leverage ratio\nindicates the relationship of assets to owner's equity. For both ratios, the greater the ratio, the more debt the company used to acquire its assets.\nTo determine which of the given companies has the greatest value of assets, first find the equity from the given long-term debts and long-term\ndebt-to-equity ratios. Rearrange the long-term debt-to-equity ratios to solve for equity. Then, find the assets using the companies' equity and\nfinancial leverage ratios, rearranging the ratios to solve for assets. Company Z has the greatest value of assets, with €11,000.\n(Choice A) Company X has the greatest value of assets if the assets are incorrectly calculated using the inverse of the financial leverage ratio\n(eg, total equity ÷ total assets).\n(Choice B) Company Y has the greatest value of assets if the equity is incorrectly calculated using the inverse of the long-term debt-to-equity\nratio (eg, total equity ÷ long-term debt).\nThings to remember:\nThe long-term debt-to-equity ratio (long-term debt ÷ total equity) measures long-term debt with respect to equity. The financial leverage ratio (total\nassets ÷ total equity) indicates the relationship of assets to owner's equity.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 19, "q": "An analyst gathers the following information: Selected Financial Statement Items Company Accounts X Y Z Cash 50 50 20 Marketable securities 20 100 120 Accounts receivable 80 40 50 Inventory 60 20 430 Unearned revenue 790 850 930 Accounts payable 220 350 130 Dividends payable 210 320 450 Taxes payable 110 250 540 Based on the cash ratio, the company least able to meet its short-term obligations is: ", "opts": ["Company X", "Company Y", "Company Z"], "ans": "A", "expl": "Liquidity ratios measure a company's ability to pay its short-term obligations. Among liquidity ratios, the cash ratio is considered the most\nconservative since it includes only items that are cash equivalents or marketable securities, which can both be quickly converted to cash. The\ncash ratio is the ratio of a company's total cash equivalents and marketable securities to its current liabilities.\nIn this scenario, the cash ratio of each company can be calculated as:\nCompany X Company Y Company Z\nCash 50 + 20 50 + 100 20 + 120\n+ Marketable securities = 70 = 150 = 140\nUnearned revenue\n+Accounts payable 790 + 220 + 850 + 350 + 930 + 130 +\n+ Dividends payable 210 + 110 320 + 250 450 + 540\n+Taxes payable = 1,330 = 1,770 = 2,050\n= Current liabilities\nCash ratio 70 / 1,330 ≈ 0.05 150 / 1,770 ≈ 0.08 140 / 2,050 ≈ 0.07\nCompany X has the lowest cash ratio. Therefore, of the three companies, Company X is least able to pay its short-term obligations.\nThings to remember:\nLiquidity ratios measure a company's ability to pay its short-term obligations. The cash ratio is the ratio of a company's total cash equivalents and\nmarketable securities to its current liabilities. It is considered the most conservative liquidity ratio since it includes only items that can be quickly\nconverted to cash.\nCalculate and interpret common-size balance sheets and related financial ratios\nCopyright©UWorld.CopyrightCFAInstitute.Allrightsreserved.\n20.A company reports under US GAAP. The company's common-size balance sheet for 20X6 and 20X5 is listed below:\nAssuming total assets remained the same from 20X5 to 20X6, which statement most accurately describes what occurred during 20X6?\nA. Working capital increased\n B. The company made an acquisition\nC. The financial leverage ratio decreased\nExplanation\nA common-size balance sheet reports all items on the balance sheet as a percentage of total assets. It is a useful tool for comparing\ncompanies of different sizes at a specific point in time.\nIn this instance, goodwill increased 5.3% on a year-over-year basis as a percentage of total assets. The only scenario for goodwill to increase\nwould be if the company had made an acquisition because goodwill revaluation or impairment reversals are not allowed under US GAAP.\n(Choice A) Working capital is the amount needed to support day-to-day business operations and is the difference between current assets and\ncurrent liabilities. The company's 20X6 working capital decreased to 28.4% (eg, 56.3 – 27.9) from 35.5% (eg, 59.4 – 23.9) in 20X5. Since the\namount of total assets remained constant and working capital as a percentage of assets decreased, the amount of working capital decreased.\n(Choice C) The financial leverage ratio increased in 20X6 to 1.92 (eg, 100 ÷ 52.1) from 1.85 in 20X5 (eg, 100 ÷ 54).\nThings to remember:\nA common-size approach is useful when comparing similar companies and can quickly identify material changes to a company's balance sheet\nwhen conducting company-specific, time-series analysis. In addition, acquisitions will be recorded in goodwill when the transaction is done above\nthe fair value of net assets.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 20, "q": "A company reports under US GAAP. The company's common-size balance sheet for 20X6 and 20X5 is listed below: Assuming total assets remained the same from 20X5 to 20X6, which statement most accurately describes what occurred during 20X6?", "opts": ["Working capital increased", "The company made an acquisition", "The financial leverage ratio decreased"], "ans": "B", "expl": "A common-size balance sheet reports all items on the balance sheet as a percentage of total assets. It is a useful tool for comparing\ncompanies of different sizes at a specific point in time.\nIn this instance, goodwill increased 5.3% on a year-over-year basis as a percentage of total assets. The only scenario for goodwill to increase\nwould be if the company had made an acquisition because goodwill revaluation or impairment reversals are not allowed under US GAAP.\n(Choice A) Working capital is the amount needed to support day-to-day business operations and is the difference between current assets and\ncurrent liabilities. The company's 20X6 working capital decreased to 28.4% (eg, 56.3 – 27.9) from 35.5% (eg, 59.4 – 23.9) in 20X5. Since the\namount of total assets remained constant and working capital as a percentage of assets decreased, the amount of working capital decreased.\n(Choice C) The financial leverage ratio increased in 20X6 to 1.92 (eg, 100 ÷ 52.1) from 1.85 in 20X5 (eg, 100 ÷ 54).\nThings to remember:\nA common-size approach is useful when comparing similar companies and can quickly identify material changes to a company's balance sheet\nwhen conducting company-specific, time-series analysis. In addition, acquisitions will be recorded in goodwill when the transaction is done above\nthe fair value of net assets.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 21, "q": "A company discloses its required depreciation expense for five years: 20X3–20X7 depreciation expense (in USD) 20X3 52,000 20X4 60,000 20X5 75,000 20X6 87,000 20X7 101,000 The company uses units of production to calculate depreciation expense. Based only on this data, the company most likely expects an increase in:", "opts": ["unit cost.", "net margin.", "units produced."], "ans": "C", "expl": "The units-of-production depreciation method expenses an asset's cost based on its use during each period. Depreciation expense is\ncalculated by multiplying the units produced each year by the depreciable unit cost, which is calculated as the asset's depreciable value (ie, initial\ncost less salvage value) divided by the total number of units expected to be produced over the asset's life.\nThe depreciable unit cost is constant since the asset's cost is known, and the salvage value and the total number of units expected to be produced\nare estimated at the beginning of the asset's life (Choice C). Therefore, the only variable that can change the depreciation expense will be the\nactual number of units produced. Using the units-of-production method, if the depreciation expense increases each year, the number of units\nproduced is also expected to grow.\n(Choice B) Net margin (ie, net profit margin) is a measure of profitability, and it increases only if profit increases or revenue decreases. In this\nscenario, although production and COGS are expected to grow, that does not suggest the net margin will increase.\nThings to remember:\nThe units-of-production depreciation method expenses an asset's cost based on its use during each period, measured by the number of units\nproduced. Depreciation expense is calculated by multiplying the units produced each year by the depreciable unit cost, which is constant. If\ndepreciation expense is expected to increase each year, the number of units produced is also expected to increase.\nExplain the financial reporting and disclosures related to intangible assets", "qhtml": null}, {"n": 22, "q": "An analyst gathers the following selected information for a company: (€ millions) 20X5 20X4 Cash 380 410 Marketable securities 210 230 Accounts receivable 490 205 Inventory 1,010 540 Total assets 5,300 4,450 Current liabilities 1,750 1,410 Common stock 420 140 Additional paid-in capital 1,760 1,700 Retained earnings 280 310 Treasury stock (50) (90) Based on only this information, which of the following ratios most likely suggests decreased financial risk in 20X5?", "opts": ["Cash ratio", "Current ratio", "Financial leverage ratio"], "ans": "B", "expl": "Balance sheet ratios include solvency and liquidity ratios. Liquidity ratios (eg, cash ratio, current ratio) measure a company's ability to meet short-\nterm obligations, and solvency ratios (eg, financial leverage ratio) measure a company's ability to meet long-term obligations. Both indicate a\ncompany's financial risk.\nIn this scenario:\nCurrent assets = Cash + Marketable securities + Accounts receivable + Inventory\nTotal equity = Common stock + Additional paid-in capital + Retained earnings + Treasury stock\nNote: Treasury stock is always presented as a negative number since it is a contra-equity account on the balance sheet.\nTherefore, the ratios for Years 20X4 and 20X5 are calculated as follows:\nSince a current ratio higher than the prior year's indicates the company is better able to meet its short-term obligations, the current ratio\nindicates lower financial risk in 20X5.\n(Choice A) A decrease in the cash ratio indicates increased financial risk since it suggests less ability to meet short-term obligations.\n(Choice C) An increase in the financial leverage ratio indicates increased financial risk since it suggests less ability to meet long-term obligations.\nThings to remember:\nBalance sheet ratios include solvency and liquidity ratios. Liquidity ratios (eg, cash ratio, current ratio) measure a company's ability to meet short-\nterm obligations, and solvency ratios (eg, financial leverage ratio) measure a company's ability to meet long-term obligations. Both indicate a\ncompany's financial risk.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}, {"n": 23, "q": "An analyst gathers the following information: Based on this information, and assuming there are no other current assets, the company with the largest quick ratio is most likely: ", "opts": ["Company X", "Company Y", "Company Z"], "ans": "A", "expl": "The quick ratio is a liquidity ratio that indicates a company's ability to pay its short-term obligations using its most liquid assets. It is the ratio of a\ncompany's current assets less inventory to its current liabilities. The items in the numerator are the current assets that can be quickly\nconverted to cash; therefore, inventory is excluded:\nCurrent assets − Inventory = Cash + Marketable securities + Accounts receivable\nIn this scenario, Company X has the largest quick ratio:\n(Choice B) Company Y has the largest current ratio [ie, (Current assets ÷ Current liabilities)].\n(Choice C) Company Z has the largest cash ratio [ie, (Cash + Marketable securities) ÷ Current liabilities].\nThings to remember:\nThe quick ratio is the ratio of a company's current assets less inventory to its current liabilities. It is a liquidity ratio that indicates a company's\nability to pay its short-term obligations using its most liquid assets; therefore, inventory is excluded.\nCalculate and interpret common-size balance sheets and related financial ratios", "qhtml": null}];
+const CFG = {"title": "Wiley · Analyzing Balance Sheets", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Financial Statement Analysis · 23 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

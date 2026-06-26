@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A distribution of returns has the same mean, standard deviation, and skewness as a normal distribution but has a kurtosis of 3.4. Compared with a normal distribution, this distribution indicates returns are more likely: ", "opts": ["near the mean and in the extremes.", "near the mean and less likely in the extremes.", "in the extremes and less likely near the mean."], "ans": "A", "expl": "Kurtosis measures the proportion of outcomes in a distribution's tails. A normal distribution has a kurtosis of 3 (ie, mesokurtic). A distribution that\nis more peaked with fatter tails has a kurtosis greater than 3 (ie, leptokurtic). In this scenario, the distribution's kurtosis is 3.4. Since the kurtosis\nis greater than 3, returns are more likely near the mean (ie, more peaked) and in the extremes (ie, fatter tails) than in a normal distribution.\n(Choices B and C) A distribution with a kurtosis greater than 3 (ie, leptokurtic) indicates a higher likelihood of outcomes both in the mean area\nand in the distribution's tails. In contrast, a distribution with a kurtosis less than 3 (ie, platykurtic) is both less peaked and has thinner tails than a\nnormal distribution, indicating a higher likelihood of outcomes in the range between the mean and the extremes. Therefore, neither of these\nanswer choices correctly describes how a leptokurtic or a platykurtic distribution differs from a normal distribution.\nThings to remember:\nKurtosis measures the proportion of outcomes in a distribution's tails. Kurtosis greater than 3 indicates a higher likelihood of outcomes both in the\ndistribution's tails and near the mean than in a normal distribution. Kurtosis less than 3 indicates a higher likelihood of outcomes in the range\nbetween the mean and the extremes than in a normal distribution.\nInterpret and evaluate measures of skewness and kurtosis to address an investment problem", "qhtml": null}, {"n": 2, "q": "A positively skewed return distribution with a mean of 0% most likely has:", "opts": ["few extreme returns in the right tail.", "frequent small returns in the right tail.", "frequent extreme returns in the right tail."], "ans": "A", "expl": "A normal distribution has returns that are symmetrically distributed around the mean. A skewed distribution, unlike a normal distribution, is\nasymmetrical around the mean due to the greater presence of extreme outliers on one side. If the return distribution with a mean of 0% is:\npositively skewed, it is characterized by frequent small losses (the left tail), and few extreme gains (the long right tail).\nnegatively skewed, it is characterized by frequent small gains (the right tail), and few extreme losses (the long left tail) (Choice B).\n(Choice C) Skewed distributions will have few, not frequent, extreme results.\nThings to remember:\nA positively skewed return distribution is characterized by frequent small losses and few extreme gains, as indicated by the long right tail. A\nnegatively skewed distribution is characterized by frequent small gains and few extreme losses, as indicated by the long left tail.\nInterpret and evaluate measures of skewness and kurtosis to address an investment problem", "qhtml": null}, {"n": 3, "q": "A researcher collects the following sales data on 10 companies: Company A B C D E F G H I J Sales ($ millions) 2.9 7.4 20 17.4 19.5 2.6 9.3 10.7 7.2 8.3 Based on this data, the second quintile for sales (in $ millions) is closest to:", "opts": ["7.20", "7.76", "7.96"], "ans": "B", "expl": "Deciles, quintiles, quartiles, and percentiles are all types of quantiles, which are measures of location for data sets. They provide the position\nthat a certain percentage of the data is at or below.\nQuintiles split data sets into fifths. For instance, the 1st quintile marks the point at which 20% of the data is less than or equal, and the 2nd quintile\nmarks the point at which 40% of the data is less than or equal. To determine the value of the 2nd quintile, arrange the data in ascending order,\ndetermine the location of the 2nd quintile, and match the associated value with that location.\nLinear interpolation is one method to calculate the value for Location 4.4. The location of the 2nd quintile (4.4) equals the number of\nobservations plus one (10 + 1) multiplied by the 40 percent. The value of Location 4.4 is between the values of Locations 4 and 5. Since 4.4 is\n40% of the distance between Locations 4 and 5, its value is 40% of the difference between 7.4 and 8.3:\n(Choice A) 7.20 results from not adding 1 to the total number of observations in the location calculation.\n(Choice C) 7.96 results from using 0.6, instead of 0.4, in the observation value calculation.\nThings to remember:\nQuintiles split data sets into fifths. To determine the value of a quintile, sort the data in ascending order, calculate the location of that quintile, and\nmatch the associated (pro-rated) value with that location. Remember to add 1 to the number of data points in the location equation.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 4, "q": "Which of the following most appropriately describes a property of the mode?", "opts": ["It can be used with nominal data.", "It is the middle value of a distribution.", "All distributions have at least one mode."], "ans": "A", "expl": "Properties of the mode\nValue that occurs most often in a distribution\nDistributions can have any number of modes (including none)\nOnly measure of central tendency that can be used with nominal data\nThe mode is the observed value that occurs most frequently. It is the only measure of central tendency not dependent on numerical data:\nthe median is obtained by ordering numerical data by value, and\nthe mean is an average that uses numerical data as inputs.\nNominal data is not ranked by any quantifiable measure. It has no mean or median, but it can have a mode. For example, if five people in a\nroom are named Tong, James, Tong, Maria, and Sarah, \"Tong\" is the mode since more people in the room are named Tong than any other name.\nThus, only the mode is appropriate for frequency distributions with categorical data, including nominal data.\n(Choice B) The middle value of a distribution is the median, not the mode.\n(Choice C) A data set that consists only of unique observations has no mode. Data sets can be unimodal, bimodal, or trimodal, depending on the\nnumber of recurrent observations.\nThings to remember:\nThe mode is the variable outcome with the highest frequency in a distribution. It is the only measure of central tendency appropriate to use for\ncategorical data, including nominal data.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 5, "q": "An analyst collects P/E ratios from companies within an industry and plots them on a box and whisker chart: The third and fourth quartiles are closest to:", "opts": ["15 and 17", "15 and 20", "17 and 20"], "ans": "B", "expl": "A box and whisker plot illustrates the dispersion of data across quartiles. The box's:\nupper boundary marks the third quartile (Q ) and 75% of the data fall at or below that point;\n3\nlower boundary marks the first quartile (Q ) and 25% of the data fall at or below that point; and\n1\nupper and lower boundaries include 50% of the data, the interquartile range.\nThe whiskers extend from the upper and lower boundaries and mark the range of acceptable observations above Q and below Q . Single values\n3 1\nbeyond the ends of the whiskers (ie, the \"fences\") represent outliers, typically marked with asterisks or dots. The largest data point (ie,\nmaximum) is the fourth quartile (Q ) since 100% of the data falls at or below that point.\n4\nOutliers are actual data points in the data set, so Q would include outliers. In this question, Q is 15, which is the upper bound of the box; Q is\n4 3 4\n20, which is an outlier and the largest value.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 6, "q": "An analyst determines that a return distribution has the same mean, standard deviation, and skewness as a normal distribution, but has an excess kurtosis of 2.2. If an analyst incorrectly assumes the returns are normally distributed, then in this analysis, extreme values would most likely be:", "opts": ["underrepresented.", "accurately represented.", "overrepresented."], "ans": "A", "expl": "Kurtosis measures the proportion of outcomes in a distribution's \"tails.\" A normal distribution has total kurtosis of 3 and excess kurtosis of 0\n(ie, the normal distribution is mesokurtic). A distribution with positive excess kurtosis (ie, a leptokurtic distribution) has:\nfatter tails, indicating a higher proportion of extreme values, and\na higher peak, indicating more results clustered around the mean.\nIn this scenario, the distribution of returns has an excess kurtosis of 2.2, meaning the distribution is more likely to generate extreme values than a\nnormal distribution is. Therefore, if the analyst assumes the values are normally distributed, extreme values will be under-represented in the\nanalysis (Choice B).\n(Choice C) Extreme values would be over-represented if the analyst assumed the distribution was platykurtic, with thinner tails than a normal\ndistribution. This results from misreading the 2.2 as total kurtosis and not excess kurtosis. Total kurtosis of 2.2 would equate to excess kurtosis of\n−0.8.\nThings to remember:\nKurtosis measures the proportion of values in a distribution's \"tails.\" Compared with a normal distribution, a distribution with positive excess\nkurtosis will have a higher peak and fatter tails, indicating a higher proportion of extreme values.\nInterpret and evaluate measures of skewness and kurtosis to address an investment problem", "qhtml": null}, {"n": 7, "q": "An analyst compares the risk of Portfolio A to Portfolio B over the last four years and gathers the following information about both portfolios: Portfolio B Annual Returns (%) −4 11 2 −13 Portfolio A Portfolio B Mean (%) 1 −1 Range (%) 23 Mean Absolute Deviation 8 Sample Standard Deviation 10.49 10.10 The comparison shows that Portfolio B is riskier in terms of the: ", "opts": ["range only.", "range and mean absolute deviation only.", "range, mean absolute deviation, and standard deviation."], "ans": "A", "expl": "To answer this question, you need to calculate only the mean absolute deviation (MAD) of Portfolio B. The range is included in each answer\nchoice, and the standard deviations of both portfolios are given.\nMean absolute deviation (MAD), like standard deviation and range, is a measure of variability (dispersion) around a mean and can be used to\ngauge risk. MAD is calculated as follows:\n1. Determine the mean of the observations.\n2. Calculate the absolute difference between each observation and its mean (this eliminates the possibility of negative numbers).\n3. Sum all the calculations from the previous step and divide the sum by the number of observations.\nMAD for Portfolio B is calculated as:\nPortfolio B's range of returns [11 − (−13) = 24%] is greater than the Portfolio A's range of returns (23%), so Portfolio B has greater risk in terms of\nrange.\nPortfolio A Portfolio B\nMean (%) 1 −1\nRange (%) 23 24\nMean Absolute Deviation 8 7.5\nSample Standard Deviation 10.49 10.10\nThe MAD of Portfolio B is less than the MAD of Portfolio A, which indicates that Portfolio B's returns have less variability around the mean and less\nrisk than Portfolio A. The standard deviation of Portfolio B is less than that of Portfolio A as shown above, also indicating less risk (Choices B and\nC).\nThings to remember:\nMean absolute deviation (MAD), like standard deviation and range, is a measure of variability (dispersion) around a mean and can be used to\ngauge risk. Less dispersion around the mean indicates less variability and less risk.\nCalculate, interpret, and evaluate measures of dispersion to address an investment problem", "qhtml": null}, {"n": 8, "q": "One month of historical daily price change data is given below for two investments: Mean Standard Deviation Investment X USD 3.37 USD 41.45 Investment Y JPY 47.03 JPY 283.43 The relative dispersion of the daily price change data for Investment Y is approximately:", "opts": ["1/2 that of Investment X.", "7 times that of Investment X.", "14 times that of Investment X."], "ans": "A", "expl": "Analysts often use the standard deviations of data set samples as a way of comparing the data sets' dispersion. However, differences in sample\nmeans affect the comparability of standard deviations. Consequently, analysts may choose instead to measure the relative dispersion of the\nsamples using the coefficient of variation (CV) if they believe a comparison of dispersion using the standard deviations would be\nproblematic due to\ndifferent units of measurement between the data sets and/or\na large difference in the data sets' sample means.\nIn this scenario, the two samples have different units of measurement (currencies) and sample means that differ greatly in magnitude—USD 3.37\nversus JPY 47.03—so comparing their dispersion using standard deviations directly could be problematic. Although 283.43 is almost seven times\n41.45, Investment Y is not necessarily seven times as volatile as Investment X (Choice B). Dividing the sample standard deviations by the\nsample means, and thus measuring relative dispersion, allows a more appropriate comparison:\nTherefore, the relative dispersion, as measured by the CV, of Investment Y (6.0) is about one half that of Investment X (12.3).\n(Choice C) The mean, not the CV, of Investment Y is about 14 times that of Investment X.\nThings to remember:\nDifferences in sample means affect the comparability of standard deviations. Analysts may measure the relative dispersion of the samples using\nthe coefficient of variation. This method avoids the shortcomings of standard deviation due to different units of measurement between data sets\nand/or a large difference in the data sets' sample means.\nCalculate, interpret, and evaluate measures of dispersion to address an investment problem", "qhtml": null}, {"n": 9, "q": "The total assets of 10 different companies, as well as their research and development (R&D) spending as a percentage of revenue, are mapped on the following scatterplot: The correlation between total assets and R&D spending is closest to:", "opts": ["−2.0", "−1.0", "1.0"], "ans": "B", "expl": "Correlation and covariance measure the linear relationship between two variables. Unlike covariance, in which values are based on the\nvariables' magnitude, correlation is a standardized measure ranging from −1.0 to 1.0. As such, correlation provides insight into not only the\ndirection but also the strength of the relationship. Direction is indicated by the correlation's sign, and strength is indicated by its value on the\nscale.\nA correlation of:\n0 suggests no linear relationship.\n1.0 indicates a perfectly positive linear relationship.\n−1.0 indicates a perfectly negative linear relationship.\nThe closer to 1.0 or −1.0, the stronger the relationship. The closer to 0, the weaker the relationship. If the correlation is exactly 1.0 or −1.0, the\nvariables move by a consistent magnitude. In this scenario, total assets and research and development (R&D) spending as a percentage of\nrevenue demonstrate a perfectly negative linear relationship: when total assets increase, R&D revenue consistently decreases. Therefore, the\ncorrelation is negative (Choice C).\n(Choice A) −2.0 is the slope of the line formed by the data points and outside the range for a correlation (ie, a standardized measure ranging from\n−1.0 to 1.0).\nThings to remember:\nCorrelation measures two variables' linear relationship; it is a standardized measure ranging from −1.0 to 1.0. Direction is indicated by the\ncorrelation's sign, and the strength of the relationship is indicated by its value. A value of 0 indicates no linear relationship. A value of 1.0 (−1.0)\nindicates a perfectly positive (negative) linear relationship.\nInterpret correlation between two variables to address an investment problem\n10.An analyst identifies the presence of outliers in a sample containing the P/E ratios of 40 companies. The analyst discards the two smallest and\nthe two largest observations before calculating the average P/E ratio. This process best describes the use of a:\n\nA. trimmed mean.\nB. harmonic mean.\nC. winsorized mean.\nExplanation\nMeasures (ie, means) of central tendency include the arithmetic mean, geometric mean, and weighted mean. Although the presence of extreme\nvalues (ie, outliers) can significantly distort the accuracy of these measures, other measures reduce that effect. In this scenario, 40\nobservations are ranked in ascending order with three means applied that treat outliers in different ways:\nA trimmed mean discards the smallest and largest observations and calculates the average of the remaining observations. In this case,\nthe 10% trimmed mean discards the two smallest observations (ranks 1 and 2) and the two largest observations (ranks 39 and 40), then\ncalculates the average of the remaining 36 observations.\nA winsorized mean replaces the smallest and largest observations respectively with the smallest and largest values that fall within an\nacceptable range. Here, the 90% winsorized mean replaces the two smallest values with 9.5 (rank 3) and the two largest values with 65.6\n(rank 38), then calculates the average of the 40 observations (Choice C).\nA harmonic mean is the ratio of the number of observations to the sum of reciprocals. It is a weighted average that assigns smaller\nweights to larger observations; in this case, the weights range from 0.323 (rank 1) to 0.008 (rank 40). Due to these weights, the harmonic\nmean is less influenced by large outliers, but it can be pulled significantly in the direction of smaller values (Choice B).\nThings to remember:\nSome measures (ie, means) of central tendency treat the presence of outliers. A winsorized mean replaces the smallest and largest observations\nwith values that fall within an acceptable range, while a trimmed mean simply discards those observations. A harmonic mean uses reciprocals to\nassign smaller weights to larger observations.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 10, "q": "An analyst identifies the presence of outliers in a sample containing the P/E ratios of 40 companies. The analyst discards the two smallest and the two largest observations before calculating the average P/E ratio. This process best describes the use of a: ", "opts": ["trimmed mean.", "harmonic mean.", "winsorized mean."], "ans": "A", "expl": "Measures (ie, means) of central tendency include the arithmetic mean, geometric mean, and weighted mean. Although the presence of extreme\nvalues (ie, outliers) can significantly distort the accuracy of these measures, other measures reduce that effect. In this scenario, 40\nobservations are ranked in ascending order with three means applied that treat outliers in different ways:\nA trimmed mean discards the smallest and largest observations and calculates the average of the remaining observations. In this case,\nthe 10% trimmed mean discards the two smallest observations (ranks 1 and 2) and the two largest observations (ranks 39 and 40), then\ncalculates the average of the remaining 36 observations.\nA winsorized mean replaces the smallest and largest observations respectively with the smallest and largest values that fall within an\nacceptable range. Here, the 90% winsorized mean replaces the two smallest values with 9.5 (rank 3) and the two largest values with 65.6\n(rank 38), then calculates the average of the 40 observations (Choice C).\nA harmonic mean is the ratio of the number of observations to the sum of reciprocals. It is a weighted average that assigns smaller\nweights to larger observations; in this case, the weights range from 0.323 (rank 1) to 0.008 (rank 40). Due to these weights, the harmonic\nmean is less influenced by large outliers, but it can be pulled significantly in the direction of smaller values (Choice B).\nThings to remember:\nSome measures (ie, means) of central tendency treat the presence of outliers. A winsorized mean replaces the smallest and largest observations\nwith values that fall within an acceptable range, while a trimmed mean simply discards those observations. A harmonic mean uses reciprocals to\nassign smaller weights to larger observations.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 11, "q": "For a positively skewed distribution, most likely the", "opts": ["mean is less than the mode.", "probability of extreme events in both tails is greater than for a normal distribution.", "probability of a negative outcome is greater than the probability of a positive outcome."], "ans": "C", "expl": "A skewed distribution is an asymmetrical probability distribution for which the mean is different than the median, which is different than the mode.\nThe mean of a positively skewed distribution is greater than its median, which is greater than its mode (Choice A).\nSince the mean of a positively skewed distribution is greater than its median, more outcomes are negative than positive and the probability of a\nnegative outcome is greater than the probability of a positive outcome. The number of expected negative outcomes is small and more likely\nwhereas the number of expected positive outcomes is large but less likely. This distribution is depicted in the illustration on the right.\n(Choice B) A leptokurtic distribution (ie, \"fat tails\") is a symmetrical distribution that is more peaked than a normal distribution, and there are\ngreater probabilities of extreme events in both tails. A skewed distribution has a greater probability of extreme events only in one tail.\nThings to remember:\nA skewed distribution is an asymmetrical probability distribution that has a greater probability of extreme outcomes in one tail. The mean of a\npositively skewed distribution is greater than its median, which is greater than its mode. Since the mean is greater than the median, more\noutcomes are negative than positive. The number of expected negative outcomes is small and more likely whereas the number of expected\npositive outcomes is large but less likely.\nInterpret and evaluate measures of skewness and kurtosis to address an investment problem", "qhtml": null}, {"n": 12, "q": "The annual returns for a mutual fund are shown below: Year 1 2 3 4 5 6 7 8 9 10 11 12 Return (%) −3.8 1.6 5.1 13.0 −3.6 5.3 3.8 −4.0 4.5 1.6 6.0 1.6 The median return (in %) is closest to:", "opts": ["1.6", "2.7", "4.6"], "ans": "B", "expl": "The median is the middle value of a set of observations arranged in ascending or descending order. For an odd number of observations, the\nmedian is the observation at (n + 1) / 2 since that will always be the middle observation. For an even number of observations, the median value is\ncalculated using the formula shown above.\nThe observations, sorted in ascending order, are shown below:\nThis question has 12 observations, so the median is located between observations 6 and 7. The median value is the average of the values for\nobservations 6 and 7:\n(Choice A) 1.6% is the mode of the observations since it is the most frequently occurring value.\n(Choice C) 4.6% is the approximate average of the returns for Years 6 and 7. Before calculating the median, remember to sort the data.\nThings to remember:\nWhen calculating the median for a set of observations, first sort the data in ascending or descending order. If the number of n observations is\neven, the median value is the average of the observations at locations n / 2 and (n + 2) / 2\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 13, "q": "An analyst constructs the following histogram of S&P 500 Index annual returns: In this histogram, the median observation is in an interval that: ", "opts": ["is the modal interval.", "lies below the modal interval.", "lies above the modal interval."], "ans": "A", "expl": "A histogram's intervals are arranged in ascending order from left to right, each having the same interval width. Histograms are used to understand\na distribution's measures of central tendency. If a set of data contains an odd number of items, the median is the middle value. If the number of\nitems is even, the median is the number resulting from adding the two middle values together and dividing by 2.\nIn this scenario, there are 27 observations (ie, one per year from 1990 to 2016, inclusive), so the 14th observation is the median, which lies in\ninterval \"10 ≤ x < 17\":\nThe modal interval is the interval that contains the most observations. In this particular scenario, interval \"10 ≤ x < 17\", the interval that contains\nthe median, is also the modal interval (Choices B and C).\nThings to remember:\nThe median is value of the middle observation if the number of items in the data set is odd. If the number in the data set is even, the median is the\nsum of the two middle values divided by 2. The modal interval is the interval with the most observations.\nInterpret correlation between two variables to address an investment problem", "qhtml": null}, {"n": 14, "q": "An analyst collects the following data for a group of companies: Company P/E ratio A 45 B 16 C 41 D 29 E 10 An analyst wants to calculate an average P/E ratio while giving less weight to larger observations. Using the most appropriate approach, the average P/E ratio is closest to: ", "opts": ["20.53", "24.35", "28.20"], "ans": "A", "expl": "The harmonic mean is the ratio of the number of observations to the sum of reciprocals. By using reciprocals, the harmonic mean assigns a\nsmaller weight to larger observations. Thus, the harmonic mean is influenced less by large outliers than the arithmetic mean, but it can be\npulled significantly in the direction of small outlier values.\nThe harmonic mean can be used to calculate an average of ratios such as a P/E ratio, in which each ratio's value is inversely proportional to its\nweight in the average.\nIn this scenario, the harmonic mean is calculated as:\n(Choice B) 24.35 is the geometric mean. The geometric mean is most appropriate for calculating the average of a time series of returns since it\naccounts for compounding. It is not a weighted average.\n(Choice C) 28.20 is the arithmetic mean and assigns equal weights to all observations. It is not a weighted average.\nThings to remember:\nThe harmonic mean is the ratio of the number of observations to the sum of reciprocals. By using reciprocals, it assigns a smaller weight to larger\nobservations.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 15, "q": "The monthly returns for a mutual fund are: Month Return (%) 1 3.0 2 −0.5 3 0.0 4 1.1 5 −1.2 6 −2.3 7 1.6 8 2.0 If the target monthly return is 1.5%, the fund's target semideviation (%) is closest to:", "opts": ["1.88", "2.00", "2.65"], "ans": "B", "expl": "An investment's standard deviation measures the dispersion of returns above and below the mean, so it can indicate the investment's potential\nupside and downside for investors. Investors are most often concerned about an investment's potential downside.\nTarget semideviation focuses on an investment's downside risk and therefore considers only returns below a target return. The target can be\nthe mean or another investor-selected metric (eg, minimum acceptable return). In this scenario, the target semideviation is calculated as follows:\nThings to remember:\nTarget downside semideviation focuses on an investment's downside risk. It is similar in concept to standard deviation but differs in that it\nconsiders only returns that are less than or equal to a target return. The target can be any value chosen by the investor.\nCalculate, interpret, and evaluate measures of dispersion to address an investment problem", "qhtml": null}, {"n": 16, "q": "An otherwise normal distribution has a skewness of −0.77. Regarding the distribution's measures of central tendency, it is most likely that its:", "opts": ["mean is larger than its mode.", "median is larger than its mean.", "median is larger than its mode."], "ans": "B", "expl": "Skewness measures the symmetry of a distribution. A normal distribution is perfectly symmetric and has the same likelihood of values at a given\nstandard deviation on both sides of the mean. Skewed distributions are asymmetric and have more extreme values in the direction of the\nskew.\nDue to the frequency of extreme results, skewness also impacts a distribution's measures of central tendency differently. For a unimodal\ndistribution:\nthe median will be pulled toward the direction of the skew more than the mode, and\nthe mean will be pulled toward the direction of the skew more than the median.\nIn this question, the distribution has a skew of −0.77 (ie, negatively skewed), indicating small but more frequent values in the right tail and a few\nextreme values in the left tail. This pulls the mean farther to the left than the median, and therefore the median is larger than the mean.\n(Choices A and C) A positively skewed distribution has a mean that is larger than its median, which is larger than its mode.\nThings to remember:\nSkewed distributions are asymmetric around the mean and have more extreme values in the direction of the skew. Skewness impacts a\ndistribution's measures of central tendency differently. For a unimodal distribution, the mean is pulled in the direction of the skew more than the\nmedian, which is be pulled more than the mode.\nInterpret and evaluate measures of skewness and kurtosis to address an investment problem", "qhtml": null}, {"n": 17, "q": "The mean absolute deviation (MAD) for this sample is closest to:", "opts": ["0.0", "4.8", "6.0"], "ans": "B", "expl": "Mean absolute deviation (MAD) measures dispersion (ie, variability) of observations around the mean. Dispersion refers to the difference\nbetween an observation and the mean. Higher dispersion means that the observations are more spread out around the mean, which indicates a\ngreater probability of observations that are significantly higher or lower than the mean. In finance, dispersion indicates risk.\nSince the sum of all dispersions around the mean equals 0, MAD instead uses the absolute value of each dispersion. The sum of all the absolute\nvalues is divided by the number of observations, which produces the average dispersion. The calculations are shown below:\n(Choice A) Data in a sample will be both above and below the mean, so some dispersions around the mean are negative and others are\npositive. The sum of all dispersions equals 0, so the average also equals 0. By using the absolute value of the dispersions, MAD always\ngenerates a number ≥ 0.\n(Choice C) 6.0 results from dividing the sum of the absolute values by (n − 1), or 4, instead of 5. The number of observations minus 1 is used\nonly when calculating the standard deviation of a sample. MAD uses the actual number of observations.\nThings to remember:\nMean absolute deviation (MAD) measures the dispersion of observations around a mean. MAD is found by calculating the absolute value of the\ndifference between each observation and the mean, totaling those absolute values, and then dividing the sum by the number of observations.\nMAD always produces a number ≥ 0.\nCalculate, interpret, and evaluate measures of dispersion to address an investment problem", "qhtml": null}, {"n": 18, "q": "An analyst prepares a frequency distribution graph of monthly returns: The value of the median return is closest to:", "opts": ["1.75%", "2.50%", "4.00%"], "ans": "B", "expl": "The median is the middle observation of a distribution. It is a measure of central tendency obtained by ordering data in ascending order and\nlocating the middle data point. The median is determined only by ranking the observations relative to one another. For a data set with n\nobservations, the median is:\nthe observation at (n + 1) / 2 when n is odd.\nthe simple average of the two middle observations, located at n / 2 and (n + 2) / 2 when n is even.\nIn this instance, there are 20 data points in the frequency distribution:\nReturn Absolute\n(%) frequency\n−8 1\n−3 1\n−1 2\n0 2\n1 3\n2 1\n3 3\n4 4\n5 2\n8 1\nThe total number of observations is an even number, so the median is the average of the two middle observations, calculated below:\n(Choice A) 1.75% is the arithmetic mean of the distribution, which accounts for the values of all observations in its calculation. The median is\nbased on the number of total observations and the value of the middle observation after the data is ordered.\n(Choice C) 4.00% is the mode, which is the value with the highest frequency.\nThings to remember:\nThe median is the middle observation of a distribution: a measure of central tendency obtained by ordering data in ascending order and locating\nthe middle data point. For a data set with an even number of observations, the median is the simple average of the two middle observations,\nlocated at n / 2 and (n + 2) / 2, where n is the number of observations.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 19, "q": "An analyst gathers statistics based on comparable samples taken from the returns of three index exchange-traded funds (index ETFs): Index ETF Sample Standard Deviation Sample Mean (% return) (% return) X 11.5 8.2 Y 9.4 5.9 Z 5.1 1.7 Which of these funds has the smallest relative dispersion? ", "opts": ["Index ETF X", "Index ETF Y", "Index ETF Z"], "ans": "A", "expl": "Using the standard deviations of samples from different data sets to compare dispersion is not always helpful, since the sample means of the sets\nmay differ greatly or may involve different units of measurement. To address this issue, analysts may turn to the coefficient of variation (CV), a\nmeasure of relative dispersion. The CV is calculated as the sample standard deviation divided by the sample mean. In this scenario, the CVs\nof the index exchange-traded funds (ETFs) are as follows:\nIndex ETF Sample standard deviation Sample mean Coefficient of\n(% return) (% return) variation\nX 11.5 8.2 1.4\nY 9.4 5.9 1.6\nZ 5.1 1.7 3.0\nIndex ETF X has the largest standard deviation, but its CV, and therefore its relative dispersion, is the smallest.\n(Choices B and C) Index ETFs Y and Z have smaller standard deviations than Index ETF X. However, standard deviation is a measure of\ndispersion, not relative dispersion. Index ETF X has the smallest CV, which measures relative dispersion.\nThings to remember:\nComparing standard deviations of samples is not always helpful since the sample means in different data sets may differ greatly or may involve\ndifferent units of measurement. The coefficient of variance (CV) addresses this issue. CV, which measures relative dispersion, is calculated as\nthe sample standard deviation divided by the sample mean.\nCalculate, interpret, and evaluate measures of dispersion to address an investment problem", "qhtml": null}, {"n": 20, "q": "For four years, an investor invests €1,000,000 annually in a stock at the following prices (per share): Purchase Price of Security (€) Year 1 120 Year 2 130 Year 3 155 Year 4 175 The average price per share paid for the stock over the four-year period is closest to: ", "opts": ["€141.89", "€143.42", "€145.00"], "ans": "A", "expl": "The harmonic mean is a weighted average. It is a measure of central tendency typically used for averaging ratios (stated as \"amount per unit\")\nwhere an observation's value is inversely proportional to its weight in the average. It can be used for cost averaging (ie, finding average price per\nshare) when fixed amounts are invested periodically.\nIn this instance, since the investor is investing annually the same total amount, €1,000,000, a lower stock price implies that a larger number of\nshares can be purchased. Thus, the lower (higher) share prices should be assigned larger (smaller) weights in the average since a greater\n(smaller) number of shares in the investment portfolio was purchased at that price. The harmonic mean assigns a larger weight to smaller\nobservations and therefore is appropriate.\n(Choice B) The geometric mean is most appropriate for calculating the average growth rate over multiple consecutive return periods by taking\ncompounding into account. It is not a weighted average.\n(Choice C) The arithmetic mean is a simple average of the purchase prices, assigning equal weight to all observations.\nThings to remember:\nThe harmonic mean is a weighted average. It is a measure of central tendency typically used for averaging ratios (stated as \"amount per unit\")\nwhere an observation's value is inversely proportional to its weight in the average. It can be used for cost averaging (ie, finding average price per\nstock) when fixed amounts are invested periodically.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 21, "q": "A fund has the following monthly returns over 11 months: Month Return 1 5% 2 7% 3 6% 4 –3% 5 –1% 6 9% 7 6% 8 2% 9 5% 10 13% 11 11% The data set's interquartile range is closest to:", "opts": ["4%", "5%", "7%"], "ans": "C", "expl": "The interquartile range (IQR) describes the spread of the middle half of observations in a data set. In an ordered distribution divided into\nquarters, the divisions are referred to as quartiles, and the IQR is calculated as the difference between the 3rd quartile (Q ) and the 1st quartile\n3\n(Q ). The 3rd quartile is represented by the 75th percentile; the 1st quartile is represented by the 25th percentile. The IQR is calculated as\n1\nfollows:\nStep 1: Locate the observations at the 25th and 75th percentiles:\nL = (11 + 1) × (25/100) = 3: The 1st quartile is the third observation.\n25\nL = (11 + 1) × (75/100) = 9: The 3rd quartile is the ninth observation.\n75\nStep 2: With the data in ascending order, find the values of the third and ninth observations, which are 2% and 9%, respectively:\nStep 3: Calculate the difference between the observed values:\nIQR = Q − Q\n3 1\nIQR = 9% − 2% = 7%\n(Choice A) 4% is the range of all observations [13% − (−3%)], divided by 4. However, the IQR is the spread of the middle half of observations.\n(Choice B) 5% is the range of the lowest 25% of the ranked data (ie, −3% to 2%). The IQR refers to the middle half of observed values in an\nordered distribution and not the lowest 25% observed values.\nThings to remember:\nThe interquartile range describes the spread of the middle half of observations in an ordered distribution. It is the difference between the observed\nvalues at the 3rd quartile and the 1st quartile, which are located at the 75th and 25th percentiles.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 22, "q": "An analyst prepares the following box and whisker chart that displays a summary of the daily returns on an indexed fund: The analyst uses 1.5 times the interquartile range for the whiskers and considers all values beyond the upper and lower fences as outliers. Outliers are best described as observed values:", "opts": ["above 14% and below −4%", "above 15% and below −3%", "above 17% and below −7%"], "ans": "C", "expl": "A box and whisker plot shows how data is distributed across quartiles. The box always displays and encloses the interquartile range (IQR) of an\nordered distribution. Thus, the upper boundary of the box marks the third quartile (Q ), and the lower boundary marks the first quartile (Q ).\n3 1\nThe whiskers extend from the upper and lower bounds and mark the range of acceptable observations above Q and below Q . Values beyond\n3 1\nthe ends of the whiskers (ie, the \"fences\") represent outliers. In this scenario, the upper fence is determined by adding 1.5 times the IQR to Q ,\n3\nand the lower fence by subtracting the same value from the Q .\n1\nTherefore, the outliers are values above 17% and below −7%.\n(Choice A) The values of 14% and −4% result from incorrectly using the mean (5%) instead of the upper and lower bounds of the box (Q and\n3\nQ ) to define the fences.\n1\n(Choice B) The maximum and minimum values of 15% and −3% result from incorrectly using the median (6%) instead of the upper and lower\nbounds of the box to define the fences.\nThings to remember:\nA box and whisker plot shows how data is distributed across quartiles. The box always displays the interquartile range (IQR) of an ordered\ndistribution, and the whiskers define the range of acceptable values beyond the upper and lower bounds of the box. The ends of the whiskers can\nbe determined using a multiple of the IQR.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 23, "q": "A distribution of sample stock returns has the following statistics: Arithmetic mean 0.45 Standard deviation 0.67 Skewness 0.0 Excess kurtosis 0.83 Compared with a normal distribution, this distribution will most likely have extreme returns that occur:", "opts": ["less frequently.", "with the same frequency.", "more frequently."], "ans": "C", "expl": "Kurtosis measures the proportion of values in a distribution that are large deviations from the mean. For investors, large deviations from the\nmean return tend to indicate higher risk, so greater kurtosis indicates riskier investments.\nA normal distribution has kurtosis of 3 (ie, a mesokurtic distribution). Excess kurtosis is measured as kurtosis − 3. A normal distribution will have 0\nexcess kurtosis:\nPositive excess kurtosis (ie, a leptokurtic distribution) indicates that there is a greater proportion of extreme values than in a normal\ndistribution; therefore, the tails of the distribution are fatter.\nNegative excess kurtosis (ie, a platykurtic distribution) indicates that there is a smaller proportion of extreme values than in a normal\ndistribution; therefore, the tails of the distribution are thinner.\nIn this scenario, the excess kurtosis is 0.83. Since the value is positive, the tails of the distribution will be fatter than in a normal distribution.\nTherefore, this distribution is more likely to have extreme returns than a normal distribution (Choices A and B).\nThings to remember:\nKurtosis measures the proportion of values in a distribution that are large deviations from the mean. A normal distribution will have excess kurtosis\nof 0. Positive excess kurtosis indicates that the proportion of extreme values is greater than in a normal distribution; therefore, the tails of the\ndistribution are fatter.\nInterpret and evaluate measures of skewness and kurtosis to address an investment problem", "qhtml": null}, {"n": 24, "q": "An analyst collects a portfolio's stock returns from last year and plots them on the following box-and-whisker plot: The interquartile range is closest to:", "opts": ["3.5%", "4.0%", "7.0%"], "ans": "C", "expl": "A box-and-whisker plot shows how ordered data is distributed across quartiles. The upper bound of the box within the plot marks the third\nquartile (Q ); the lower bound marks the first quartile (Q ). Therefore, the box within the plot displays the interquartile range (IQR), which is the\n3 1\ndifference between Q and Q (ie, the upper and lower bounds of the box). The IQR represents the range of the middle half of observations in\n3 1\nthe dataset.\nIn this scenario, the upper bound of the box is 6%. The lower bound of the box is −1%. Therefore, the IQR is 7.0% [6% − (−1%)].\n(Choice A) 3.5% results from incorrectly dividing the IQR in half, which is the average range of the inner quartiles.\n(Choice B) 4.0% results from incorrectly dividing the range of the full dataset [10% − (−6%) = 16%] by the number of quartiles (4). The IQR does\nnot include the whiskers or any outliers.\nThings to remember:\nA box-and-whisker plot shows how ordered data is distributed across quartiles. The upper bound of the box within the plot marks the third quartile\n(Q ); the lower bound marks the first quartile (Q ). The difference between the box's upper and lower bounds is the interquartile range (IQR).\n3 1\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 25, "q": "The annual returns for a mutual fund over the past 12 years are shown in the table below: The 7th decile return for this fund is closest to:", "opts": ["9.40%", "10.24%", "10.61%"], "ans": "B", "expl": "Deciles divide a distribution into ten equal parts and are used to show the location of an observation relative to all observations in the\ndistribution. As shown in the image above, specifying an observation as the 7th decile means that 7/10 (ie, 70%) of all observations in the\ndistribution are below that observation.\nPercentiles are frequently used to show relative location since all other quantiles can be defined with respect to percentiles. The location of the\n7th decile is the same as the location of the 70th percentile. The process for determining the location and value of any percentile involves three\nsteps:\nSort the data numerically from lowest to highest: In this scenario, the 12 observations are presented in chronological order. Sorting values in\nascending order is represented by the following table:\nDetermine the location of the desired percentile: The location of any percentile is calculated as:\nThe 70th percentile is located at: (12 + 1) × 70/100 = 9.1. Since 9.1 is not a whole number, it is between Locations 9 and 10:\nUse linear interpolation to calculate the value of the observation that corresponds to the specified location: Location 9.1 is 10% of the\ndistance between Locations 9 and 10. Linear interpolation indicates that the value of Location 9.1 equals Location 9's value plus 10% of the\ndifference between the values of Locations 9 and 10, or 10% + [10% × (12.4% − 10.0%)] = 10.24%.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 26, "q": "When conducting correlation analysis, the most appropriate approach is to exclude:", "opts": ["all the outliers.", "none of the outliers.", "only outliers that are generated from noise."], "ans": "C", "expl": "Correlation analysis indicates the direction and strength of the linear relationship between two variables. However, correlation analysis has\nlimitations that can reduce its reliability as a summary statistic. These limitations include the following:\nOutliers have significant impact. Outliers can create significant changes to the correlation between two variables. Analysts must judge\nwhether outliers contain information about the relationship between the variables and should therefore remain in the dataset or are noise\nand should be excluded from the dataset (Choices A and B). If outliers from noise remain, they will reduce the correlation metric's\nreliability.\nCorrelation measures only linear relationships. Variables can have a strong nonlinear (eg, logarithmic) relationship while also having\nlow correlation values since correlation does not account for a nonlinear relationship.\nHigh correlation coefficients can be caused by spurious (ie, false) correlation. This occurs when:\nthe correlation is due to chance and not to a meaningful relationship.\ncalculations combine the two variables with a third variable.\nthe correlation results from a direct relationship to a third variable.\nThings to remember:\nCorrelation analysis indicates the direction and strength of a relationship between two variables. Outliers can create significant changes and\npotentially reduce the correlation metric's reliability. Analysts must judge whether outliers contain information about the relationship between the\nvariables and should therefore remain in the data set or are noise and should be excluded.\nInterpret correlation between two variables to address an investment problem", "qhtml": null}, {"n": 27, "q": "A portfolio holds the following stocks: Stock Return (%) Stock 1 6.00 Stock 2 5.20 Stock 3 −3.75 Stock 4 4.90 Stock 5 6.85 Stock 6 −0.50 Stock 7 2.25 If an analyst is choosing stocks that are only in the third and fourth quintiles of returns for this portfolio, which of the following stocks is the least appropriate choice?", "opts": ["Stock 2", "Stock 4", "Stock 7"], "ans": "C", "expl": "Quantiles are used to mark distributions into portions containing equal numbers of observations. One example is a percentile, which establishes\nthe percentage of observations in the distribution lying at or below a specified cutoff value (eg, the 90th percentile means that 90% of values in a\ndistribution lie at or below that observation). The boundaries of the quantile being sought often do not match an exact observation in the\ndistribution, so the location must be estimated using linear interpolation.\nOther quantiles can be defined using percentiles. For example, quintiles (ie, fifths) occur at the 20th, 40th, 60th, 80th, and 100th percentiles:\n1st quintile: > 0 and ≤ 20th percentile\n2nd quintile: > 20th to ≤ 40th percentile\n3rd quintile: > 40th to ≤ 60th percentile\n4th quintile: > 60th to ≤ 80th percentile\n5th quintile: > 80th to ≤ 100th percentile\nIn this case, the analyst is interested in the third and fourth quintiles of returns (ie, observations above the 40th percentile and at or below the\n80th percentile). This result can be derived by sorting the returns in ascending order, and then determining the two locations that correspond to\nthe beginning point of the 3rd quintile and the endpoint of the 4th quintile.\nThe stock returns are ordered by ascending value:\nCalculate the location of each percentile:\nNote that 3.2% marks the 40th percentile, while 6.4% represents the 80th percentile. Since no actual returns from the portfolio correspond to\nthese returns, use linear interpolation to find the corresponding returns for each percentile:\nThe stocks that have returns in the third and fourth quintiles—above the 40th percentile and at or below the 80th percentile—have returns greater\nthan 2.78% and less than 6.34%. The stocks within that range are Stocks 1, 2, and 4, as illustrated by the shading in the table above. These are\nthe most suitable selections for the analyst (Choices A and B). Stocks 3, 5, 6, and 7 are not suitable since they fail to meet the criteria.\nThings to remember:\nQuantiles are used to organize distributions into portions containing equal numbers of observations. In many cases, the quantile will not exactly\nequal the value of an observation, so linear interpolation is used to solve for the desired quantile.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 28, "q": "An otherwise normal distribution with a mean of 0 has an excess kurtosis of −0.6. Which of the following best describes the distribution?", "opts": ["Its mean will be smaller than its median", "Its tails will be thinner than a normal distribution", "It is more likely to have negative values than positive values"], "ans": "B", "expl": "Kurtosis measures the proportion of outcomes in a distribution's \"tails.\" A normal distribution has total kurtosis of 3 and excess kurtosis of 0\n(ie, the normal distribution is mesokurtic). A distribution with negative excess kurtosis (ie, a platykurtic distribution) will have:\nthinner tails, indicating a smaller proportion of extreme values, and\na lower peak, indicating fewer results clustered around the mean.\nIn this scenario, the distribution is otherwise normal except that it has excess kurtosis of −0.6. This indicates that the distribution is platykurtic, and\nthus that its tails will be thinner than the tails of a normal distribution.\n(Choice A) Kurtosis does not affect the symmetry, and therefore the location of the measures of central tendency, of an otherwise normal\ndistribution. A normal distribution's mean is equal to its median.\n(Choice C) Kurtosis does not affect the symmetry of an otherwise normal distribution. Since the mean of the distribution is 0 and the distribution\nremains symmetric, the distribution of positive values is the same as the distribution of negative values.\nThings to remember:\nKurtosis measures the proportion of values in a distribution that are far from the mean. When excess kurtosis is positive (negative) the tails of the\ndistribution are fatter (thinner) and the proportion of extreme values increases (decreases).\nInterpret and evaluate measures of skewness and kurtosis to address an investment problem", "qhtml": null}, {"n": 29, "q": "Assuming assets have a unimodal return distribution, which of the following assets would be most appropriate for an investor aiming to maximize mean returns? An asset with an expected return distribution that is:", "opts": ["symmetrical.", "positively skewed.", "negatively skewed."], "ans": "B", "expl": "Investors commonly consider the level of symmetry in a return distribution. For unimodal distributions, if the return distribution is perfectly\nsymmetrical, where the arithmetic mean, median, and mode are equal, then the probability of a gain is the same as the probability of a loss.\nSkewness refers to the lack of symmetry in a distribution.\nA positively skewed return distribution has a long right tail with:\nfewer but large returns above the mean and\nfrequent but smaller returns below the mean.\nThese large returns pull the mean to the right of the mode and the median, so the mean is greater than the median, which is greater than the\nmode. Positively skewed returns are most appropriate for the investor aiming to maximize mean returns since the mean expected return is\ngreater than for assets with symmetrical or negatively skewed distributions, all else equal (Choices A and C).\nIf a return distribution is negatively skewed, it has a long left tail: fewer but larger returns below the mean with frequent but smaller returns above\nthe mean. The mean is less than the median, which is less than the mode, and the mean expected return is less than that for a symmetrical or\npositively skewed unimodal distribution.\nThings to remember:\nA positively skewed return distribution has a long right tail, and the mean is greater than the median, which is greater than the mode. For\npositively skewed returns, the mean expected return is greater than for assets with symmetrical or negatively skewed distributions, all else equal.\nInterpret and evaluate measures of skewness and kurtosis to address an investment problem", "qhtml": null}, {"n": 30, "q": "An analyst gathers 20X7 annual returns of all 16 stocks in a portfolio. The analyst sorts them from lowest to highest and categorizes them into 4 different groups based on the size of the annual return: Annual stock returns in 20X7 Group 1 Group 2 Group 3 Group 4 −6.2% −2.3% 6.3% 12.2% −5.7% −1.6% 8.8% 14.0% −3.6% 3.4% 11.5% 15.7% −3.5% 4.2% 11.6% 16.2% The 75th percentile return for all 16 stocks in the portfolio is closest to:", "opts": ["11.90%", "12.05%", "12.20%"], "ans": "B", "expl": "Each quartile represents 25% of the annual returns, with the lowest set of returns in the 1st quartile (Group 1) and the highest set in the 4th\nquartile (Group 4). The location of the 75th percentile is where Group 3 ends. The 75th percentile location's value separates the bottom 75% of\nall returns from the top 25% of all returns. To determine the location (L) of the 75th percentile, use the location of the percentile formula:\nThe 12.75 result shows that the value of the 75th percentile is located between the 12th and the 13th annual returns. The values of the 12th and\n13th locations are 11.6% and 12.2%, respectively. To find the value of the location:\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 31, "q": "A set of stocks in a portfolio had the following returns last year: Stock 1 2 3 4 5 6 7 8 9 10 Return 4.7% 9.7% −8.3% 6.8% 12.1% 0.9% −2.6% 18.7% 5.5% 17.2% A manager wants to adjust the portfolio's strategy and review the stocks in the second quartile of returns. Which stock would be among those that the manager will most likely review?", "opts": ["Stock 1", "Stock 4", "Stock 7"], "ans": "A", "expl": "List the stock returns in ascending order:\nDeciles, quintiles, quartiles, and percentiles are all types of quantiles, which are measures of location for data sets. They provide the position\nthat a certain percentage of the data is at or below.\nQuartiles split data sets into fourths. For instance, Quartile 1 marks the point that 25% of the data is at or below. Quartile 3 marks the point that\n75% of the data is at or below.\nQuartiles are often used to group data points into segments. The second quartile would be stock returns from 25% to 50% (ie, the stock returns\nbetween Quartile 1 and Quartile 2).\nTo find measures of location, returns must be placed in ascending order. After the location is calculated, the value can be determined by counting\nfrom the smallest data point. Measures of location can be calculated with the following equation:\nThe portfolio has 10 stocks, so the locations of Quartile 1 and Quartile 2 are:\nThe manager will review the stocks between locations 2.75 and 5.5, which are the 3rd, 4th, and 5th lowest stock returns. Stock 6, Stock 1, and\nStock 9 are located within Quartile 2.\n(Choice B) Stock 4 is the 6th stock when returns are ranked in ascending order. The return is placed in the 3rd quartile, which is not in the set of\nstocks that the manager plans to review.\n(Choice C) Stock 7 is the 2nd stock when returns are ranked in ascending order. The return is placed in the 1st or bottom quartile, which is not in\nthe set of stocks that the manager plans to review.\nThings to remember:\nQuantiles provide information on the location that a certain percentage of the data is at or below.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem LOS\n32.The correlation of three portfolios' daily stock returns over the past decade is presented in the following matrix:\nPortfolio 1 Portfolio 2 Portfolio 3\nPortfolio 1 1.00 0.83 −0.77\nPortfolio 2 1.00 0.13\nPortfolio 3 1.00\nBased on only this information, which two portfolios most likely demonstrated the weakest linear relationship?\nA. Portfolios 1 and 2\nB. Portfolios 1 and 3\n\nC. Portfolios 2 and 3\nExplanation\nCorrelation measures the linear relationship between two variables. When the relationship is direct (ie, the variables generally move in the\nsame direction), correlation will be positive. When the relationship is inverse (ie, the variables generally move in opposite directions), correlation\nwill be negative.\nCorrelation is a standardized measure that indicates both the direction and strength of a linear relationship. A correlation value closer to 0\nsuggests a weak linear relationship between the variables. If the value moves closer to either −1 or 1 (ie, away from 0), it indicates a stronger\nrelationship. A value of −1 indicates a perfect negative linear relationship; a value of 1 indicates a perfect positive linear relationship.\nIn this scenario, the weakest linear relationship is between Portfolios 2 and 3 because their correlation of 0.13 is the closest to 0. Note: The\ncorrelation between any variable and itself will always be 1.\n(Choice A) Portfolios 1 and 2 have a correlation of 0.83, indicating a strong positive linear relationship.\n(Choice B) Portfolios 1 and 3 have a correlation of −0.77, indicating a strong negative linear relationship.\nThings to remember:\nCorrelation measures the linear relationship between two variables. A correlation value near 0 means the variables have a weak linear\nrelationship. If the value moves closer to either −1 or 1 (ie, away from 0), it indicates a stronger relationship. A value of 1 (−1) indicates a perfect\npositive (negative) linear relationship.\nInterpret correlation between two variables to address an investment problem", "qhtml": null}, {"n": 32, "q": "The correlation of three portfolios' daily stock returns over the past decade is presented in the following matrix: Portfolio 1 Portfolio 2 Portfolio 3 Portfolio 1 1.00 0.83 −0.77 Portfolio 2 1.00 0.13 Portfolio 3 1.00 Based on only this information, which two portfolios most likely demonstrated the weakest linear relationship?", "opts": ["Portfolios 1 and 2", "Portfolios 1 and 3", "Portfolios 2 and 3"], "ans": "C", "expl": "Correlation measures the linear relationship between two variables. When the relationship is direct (ie, the variables generally move in the\nsame direction), correlation will be positive. When the relationship is inverse (ie, the variables generally move in opposite directions), correlation\nwill be negative.\nCorrelation is a standardized measure that indicates both the direction and strength of a linear relationship. A correlation value closer to 0\nsuggests a weak linear relationship between the variables. If the value moves closer to either −1 or 1 (ie, away from 0), it indicates a stronger\nrelationship. A value of −1 indicates a perfect negative linear relationship; a value of 1 indicates a perfect positive linear relationship.\nIn this scenario, the weakest linear relationship is between Portfolios 2 and 3 because their correlation of 0.13 is the closest to 0. Note: The\ncorrelation between any variable and itself will always be 1.\n(Choice A) Portfolios 1 and 2 have a correlation of 0.83, indicating a strong positive linear relationship.\n(Choice B) Portfolios 1 and 3 have a correlation of −0.77, indicating a strong negative linear relationship.\nThings to remember:\nCorrelation measures the linear relationship between two variables. A correlation value near 0 means the variables have a weak linear\nrelationship. If the value moves closer to either −1 or 1 (ie, away from 0), it indicates a stronger relationship. A value of 1 (−1) indicates a perfect\npositive (negative) linear relationship.\nInterpret correlation between two variables to address an investment problem", "qhtml": null}, {"n": 33, "q": "If a unimodal distribution has a skewness of 0.8, which of the following measures of central tendency is the greatest?", "opts": ["mode.", "median.", "arithmetic mean."], "ans": "C", "expl": "Skewness measures how nonsymmetrical a distribution is. Skewed distributions typically have more extreme values in one tail and more\nmoderate values in the other. As a distribution becomes more skewed and either the left or right tail grows higher or longer, the values farther from\nthe middle of the distribution are more likely to pull the arithmetic mean (simple mean or average) away from the distribution center than the\nmedian or mode. Because the arithmetic mean weights every value equally, it is more heavily influenced by outliers and extreme data points.\nA normal distribution, which is symmetrical, has a skewness of 0. A distribution with a skewness of 0.8 is positive, suggesting that there is a larger\nnumber of higher-valued data points. Since the tail to the right is longer in a distribution with positive skewness, the arithmetic mean is more\naffected than the median and mode.\n(Choice A) The mode (most common value) normally is least affected by skewness in a unimodal distribution. The presence of skewness in a\ndistribution suggests a lack of symmetry (ie, one of the tails is higher or longer than the other). Altering the size of a distribution's tails typically will\nnot change the most frequent data point.\n(Choice B) The median (middle value) is normally more affected than the mode by skewness in a unimodal distribution, although less affected\nthan the arithmetic mean. In a positively skewed distribution, the greater number of larger values will pull the median to the right. Although the\nmedian is affected by the values in the right tail, the arithmetic mean is more affected by the larger values.\nThings to remember:\nThe mean will be more affected by outliers than the median and mode. For positively skewed distributions, typically the mean is greater than the\nmedian, which is greater than the mode (mean > median > mode). The opposite is true for negatively skewed distributions (mean < median <\nmode).\nInterpret and evaluate measures of skewness and kurtosis to address an investment problem", "qhtml": null}, {"n": 34, "q": "A financial advisor grouped returns on asset classes in the following table: Portfolio Asset Class Weighting (%) Return (%) Domestic Stocks 40.0 7.0 International Stocks 15.0 14.0 Corporate Bonds 35.0 −4.0 Cash and Cash Equivalents 10.0 1.0 The portfolio's return is closest to: ", "opts": ["3.6%", "4.5%", "5.0%"], "ans": "A", "expl": "The weighted mean is a measure of central tendency that is used when each observation has a different level of significance and therefore\nshould have a unique weight in the mean. Typically, the average portfolio return is the sum of the individual asset class returns weighted by their\npercentage allocation in the portfolio.\nThe weights of asset allocations in a portfolio will always sum to 100% (ie, 100% of the portfolio's value). A positive weight is assigned to long\npositions and a negative weight to short positions. Each data point is multiplied by its weight as follows:\nThe resulting individual weighted returns, showing the contribution of each asset class to total return, are then added together to reach the\nportfolio average of 3.6%.\n(Choice B) 4.5% is the arithmetic mean. It is a simple average that assigns equal weights to all observations, which is inappropriate in this case\nsince each asset class has a different allocation in the portfolio.\n(Choice C) 5.0% is the midpoint of the range of returns. It does not assign weights to observations.\nThings to remember:\nThe weighted mean is a measure of central tendency used when each observation has a different level of significance and therefore must have a\ndifferent weight in the average. The weights of asset allocations in a portfolio will always sum to 100% (ie, 100% of the portfolio's value). A\npositive weight is assigned to long positions and a negative weight to short positions.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 35, "q": "An analyst calculates the mean and standard deviation for two companies over the same 7-year period: Company A: Mean is 9% and standard deviation is 20%. Company B: Mean is 14% and standard deviation is 30%. The most appropriate measure for determining which company offers less relative volatility is:", "opts": ["F-test.", "semideviation.", "coefficient of variation."], "ans": "C", "expl": "The standard deviation of asset returns measures the variation of returns around the mean; a higher standard deviation indicates more volatility\nand therefore more risk. An investor who prefers less risk may be tempted to reject Company B due to its higher standard deviation; however,\nCompany B also has a higher average return than Company A. Evaluating each company's risk relative to its return allows the investor to\ndetermine which offers less relative volatility.\nThe coefficient of variation (CV) is the ratio of an asset's standard deviation to its mean return. An asset with a higher CV is relatively more\nvolatile than one with a lower CV since it has higher risk per unit of return. In this question, Company A's CV is approximately 2.22, while\nCompany B's is approximately 2.14. This indicates that Company B has less risk per unit of return (ie, less relative volatility) than Company A,\nalthough it has a higher standard deviation.\n(Choice A) An F-test is used to determine if the variances of two populations are equal. It does not measure which of the two populations\ndemonstrates less volatility.\n(Choice B) Semideviation measures an asset's downside risk. It does not indicate relative volatility among multiple assets.\nThings to remember:\nFor asset returns, a higher standard deviation indicates greater risk. The coefficient of variation (CV) measures an asset's risk per unit of return.\nCV can be used to compare the relative risk of multiple assets. An asset with a higher CV is relatively riskier than one with a lower CV.\nCalculate, interpret, and evaluate measures of dispersion to address an investment problem", "qhtml": null}, {"n": 36, "q": "The annual returns for three funds over a nine-year period are listed in the following table: Annual Returns (%) Fund −12.3 −10.4 −3.7 1.8 3.9 4.3 7.1 8.6 9.9 1 Fund −8.4 -6.5 −4.9 −1.2 1.1 5.3 6.5 8.9 10.7 2 Fund −18.0 −13.9 −8.7 −2.3 3.4 5.7 6.2 13.3 15.8 3 The fund that had the highest 67th percentile of returns is most likely: ", "opts": ["Fund 1", "Fund 2", "Fund 3"], "ans": "A", "expl": "Deciles, quintiles, quartiles, and percentiles are all types of quantiles, which are measures of location for data sets. They provide the\nlocation at which a certain percentage of data is at or below. To find measures of location, data must be ordered.\nPercentiles split data sets into hundredths. For instance, 58th percentile marks the point that 58% of the data is at or below.\nMeasures of location can be calculated with the following equation:\nThe portfolio has nine stocks, so the location of the 67th percentile is:\nWhen the location is a decimal, linear interpolation is used to find the value of the quantile. Linear interpolation assumes that a straight line exists\nbetween the two known data points on each side of the location. The most efficient way to calculate a decimal quantile is as follows:\n(Choices B and C) Since all three funds have the same number of values, the location of the 67th percentile is the same for each. The 67th\npercentile of returns for Fund 2 is 6.14%, and 6.05% for Fund 3. Both of these are less than the 67th percentile of returns for Fund 1.\nThings to remember:\nWhen the quantile is a decimal, use linear interpolation to calculate the value.\nCalculate, interpret, and evaluate measures of central tendency and location to address an investment problem", "qhtml": null}, {"n": 37, "q": "The monthly returns of a mutual fund for the first six months of 20X0 are given below: If the sample standard deviation for this fund over the period is approximately 1.77%, the most appropriate conclusion is that the fund's sample semideviation for the same period is:", "opts": ["less than the standard deviation.", "equal to the standard deviation.", "greater than the standard deviation."], "ans": "A", "expl": "Variance and standard deviation measure the dispersion of returns both above and below the mean, so they offer investors an idea of an asset's\npotential upside as well as its downside. However, investors are often concerned with downside risk only. Semivariance and semideviation focus\non downside risk.\nFor any distribution of an asset's returns, semivariance is the average squared deviation below the mean, and semideviation is the positive\nsquare root of semivariance. Both measures can be calculated for a sample or a population. With sample semivariance and semideviation,\nremember to reduce the denominator by one. The steps for calculating the sample semivariance and semideviation are shown below:\nThe sample semideviation of 1.30% is less than the sample standard deviation of 1.77% (Choices B and C). This means that the fund's\ndownside risk is less than indicated by the standard deviation.\nRemember that semivariance and semideviation do not necessarily use only negative returns. Downside risk is defined as the risk that a return is\nbelow the mean, so semivariance and semideviation can be calculated based on both positive and negative returns.\nThings to remember:\nSemivariance and semideviation are dispersion measures that focus on an asset's downside risk (ie, risk that a return is less than the asset's\nmean return). They can be calculated based on positive and negative returns since it is possible for a return to be positive yet less than the mean\nreturn.\nCalculate, interpret, and evaluate measures of dispersion to address an investment problem", "qhtml": null}];
+const CFG = {"title": "Wiley · Statistical Measures of Asset Returns", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Quantitative Methods · 37 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>

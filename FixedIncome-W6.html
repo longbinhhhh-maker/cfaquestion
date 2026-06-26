@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#6366f1; --accent2:#818cf8;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#6366f1; --accent2:#4f46e5;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#6d5efc; --accent2:#9d8bff;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#6d5efc; --accent2:#5346e0;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(109,94,252,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(157,139,255,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(109,94,252,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(109,94,252,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='/'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()">☰ Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()">↻ Làm lại</button>
+  <button class="btn-primary" onclick="requestSubmit()">Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big">⏸</div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "On August 8, 20X0, an investor buys a 6.4%, semiannual-paying bond with a YTM of 5.2%. The bond matures on December 15, 20X2 and pays coupon interest each June 15 and December 15. The bond trades on a 30/360 basis. If the dealer quotes a price of 102.62 per 100 of par value, the bond's flat price on August 8, 20X0 is closest to:", "opts": ["101.68", "102.62", "103.56"], "ans": "B", "expl": "A bond's flat price is the difference between its full price and any interest that accrued since it last paid coupon interest. When selling a bond,\ndealers usually quote a bond's flat price as the market price. The accrued interest is added to the flat price, and the buyer pays the total amount.\nIt should be noted that the flat price is also known as the \"clean price\" and that the full price is also known as the \"dirty price.\" The exam may use\nany of these terms in questions related to this topic.\n(Choice A) 101.68 results from incorrectly assuming 102.62 is the bond's full price. Fifty-three days of interest accrued between June 15 and\nAugust 8, 20X0. The total accrued interest is (53 ÷ 180) × 3.2, or approximately 0.94 per 100 par value. Subtracting that amount from 102.62\nequals 101.68.\nNote: The calculator keystrokes that are included with this question refer to this calculation.\n(Choice C) 103.56 is the bond's full price on August 8, 20X0.\nThings to remember:\nA bond's flat price is the difference between its full price and any interest that accrued since its last coupon interest payment. Bond dealers usually\nquote a bond's flat price as the market price. The accrued interest is added to the flat price, and the buyer pays the total amount as the full price.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 2, "q": "A bond originally issued with a 7-year maturity now has 3 years remaining to maturity. The bond has a 5% coupon rate and pays interest semiannually. If the YTM is 4%, the bond's price per 100 par value is closest to:", "opts": ["101.44", "102.80", "106.05"], "ans": "B", "expl": "A bond's price is calculated as the sum of the present value of each of its future cash flows. As in any present value calculation, the number of\nperiods and the periodic rates used in the calculation depend on the frequency of cash flows. When a bond pays interest more than once per\nyear, the following adjustments are needed:\nThe YTM is divided by the number of payment periods per year. In this scenario, the annual YTM is 4.0% but there are two payments per\nyear, so the semiannual YTM used in this calculation is 2.0% (= 0.04 / 2).\nEach coupon payment must also be adjusted for the number of payments per year. In this scenario, the annual coupon is 5.0 (= 0.05 ×\n100), and the semiannual coupon is 2.5 (= 5.0 / 2).\nThe total number of payment periods is calculated by multiplying the maturity (in years) by the number of payments per year. In this\nscenario, there are 3 years to maturity and 2 payments per year, so the total number of payments is 6.\n(Choice A) 101.44 results from correctly using the semiannual coupon and YTM, but neglecting to use the number of semiannual, instead of\nannual, periods to reflect the semiannual payment schedule.\n(Choice C) 106.05 results from incorrectly using the bond's original maturity of 7 years instead of the remaining maturity of 3 years.\nThings to remember:\nThe price of a bond is the sum of the present values of each of the bond's future cash flows. To properly calculate the present value, the YTM,\ncash flows, and number of periods discounted must be adjusted to account for payment frequency.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 3, "q": "A bond with 4 years until maturity has a 3.5% annual-pay coupon. If the bond's price per 100 par value is 81.50, the implied market discount rate is closest to:", "opts": ["1.27%.", "9.24%.", "13.09%."], "ans": "B", "expl": "A bond's price, or present value (PV), is calculated as the sum of the PVs of its expected future cash flows. The discount rate(s) is the single\nmarket discount rate that investors require given a bond's level of risk. The annual coupon rate determines the coupon amount (PMT) the issuer is\nrequired to pay to bondholders each period.\nWhen the market price of a bond is known, the market discount rate is called the implied market discount rate or yield-to-maturity (YTM). This\nquestion asks for the single implied market discount rate r. The market discount rate, which can be determined using a financial calculator, is the\nsingle discount rate that equates the sum of the PV's of a bond's cash flows to its price:\n(Choice A) 1.27% is the result of incorrectly entering the sign of PMT into the financial calculator. The sign of the payment must be the same as\nthe sign of the future value (FV). For example, if the sign for PV is negative, it must be positive for PMT and FV. Positive PV, with negative PMT\nand FV, also works. However, negative PV and PMT with positive FV, and vice versa, result in an incorrect answer.\n(Choice C) 13.09% is the result of incorrectly calculating the market discount rate per semiannual period as if the bond paid a 7% semiannual\ncoupon (ie, paid 3.5 per 100 par value every six months).\nThings to remember:\nThe implied market discount rate, or yield-to-maturity (YTM), is the single discount rate that equates the sum of the present values (PVs) of a\nbond's cash flows to its price. Given the PV, future value (FV), number of time periods (N), and coupon amount (PMT), the single market discount\nrate can be determined with a financial calculator.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 4, "q": "An analyst uses matrix pricing to estimate the YTM of an illiquid, 5-year corporate bond that pays a 7% annual coupon. The analyst compares two publicly traded bonds of similar credit quality, as show in the image below: Based on this data, the estimated YTM of the illiquid bond is closest to:", "opts": ["4.06%", "7.50%", "8.13%"], "ans": "C", "expl": "Matrix pricing is a method of estimating a bond's price or yield when market data are not readily available, such as when valuing inactively\ntraded bonds or determining the required yield spread when underwriting new issues. These estimates are typically derived from actively traded\nbonds with a similar credit rating, maturity, or coupon.\nIn this scenario, the analyst extrapolates the yield on a 5-year corporate bond using the yields of similar bonds with 4- and 6-year maturities. To do\nso, first calculate the yields of the two comparative bonds, then average those yields.\n(Choice A) 4.06% results from dividing the annual coupons by 2 and multiplying the time-to-maturity by 2. This would be the estimate if the\nbonds were semiannual coupon bonds.\n(Choice B) 7.50% is the average coupon rate, not the YTM, calculated from Bonds X and Y. The YTM is the market discount rate that equates a\nbond's future cash flows to its present value.\nThings to remember:\nTo derive the yield for an illiquid bond using matrix pricing, first calculate the yields of similar publicly traded bonds, then average those yields.\nDescribe matrix pricing", "qhtml": null}, {"n": 5, "q": "A bond that matures in four years has a 5% annual coupon rate with interest paid semiannually. If the market discount rate for the bond is 4.50%, the price of the bond per 100 of par is closest to:", "opts": ["98.2075", "101.7938", "101.8118"], "ans": "C", "expl": "The price of a bond is the bond's present value: the sum of the present values of its coupon and principal (ie, par value) payments over the\nremaining time to maturity. Each cash flow is discounted by the market yield to maturity (YTM), expressed as a periodic rate, over the number of\nperiods between the pricing date and the date each cash flow is due.\nThe quickest solution to the problem is obtained with a financial calculator, using the following inputs:\nNumber of periods (N) n × m = 4 × 2 = 8\nPeriodic discount rate (i) r ÷ m = 4.50% ÷ 2 = 2.25(%)\nPeriodic payments (PMT) (c × FV) ÷ m = (0.05 × 100) ÷ 2 = 2.5\nPar value (FV) 100\nc = coupon rate; FV = par value\nFor bonds with a compounding frequency (m) of more than once per year, the number of periods (N), coupon payments (PMT), and market\ndiscount rate (i) must be adjusted from the given annual values to the periodic values. The market discount rate is also called the required yield or\nthe required rate of return.\n(Choice A) 98.2075 results from using the market discount rate to determine the coupon payments and using the coupon rate to discount the\ncash flows. Note that since the bond's coupon rate is greater than its yield, it is currently priced at a premium: the price must be greater than the\npar value. Thus, any answer choice less than par value is incorrect.\n(Choice B) 101.7938 would be the price if the bond paid coupons once per year.\nThings to remember:\nThe price of a bond is the present value of its coupon and principal payments over the remaining time to maturity. For bonds with a compounding\nfrequency of more than once per year, the number of periods, coupon payments, and market discount rate must be adjusted from the given annual\nvalues to the periodic values.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 6, "q": "A bond with a 4% coupon rate pays interest annually and matures in 12 years. If the required rate of return on the bond is 5%, the price per 100 of par value is closest to:", "opts": ["91.0575", "91.1367", "109.3851"], "ans": "B", "expl": "The price (PV) of a bond is the sum of the present value of its cash flows to maturity.\nThe cash flows are:\nthe coupon payment for each period (PMT) and\nthe future value (FV) at maturity (ie, par value).\nThe market discount rate is the required rate of return (r) (ie, market YTM).\nThe divisor exponents measure the number of compounding periods until each cash flows is due.\nIn this scenario, the bond's price can be found quickly with a financial calculator, using the following inputs:\nNumber of periods (N) 12\nDiscount rate (i) 5 (%)\nPeriodic payments (PMT) c × FV = (0.04 × 100) = 4\nPar value (FV) 100\nc = Coupon rate\nFor bonds that pay coupons once per year, FV, N, and the market discount rate (i) are entered as given. PMT is calculated as shown in the table\nabove.\n(Choice A) 91.0575 results from pricing the bond as if it paid coupons semiannually (ie, PMT = 2, N = 24, i = 2.5).\n(Choice C) 109.3851 results from calculating the price by transposing the coupon rate and the required rate of return (ie, PMT = 5, i = 4). Note:\nSince the bond's required rate of return is greater than its coupon rate, the bond is priced at a discount and its price must be less than its par\nvalue. Therefore, 109.3851 is an incorrect choice.\nThings to remember:\nA bond's price is the present value of its coupon and principal payments over the time to maturity. For bonds that pay coupons once per year, the\namount of the coupon payment must be calculated from the par value and the coupon rate. The par value, number of periods, and market\ndiscount rate are entered as given.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 7, "q": "An analyst obtains the following information on a government bond: Bond Data Annual coupon rate 4.00% YTM 5.00% Payment frequency Semiannual Payment dates 15 January, 15 July Maturity date 15 January 2030 Day-count convention Actual/actual Assuming a trade settlement date of 9 November 2020, the amount of accrued interest per 100 of par value is closest to: ", "opts": ["1.27", "1.59", "2.54"], "ans": "A", "expl": "Bonds earn interest daily but pay interest only periodically. On the payment date, the owner of the bond receives the full coupon payment for the\npreceding period. If a bond trades between coupon dates, the buyer will receive the entire coupon. Therefore, the buyer must compensate the\nseller for the portion of the coupon earned (ie, accrued) since the last coupon payment.\nThe amount of accrued interest is determined by the par value, the coupon rate, and the period of time over which interest accrued. Several\nmethods, known as day-count conventions, can be used to measure that period. For many government bonds, the actual/actual method is used\nas follows:\nDetermine the number of actual calendar days over which interest accrued (ie, days of accrued interest), starting on the last coupon\npayment date and continuing to but not including the settlement date.\nDetermine the actual number of days in the coupon period by counting the days from the settlement date up to but not including the next\ncoupon date (ie, balance of period), then adding that number to the days of accrued interest.\nDays of accrued interest = 117 Balance of period = 67\nMonth # of days Month # of days\nJuly 17* November 22\nAugust 31 December 31\nSeptember 30 January 14**\nOctober 31\nNovember 8\n*15th–31st inclusive **Does not include payment date\nEnter those values along with the coupon rate and par value into the following formula:\n(Choice B) 1.59 results from using the YTM rather than the coupon rate in the calculation.\n(Choice C) 2.54 results from failing to divide the coupon rate by 2.\nThings to remember:\nBonds earn interest daily but pay interest only periodically. When a bond is traded between coupon dates, the seller receives the portion of the\nnext coupon that has accrued since the last coupon payment.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 8, "q": "Using matrix pricing to value a bond, the applicable discount rate is most appropriately estimated using:", "opts": ["spot rates.", "yields on similar bonds.", "spreads above benchmark government bond yields."], "ans": "B", "expl": "Estimating bond values\nMethod Approach Other considerations\nSpot rate Value bond as a package of zero-coupon securities, discounting each by a May require adding a credit spread to risk-\npricing rate reflecting the different maturities free spot rates\nMatrix Value bonds using the YTMs of actively traded bonds with similar coupon Need to adjust discount rate for differences\npricing rates, maturities, and credit risks between bonds\nMany bond issues trade infrequently. As a result, a bond's most recent transaction price can be days or weeks old and may not accurately reflect\nits current value. Matrix pricing can be used to estimate the market price of inactively traded securities from the YTM of actively traded\nbonds.\nSecurities with similar risks should have similar expected returns, so bonds that have similar credit risks, coupon rates, and times to maturity\nshould trade at a comparable YTM. If bonds of similar maturities are not available for comparison, a market discount rate for pricing an inactively\ntraded bond can be estimated from the yields of otherwise-similar actively traded bonds of shorter and longer maturities.\n(Choice A) Discounting a bond's cash flows by spot rates calculated from similar-risk bonds is an alternative to matrix pricing (not a component of\nit). It is another method for valuing inactively traded bonds.\n(Choice C) Adding a yield spread to a benchmark government bond is an alternative for estimating a discount rate, but it is not used in matrix\npricing.\nThings to remember:\nBonds that expose investors to similar degrees of risk should have similar expected returns. If bonds of similar maturities are not available for\ncomparison, a market discount rate for pricing an inactively traded bond can be estimated from the yields of otherwise-similar actively traded\nbonds of shorter and longer maturities.\nDescribe matrix pricing", "qhtml": null}, {"n": 9, "q": "A bondholder receives a coupon payment for a semiannual-paying bond on July 15, 20X3 and then sells the bond on November 20 of the same year. If the bond uses a 30/360 day-count convention and the settlement date and sale date are the same, the number of days of accrued interest is closest to:", "opts": ["120", "125", "128"], "ans": "B", "expl": "Most fixed-coupon bonds pay interest semiannually on the same dates each year, such as every January 31 and July 31. However, interest\naccrues every day between payment dates, including days when the markets are closed for trading. An investor who sells a bond between\npayment dates is entitled to the interest that has accrued as of the date of sale. The accrued interest is added to the price of the bond.\nThe amount of accrued interest depends on the bond's day-count convention (ie, the method used to count the number of days between\ncoupon payments). The day-count conventions used by the CFA materials are actual/actual and 30/360, which assumes 30 days in each month\n(including February) and 360 days in a year (including leap years).\n(Choice A) 120 is a simplistic calculation that multiplies the number of whole months (four) by the presumed number of days in each month (30).\nThis is incorrect since the 30/360 convention requires that the number of days be adjusted for periods that are different than a whole month.\n(Choice C) 128 is the actual number of days between July 15 and November 20, not the number of days using the 30/360 convention.\nThings to remember:\nWhen pricing a bond between coupon payment dates, accrued interest must be added to the price. Interest accrues daily, but the number of days\nthat have elapsed from the last payment dates depends on the day-count convention of the bond. The two conventions used at Level I are\nactual/actual and 30/360.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 10, "q": "All else being equal, as soon as the coupon on a bond is paid, the quoted price of that bond from a bond dealer will most likely:", "opts": ["decrease.", "remain the same.", "increase."], "ans": "B", "expl": "The quoted market price, or the flat price (ie, clean price) of a bond, does not include accrued interest. Therefore, all else being equal, on the\ncoupon payment date the quoted price of a bond remains the same. Quoting only the flat price separates the accrued interest component,\nwhich always increases the price, from other factors (eg, changes in interest rates or credit quality) that are more relevant to investors.\nThe bond's full price (ie, dirty price), or the total amount an investor pays for a bond, is equal to the flat price plus the accrued interest. Interest\naccrues each day; therefore, the full price increases each day until the coupon payment is made, at which point accrued interest falls to zero (as\nshown in the image above). On the coupon payment date, the flat price and the full price are the same.\n(Choices A and C) The standard market quoting convention is to quote the flat price, which does not include accrued interest. Therefore, a\ncoupon payment does not affect the bond's quoted price.\nThings to remember:\nThe quoted market price is the bond's flat price, which does not include accrued interest. Therefore, a coupon payment does not affect the bond's\nquoted price. The buyer pays the full price (ie, flat price plus accrued interest).\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 11, "q": "A 6% coupon bond pays interest each January 15 and July 15 and matures on July 15, 20X1. Its yield-to-maturity is 5% and it uses an actual/actual day-count convention. On October 3, 20X0, the bond's full price per 100 par value is closest to:", "opts": ["100.96", "102.05", "103.14"], "ans": "B", "expl": "A bond's full price (ie, dirty price) is the sum of the present values for all future cash flows. When a bond is priced on its coupon payment date,\neach remaining cash flow is discounted back to the pricing date by the number of whole periods until that payment is received.\nThe bond in this question uses the actual/actual day-count convention and has two more coupon payments until maturity. There are 80 days\nbetween July 15, 20X0, and October 3, 20X0, and 184 days for the coupon period between July 15, 20X0, and January 15, 20X1. The steps for\ncalculating this bond's full price are shown below:\n(Choice A) 100.96 is the bond's full price on July 15, 20X0, but this fails to adjust for the period between October 3, 20X0, and January 15, 20X1.\n(Choice C) 103.14 results from incorrectly adding the 1.30 in interest that accrued between July 15, 20X0, and October 3, 20X0, to the full price.\nThe full price already includes any accrued interest.\nThings to remember:\nA bond's full price is the sum of its flat price plus accrued interest. The price of a bond sold between coupon dates must be adjusted to account for\nthe shorter period until the next coupon date.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 12, "q": "A bond with 5 years until maturity has a 3.5% annual-pay coupon. If the yield to maturity (YTM) is 2.75% and the risk-free rate is 2%, the bond's price per 100 par value is closest to: ", "opts": ["103.46", "103.48", "107.07"], "ans": "A", "expl": "A bond's price, or present value (PV), is calculated as the PV of its expected future cash flows. Since bonds trade according to the YTM,\nwhich is constantly changing, the bond price must be calculated whenever a purchase or sale occurs using the YTM as the discount rate in the PV\ncalculation.\nIn this case, the bond's future cash flows are its annual coupon payments and par value at maturity. The par value is the principal received at\nmaturity. The PV of the bond in the question is calculated as follows:\nDue to the complexity of the calculation, a financial calculator is recommended.\n(Choice B) 103.48 incorrectly assumes semiannual coupon payments of 1.75 instead of annual coupons, as stated in the question.\n(Choice C) 107.07 results from incorrectly using the risk-free rate of 2% to discount the bond's cash flows instead of its YTM.\nThings to remember:\nA bond's price is the present value of its future cash flows, using the bond's YTM as the discount rate.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 13, "q": "A bond with 3 years to maturity has a 4% coupon rate and pays interest semiannually. If the market discount rate is 5.5%, the bond's price per 100 par value is closest to: ", "opts": ["95.90", "95.95", "97.86"], "ans": "A", "expl": "A bond's price is calculated as the sum of the present values of each of its future cash flows. When a bond pays interest more than once per\nyear, the YTM is divided by the number of payment periods per year. Each coupon payment equals the annual coupon amount divided by the\nnumber of payments per year. The total number of payment periods is calculated by multiplying the maturity (in years) by the number of payments\nper year.\nA semiannual bond with three years to maturity has six payment periods. Each period's coupon payment equals half the bond's total coupon\npayments for the year. In this question, the bond pays a 4% coupon rate, so each payment is 2% of the bond's par value. The YTM is 5.5%, so\nhalf this amount is 2.75%.\nIt is recommended that candidates use a calculator's time value of money functions to solve this and similar problems; the calculator is faster and\ndoes not require memorizing the equation.\n(Choice B) This answer results when failing to adjust the coupon payment, the number of periods, and the YTM from annual to semiannual.\n(Choice C) This choice results from dividing the annual coupon interest by two but neglecting to adjust the number of periods from three to six to\nreflect the semiannual payment schedule.\nThings to remember:\nThe price of a semiannual bond is the sum of the present values of each of the bond's future cash flows. To properly calculate the present value,\nthe YTM, the cash flows, and the number of payments per year must be adjusted to account for payments that occur more than once per year.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 14, "q": "On May 22, 20X0, a 4.5% corporate bond has accrued interest of 0.8375 per 100 par value and is quoted at 98.24 per 100 par value. The bond's flat price (per 100 of par value) on May 22, 20X0 is closest to:", "opts": ["97.40", "98.24", "99.08"], "ans": "B", "expl": "Flat price = Quoted market price\nFor bond purchases, the quoted market price is called the bond's flat price. The amount an investor pays for the bond is the flat price plus any\ninterest that has accrued since the bond's most recent coupon payment, since the seller is entitled to the accrued interest until the sale. The sum\nof the flat price and the accrued interest is the bond's full price.\nInterest accrues each day, so the full price increases each day. However, a bond's price is also affected by factors including changes in interest\nrates and the issuer's credit quality. Quoting only the flat price separates the accrued interest component (a mechanical adjustment that always\nincreases the price) from other factors that are more relevant to investors.\n(Choice A) 97.40 results from mistaking the bond's quoted price of 98.24 as its full price, and then subtracting the accrued interest of 0.8375 per\n100 par value from 98.24.\n(Choice C) 99.08 is the bond's full price after adding accrued interest of 0.8375 per 100 par value to the quoted price.\nThings to remember:\nThe market price quoted for a bond is the bond's flat price. If an investor purchases the bond, the amount paid is the flat price plus any interest\nthat has accrued since the bond's most recent coupon payment. The flat price plus accrued interest is the bond's full price.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 15, "q": "A bond with four years until maturity has an 8% coupon rate and pays interest annually. If the required YTM is 7%, the price of the bond per 100 of par value is closest to:", "opts": ["96.68", "100.00", "103.39"], "ans": "C", "expl": "The required return (ie, YTM) represents the return that investors expect for bonds of similar maturity and credit quality. The required return\noften changes during the life of a bond as economic conditions change. Bond prices react inversely to changes in the required return: as the\nrequired return declines, bond prices increase, and vice versa.\nA bond that pays a higher coupon than the market requires should be worth more than a bond that pays a lower coupon but is otherwise similar.\nThe bond in this question pays an 8% coupon, but the market only requires a return of 7%. Since the coupon is higher than the required return,\nthe bond in this question is a premium bond. The price of a premium bond is higher than its par (ie, face) value.\n(Choice A) If the coupon rate is less than the required return, the bond is priced below par.\n(Choice B) A bond whose coupon rate is equal to the required return is priced at 100 (ie, par).\nThings to remember:\nBond prices are inversely related to the investors' required return for bonds of similar maturity and credit quality. As the required return declines,\nbond prices increase, and vice versa. A bond with a coupon rate that is higher than the required return will be priced above par value, and one\nwith a lower-than-required coupon rate will be priced below par value.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 16, "q": "Matrix pricing estimates the price of an inactively traded bond by comparing it with bonds with similar characteristics. Matrix pricing is most appropriately used to price an inactively traded bond by averaging the comparable bonds': ", "opts": ["yields.", "credit risk.", "coupon rates."], "ans": "A", "expl": "Matrix pricing is a method of estimating a bond's price or required spread when market data are not readily available, such as when valuing\ninactively traded bonds or determining the required yield spread when underwriting new issues.\nThe process for using matrix pricing for inactively traded bonds (eg, debt of private firms) is as follows: First, identify actively traded bonds with\nthe same credit rating, similar maturity, and similar coupon rate as the inactively traded bond. Then group the actively traded bonds by maturity\nand calculate the average yield, not the average coupon, for each maturity group. Finally, use interpolation to estimate the required market yield\n(and price) for the inactively traded bond (Choices B and C).\nThings to remember:\nMatrix pricing is used to estimate the required spread for new issues and prices for inactively traded bonds using bonds with similar\ncharacteristics. The general process is to identity comparable bonds, group them by maturity, take an average of the yield or spread for that\nmaturity group, and use interpolation to estimate the price or spread for the bond.\nDescribe matrix pricing", "qhtml": null}, {"n": 17, "q": "A bond with 2 years to maturity has a market discount rate of 5.6% and a par value of 100. If the bond's annual 5% coupon is paid quarterly, its price per 100 par value is closest to:", "opts": ["89.03", "98.87", "98.89"], "ans": "B", "expl": "The present value (PV) of a bond, and therefore its price, is the sum of the PVs of its future cash flows discounted at the market discount\nrate (r). Investors require a certain market discount rate based on the bond's level of risk.\nA bond's periodicity (m) is equal to the number of coupon payments made per year. The PV calculation must account for the bond's periodicity by\nmultiplying the number of years until maturity by the periodicity to determine the total number of discount periods: m × n = 4 × 2 = 8. The periodic\ncoupon (PMT) is (Future value × Annual coupon payment / m) = 100 × 5% / 4 = 1.25.\nIn this scenario, to calculate the price (PV) of the bond using the formula above, substitute as follows:\nAs in many bond calculations, use of a financial calculator is recommended. The calculator inputs are as follows:\n(Choice A) 89.03 results from dividing the annual market discount rate by the number of years (2) rather than the periodicity (4) to obtain the\ndiscount rate per period.\n(Choice C) 98.89 results from assuming annual coupon payments on the bond.\nThings to remember:\nThe present value (PV) of a bond, and therefore its price, is the sum of the PVs of its future cash flows discounted at the market discount rate.\nThat calculation must account for the bond's periodicity in determining the payment, the discount rate applied, and the number of periods until\nmaturity. As in many bond calculations, use of a financial calculator is recommended.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 18, "q": "An underwriter wants to estimate the offering price on a new issue for a 2-year bond with an 8.5% coupon rate that pays interest semiannually. The underwriter gathers comparative information on two publicly traded corporate bonds, Bonds Y and Z, with the same maturity and similar credit quality: The estimate of the new bond issue's price using matrix pricing is closest to:", "opts": ["103.7503", "105.1310", "105.1486"], "ans": "C", "expl": "Matrix pricing can be used to approximate a new bond's issuance price from existing publicly traded bonds with a similar credit rating, maturity,\nand/or coupon. In this question, the underwriter wants to derive the price of a new 2-year corporate bond from the characteristics of two similar\nbonds. To derive the price, find the average periodic rate of the two publicly traded bonds, then use the rate to calculate the present value (ie,\nprice) of the new bond.\n(Choice A) 103.7503 results from incorrectly approximating an average coupon payment for the new bond. The coupon payments of the new\nbond are given in this scenario and should not be approximated.\n(Choice B) 105.1310 results from treating the coupons as annual payments and discounting each payment at the stated annual coupon rate.\nThings to remember:\nThe price of a new bond issuance can be estimated from the prices of publicly traded bonds. To do so, average the yields of public bonds and use\nthe yield to calculate the price of the new issue.\nDescribe matrix pricing", "qhtml": null}, {"n": 19, "q": "An analyst gathers the following information about two bonds: Time to maturity Coupon Bond Coupon rate (%) (years) frequency X 2 Semiannual 6.00 Y 2 Semiannual 3.00 If the applicable market discount rate for both bonds is 5%, the price difference between them is closest to:", "opts": ["5.31", "5.57", "5.64"], "ans": "C", "expl": "A bond's price is the sum of its discounted cash flows, in which the discount rate is the bond's YTM. Both the discount rate and the coupon are\nadjusted to reflect payment frequency.\nIn this scenario, since the only provided difference between the two bonds is in their coupon rates, the price difference can be found by\ndiscounting the difference in the coupons using the bonds' periodic discount rate.\nThe alternative method is to solve for each bond's price, then find the difference between the two prices.\n(Choice A) A price difference of 5.31 results from properly adjusting the coupon amounts and number of payments but failing to adjust the\ndiscount rate.\n(Choice B) A price difference of 5.57 results from failing to properly adjust the coupon amounts, discount rate, and number of payments.\nThings to remember:\nA bond's price is the sum of its discounted cash flows. For a bond that pays multiple coupons per year, the discount rate, coupon amount, and\nnumber of payments must all account for coupon frequency.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 20, "q": "An analyst gathers information for two bonds. Both mature at the same time and have identical yields-to-maturity (YTM). Bond A pays an annual coupon of 3.5%, and Bond B pays an annual coupon of 6.0%. If the YTM for bonds with these maturities increases, Bond A's percentage change in price will most likely be:", "opts": ["less than the percentage change in Bond B's price.", "equal to the percentage change in Bond B's price.", "greater than the percentage change in Bond B's price."], "ans": "C", "expl": "The inverse effect describes the general relationship between market interest rates and bond prices. When interest rates decline, bond prices\nincrease and vice-versa. The convexity effect, coupon effect, and maturity effect further refine the inverse effect by explaining the specific\nrelationship between prices and characteristics such as a bond's coupon and maturity.\nThe coupon effect states that if two bonds have the same maturity and YTM, then an equal change in both bonds' required return causes a\ngreater percentage price change for the bond with the lower coupon. This relationship always holds, regardless of the initial YTM, and\nregardless of whether the change in YTM is up or down.\nThe table below demonstrates the coupon effect for the bonds in this question when the initial YTM is adjusted by increasing it by 1.5%. In all\ncases, the percentage change is greater for the 3.5% coupon bond, regardless of whether the bonds are priced at a premium or a discount:\n(Choices A and B) A given change in YTM always has a greater impact on the price of a lower coupon bond compared with a higher coupon\nbond that has the same maturity and YTM.\nThings to remember:\nThe inverse effect describes the general inverse relationship between bond prices and interest rates. The coupon effect states that a given\nchange in interest rates always causes a greater percentage price change for a bond with a lower coupon rate than one with a higher coupon rate.\nIdentify the relationships among a bond’s price, coupon rate, maturity, and yield-to-maturity.\n21.A bond has the following characteristics:\nAnnualized coupon rate 4.00%\nCoupon frequency Semiannual\nTime to maturity 2 years, 75 days\nDay-count convention 30/360\nAnnualized YTM 3.50%\nIf the next coupon payment is due in 75 days, the bond's flat price is closest to:\nA. 100.02\n\nB. 101.05\nC. 101.09\nExplanation\nWhen quoting bond prices, dealers typically quote the flat price (ie, clean price), which excludes any accrued interest. When a bond is being\ntraded, dealers add accrued interest to determine the full price (ie, dirty price), which is then used to settle the trade.\nIn this case, the bond has five payments until maturity. The price at the start of the current coupon period (ie, present value) is 101.187,\ncalculated as follows:\nThis calculated present value (PV) reflects five complete coupon periods.\nThe 30/360 convention means that semiannual coupon bonds pay coupons every 180 days. In this case, the next payment is due in 75 days, so\n105 days (= 180 − 75) have elapsed in the current coupon period. The full price today, after 105 days of the current coupon period have\nelapsed, is calculated as the fair value of the present value (101.187) from the beginning of the period, with t representing the time since the\nprevious payment (ie, beginning of the period) and T representing the time between payments:\nThe number of coupon days in the current period is also used to calculate accrued interest (AI). The flat price today (101.0495) is the full price\nnet of accrued interest (1.1667):\n(Choice A) 100.02 results from assuming that the present value of 101.187 is the full price, then subtracting AI from that number to derive the flat\nprice.\n(Choice C) 101.09 results from calculating the full price and accrued interest using the number of days remaining in the coupon period (ie, 75),\nnot the number of days that have passed (ie, 105).\nThings to remember:\nWhen a bond's price is quoted, accrued interest is excluded from the flat price. A current flat price can be calculated by solving for the bond's\nvalue at the start of the current coupon period, determining the current full price, then subtracting accrued interest.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 21, "q": "A bond has the following characteristics: Annualized coupon rate 4.00% Coupon frequency Semiannual Time to maturity 2 years, 75 days Day-count convention 30/360 Annualized YTM 3.50% If the next coupon payment is due in 75 days, the bond's flat price is closest to:", "opts": ["100.02", "101.05", "101.09"], "ans": "B", "expl": "When quoting bond prices, dealers typically quote the flat price (ie, clean price), which excludes any accrued interest. When a bond is being\ntraded, dealers add accrued interest to determine the full price (ie, dirty price), which is then used to settle the trade.\nIn this case, the bond has five payments until maturity. The price at the start of the current coupon period (ie, present value) is 101.187,\ncalculated as follows:\nThis calculated present value (PV) reflects five complete coupon periods.\nThe 30/360 convention means that semiannual coupon bonds pay coupons every 180 days. In this case, the next payment is due in 75 days, so\n105 days (= 180 − 75) have elapsed in the current coupon period. The full price today, after 105 days of the current coupon period have\nelapsed, is calculated as the fair value of the present value (101.187) from the beginning of the period, with t representing the time since the\nprevious payment (ie, beginning of the period) and T representing the time between payments:\nThe number of coupon days in the current period is also used to calculate accrued interest (AI). The flat price today (101.0495) is the full price\nnet of accrued interest (1.1667):\n(Choice A) 100.02 results from assuming that the present value of 101.187 is the full price, then subtracting AI from that number to derive the flat\nprice.\n(Choice C) 101.09 results from calculating the full price and accrued interest using the number of days remaining in the coupon period (ie, 75),\nnot the number of days that have passed (ie, 105).\nThings to remember:\nWhen a bond's price is quoted, accrued interest is excluded from the flat price. A current flat price can be calculated by solving for the bond's\nvalue at the start of the current coupon period, determining the current full price, then subtracting accrued interest.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 22, "q": "A bond with 5 years to maturity has a 4.5% coupon rate and pays interest semiannually. If the bond's price per 100 par value is 97.80, the bond's YTM is closest to:", "opts": ["2.5%", "2.7%", "5.0%"], "ans": "C", "expl": "The yield-to-maturity (YTM) is the discount rate used to discount a bond's expected future cash flows to estimate its present value or bond price.\nThe number of periods and the periodic discount rate used in the calculation depend on the frequency of cash flows. When a bond pays interest\nmore than once per year, the coupon payment and the number of periods are adjusted for the frequency of payments per year. Knowing the\nbond's present value, face value, periodic coupon, and number of periods until maturity, solve for YTM:\nNote that the calculator solution provides the periodic discount rate of 2.5%, which represents a six-month periodic rate. That rate must be\nadjusted to an annual YTM of 5.0%. Due to the complexity of the calculation, a financial calculator is recommended.\n(Choice A) 2.5% results from incorrectly assuming the periodic discount rate is equal to YTM, which is always quoted as an annual rate.\n(Choice B) 2.7% results from using the semiannual coupon interest but neglecting to use the number of semiannual, instead of annual, periods to\nreflect the semiannual payment schedule.\nThings to remember:\nThe yield-to-maturity (YTM) is the rate used to calculate the present value of a bond's expected future cash flows. YTM is an annual rate and\nmust be adjusted within a calculation to match the frequency of cash flows.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 23, "q": "A zero-coupon bond has 5 years to maturity. If the market discount rate is 6%, and assuming semiannual compounding, the bond's price per 100 of par value is closest to:", "opts": ["55.84", "74.41", "86.26"], "ans": "B", "expl": "A zero-coupon bond is a bond that pays no coupon interest. The investor purchases the bond today for significantly less than its face value.\nThe bond's only future cash flow occurs at maturity, when the investor receives its face value. The difference between the face value and the\npurchase price represents the accrued interest on the bond.\nThe price of any bond is the sum of the present values of its cash flows; for a zero-coupon bond, the price is the present value of its face value.\nPresent value depends on the market discount rate (also known as the yield-to-maturity [YTM]), which is the return that investors demand for\nbonds that are similar in maturity and credit quality to the bond being priced.\nThe required return for a zero-coupon bond can be based on semiannual compounding. The denominator in the formula is adjusted by dividing\nthe required return by two to account for semiannual compounding. The total number of discounting periods is also adjusted by multiplying the\nyears to maturity by two (ie, the number of compounding periods per year).\n(Choice A) 55.84 results from using the number of periods for semiannual compounding (ie, 10) but incorrectly using 6% instead of 3% as the\ndiscount rate.\n(Choice C) 86.26 results from correctly adjusting the market discount rate from 6% to 3% to account for semiannual compounding but failing to\naccount for semiannual compounding using 10 periods, not 5 (the number of years to maturity).\nThings to remember:\nA zero-coupon bond pays no interest during its life. An investor purchases the bond at a significant discount to its par value. At the bond's\nmaturity, the issuer pays the par value to the investor. The difference between the purchase price and the par value represents the interest that\naccrued over the bond's lifetime.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 24, "q": "An analyst wishes to estimate the market price of Bond X, an inactively traded bond, and gathers information on four comparable, actively traded bonds. Using matrix pricing, the analyst most appropriately uses the: ", "opts": ["YTMs of the comparable bonds to estimate the YTM of Bond X.", "prices of the comparable bonds to estimate the YTM of Bond X.", "prices of the comparable bonds as an estimate of the price of Bond X."], "ans": "A", "expl": "Estimating bond values\nMethod Approach Other considerations\nSpot rate Value bond as a package of zero-coupon securities, discounting each by a May require adding a credit spread to risk-\npricing rate reflecting the different maturities free spot rates\nMatrix Value bonds using the YTMs of actively traded bonds with similar coupon Need to adjust discount rate for differences\npricing rates, maturities, and credit risks between bonds\nMany bond issues trade infrequently. Therefore, recent transaction prices can be days or weeks old and may not accurately reflect current value.\nMatrix pricing can be used to estimate the market price of inactively traded securities.\nMatrix pricing takes a representative sample of actively traded securities with similar credit risks, times to maturity, and coupon rates. Since\nsecurities that expose investors to similar degrees of risk should have similar expected returns, the average YTM of the comparable bonds can\nbe used to estimate the YTM on the bond being valued.\nBonds that have the same time to maturity and credit risk should have similar expected returns. However, different coupon rates cause otherwise\nsimilar bonds to trade at different prices. For example, consider the following two bonds that have the same credit risk, mature in exactly three\nyears, and have a YTM of 6%:\n5% semiannual coupon bond priced at 97.20 per 100 par\n9% semiannual coupon bond priced at 108.13 per 100 par\nBonds with the same credit risk but slightly different maturities and/or coupon rates trade at different prices. However, despite differences in their\ncontract terms, bonds with the same credit risk should have similar expected returns. Therefore, bond yields (ie, returns to maturity based on their\nprices), not bond prices, are used to estimate the value of similar bonds. A YTM derived from similar actively traded bonds, adjusted for\ndifferences in coupon rate and/or maturity, can be used to discount the cash flows of an inactively traded bond to estimate its price (Choices B\nand C).\nThings to remember:\nMatrix pricing estimates the value of inactively traded securities using a sample of actively traded securities with similar credit risks, times to\nmaturity, and coupon rates. Comparable securities should have similar expected returns and therefore can be used to estimate a YTM of an\ninactively traded bond to estimate its market price.\nDescribe matrix pricing", "qhtml": null}, {"n": 25, "q": "A 12%, semiannual coupon bond with face value of CNY 1,000 pays interest each year on March 30 and September 30. Assuming a 30/360 day-count convention, a bond that is sold and settled on August 20 will have accrued interest closest to:", "opts": ["CNY 46.63", "CNY 46.67", "CNY 47.67"], "ans": "B", "expl": "Bonds that pay coupon interest do so on specific dates (eg, annually, semiannually), but interest accrues each day between payment dates. A\nbondholder who sells the bond between payment dates is entitled to the interest that has accrued since the previous payment. Accrued\ninterest is calculated using the formula shown above.\nThe numerator and denominator in the accrued interest formula both depend on which day-count convention is used. The 30/360 convention\nassumes that each year has 360 days. A semiannual coupon bond always has 180 days in each coupon period.\nEach of this bond's coupon payments equals CNY 120 / 2 = CNY 60. Using the 30/360 day-count convention, the number of days between March\n30 and August 20 is 140, so the accrued interest equals 140 / 180 × CNY 60, or approximately CNY 46.67.\n(Choice A) CNY 46.63 is the accrued interest using the actual/actual day-count convention, which uses the actual number of days for both the\nelapsed days since the previous payment (143) and the number of days in the coupon period (184).\n(Choice C) CNY 47.67 is the accrued interest from using the actual/360 day-count convention.\nThings to remember:\nAlthough a bond pays interest on specific days, interest accrues ratably each day between payment dates. The seller of a bond is entitled to the\ninterest that accrues between the date of sale and the previous payment date. The amount of accrued interest depends on the day-count\nconvention that the bond uses.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 26, "q": "A noncallable bond is currently trading at par. Its required yield-to-maturity (YTM) falls by 10 basis points (bps) and its new price is 101. If its YTM had instead increased by 10 bps, which of the following would be the best estimate of its price?", "opts": ["98.35", "98.95", "99.20"], "ans": "C", "expl": "The inverse effect describes the relationship between bond prices and interest rates: as interest rates fall, bond prices rise, and vice-versa.\nHowever, the relationship is not linear, but curved. The chart above demonstrates a 2% coupon bond that has 50 years to maturity. The graph\nshows the bond's price at different yields-to-maturity (YTM).\nThe convexity effect refers to the phenomenon that, for a given change in the YTM, the percentage change in price is always greater when YTM\ndecreases than when YTM increases, regardless of the original YTM. In the chart shown above, the bond is priced at 36.95 when YTM is 6%. If\nYTM falls to 4.5%, the price increases by approximately 37%, to 50.59. If YTM instead increases to 7.5%, the price falls to 28.64, a decrease of\napproximately 21.5%.\nIn this question, when YTM fell by 10 basis points, the bond's price rose from 100 (ie, par value) to 101, a 1% increase. If YTM had instead\nrisen by 10 basis points, the corresponding decline in the bond's price would have been less than 1%. A 1% decrease from par value means a\nprice of 99, so the convexity effect means that the bond's price is higher than 99.\n(Choices A and B) Both choices are lower than 99; neither price is possible for this bond due to the convexity effect.\nThings to remember:\nBond prices move inversely to changes in yields-to-maturity (YTM). The convexity effect means that the percentage price change for any\nnoncallable bond is greater for a given decrease in YTM than for an equivalent increase in YTM.\nIdentify the relationships among a bond’s price, coupon rate, maturity, and yield-to-maturity.", "qhtml": null}, {"n": 27, "q": "A bond with 3 years until maturity has a 6% annual coupon paid quarterly. If the bond's price per 100 par value is 92.31, the implied annual market discount rate is closest to:", "opts": ["2.24%", "4.29%", "8.95%"], "ans": "C", "expl": "A bond's price is calculated as the present value of its future cash flows: the coupon payments and the par value at maturity, respectively. The\nmarket discount rate (r) is the annual discount rate investors require given the bond's level of risk. When a bond's market price is known, the\ndiscount rate is referred to as the implied market discount rate or the YTM.\nIn this scenario, each cash flow is discounted by the market discount rate (r), expressed as a periodic rate (r / m), over the number of periods\nbetween the pricing date and the date each cash flow is due. The market discount rate of 8.95% is best solved for by using a financial calculator.\n(Choice A) 2.24% is the bond's periodic rate, not the implied annual market discount rate. Since the bond pays interest quarterly, multiplying its\nperiodic rate by 4 produces its annual implied market discount rate.\n(Choice B) 4.29% results from using 3 as the input for number of periods in the financial calculator and then failing to multiply the result by 4.\nAlthough 3 is the number of years, there are 12 discounting periods. Since the rate is periodic, it must be multiplied by the number of\ncompounding periods to obtain the annual implied market discount rate.\nThings to remember:\nA bond's price is calculated as the present value of its expected future cash flows. The market discount rate is the annual discount rate investors\nrequire given the bond's level of risk.\nCalculate a bond’s price given a yield-to-maturity on or between coupon dates.", "qhtml": null}, {"n": 28, "q": "An analyst gathers information for the following bonds: If yield-to-maturity (YTM) increases by 100 basis points for all bonds, the exception to the maturity effect most likely means, in terms of absolute percentage price change, that:", "opts": ["Bond A's change is higher than Bond D's.", "Bond B's change is higher than Bond E's.", "Bond C's change is higher than Bond F's."], "ans": "B", "expl": "The maturity effect refines the general inverse relationship between bond prices and the required YTM, which is also known as the required rate\nof return. If two bonds are identical in all respects except for maturity, a given change in YTM generally causes a higher absolute percentage price\nchange for the bond with the longer maturity than for the bond with the shorter maturity.\nThe maturity effect always holds for zero-coupon and premium bonds (Choices A and C). A rare exception can apply to discount bonds\n(bonds that have a price less than par value). If the exception applies, shorter maturities will exhibit a higher absolute percentage change than\nlonger maturities. The bonds that the exception applies to are long-term bonds with high YTM, as shown by the table below:\nThings to remember:\nThe maturity effect states that when two bonds have the same coupon and required return, a given change in interest rates usually causes a\ngreater percentage price change for a bond with the longer maturity. An exception to the maturity effect can apply in some cases, but ONLY to\nlong-term discount bonds that pay coupon interest.\nIdentify the relationships among a bond’s price, coupon rate, maturity, and yield-to-maturity.", "qhtml": null}];
+const CFG = {"title": "Wiley · Fixed-Income Bond Valuation Prices and Yields", "subtitle": "CFA Level I · Wiley/UWorld 2024 · Fixed Income · 28 câu", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      const lab = document.createElement("b"); lab.textContent = "Giải thích: ";
+      e.appendChild(lab);
+      e.appendChild(document.createTextNode(q.expl));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function requestSubmit(){
+  if(graded) return;
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>
