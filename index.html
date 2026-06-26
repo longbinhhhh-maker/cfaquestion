@@ -343,8 +343,8 @@
   })();
   </script>
 
-  <!-- VIEW 1: subjects -->
-  <section id="subjectsView">
+  <!-- VIEW 0: sources (Schweser / Wiley / Mock) -->
+  <section id="sourcesView">
     <div id="todayPanel">
       <div class="t-head"><h2>📅 Hôm nay</h2><span id="streakBadge" class="t-streak"></span><span id="todayDate" class="t-date"></span></div>
       <div id="todaySummary" class="t-summary"></div>
@@ -354,7 +354,16 @@
         <div id="histChart" class="t-hist-chart"></div>
       </div>
     </div>
-    <div class="crumb"><b>Các môn học</b></div>
+    <div class="crumb"><b>Chọn bộ câu hỏi</b></div>
+    <div id="sourceGrid" class="grid"></div>
+  </section>
+
+  <!-- VIEW 1: subjects -->
+  <section id="subjectsView" class="hide">
+    <div class="crumb">
+      <button onclick="showSources()">Trang chủ</button>
+      <span>›</span><span id="crumbSrc"></span>
+    </div>
     <div id="subjectGrid" class="grid"></div>
   </section>
 
@@ -373,7 +382,8 @@
   </style>
   <section id="modulesView" class="hide">
     <div class="crumb">
-      <button onclick="showSubjects()">Các môn học</button>
+      <button onclick="showSources()">Trang chủ</button>
+      <span>›</span><button id="crumbSrc2" onclick="showSubjects()"></button>
       <span>›</span><span id="crumbSubj"></span>
     </div>
     <div class="subj-head">
@@ -687,11 +697,37 @@ const SUBJ_COLOR = {
 };
 function subjColor(s){ return SUBJ_COLOR[s.id] || "var(--accent)"; }
 
-function readyCount(s){ return s.modules.filter(m=>m.status==="ready").length; }
-function totalCount(s){ return s.modules.length; }
+/* ===== 3 bộ câu hỏi cấp cao nhất ===== */
+const SOURCES = [
+  {id:"schweser", name:"Schweser Notes", desc:"Câu hỏi theo môn — Schweser + Ngân hàng CFA chính thức", ico:"📕", color:"#6366f1"},
+  {id:"wiley",    name:"Wiley / UWorld 2024", desc:"Ngân hàng câu hỏi mới, theo từng reading", ico:"📘", color:"#0ea5e9"},
+  {id:"mock",     name:"Đề thi thử (Mock)", desc:"Mock exams đầy đủ — Schweser & UWorld", ico:"📝", color:"#ef4444"},
+];
+let currentSource = null;
+function isMockSubj(s){ return s.id==="mock" || s.id==="uword"; }
+/* nguồn của một module: mock theo môn, wiley theo tên file -W#, còn lại = schweser */
+function modSrc(s,m){
+  if(isMockSubj(s)) return "mock";
+  if(m.file && /-W\d+\.html$/i.test(m.file)) return "wiley";
+  return "schweser";
+}
+/* các module của môn s thuộc nguồn đang chọn */
+function modsOf(s){
+  if(!currentSource) return s.modules;
+  return s.modules.filter(m=>modSrc(s,m)===currentSource);
+}
+/* các môn xuất hiện dưới một nguồn */
+function subjectsOf(src){
+  if(src==="mock") return HUB.filter(isMockSubj);
+  return HUB.filter(s=>!isMockSubj(s) && s.modules.some(m=>modSrc(s,m)===src));
+}
+
+function readyCount(s){ return modsOf(s).filter(m=>m.status==="ready").length; }
+function totalCount(s){ return modsOf(s).length; }
 /* tổng số câu — bỏ module n:0 ("Toàn bộ môn") để khỏi đếm trùng với các reading */
 function totalQ(s){
-  const mods = s.modules.length>1 ? s.modules.filter(m=>m.n!==0) : s.modules;
+  const all = modsOf(s);
+  const mods = all.length>1 ? all.filter(m=>m.n!==0) : all;
   return mods.reduce((a,m)=>a+(m.q||0),0);
 }
 
@@ -705,7 +741,8 @@ function getProg(file){
 function subjStats(s){
   let done=0, doing=0;
   const graded=[];
-  s.modules.forEach(m=>{
+  const mods = modsOf(s);
+  mods.forEach(m=>{
     const p = getProg(m.file); if(!p) return;
     if(p.graded){ done++; graded.push({m,p}); }
     else if((p.done||0)>0) doing++;
@@ -713,7 +750,7 @@ function subjStats(s){
   // Điểm trung bình cả môn: bỏ module n:0 ("Toàn bộ môn") nếu đã có reading
   // riêng được chấm, để không tính trùng câu hỏi.
   let avgSet = graded;
-  if(s.modules.length>1 && graded.some(g=>g.m.n!==0))
+  if(mods.length>1 && graded.some(g=>g.m.n!==0))
     avgSet = graded.filter(g=>g.m.n!==0);
   let correct=0, total=0;
   avgSet.forEach(g=>{ correct+=g.p.correct||0; total+=g.p.total||0; });
@@ -874,13 +911,49 @@ function renderToday(){
   renderHistory(daily);
 }
 
+/* ===== VIEW 0: 3 bộ câu hỏi ===== */
+function renderSources(){
+  const grid = $("sourceGrid"); if(!grid) return;
+  grid.innerHTML = "";
+  SOURCES.forEach(src=>{
+    const subs = subjectsOf(src.id);
+    if(!subs.length) return;
+    currentSource = src.id;            // tạm gán để readyCount/totalQ tính đúng nguồn
+    let nReady=0, nQ=0;
+    subs.forEach(s=>{ nReady += readyCount(s); nQ += totalQ(s); });
+    currentSource = null;
+    const card = document.createElement("div");
+    card.className = "subj";
+    card.style.setProperty("--c", src.color);
+    card.onclick = ()=>showSource(src.id);
+    card.innerHTML = `
+      <div class="subj-top">
+        <span class="subj-ico">${src.ico}</span>
+        <span class="pill live">${nReady} đề</span>
+      </div>
+      <h3>${src.name}</h3>
+      <div class="meta">${src.desc}<br>${subs.length} ${src.id==="mock"?"nhóm":"môn"} · ${nQ.toLocaleString("vi-VN")} câu</div>`;
+    grid.appendChild(card);
+  });
+}
+function showSource(id){
+  currentSource = id;
+  const src = SOURCES.find(x=>x.id===id);
+  $("crumbSrc").textContent = src ? src.name : "";
+  $("sourcesView").classList.add("hide");
+  $("modulesView").classList.add("hide");
+  $("subjectsView").classList.remove("hide");
+  renderSubjects();
+  window.scrollTo({top:0});
+}
+
 function renderSubjects(){
   const grid = $("subjectGrid"); grid.innerHTML = "";
   const q = query.toLowerCase();
   let shown = 0;
-  HUB.forEach(s=>{
+  subjectsOf(currentSource).forEach(s=>{
     const hit = !q || s.name.toLowerCase().includes(q) || (s.short||"").toLowerCase().includes(q)
-      || s.modules.some(m=>m.title.toLowerCase().includes(q));
+      || modsOf(s).some(m=>m.title.toLowerCase().includes(q));
     if(!hit) return;
     shown++;
     const ready = readyCount(s), total = totalCount(s);
@@ -911,8 +984,11 @@ let currentSubj = null;
 function showModules(id){
   currentSubj = id;
   const s = HUB.find(x=>x.id===id);
+  $("sourcesView").classList.add("hide");
   $("subjectsView").classList.add("hide");
   $("modulesView").classList.remove("hide");
+  const src = SOURCES.find(x=>x.id===currentSource);
+  $("crumbSrc2").textContent = src ? src.name : "Các môn học";
   $("crumbSubj").textContent = s.name;
   $("mName").textContent = s.name;
   $("mDesc").textContent = s.desc || "";
@@ -937,11 +1013,12 @@ function showModules(id){
     sa.innerHTML = "";
   }
 
+  const mods = modsOf(s);
   const list = $("moduleList"); list.innerHTML = "";
-  if(!s.modules.length){
+  if(!mods.length){
     list.innerHTML = `<div class="empty">Chưa có module nào cho môn này.<br>Bạn upload đề sau, mình thêm vào đây.</div>`;
   }
-  s.modules.forEach(m=>{
+  mods.forEach(m=>{
     const ready = m.status==="ready";
     const p = ready ? getProg(m.file) : null;
     const row = document.createElement("div");
@@ -985,8 +1062,20 @@ function showModules(id){
 }
 
 function showSubjects(){
+  if(!currentSource) return showSources();
+  $("sourcesView").classList.add("hide");
   $("modulesView").classList.add("hide");
   $("subjectsView").classList.remove("hide");
+  renderSubjects();
+  window.scrollTo({top:0});
+}
+function showSources(){
+  currentSource = null; currentSubj = null;
+  $("subjectsView").classList.add("hide");
+  $("modulesView").classList.add("hide");
+  $("sourcesView").classList.remove("hide");
+  renderToday();
+  renderSources();
   window.scrollTo({top:0});
 }
 function onSearch(){ query = $("search").value.trim();
@@ -994,11 +1083,12 @@ function onSearch(){ query = $("search").value.trim();
 }
 
 renderToday();
-renderSubjects();
+renderSources();
 // làm mới tiến trình khi quay lại từ một đề (kể cả bfcache)
 window.addEventListener("pageshow", ()=>{
-  if($("modulesView").classList.contains("hide")){ renderToday(); renderSubjects(); }
-  else if(currentSubj) showModules(currentSubj);
+  if(!$("modulesView").classList.contains("hide") && currentSubj){ showModules(currentSubj); }
+  else if(!$("subjectsView").classList.contains("hide")){ renderSubjects(); }
+  else { renderToday(); renderSources(); }
 });
 </script>
 </body>
