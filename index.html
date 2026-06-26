@@ -80,7 +80,7 @@
   .btn:disabled{opacity:.45;cursor:not-allowed}
   .empty{color:var(--muted);text-align:center;padding:50px 10px;font-size:14px}
   .hide{display:none}
-  @media(max-width:520px){.search{min-width:130px}.mod{flex-wrap:wrap}.mod .info{order:2;flex-basis:100%}}
+  @media(max-width:520px){.search{min-width:130px}.mod{flex-wrap:wrap}.mod .info{flex-basis:100%}}
   /* ===== theme sáng ===== */
   #themeBtn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);
     border-radius:9px;padding:7px 11px;cursor:pointer;font:inherit;font-size:15px;line-height:1}
@@ -379,6 +379,12 @@
     #subjAvg .sa-sub{color:var(--muted);font-size:12.5px;margin-top:3px}
     #subjAvg .sa-bar{height:8px;border-radius:99px;background:var(--panel2);overflow:hidden;margin-top:11px}
     #subjAvg .sa-bar i{display:block;height:100%;border-radius:99px;transition:width .3s ease}
+    #subjIntro{background:var(--panel);border:1px solid var(--line);
+      border-left:4px solid var(--accent);border-radius:var(--radius,14px);
+      padding:14px 18px;margin:0 0 18px;box-shadow:var(--shadow,0 8px 28px rgba(2,6,23,.25))}
+    #subjIntro.hide{display:none}
+    #subjIntro .si-head{font-size:14px;font-weight:700;margin-bottom:6px;letter-spacing:-.01em}
+    #subjIntro p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.6}
   </style>
   <section id="modulesView" class="hide">
     <div class="crumb">
@@ -387,8 +393,9 @@
       <span>›</span><span id="crumbSubj"></span>
     </div>
     <div class="subj-head">
-      <div><h2 id="mName"></h2><p id="mDesc"></p></div>
+      <div><h2 id="mName"></h2></div>
     </div>
+    <div id="subjIntro" class="subj-intro hide"></div>
     <div id="subjAvg" class="hide"></div>
     <div id="moduleList"></div>
   </section>
@@ -697,6 +704,22 @@ const SUBJ_COLOR = {
 };
 function subjColor(s){ return SUBJ_COLOR[s.id] || "var(--accent)"; }
 
+/* ===== Giới thiệu ngắn từng môn (hiện ở đầu màn hình module) ===== */
+const SUBJ_INTRO = {
+  quant: "Nền tảng định lượng cho cả chương trình CFA: đo lợi suất, giá trị thời gian của tiền, thống kê mô tả, xác suất, lấy mẫu – kiểm định giả thuyết và hồi quy tuyến tính. Đây là bộ công cụ bạn sẽ dùng lại ở hầu hết các môn sau.",
+  econ: "Kinh tế học vi mô và vĩ mô áp dụng cho đầu tư: cung – cầu, cấu trúc thị trường, chu kỳ kinh tế, chính sách tài khóa & tiền tệ, thương mại quốc tế và cách hình thành tỷ giá hối đoái.",
+  ci: "Nhìn doanh nghiệp dưới góc độ nhà đầu tư: hình thức tổ chức, quản trị công ty và các bên liên quan, quản lý vốn lưu động, quyết định đầu tư vốn, cơ cấu vốn và mô hình kinh doanh.",
+  fsa: "Đọc và phân tích báo cáo tài chính: kết quả kinh doanh, bảng cân đối kế toán, lưu chuyển tiền tệ; phân tích hàng tồn kho, tài sản dài hạn, thuế và chất lượng báo cáo. Môn nặng và có trọng số cao trong kỳ thi.",
+  equity: "Thị trường và công cụ cổ phiếu: cách tổ chức thị trường, chỉ số, mức độ hiệu quả của thị trường, đặc điểm cổ phiếu, phân tích ngành – doanh nghiệp và các phương pháp định giá cơ bản.",
+  fi: "Thế giới trái phiếu: đặc điểm và dòng tiền của công cụ nợ, định giá, đường cong lợi suất, đo lường rủi ro lãi suất (duration, convexity) và phân tích rủi ro tín dụng, chứng khoán hóa.",
+  deriv: "Công cụ phái sinh: hợp đồng kỳ hạn, tương lai, hoán đổi và quyền chọn; nguyên tắc định giá theo arbitrage, chi phí nắm giữ và mô hình nhị thức một kỳ.",
+  alt: "Các kênh đầu tư thay thế: vốn cổ phần/nợ tư nhân, bất động sản, hạ tầng, tài nguyên thiên nhiên, quỹ phòng hộ và tài sản số – cùng đặc điểm rủi ro, lợi nhuận và cách đo hiệu quả.",
+  pm: "Tư duy theo danh mục thay vì từng tài sản riêng lẻ: rủi ro – lợi nhuận, lý thuyết danh mục và CAPM, quy trình lập kế hoạch và xây dựng danh mục, thiên kiến hành vi và nhập môn quản trị rủi ro.",
+  ethics: "Bộ Quy tắc Đạo đức và 7 Chuẩn mực Hành nghề của CFA Institute, chuẩn GIPS cùng rất nhiều tình huống ứng dụng. Trọng số lớn và thường mang tính quyết định khi điểm sát ngưỡng đậu.",
+  mock: "Các đề thi thử full-length mô phỏng kỳ thi thật: mỗi đề gồm 2 phiên, mỗi phiên 90 câu trong 2 giờ 15 phút. Dùng để luyện sức bền và canh thời gian làm bài.",
+  uword: "Đề thi thử của UWorld theo đúng định dạng CFA Level I: mỗi đề 2 phiên, mỗi phiên 90 câu trong 2 giờ 15 phút.",
+};
+
 /* ===== 3 bộ câu hỏi cấp cao nhất ===== */
 const SOURCES = [
   {id:"schweser", name:"Schweser Notes", desc:"Câu hỏi theo môn — Schweser + Ngân hàng CFA chính thức", ico:"📕", color:"#6366f1"},
@@ -991,7 +1014,18 @@ function showModules(id){
   $("crumbSrc2").textContent = src ? src.name : "Các môn học";
   $("crumbSubj").textContent = s.name;
   $("mName").textContent = s.name;
-  $("mDesc").textContent = s.desc || "";
+
+  // Giới thiệu ngắn về môn
+  const intro = SUBJ_INTRO[s.id] || s.desc || "";
+  const si = $("subjIntro");
+  if(intro){
+    si.classList.remove("hide");
+    si.style.borderLeftColor = subjColor(s);
+    si.innerHTML = `<div class="si-head">📖 Giới thiệu môn</div><p>${intro}</p>`;
+  } else {
+    si.classList.add("hide");
+    si.innerHTML = "";
+  }
 
   // Điểm trung bình cả môn
   const sa = $("subjAvg"), stx = subjStats(s);
@@ -1037,7 +1071,6 @@ function showModules(id){
     }
 
     row.innerHTML = `
-      <div class="num">${m.n}</div>
       <div class="info">
         <b>${m.title}</b>
         <span>${m.q? m.q+' câu' : (m.n===0?'Cả môn — tất cả readings':'Reading '+m.n)} ${ready?'':'· chưa có đề'}</span>
