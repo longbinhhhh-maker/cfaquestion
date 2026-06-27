@@ -1006,6 +1006,7 @@ function renderSubjects(){
 let currentSubj = null;
 function showModules(id){
   currentSubj = id;
+  try{ localStorage.setItem("cfa-nav", JSON.stringify({source:currentSource, subj:id})); }catch(e){}
   const s = HUB.find(x=>x.id===id);
   $("sourcesView").classList.add("hide");
   $("subjectsView").classList.add("hide");
@@ -1115,8 +1116,23 @@ function onSearch(){ query = $("search").value.trim();
   if(!$("subjectsView").classList.contains("hide")) renderSubjects();
 }
 
+// Quay lại đúng danh sách module mà người dùng vừa rời đi (nút "← Quay lại" trỏ index.html#resume)
+function resumeNav(){
+  if(location.hash !== "#resume") return false;
+  history.replaceState(null, "", location.pathname);
+  try{
+    const nav = JSON.parse(localStorage.getItem("cfa-nav")||"null");
+    if(nav && nav.source && nav.subj && HUB.find(x=>x.id===nav.subj)){
+      currentSource = nav.source;
+      showModules(nav.subj);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
 renderToday();
 renderSources();
+resumeNav();
 // làm mới tiến trình khi quay lại từ một đề (kể cả bfcache)
 window.addEventListener("pageshow", ()=>{
   if(!$("modulesView").classList.contains("hide") && currentSubj){ showModules(currentSubj); }
