@@ -1336,10 +1336,29 @@ function pgMetricCard(ic,label,val,sub){
     '<div class="pg-mv">'+val+'</div><div class="pg-ms">'+(sub||'')+'</div></div>';
 }
 
+function parseExamDate(v){
+  if(v==null) return null;
+  v = (""+v).trim(); if(!v) return null;
+  function mk(y,mo,d){
+    y=+y; mo=+mo; d=+d;
+    if(!y||mo<1||mo>12||d<1||d>31) return null;
+    return y+"-"+("0"+mo).slice(-2)+"-"+("0"+d).slice(-2);
+  }
+  var m;
+  // YYYY-MM-DD / YYYY.MM.DD / YYYY/MM/DD
+  if(m=v.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/)) return mk(m[1],m[2],m[3]);
+  // DD/MM/YYYY / DD-MM-YYYY / DD.MM.YYYY (kiểu Việt Nam: ngày trước)
+  if(m=v.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/)) return mk(m[3],m[2],m[1]);
+  // fallback: để trình duyệt tự hiểu (vd "August 18, 2026")
+  var t=new Date(v);
+  if(!isNaN(+t)) return mk(t.getFullYear(), t.getMonth()+1, t.getDate());
+  return null;
+}
 function examInfo(){
   try{
-    var d = localStorage.getItem("cfa:examdate"); if(!d) return null;
-    var t = new Date(d+"T00:00:00"); if(isNaN(+t)) return null;
+    var raw = localStorage.getItem("cfa:examdate"); if(!raw) return null;
+    var norm = parseExamDate(raw); if(!norm) return null;
+    var t = new Date(norm+"T00:00:00"); if(isNaN(+t)) return null;
     var days = Math.ceil((t - new Date())/86400000);
     return {date:t, days:days};
   }catch(e){ return null; }
@@ -1347,11 +1366,15 @@ function examInfo(){
 function setExamDate(){
   var cur = "";
   try{ cur = localStorage.getItem("cfa:examdate")||""; }catch(e){}
-  var v = prompt("Nhập ngày thi CFA (định dạng YYYY-MM-DD). Để trống để xoá:", cur||"2026-08-18");
+  var v = prompt("Nhập ngày thi CFA (vd 18/08/2026 hoặc 2026-08-18). Để trống để xoá:", cur||"18/08/2026");
   if(v==null) return;
   try{
-    if(v.trim()==="") localStorage.removeItem("cfa:examdate");
-    else localStorage.setItem("cfa:examdate", v.trim());
+    if(v.trim()===""){ localStorage.removeItem("cfa:examdate"); }
+    else {
+      var norm = parseExamDate(v);
+      if(!norm){ alert("Ngày chưa hợp lệ. Hãy nhập theo ngày/tháng/năm, ví dụ 18/08/2026."); return; }
+      localStorage.setItem("cfa:examdate", norm);
+    }
   }catch(e){}
   renderExam();
 }
