@@ -84,8 +84,8 @@
   /* ===== theme sáng ===== */
   #themeBtn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);
     border-radius:9px;padding:7px 11px;cursor:pointer;font:inherit;font-size:15px;line-height:1}
-  #themeBtn::after{content:"🌙"}
-  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  #themeBtn::after{content:""}
+  html[data-theme="light"] #themeBtn::after{content:""}
   html[data-theme="light"]{
     --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
     --txt:#0f172a; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
@@ -199,7 +199,7 @@
     box-shadow:0 12px 30px color-mix(in srgb,var(--c) 30%,transparent)}
   .subj-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
   .subj-ico{width:46px;height:46px;flex:none;border-radius:13px;
-    display:flex;align-items:center;justify-content:center;font-size:25px;
+    display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;letter-spacing:.02em;color:color-mix(in srgb,var(--c) 72%,var(--txt));
     background:color-mix(in srgb,var(--c) 20%,var(--panel2));
     border:1px solid color-mix(in srgb,var(--c) 38%,transparent)}
   .subj h3{margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.3}
@@ -263,7 +263,7 @@
   header p{ font-size:12.5px; color:var(--muted); }
   .search{ background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:10px;
     padding:9px 13px; min-width:220px; }
-  #themeBtn{ background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:10px; }
+  #themeBtn{ display:none; }
   main{ max-width:1040px; margin:0 auto; padding:24px 24px 80px; }
   .subj, .mod, #todayPanel, #quoteBar, #subjAvg, #subjIntro{ box-shadow:var(--shadow); }
   .subj:hover{ box-shadow:0 8px 22px rgba(24,28,40,.10); }
@@ -285,32 +285,31 @@
 <div class="fx-app">
 <aside class="fx-side">
   <div class="fx-brand">
-    <div class="fx-logo">🎓</div>
     <div><div class="fx-name">CFA Study Hub</div><div class="fx-sub">Level I · Ôn thi</div></div>
   </div>
   <nav class="fx-nav">
-    <a class="fx-nav-item active" onclick="showSources();fxActive(this)"><span class="fx-i">🏠</span>Trang chủ</a>
-    <a class="fx-nav-item" onclick="showProgress();fxActive(this)"><span class="fx-i">📊</span>Tiến độ</a>
-    <a class="fx-nav-item" onclick="showSource('schweser');fxActive(this)"><span class="fx-i">📕</span>Schweser Notes</a>
-    <a class="fx-nav-item" onclick="showSource('wiley');fxActive(this)"><span class="fx-i">📘</span>Wiley / UWorld</a>
-    <a class="fx-nav-item" onclick="showSource('mock');fxActive(this)"><span class="fx-i">📝</span>Đề thi thử</a>
+    <a class="fx-nav-item active" onclick="showSources();fxActive(this)">Trang chủ</a>
+    <a class="fx-nav-item" onclick="showProgress();fxActive(this)">Tiến độ</a>
+    <a class="fx-nav-item" onclick="showSource('schweser');fxActive(this)">Schweser Notes</a>
+    <a class="fx-nav-item" onclick="showSource('wiley');fxActive(this)">Wiley / UWorld</a>
+    <a class="fx-nav-item" onclick="showSource('mock');fxActive(this)">Đề thi thử</a>
   </nav>
   <div class="fx-navlabel">Tiện ích</div>
   <nav class="fx-nav">
-    <a class="fx-nav-item" onclick="var s=document.getElementById('search');if(s)s.focus()"><span class="fx-i">🔍</span>Tìm kiếm</a>
-    <a class="fx-nav-item" onclick="toggleTheme()"><span class="fx-i">🌗</span>Giao diện sáng / tối</a>
+    <a class="fx-nav-item" onclick="var s=document.getElementById('search');if(s)s.focus()">Tìm kiếm</a>
+    <a class="fx-nav-item" onclick="toggleTheme()">Giao diện sáng / tối</a>
   </nav>
   <div class="fx-side-foot">
-    <div class="fx-tip">💡 Chọn một nguồn để xem danh sách môn, rồi chọn module để bắt đầu làm bài.</div>
+    <div class="fx-tip">Chọn một nguồn để xem danh sách môn, rồi chọn module để bắt đầu làm bài.</div>
   </div>
   <script>function fxActive(el){document.querySelectorAll('.fx-nav-item').forEach(function(n){n.classList.remove('active')});if(el)el.classList.add('active');}</script>
 </aside>
 <div class="fx-main">
 <header>
-  <span class="logo">🎓</span>
+  <span class="logo"></span>
   <div>
     <h1>Ngân hàng câu hỏi CFA</h1>
-    <p>Chọn môn → chọn module để ôn tập</p>
+    <p>Chọn môn rồi chọn module để ôn tập</p>
   </div>
   <span class="spacer"></span>
   <input id="search" class="search" placeholder="Tìm môn / module…" oninput="onSearch()">
@@ -331,7 +330,7 @@
     .t-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);
       border-radius:11px;background:var(--panel2);text-decoration:none;color:inherit;transition:border-color .15s,transform .1s}
     .t-item:hover{border-color:var(--accent);transform:translateX(2px)}
-    .t-item .t-ic{font-size:18px;flex:none}
+    .t-item .t-ic{font-size:12px;font-weight:700;flex:none;color:var(--muted)}
     .t-item .t-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
     .t-item .t-info b{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .t-item .t-info .t-sub{font-size:12.5px;color:var(--muted)}
@@ -372,19 +371,19 @@
       font-weight:700;color:var(--accent2)}
     #quoteBar .q-author:empty{display:none}
     #quoteBar .q-refresh{flex:none;background:var(--panel2);border:1px solid var(--line);
-      color:var(--muted);width:34px;height:34px;border-radius:9px;cursor:pointer;
+      color:var(--muted);min-width:34px;height:34px;padding:0 10px;border-radius:9px;cursor:pointer;
       font-size:15px;line-height:1;transition:.15s}
-    #quoteBar .q-refresh:hover{color:var(--txt);border-color:var(--accent);transform:rotate(60deg)}
+    #quoteBar .q-refresh:hover{color:var(--txt);border-color:var(--accent)}
     #quoteBar.is-loading .q-text{opacity:.4}
     @media(max-width:520px){#quoteBar .q-ic{display:none}}
   </style>
   <div id="quoteBar" class="is-loading">
-    <span class="q-ic">💡</span>
+    <span class="q-ic"></span>
     <div class="q-body">
       <span id="quoteText" class="q-text">Đang tải câu nói truyền cảm hứng…</span>
       <span id="quoteAuthor" class="q-author"></span>
     </div>
-    <button class="q-refresh" onclick="loadQuote(true)" title="Đổi câu khác">🔄</button>
+    <button class="q-refresh" onclick="loadQuote(true)" title="Đổi câu khác">Đổi</button>
   </div>
   <script>
   (function(){
@@ -437,7 +436,7 @@
   <!-- VIEW 0: sources (Schweser / Wiley / Mock) -->
   <section id="sourcesView">
     <div id="todayPanel">
-      <div class="t-head"><h2>📅 Hôm nay</h2><span id="streakBadge" class="t-streak"></span><span id="todayDate" class="t-date"></span></div>
+      <div class="t-head"><h2>Hôm nay</h2><span id="streakBadge" class="t-streak"></span><span id="todayDate" class="t-date"></span></div>
       <div id="todaySummary" class="t-summary"></div>
       <div id="todayList" class="t-list"></div>
       <div id="histWrap" class="t-hist">
@@ -540,7 +539,7 @@
   </style>
   <section id="progressView" class="hide">
     <div class="crumb"><button onclick="showSources()">Trang chủ</button><span>›</span><span>Tiến độ</span></div>
-    <div class="subj-head"><div><h2>📊 Tiến độ ôn thi</h2><p>Tổng hợp tự động từ hoạt động làm bài của bạn</p></div></div>
+    <div class="subj-head"><div><h2>Tiến độ ôn thi</h2><p>Tổng hợp tự động từ hoạt động làm bài của bạn</p></div></div>
     <div id="pgMetrics" class="pg-metrics"></div>
     <div class="pg-grid">
       <div class="pg-card"><div class="pg-card-h"><h3>Tiến độ theo môn</h3></div><div id="pgSubjects"></div></div>
@@ -560,7 +559,7 @@
    status: "ready" (có file) | "soon" (chưa có). q = số câu (nếu biết). */
 const HUB = [
   {
-    id:"quant", name:"Quantitative Methods", short:"Định lượng", ico:"📊",
+    id:"quant", name:"Quantitative Methods", short:"Định lượng", ico:"QM",
     desc:"Lợi suất, giá trị thời gian của tiền, xác suất, kiểm định giả thuyết, hồi quy.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)",  q:93, status:"ready", file:"Quant.html"},
@@ -590,7 +589,7 @@ const HUB = [
     ]
   },
   {
-    id:"econ", name:"Economics", short:"Kinh tế học", ico:"🌐",
+    id:"econ", name:"Economics", short:"Kinh tế học", ico:"EC",
     desc:"Cấu trúc thị trường, chu kỳ kinh tế, chính sách tài khóa & tiền tệ, tỷ giá hối đoái.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)", q:76, status:"ready", file:"Economics.html"},
@@ -614,7 +613,7 @@ const HUB = [
     ]
   },
   {
-    id:"ci", name:"Corporate Issuers", short:"Tài chính DN", ico:"🏢",
+    id:"ci", name:"Corporate Issuers", short:"Tài chính DN", ico:"CI",
     desc:"Hình thức tổ chức, quản trị công ty, vốn lưu động, cơ cấu vốn, mô hình kinh doanh.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)", q:67, status:"ready", file:"CorporateIssuers.html"},
@@ -636,7 +635,7 @@ const HUB = [
     ]
   },
   {
-    id:"fsa", name:"Financial Statement Analysis", short:"FSA", ico:"📒",
+    id:"fsa", name:"Financial Statement Analysis", short:"FSA", ico:"FSA",
     desc:"Phân tích báo cáo kết quả KD, bảng cân đối, lưu chuyển tiền tệ, chất lượng báo cáo.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)", q:129, status:"ready", file:"FSA.html"},
@@ -668,7 +667,7 @@ const HUB = [
     ]
   },
   {
-    id:"equity", name:"Equity Investments", short:"Cổ phiếu", ico:"📈",
+    id:"equity", name:"Equity Investments", short:"Cổ phiếu", ico:"EQ",
     desc:"Tổ chức thị trường, chỉ số, hiệu quả thị trường, phân tích & định giá cổ phiếu.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)", q:49, status:"ready", file:"Equity.html"},
@@ -691,7 +690,7 @@ const HUB = [
     ]
   },
   {
-    id:"fi", name:"Fixed Income", short:"Trái phiếu", ico:"💵",
+    id:"fi", name:"Fixed Income", short:"Trái phiếu", ico:"FI",
     desc:"Đặc điểm & định giá trái phiếu, đường cong lợi suất, duration, rủi ro tín dụng, chứng khoán hóa.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)", q:105, status:"ready", file:"FixedIncome.html"},
@@ -738,7 +737,7 @@ const HUB = [
     ]
   },
   {
-    id:"deriv", name:"Derivatives", short:"Phái sinh", ico:"🔀",
+    id:"deriv", name:"Derivatives", short:"Phái sinh", ico:"DE",
     desc:"Hợp đồng kỳ hạn, tương lai, hoán đổi, quyền chọn; định giá và mô hình nhị thức.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)", q:65, status:"ready", file:"Derivatives.html"},
@@ -755,7 +754,7 @@ const HUB = [
     ]
   },
   {
-    id:"alt", name:"Alternative Investments", short:"Đầu tư thay thế", ico:"🏗️",
+    id:"alt", name:"Alternative Investments", short:"Đầu tư thay thế", ico:"AI",
     desc:"Vốn cổ phần tư nhân, bất động sản, hạ tầng, tài nguyên, quỹ phòng hộ, tài sản số.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)", q:60, status:"ready", file:"AlternativeInvestments.html"},
@@ -777,7 +776,7 @@ const HUB = [
     ]
   },
   {
-    id:"pm", name:"Portfolio Management", short:"Quản lý danh mục", ico:"📚",
+    id:"pm", name:"Portfolio Management", short:"Quản lý danh mục", ico:"PM",
     desc:"Lý thuyết danh mục, CAPM, lập kế hoạch & xây dựng danh mục, thiên kiến hành vi, quản lý rủi ro.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)", q:100, status:"ready", file:"PortfolioManagement.html"},
@@ -793,7 +792,7 @@ const HUB = [
     ]
   },
   {
-    id:"ethics", name:"Ethical & Professional Standards", short:"Đạo đức", ico:"⚖️",
+    id:"ethics", name:"Ethical & Professional Standards", short:"Đạo đức", ico:"ETH",
     desc:"Bộ quy tắc đạo đức, chuẩn mực hành nghề I–VII, GIPS và tình huống ứng dụng.",
     modules:[
       {n:0,  title:"Toàn bộ môn — Ngân hàng câu hỏi (CFA chính thức)", q:148, status:"ready", file:"Ethics.html"},
@@ -819,7 +818,7 @@ const HUB = [
     ]
   },
   {
-    id:"mock", name:"Mock Exams", short:"Đề thi thử", ico:"📝",
+    id:"mock", name:"Mock Exams", short:"Đề thi thử", ico:"MK",
     desc:"6 đề thi thử CFA Level I. Mỗi đề gồm 2 phiên (Session), mỗi phiên 90 câu · thời gian 2 giờ 15 phút.",
     modules:[
       {n:1,  title:"Mock 1 — Session 1", q:90, status:"ready", file:"Mock1-SS1.html"},
@@ -837,7 +836,7 @@ const HUB = [
     ]
   },
   {
-    id:"uword", name:"UWorld Mock Exams", short:"Đề UWorld", ico:"🧩",
+    id:"uword", name:"UWorld Mock Exams", short:"Đề UWorld", ico:"UW",
     desc:"2 đề thi thử CFA Level I của UWorld. Mỗi đề gồm 2 phiên (Session), mỗi phiên 90 câu · thời gian 2 giờ 15 phút.",
     modules:[
       {n:1, title:"UWorld Mock 1 — Session 1", q:90, status:"ready", file:"UWorld1-SS1.html"},
@@ -877,9 +876,9 @@ const SUBJ_INTRO = {
 
 /* ===== 3 bộ câu hỏi cấp cao nhất ===== */
 const SOURCES = [
-  {id:"schweser", name:"Schweser Notes", desc:"Câu hỏi theo môn — Schweser + Ngân hàng CFA chính thức", ico:"📕", color:"#6366f1"},
-  {id:"wiley",    name:"Wiley / UWorld 2024", desc:"Ngân hàng câu hỏi mới, theo từng reading", ico:"📘", color:"#0ea5e9"},
-  {id:"mock",     name:"Đề thi thử (Mock)", desc:"Mock exams đầy đủ — Schweser & UWorld", ico:"📝", color:"#ef4444"},
+  {id:"schweser", name:"Schweser Notes", desc:"Câu hỏi theo môn — Schweser + Ngân hàng CFA chính thức", ico:"SN", color:"#6366f1"},
+  {id:"wiley",    name:"Wiley / UWorld 2024", desc:"Ngân hàng câu hỏi mới, theo từng reading", ico:"WU", color:"#0ea5e9"},
+  {id:"mock",     name:"Đề thi thử (Mock)", desc:"Mock exams đầy đủ — Schweser & UWorld", ico:"MK", color:"#ef4444"},
 ];
 let currentSource = null;
 function isMockSubj(s){ return s.id==="mock" || s.id==="uword"; }
@@ -1054,11 +1053,11 @@ function renderToday(){
   }
 
   const stk = streakCount(daily);
-  $("streakBadge").textContent = stk>=2 ? `🔥 ${stk} ngày liên tiếp` : "";
+  $("streakBadge").textContent = stk>=2 ? `${stk} ngày liên tiếp` : "";
 
   if(!items.length){
     sum.textContent = "";
-    list.innerHTML = `<div class="t-empty">Hôm nay bạn chưa làm câu nào. Chọn một đề bên dưới để bắt đầu nhé! 💪</div>`;
+    list.innerHTML = `<div class="t-empty">Hôm nay bạn chưa làm câu nào. Chọn một đề bên dưới để bắt đầu nhé! </div>`;
   } else {
     let qsum = 0, graded = 0;
     items.forEach(it=>{ qsum += it.answered; if(it.st.graded) graded++; });
@@ -1067,13 +1066,13 @@ function renderToday(){
       const st = it.st, total = st.total||(it.m&&it.m.q)||0, done = st.done||0;
       const pct = total ? Math.round(done/total*100) : 0;
       const time = it.ts ? new Date(it.ts).toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"}) : "";
-      const ico = (it.s&&it.s.ico)||"📘";
+      const ico = (it.s&&it.s.ico)||"";
       const subj = (it.s&&(it.s.short||it.s.name))||"";
       const title = (it.m&&it.m.title)||st.title||it.slug;
       const file = (it.m&&it.m.file)||(it.slug+".html");
       const stat = st.graded
-        ? `<span class="t-stat done">✓ ${st.correct}/${st.total} · ${st.pct!=null?st.pct:0}%</span>`
-        : `<span class="t-stat doing">⏳ ${done}/${total}</span>`;
+        ? `<span class="t-stat done">${st.correct}/${st.total} · ${st.pct!=null?st.pct:0}%</span>`
+        : `<span class="t-stat doing">${done}/${total}</span>`;
       const sub = [subj, time, it.answered>0?`+${it.answered} câu`:""].filter(Boolean).join(" · ");
       return `<a class="t-item" href="${file}">
         <span class="t-ic">${ico}</span>
@@ -1147,7 +1146,7 @@ function renderSubjects(){
       : `${s.short||''}${qsum?` · ${qsum} câu`:''}`;
     card.innerHTML = `
       <div class="subj-top">
-        <span class="subj-ico">${s.ico||'📘'}</span>
+        <span class="subj-ico">${s.ico||''}</span>
         <span class="pill ${ready?'live':''}">${ready?ready+' đề':'Sắp có'}</span>
       </div>
       <h3>${s.name}</h3>
@@ -1177,7 +1176,7 @@ function showModules(id){
   if(intro){
     si.classList.remove("hide");
     si.style.borderLeftColor = subjColor(s);
-    si.innerHTML = `<div class="si-head">📖 Giới thiệu môn</div><p>${intro}</p>`;
+    si.innerHTML = `<div class="si-head">Giới thiệu môn</div><p>${intro}</p>`;
   } else {
     si.classList.add("hide");
     si.innerHTML = "";
@@ -1193,7 +1192,7 @@ function showModules(id){
     sa.style.borderLeftColor = c;
     sa.innerHTML = `
       <div class="sa-top">
-        <span class="sa-title">📊 Điểm trung bình cả môn</span>
+        <span class="sa-title">Điểm trung bình cả môn</span>
         <span class="sa-score" style="color:${c}">${stx.pct}%</span>
       </div>
       <div class="sa-sub">${stx.correct}/${stx.total} câu đúng · ${stx.gradedCount} đề đã nộp · ${passTxt}</div>
@@ -1216,14 +1215,14 @@ function showModules(id){
 
     // trạng thái tiến trình
     let progLine = "", badgeCls = ready?"ready":"", badgeTxt = ready?"Có sẵn":"Sắp có";
-    let btnLabel = "Làm bài →";
+    let btnLabel = "Làm bài";
     if(p && p.graded){
       const pct = p.pct!=null?p.pct:0;
-      progLine = `<span class="prog done">✓ Đã nộp · ${p.correct}/${p.total} (${pct}%)</span>`;
-      badgeCls = "done"; badgeTxt = pct+"%"; btnLabel = "Xem lại →";
+      progLine = `<span class="prog done">Đã nộp · ${p.correct}/${p.total} (${pct}%)</span>`;
+      badgeCls = "done"; badgeTxt = pct+"%"; btnLabel = "Xem lại";
     }else if(p && (p.done||0)>0){
-      progLine = `<span class="prog doing">⏳ Đang làm · ${p.done}/${p.total} câu</span>`;
-      badgeCls = "doing"; badgeTxt = "Đang làm"; btnLabel = "Tiếp tục →";
+      progLine = `<span class="prog doing">Đang làm · ${p.done}/${p.total} câu</span>`;
+      badgeCls = "doing"; badgeTxt = "Đang làm"; btnLabel = "Tiếp tục";
     }
 
     row.innerHTML = `
@@ -1236,7 +1235,7 @@ function showModules(id){
 
     if(p){
       const rb = document.createElement("button");
-      rb.className = "reset"; rb.textContent = "↺ Đặt lại";
+      rb.className = "reset"; rb.textContent = "Đặt lại";
       rb.onclick = (ev)=>resetProg(m.file, ev);
       row.appendChild(rb);
     }
@@ -1271,7 +1270,7 @@ function onSearch(){ query = $("search").value.trim();
   if(!$("subjectsView").classList.contains("hide")) renderSubjects();
 }
 
-// Quay lại đúng danh sách module mà người dùng vừa rời đi (nút "← Quay lại" trỏ index.html#resume)
+// Quay lại đúng danh sách module mà người dùng vừa rời đi (nút "Quay lại" trỏ index.html#resume)
 function resumeNav(){
   if(location.hash !== "#resume") return false;
   history.replaceState(null, "", location.pathname);
@@ -1300,7 +1299,7 @@ window.addEventListener("pageshow", ()=>{
 const SUBJ_WEIGHT = { ethics:17, quant:8, econ:8, fsa:13, ci:8, equity:13, fi:12, deriv:6, alt:8, pm:10 };
 
 function pgMetricCard(ic,label,val,sub){
-  return '<div class="pg-metric"><div class="pg-ml">'+ic+' '+label+'</div>'+
+  return '<div class="pg-metric"><div class="pg-ml">'+label+'</div>'+
     '<div class="pg-mv">'+val+'</div><div class="pg-ms">'+(sub||'')+'</div></div>';
 }
 
@@ -1327,11 +1326,11 @@ function renderExam(){
   var el = $("pgExam"); if(!el) return;
   var e = examInfo();
   if(!e){
-    el.innerHTML = '<span class="pg-en">🗓️</span><span class="pg-et">Bấm để đặt <b>ngày thi</b><br>rồi xem đếm ngược</span>';
+    el.innerHTML = '<span class="pg-en"></span><span class="pg-et">Bấm để đặt <b>ngày thi</b><br>rồi xem đếm ngược</span>';
   } else if(e.days>=0){
     el.innerHTML = '<span class="pg-en">'+e.days+'</span><span class="pg-et">ngày đến kỳ thi<br>Level I · '+e.date.toLocaleDateString("vi-VN")+'</span>';
   } else {
-    el.innerHTML = '<span class="pg-en">✓</span><span class="pg-et">Kỳ thi đã diễn ra<br>'+e.date.toLocaleDateString("vi-VN")+'</span>';
+    el.innerHTML = '<span class="pg-en"></span><span class="pg-et">Kỳ thi đã diễn ra<br>'+e.date.toLocaleDateString("vi-VN")+'</span>';
   }
   el.onclick = setExamDate;
 }
@@ -1354,10 +1353,10 @@ function renderProgress(){
   HUB.forEach(function(s){ s.modules.forEach(function(m){ var p=getProg(m.file); if(p) qAnswered += (p.done||0); }); });
 
   $("pgMetrics").innerHTML =
-    pgMetricCard("📈","Tổng tiến độ", overall+"%", "điểm TB có trọng số CFA") +
-    pgMetricCard("📝","Đề đã nộp", gradedAll, (avgScore!=null ? ("điểm TB "+avgScore+"%") : "chưa chấm đề nào")) +
-    pgMetricCard("✅","Câu đã làm", qAnswered.toLocaleString("vi-VN"), (tot ? (corr+"/"+tot+" đúng khi chấm") : "trên tất cả các đề")) +
-    pgMetricCard("🔥","Chuỗi ngày học", streak+" ngày", streak>=2 ? "Giữ phong độ nhé!" : "Làm bài hôm nay để nối chuỗi");
+    pgMetricCard("","Tổng tiến độ", overall+"%", "điểm TB có trọng số CFA") +
+    pgMetricCard("","Đề đã nộp", gradedAll, (avgScore!=null ? ("điểm TB "+avgScore+"%") : "chưa chấm đề nào")) +
+    pgMetricCard("","Câu đã làm", qAnswered.toLocaleString("vi-VN"), (tot ? (corr+"/"+tot+" đúng khi chấm") : "trên tất cả các đề")) +
+    pgMetricCard("","Chuỗi ngày học", streak+" ngày", streak>=2 ? "Giữ phong độ nhé!" : "Làm bài hôm nay để nối chuỗi");
 
   $("pgSubjects").innerHTML = rows.map(function(r){
     var c = subjColor(r.s), w = SUBJ_WEIGHT[r.s.id];
