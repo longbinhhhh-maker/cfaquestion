@@ -293,6 +293,7 @@
     <a class="fx-nav-item" onclick="showSource('schweser');fxActive(this)">Schweser Notes</a>
     <a class="fx-nav-item" onclick="showSource('wiley');fxActive(this)">Wiley / UWorld</a>
     <a class="fx-nav-item" onclick="showSource('mock');fxActive(this)">Đề thi thử</a>
+    <a class="fx-nav-item" onclick="showFormula();fxActive(this)">Công thức</a>
   </nav>
   <div class="fx-navlabel">Tiện ích</div>
   <nav class="fx-nav">
@@ -549,6 +550,28 @@
       </div>
     </div>
     <div class="pg-card"><div class="pg-card-h"><h3>Hoạt động 7 ngày qua</h3><span id="pgWeekTotal" class="pg-link"></span></div><div id="pgWeek" class="pg-week"></div></div>
+  </section>
+
+  <style id="formula-css">
+    #formulaView .subj-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    #formulaView .fmla-dl{padding:9px 18px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
+    #formulaView .fmla-dl:hover{filter:brightness(1.06)}
+    #formulaView .fmla-wrap{margin-top:6px}
+    #formulaView .fmla-frame{width:100%;height:82vh;min-height:520px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow)}
+    #formulaView .fmla-fallback{color:var(--muted);font-size:13px;margin-top:10px;text-align:center}
+    #formulaView .fmla-fallback a{color:var(--accent);font-weight:600}
+    @media(max-width:860px){#formulaView .fmla-frame{height:70vh}}
+  </style>
+  <section id="formulaView" class="hide">
+    <div class="crumb"><button onclick="showSources()">Trang chủ</button><span>›</span><span>Công thức</span></div>
+    <div class="subj-head">
+      <div><h2>Công thức CFA Level I</h2><p>Formula Sheet — 2024 Syllabus · đầy đủ 10 môn</p></div>
+      <a class="fmla-dl" href="CFA-L1-FormulaSheet-2024.pdf" target="_blank" rel="noopener">Tải PDF</a>
+    </div>
+    <div class="fmla-wrap">
+      <iframe class="fmla-frame" src="CFA-L1-FormulaSheet-2024.pdf#view=FitH" title="CFA Level I Formula Sheet 2024" loading="lazy"></iframe>
+      <p class="fmla-fallback">Không xem được PDF ở đây? <a href="CFA-L1-FormulaSheet-2024.pdf" target="_blank" rel="noopener">Mở trong tab mới</a>.</p>
+    </div>
   </section>
 </main>
 </div><!--/fx-main-->
@@ -1415,17 +1438,29 @@ function showProgress(){
   $("sourcesView").classList.add("hide");
   $("subjectsView").classList.add("hide");
   $("modulesView").classList.add("hide");
+  $("formulaView").classList.add("hide");
   $("progressView").classList.remove("hide");
   renderProgress();
   window.scrollTo({top:0});
 }
 
-/* Khi chuyển sang view khác qua nav, ẩn luôn progressView (bọc các hàm điều hướng sẵn có) */
+function showFormula(){
+  currentSource=null; currentSubj=null;
+  $("sourcesView").classList.add("hide");
+  $("subjectsView").classList.add("hide");
+  $("modulesView").classList.add("hide");
+  $("progressView").classList.add("hide");
+  $("formulaView").classList.remove("hide");
+  window.scrollTo({top:0});
+}
+
+/* Khi chuyển sang view khác qua nav, ẩn luôn progressView + formulaView (bọc các hàm điều hướng sẵn có) */
 (function(){
   ["showSources","showSource","showSubjects","showModules"].forEach(function(fn){
     var orig = window[fn]; if(typeof orig!=="function") return;
     window[fn] = function(){
       var pv=document.getElementById("progressView"); if(pv) pv.classList.add("hide");
+      var fv=document.getElementById("formulaView"); if(fv) fv.classList.add("hide");
       return orig.apply(this, arguments);
     };
   });
