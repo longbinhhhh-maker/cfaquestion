@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ôn tập CFA — Ngân hàng câu hỏi</title>
 <script>
-  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"light"); }catch(e){} })();
   function toggleTheme(){
     var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
     try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
@@ -213,8 +213,98 @@
   .subj .bar > i{background:linear-gradient(90deg,
     color-mix(in srgb,var(--c) 70%,var(--accent)),var(--c))}
 </style>
+<style id="fillo-skin">
+  :root{
+    --accent:#534AB7; --accent2:#6f66d6;
+    --bg:#eef1f6; --panel:#ffffff; --panel2:#f2f3f7; --line:#e7e9ef;
+    --txt:#1f2430; --muted:#6b7280; --ok:#1d9e75; --okbg:#e4f5ee;
+    --bad:#e24b4a; --badbg:#fcebeb; --pin:#ef9f27;
+    --radius:14px; --shadow:0 1px 2px rgba(24,28,40,.06);
+  }
+  html[data-theme="light"]{
+    --accent:#534AB7; --accent2:#6f66d6;
+    --bg:#eef1f6; --panel:#ffffff; --panel2:#f2f3f7; --line:#e7e9ef;
+    --txt:#1f2430; --muted:#6b7280; --ok:#1d9e75; --okbg:#e4f5ee;
+    --bad:#e24b4a; --badbg:#fcebeb; --pin:#ef9f27;
+    --shadow:0 1px 2px rgba(24,28,40,.06);
+  }
+  html[data-theme="dark"]{
+    --accent:#7f77dd; --accent2:#6a61e0;
+    --bg:#0e1220; --panel:#151b2c; --panel2:#1d2540; --line:#2a3352;
+    --txt:#e6edf6; --muted:#9aa4b6; --ok:#34d19b; --okbg:#123a2c;
+    --bad:#f16a6a; --badbg:#3a1620; --pin:#f0a93a;
+    --shadow:0 8px 28px rgba(0,0,0,.32);
+  }
+  body{ background:var(--bg); background-attachment:initial;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+  .fx-app{ display:grid; grid-template-columns:248px minmax(0,1fr); min-height:100vh; align-items:start; }
+  .fx-side{ position:sticky; top:0; height:100vh; overflow-y:auto; background:var(--panel);
+    border-right:1px solid var(--line); padding:16px 12px; display:flex; flex-direction:column; gap:2px; z-index:30; }
+  .fx-main{ min-width:0; display:flex; flex-direction:column; }
+  .fx-brand{ display:flex; align-items:center; gap:10px; padding:6px 8px 14px; }
+  .fx-logo{ width:34px; height:34px; border-radius:10px; flex:none; background:linear-gradient(135deg,#6a61e0,#534AB7);
+    display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 4px 12px rgba(83,74,183,.35); }
+  .fx-name{ font-size:14px; font-weight:600; color:var(--txt); white-space:nowrap; line-height:1.15; }
+  .fx-sub{ font-size:11px; color:var(--muted); }
+  .fx-navlabel{ font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:14px 10px 6px; }
+  .fx-nav{ display:flex; flex-direction:column; gap:2px; }
+  .fx-nav-item{ display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:9px; color:var(--muted);
+    font-size:13.5px; font-weight:500; cursor:pointer; user-select:none; }
+  .fx-nav-item .fx-i{ font-size:16px; width:20px; text-align:center; flex:none; }
+  .fx-nav-item:hover{ background:var(--panel2); color:var(--txt); }
+  .fx-nav-item.active{ background:color-mix(in srgb,var(--accent) 12%,var(--panel)); color:var(--accent); }
+  .fx-side-foot{ margin-top:auto; padding-top:14px; }
+  .fx-tip{ font-size:11.5px; color:var(--muted); background:var(--panel2); border:1px solid var(--line);
+    border-radius:11px; padding:11px 12px; line-height:1.55; }
+  header{ position:sticky; top:0; z-index:20; background:var(--panel); border-bottom:1px solid var(--line);
+    padding:14px 24px; backdrop-filter:none; -webkit-backdrop-filter:none; box-shadow:none; }
+  header .logo{ display:none; }
+  header h1{ font-size:18px; font-weight:600; letter-spacing:-.01em; color:var(--txt); }
+  header p{ font-size:12.5px; color:var(--muted); }
+  .search{ background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:10px;
+    padding:9px 13px; min-width:220px; }
+  #themeBtn{ background:var(--panel2); border:1px solid var(--line); color:var(--txt); border-radius:10px; }
+  main{ max-width:1040px; margin:0 auto; padding:24px 24px 80px; }
+  .subj, .mod, #todayPanel, #quoteBar, #subjAvg, #subjIntro{ box-shadow:var(--shadow); }
+  .subj:hover{ box-shadow:0 8px 22px rgba(24,28,40,.10); }
+  .mod{ border-radius:14px; }
+  .btn.primary{ background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:#fff; }
+  .crumb button{ color:var(--accent); }
+  @media(max-width:820px){
+    .fx-app{ grid-template-columns:1fr; }
+    .fx-side{ position:static; height:auto; flex-direction:row; align-items:center; gap:6px;
+      overflow-x:auto; padding:10px 12px; border-right:none; border-bottom:1px solid var(--line); }
+    .fx-brand{ padding:0 6px 0 0; } .fx-navlabel, .fx-side-foot{ display:none; }
+    .fx-nav{ flex-direction:row; } .fx-nav-item{ white-space:nowrap; }
+    main{ padding:16px 14px 60px; }
+    .search{ min-width:130px; }
+  }
+</style>
 </head>
 <body>
+<div class="fx-app">
+<aside class="fx-side">
+  <div class="fx-brand">
+    <div class="fx-logo">🎓</div>
+    <div><div class="fx-name">CFA Study Hub</div><div class="fx-sub">Level I · Ôn thi</div></div>
+  </div>
+  <nav class="fx-nav">
+    <a class="fx-nav-item active" onclick="showSources();fxActive(this)"><span class="fx-i">🏠</span>Trang chủ</a>
+    <a class="fx-nav-item" onclick="showSource('schweser');fxActive(this)"><span class="fx-i">📕</span>Schweser Notes</a>
+    <a class="fx-nav-item" onclick="showSource('wiley');fxActive(this)"><span class="fx-i">📘</span>Wiley / UWorld</a>
+    <a class="fx-nav-item" onclick="showSource('mock');fxActive(this)"><span class="fx-i">📝</span>Đề thi thử</a>
+  </nav>
+  <div class="fx-navlabel">Tiện ích</div>
+  <nav class="fx-nav">
+    <a class="fx-nav-item" onclick="var s=document.getElementById('search');if(s)s.focus()"><span class="fx-i">🔍</span>Tìm kiếm</a>
+    <a class="fx-nav-item" onclick="toggleTheme()"><span class="fx-i">🌗</span>Giao diện sáng / tối</a>
+  </nav>
+  <div class="fx-side-foot">
+    <div class="fx-tip">💡 Chọn một nguồn để xem danh sách môn, rồi chọn module để bắt đầu làm bài.</div>
+  </div>
+  <script>function fxActive(el){document.querySelectorAll('.fx-nav-item').forEach(function(n){n.classList.remove('active')});if(el)el.classList.add('active');}</script>
+</aside>
+<div class="fx-main">
 <header>
   <span class="logo">🎓</span>
   <div>
@@ -400,6 +490,8 @@
     <div id="moduleList"></div>
   </section>
 </main>
+</div><!--/fx-main-->
+</div><!--/fx-app-->
 
 <script>
 /* ===== DỮ LIỆU — thêm môn/đề ở đây. Mỗi đề "ready" trỏ tới file quiz cùng thư mục. =====
