@@ -556,22 +556,32 @@
     #formulaView .subj-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
     #formulaView .fmla-dl{padding:9px 18px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
     #formulaView .fmla-dl:hover{filter:brightness(1.06)}
-    #formulaView .fmla-wrap{margin-top:6px}
-    #formulaView .fmla-frame{width:100%;height:82vh;min-height:520px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:var(--shadow)}
-    #formulaView .fmla-fallback{color:var(--muted);font-size:13px;margin-top:10px;text-align:center}
-    #formulaView .fmla-fallback a{color:var(--accent);font-weight:600}
-    @media(max-width:860px){#formulaView .fmla-frame{height:70vh}}
+    #fmlaSearch{width:100%;box-sizing:border-box;margin:6px 0 14px;padding:11px 14px;border-radius:11px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:15px;font-family:inherit}
+    #fmlaSearch:focus{outline:none;border-color:var(--accent)}
+    #fmlaTabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+    .fmla-tab{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+    .fmla-tab:hover{color:var(--txt);border-color:var(--accent)}
+    .fmla-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .fmla-subjhead{font-size:15px;font-weight:700;color:var(--accent);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+    .fmla-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start}
+    .fmla-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+    .fmla-t{font-weight:700;font-size:14.5px;color:var(--txt);margin-bottom:4px}
+    .fmla-sec-tag{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+    .fmla-f{margin:8px 0 4px;overflow-x:auto;color:var(--txt)}
+    .fmla-n{font-size:13px;color:var(--muted);line-height:1.55;margin-top:6px}
+    .fmla-empty,.fmla-loading{color:var(--muted);text-align:center;padding:44px 0}
+    mjx-container{color:var(--txt)}
+    @media(max-width:860px){.fmla-grid{grid-template-columns:1fr}}
   </style>
   <section id="formulaView" class="hide">
     <div class="crumb"><button onclick="showSources()">Trang chủ</button><span>›</span><span>Công thức</span></div>
     <div class="subj-head">
-      <div><h2>Công thức CFA Level I</h2><p>Formula Sheet — 2024 Syllabus · đầy đủ 10 môn</p></div>
-      <a class="fmla-dl" href="CFA-L1-FormulaSheet-2024.pdf" target="_blank" rel="noopener">Tải PDF</a>
+      <div><h2>Công thức CFA Level I</h2><p>Formula Sheet — 2024 Syllabus · <span id="fmlaCount">10 môn</span></p></div>
+      <a class="fmla-dl" href="CFA-L1-FormulaSheet-2024.pdf" target="_blank" rel="noopener">Tải PDF gốc</a>
     </div>
-    <div class="fmla-wrap">
-      <iframe class="fmla-frame" src="CFA-L1-FormulaSheet-2024.pdf#view=FitH" title="CFA Level I Formula Sheet 2024" loading="lazy"></iframe>
-      <p class="fmla-fallback">Không xem được PDF ở đây? <a href="CFA-L1-FormulaSheet-2024.pdf" target="_blank" rel="noopener">Mở trong tab mới</a>.</p>
-    </div>
+    <input id="fmlaSearch" type="search" autocomplete="off" placeholder="Tìm công thức: duration, WACC, Sharpe, DDM, Bayes..." oninput="renderFormulas()">
+    <div id="fmlaTabs"></div>
+    <div id="fmlaBody"><div class="fmla-loading">Đang tải công thức…</div></div>
   </section>
 </main>
 </div><!--/fx-main-->
@@ -1452,6 +1462,75 @@ function showFormula(){
   $("progressView").classList.add("hide");
   $("formulaView").classList.remove("hide");
   window.scrollTo({top:0});
+  fmlaInit();
+}
+
+/* ===== Công thức: lazy-load dữ liệu + MathJax, duyệt theo môn + tìm kiếm ===== */
+var fmlaData=null, fmlaTab=null, fmlaBooting=false;
+function fmlaLoadScript(src){return new Promise(function(res,rej){var s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+function fmlaInit(){
+  if(fmlaData||fmlaBooting) return; fmlaBooting=true;
+  window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},svg:{fontCache:"global"},startup:{typeset:false}};
+  fmlaLoadScript("formulas-data.js").then(function(){
+    fmlaData=window.CFA_FORMULAS||[];
+    if(fmlaData.length) fmlaTab=fmlaData[0].id;
+    return fmlaLoadScript("https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js");
+  }).then(function(){ fmlaBuildTabs(); renderFormulas(); })
+    .catch(function(){ var b=$("fmlaBody"); if(b) b.innerHTML='<div class="fmla-empty">Không tải được công thức. <a class="fmla-dl" href="CFA-L1-FormulaSheet-2024.pdf" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px">Mở PDF gốc</a></div>'; });
+}
+function fmlaBuildTabs(){
+  if(!fmlaData) return;
+  var t=$("fmlaTabs"); if(!t) return; t.innerHTML="";
+  var q=(($("fmlaSearch")||{}).value||"").trim();
+  fmlaData.forEach(function(sub){
+    var b=document.createElement("button");
+    b.className="fmla-tab"+(!q&&sub.id===fmlaTab?" active":"");
+    b.textContent=sub.name;
+    b.onclick=function(){ fmlaTab=sub.id; var s=$("fmlaSearch"); if(s) s.value=""; fmlaBuildTabs(); renderFormulas(); window.scrollTo({top:0}); };
+    t.appendChild(b);
+  });
+  var c=$("fmlaCount"); if(c) c.textContent=(window.CFA_FORMULAS_TOTAL||"")+" công thức · "+fmlaData.length+" môn";
+}
+function fmlaCard(it, secLabel){
+  var card=document.createElement("div"); card.className="fmla-card";
+  var h=document.createElement("div"); h.className="fmla-t"; h.textContent=it.t; card.appendChild(h);
+  if(secLabel){ var s=document.createElement("div"); s.className="fmla-sec-tag"; s.textContent=secLabel; card.appendChild(s); }
+  if(it.f){ var f=document.createElement("div"); f.className="fmla-f"; f.textContent="\\["+it.f+"\\]"; card.appendChild(f); }
+  if(it.n){ var n=document.createElement("div"); n.className="fmla-n"; n.textContent=it.n; card.appendChild(n); }
+  return card;
+}
+function renderFormulas(){
+  if(!fmlaData) return;
+  var body=$("fmlaBody"); if(!body) return; body.innerHTML="";
+  var q=(($("fmlaSearch")||{}).value||"").trim().toLowerCase();
+  fmlaBuildTabs();
+  if(q){
+    var any=false, cur=null, grid=null;
+    fmlaData.forEach(function(sub){
+      sub.sections.forEach(function(sec){
+        sec.items.forEach(function(it){
+          var hay=(it.t+" "+sec.h+" "+(it.n||"")+" "+(it.f||"")+" "+sub.name).toLowerCase();
+          if(hay.indexOf(q)<0) return;
+          any=true;
+          if(cur!==sub.id){ cur=sub.id;
+            var hh=document.createElement("h3"); hh.className="fmla-subjhead"; hh.textContent=sub.name; body.appendChild(hh);
+            grid=document.createElement("div"); grid.className="fmla-grid"; body.appendChild(grid);
+          }
+          grid.appendChild(fmlaCard(it, sec.h));
+        });
+      });
+    });
+    if(!any){ body.innerHTML='<div class="fmla-empty">Không tìm thấy công thức phù hợp với “'+q.replace(/</g,"")+'”.</div>'; return; }
+  } else {
+    var sub=null; for(var i=0;i<fmlaData.length;i++){ if(fmlaData[i].id===fmlaTab){ sub=fmlaData[i]; break; } }
+    if(!sub) sub=fmlaData[0];
+    sub.sections.forEach(function(sec){
+      var hh=document.createElement("h3"); hh.className="fmla-subjhead"; hh.textContent=sec.h; body.appendChild(hh);
+      var grid=document.createElement("div"); grid.className="fmla-grid"; body.appendChild(grid);
+      sec.items.forEach(function(it){ grid.appendChild(fmlaCard(it, null)); });
+    });
+  }
+  if(window.MathJax&&MathJax.typesetPromise){ MathJax.typesetPromise([body]).catch(function(){}); }
 }
 
 /* Khi chuyển sang view khác qua nav, ẩn luôn progressView + formulaView (bọc các hàm điều hướng sẵn có) */
