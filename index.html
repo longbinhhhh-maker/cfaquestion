@@ -57,26 +57,50 @@
   .subj-head h2{margin:0;font-size:20px}
   .subj-head p{margin:2px 0 0;color:var(--muted);font-size:13px}
   .mod{display:flex;align-items:center;gap:14px;background:var(--panel);
-    border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
-  .mod .num{width:34px;height:34px;flex:none;border-radius:9px;background:var(--panel2);
-    display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent2)}
+    border:1px solid var(--line);border-radius:14px;padding:13px 16px;margin-bottom:10px;
+    transition:border-color .12s ease,transform .12s ease,box-shadow .12s ease}
+  .mod:hover{transform:translateY(-1px);
+    border-color:color-mix(in srgb,var(--c,var(--accent)) 45%,var(--line));
+    box-shadow:0 6px 18px color-mix(in srgb,var(--c,var(--accent)) 15%,transparent)}
+  .mod.doing{border-color:color-mix(in srgb,var(--pin) 55%,transparent);
+    box-shadow:0 0 0 1px color-mix(in srgb,var(--pin) 40%,transparent)}
+  .mod .num{width:44px;height:44px;flex:none;border-radius:12px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;
+    background:color-mix(in srgb,var(--c,var(--accent)) 16%,var(--panel2));
+    color:color-mix(in srgb,var(--c,var(--accent)) 72%,var(--txt));
+    border:1px solid color-mix(in srgb,var(--c,var(--accent)) 26%,transparent)}
+  .mod .num .nk{font-size:9px;letter-spacing:.06em;opacity:.75;font-weight:600}
+  .mod .num .nv{font-size:15px;font-weight:700}
   .mod .info{flex:1;min-width:0}
-  .mod .info b{font-size:15px;display:block}
+  .mod .info b{font-size:14.5px;font-weight:600;display:block;line-height:1.35}
   .mod .info span{color:var(--muted);font-size:12.5px}
-  .mod .badge{font-size:11.5px;padding:3px 9px;border-radius:99px;background:var(--panel2);color:var(--soon)}
-  .mod .badge.ready{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
-  .mod .badge.doing{background:#3b2f10;color:#fde68a;border:1px solid #f59e0b}
-  .mod .badge.done{background:#0b3a52;color:#bae6fd;border:1px solid #38bdf8}
+  .mod .mbar{height:5px;border-radius:20px;overflow:hidden;margin-top:8px;max-width:280px;
+    background:color-mix(in srgb,var(--c,var(--accent)) 12%,var(--panel2))}
+  .mod .mbar>i{display:block;height:100%;border-radius:20px;background:var(--pin)}
+  .mod .mbar>i.g{background:var(--ok)}
+  .mod .badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;
+    background:var(--panel2);color:var(--soon);border:1px solid var(--line)}
+  .mod .badge.ready{background:var(--okbg);color:var(--ok);
+    border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+  .mod .badge.doing{background:color-mix(in srgb,var(--pin) 18%,var(--panel2));color:var(--pin);
+    border-color:color-mix(in srgb,var(--pin) 42%,transparent)}
+  .mod .badge.done{background:color-mix(in srgb,var(--c,var(--accent)) 16%,var(--panel2));
+    color:color-mix(in srgb,var(--c,var(--accent)) 72%,var(--txt));
+    border-color:color-mix(in srgb,var(--c,var(--accent)) 34%,transparent)}
   .prog{display:inline-block;margin-top:4px;font-size:12px}
-  .prog.doing{color:#fbbf24}
-  .prog.done{color:#7dd3fc}
+  .prog.doing{color:var(--pin)}
+  .prog.done{color:var(--ok)}
   .reset{background:none;border:none;color:var(--muted);cursor:pointer;font:inherit;
-    font-size:12px;padding:2px 6px;white-space:nowrap}
-  .reset:hover{color:#fecaca;text-decoration:underline}
+    font-size:12px;padding:5px 9px;white-space:nowrap;border-radius:8px}
+  .reset:hover{color:var(--txt);background:var(--panel2);text-decoration:none}
   .btn{font:inherit;border:1px solid var(--line);background:var(--panel2);color:var(--txt);
-    padding:8px 16px;border-radius:9px;cursor:pointer;white-space:nowrap}
-  .btn.primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+    padding:8px 16px;border-radius:10px;cursor:pointer;white-space:nowrap;font-weight:600}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
   .btn.primary:hover{background:var(--accent2)}
+  .btn.ghost{background:color-mix(in srgb,var(--c,var(--accent)) 13%,var(--panel2));
+    border-color:color-mix(in srgb,var(--c,var(--accent)) 30%,transparent);
+    color:color-mix(in srgb,var(--c,var(--accent)) 74%,var(--txt))}
+  .btn.ghost:hover{background:color-mix(in srgb,var(--c,var(--accent)) 22%,var(--panel2))}
   .btn:disabled{opacity:.45;cursor:not-allowed}
   .empty{color:var(--muted);text-align:center;padding:50px 10px;font-size:14px}
   .hide{display:none}
@@ -92,11 +116,6 @@
     --ok:#16a34a; --okbg:#dcfce7; --soon:#94a3b8;
   }
   html[data-theme="light"] .pill.live{background:#dcfce7;color:#166534}
-  html[data-theme="light"] .mod .badge.ready{background:#dcfce7;color:#166534}
-  html[data-theme="light"] .mod .badge.doing{background:#fef3c7;color:#92400e;border-color:#d97706}
-  html[data-theme="light"] .mod .badge.done{background:#dbeafe;color:#1e40af;border-color:#3b82f6}
-  html[data-theme="light"] .prog.doing{color:#b45309}
-  html[data-theme="light"] .prog.done{color:#1d4ed8}
 </style>
 <!--ui-polish-start-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1264,6 +1283,7 @@ function showModules(id){
 
   const mods = modsOf(s);
   const list = $("moduleList"); list.innerHTML = "";
+  list.style.setProperty("--c", subjColor(s));
   if(!mods.length){
     list.innerHTML = `<div class="empty">Chưa có module nào cho môn này.<br>Bạn upload đề sau, mình thêm vào đây.</div>`;
   }
@@ -1271,25 +1291,37 @@ function showModules(id){
     const ready = m.status==="ready";
     const p = ready ? getProg(m.file) : null;
     const row = document.createElement("div");
-    row.className = "mod";
+
+    // ô số reading: n:0 = cả môn (icon), số = LM n, còn lại = giá trị n
+    const numHtml = (m.n===0 || m.n==null)
+      ? `<div class="num"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 13l9 5 9-5"/></svg></div>`
+      : (typeof m.n==="number"
+          ? `<div class="num"><span class="nk">LM</span><span class="nv">${m.n}</span></div>`
+          : `<div class="num"><span class="nv" style="font-size:12.5px">${m.n}</span></div>`);
 
     // trạng thái tiến trình
-    let progLine = "", badgeCls = ready?"ready":"", badgeTxt = ready?"Có sẵn":"Sắp có";
+    let progLine = "", barHtml = "", badgeCls = ready?"ready":"", badgeTxt = ready?"Có sẵn":"Sắp có";
     let btnLabel = "Làm bài";
     if(p && p.graded){
       const pct = p.pct!=null?p.pct:0;
       progLine = `<span class="prog done">Đã nộp · ${p.correct}/${p.total} (${pct}%)</span>`;
+      barHtml = `<div class="mbar"><i class="g" style="width:100%"></i></div>`;
       badgeCls = "done"; badgeTxt = pct+"%"; btnLabel = "Xem lại";
     }else if(p && (p.done||0)>0){
+      const w = Math.round((p.done/(p.total||1))*100);
       progLine = `<span class="prog doing">Đang làm · ${p.done}/${p.total} câu</span>`;
+      barHtml = `<div class="mbar"><i style="width:${w}%"></i></div>`;
       badgeCls = "doing"; badgeTxt = "Đang làm"; btnLabel = "Tiếp tục";
     }
+    row.className = "mod" + (badgeCls==="doing" ? " doing" : "");
 
     row.innerHTML = `
+      ${numHtml}
       <div class="info">
         <b>${m.title}</b>
         <span>${m.q? m.q+' câu' : (m.n===0?'Cả môn — tất cả readings':'Reading '+m.n)} ${ready?'':'· chưa có đề'}</span>
         ${progLine}
+        ${barHtml}
       </div>
       <span class="badge ${badgeCls}">${badgeTxt}</span>`;
 
@@ -1300,9 +1332,8 @@ function showModules(id){
       row.appendChild(rb);
     }
     const btn = document.createElement(ready?"a":"button");
-    btn.className = "btn primary";
-    if(ready){ btn.href = m.file; btn.textContent = btnLabel; }
-    else { btn.textContent = "Sắp có"; btn.disabled = true; }
+    if(ready){ btn.className = "btn " + (badgeCls==="doing" ? "primary" : "ghost"); btn.href = m.file; btn.textContent = btnLabel; }
+    else { btn.className = "btn"; btn.textContent = "Sắp có"; btn.disabled = true; }
     row.appendChild(btn);
     list.appendChild(row);
   });
