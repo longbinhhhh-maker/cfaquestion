@@ -847,5 +847,72 @@ render();
 })();
 </script>
 <!--qnote-feature-end-->
+<!--qnav-note-start-->
+<style id="qnav-note-css">
+  #navGrid .cell.noted::before{content:"\1F4DD";position:absolute;top:-4px;left:-3px;font-size:10px;line-height:1}
+</style>
+<script>
+/* ===== Đánh dấu câu có Ghi chú trong "Danh sách câu" + bộ lọc "Ghi chú" ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function noteSet(){
+    var s={};
+    try{ var m=JSON.parse(localStorage.getItem(NKEY)||"{}")||{};
+      for(var k in m){ if(m.hasOwnProperty(k) && m[k] && (""+m[k]).trim()) s[k]=1; } }catch(e){}
+    return s;
+  }
+  function addChip(){
+    var chips=document.getElementById("chips");
+    if(!chips || chips.querySelector('[data-f="note"]')) return;
+    var b=document.createElement("button");
+    b.className="chip"; b.setAttribute("data-f","note");
+    b.innerHTML='Ghi chú <span></span>';
+    b.onclick=function(){ if(typeof setFilter==="function") setFilter("note", b); };
+    chips.appendChild(b);
+  }
+  var wrapped=false;
+  function wrapRefresh(){
+    if(wrapped || typeof window.refreshNav!=="function") return;
+    wrapped=true;
+    var orig=window.refreshNav;
+    window.refreshNav=function(){
+      orig.apply(this, arguments);
+      var ns=noteSet(), cnt=0;
+      var active=document.querySelector('#chips .chip.active');
+      var f=active?active.getAttribute("data-f"):"all";
+      var cells=document.querySelectorAll("#navGrid .cell");
+      for(var j=0;j<cells.length;j++){
+        var c=cells[j], m=(c.id||"").match(/^cell-(\d+)$/); if(!m) continue;
+        var has=!!ns[m[1]];
+        c.classList.toggle("noted", has);
+        if(has) cnt++;
+        if(f==="note") c.classList.toggle("hide", !has);
+      }
+      var sp=document.querySelector('#chips [data-f="note"] span');
+      if(sp) sp.textContent="("+cnt+")";
+    };
+  }
+  function wrapToggle(){
+    if(typeof window.toggleNav!=="function" || window.toggleNav.__qnav) return;
+    var orig=window.toggleNav;
+    window.toggleNav=function(){
+      var r=orig.apply(this, arguments);
+      var p=document.getElementById("navPanel");
+      if(p && p.classList.contains("open") && typeof window.refreshNav==="function") window.refreshNav();
+      return r;
+    };
+    window.toggleNav.__qnav=true;
+  }
+  function boot(){
+    addChip(); wrapRefresh(); wrapToggle();
+    if(typeof window.refreshNav==="function") window.refreshNav();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnav-note-end-->
+
 </body>
 </html>
