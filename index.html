@@ -323,6 +323,7 @@
     <a class="fx-nav-item" onclick="showSource('schweser');fxActive(this)">Schweser Notes</a>
     <a class="fx-nav-item" onclick="showSource('mock');fxActive(this)">Đề thi thử</a>
     <a class="fx-nav-item" onclick="showFormula();fxActive(this)">Công thức</a>
+    <a class="fx-nav-item" onclick="showNotes();fxActive(this)">Ghi chú</a>
   </nav>
   <div class="fx-navlabel">Tiện ích</div>
   <nav class="fx-nav">
@@ -611,6 +612,31 @@
     <input id="fmlaSearch" type="search" autocomplete="off" placeholder="Tìm công thức: duration, WACC, Sharpe, DDM, Bayes..." oninput="renderFormulas()">
     <div id="fmlaTabs"></div>
     <div id="fmlaBody"><div class="fmla-loading">Đang tải công thức…</div></div>
+  </section>
+
+  <style id="notes-css">
+    #notesView .subj-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    #notesSearch{width:100%;box-sizing:border-box;margin:6px 0 16px;padding:11px 14px;border-radius:11px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:15px;font-family:inherit}
+    #notesSearch:focus{outline:none;border-color:var(--accent)}
+    .nt-subjhead{font-size:15px;font-weight:700;color:var(--accent);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+    .nt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start;margin-bottom:6px}
+    .nt-card{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,var(--accent));border-radius:14px;padding:13px 16px;box-shadow:var(--shadow);transition:border-color .15s,transform .12s}
+    .nt-card:hover{transform:translateY(-2px);border-color:var(--c,var(--accent))}
+    .nt-meta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px}
+    .nt-mod{font-size:12.5px;font-weight:700;color:var(--muted);line-height:1.35}
+    .nt-q{flex:none;font-size:11.5px;font-weight:700;color:#fff;background:var(--c,var(--accent));border-radius:999px;padding:2px 9px;white-space:nowrap}
+    .nt-txt{font-size:14px;line-height:1.55;color:var(--txt);white-space:pre-wrap;word-break:break-word}
+    .nt-txt mark{background:color-mix(in srgb,var(--pin) 45%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+    .nt-empty{color:var(--muted);text-align:center;padding:44px 16px;line-height:1.6}
+    @media(max-width:860px){.nt-grid{grid-template-columns:1fr}}
+  </style>
+  <section id="notesView" class="hide">
+    <div class="crumb"><button onclick="showSources()">Trang chủ</button><span>›</span><span>Ghi chú</span></div>
+    <div class="subj-head">
+      <div><h2>Ghi chú của tôi</h2><p>Mọi câu bạn đã ghi chú · <span id="notesCount">—</span></p></div>
+    </div>
+    <input id="notesSearch" type="search" autocomplete="off" placeholder="Tìm trong ghi chú: theo nội dung bạn viết, tên môn, module…" oninput="renderNotes()">
+    <div id="notesBody"></div>
   </section>
 </main>
 </div><!--/fx-main-->
@@ -1441,6 +1467,7 @@ function showProgress(){
   $("subjectsView").classList.add("hide");
   $("modulesView").classList.add("hide");
   $("formulaView").classList.add("hide");
+  $("notesView").classList.add("hide");
   $("progressView").classList.remove("hide");
   renderProgress();
   window.scrollTo({top:0});
@@ -1452,6 +1479,7 @@ function showFormula(){
   $("subjectsView").classList.add("hide");
   $("modulesView").classList.add("hide");
   $("progressView").classList.add("hide");
+  $("notesView").classList.add("hide");
   $("formulaView").classList.remove("hide");
   window.scrollTo({top:0});
   fmlaInit();
@@ -1525,13 +1553,93 @@ function renderFormulas(){
   if(window.MathJax&&MathJax.typesetPromise){ MathJax.typesetPromise([body]).catch(function(){}); }
 }
 
-/* Khi chuyển sang view khác qua nav, ẩn luôn progressView + formulaView (bọc các hàm điều hướng sẵn có) */
+/* ===== Ghi chú: tổng hợp mọi ghi chú cá nhân (localStorage cfa:note:<slug> -> {chỉ số câu: nội dung}) ===== */
+var NOTE_FILE_MAP=null;
+function noteFileMap(){
+  if(NOTE_FILE_MAP) return NOTE_FILE_MAP;
+  var map={};
+  HUB.forEach(function(s){
+    (s.modules||[]).forEach(function(m){
+      if(!m.file) return;
+      var slug=m.file.replace(/\.html$/i,"").toLowerCase();
+      map[slug]={subj:s.name, subjId:s.id, mod:m.title, file:m.file, color:subjColor(s)};
+    });
+  });
+  NOTE_FILE_MAP=map; return map;
+}
+function collectNotes(){
+  var meta=noteFileMap(), out=[];
+  for(var i=0;i<localStorage.length;i++){
+    var key=localStorage.key(i);
+    if(!key || key.indexOf("cfa:note:")!==0) continue;
+    var slug=key.slice(9);
+    var m; try{ m=JSON.parse(localStorage.getItem(key)||"{}")||{}; }catch(e){ continue; }
+    var info=meta[slug]||null;
+    for(var qk in m){ if(!m.hasOwnProperty(qk)) continue;
+      var text=(m[qk]||"").trim(); if(!text) continue;
+      out.push({
+        slug:slug, qk:qk, text:text,
+        subj: info?info.subj:"Khác",
+        mod: info?info.mod:(slug+".html"),
+        file: info?info.file:(slug+".html"),
+        color: info?info.color:"var(--accent)",
+        qnum: (parseInt(qk,10)||0)+1
+      });
+    }
+  }
+  out.sort(function(a,b){ return a.subj.localeCompare(b.subj)||a.mod.localeCompare(b.mod)||(a.qnum-b.qnum); });
+  return out;
+}
+function noteHi(text,q){
+  var esc=text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  if(!q) return esc;
+  try{ return esc.replace(new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","ig"),'<mark>$1</mark>'); }
+  catch(e){ return esc; }
+}
+function showNotes(){
+  currentSource=null; currentSubj=null;
+  $("sourcesView").classList.add("hide");
+  $("subjectsView").classList.add("hide");
+  $("modulesView").classList.add("hide");
+  $("progressView").classList.add("hide");
+  $("formulaView").classList.add("hide");
+  $("notesView").classList.remove("hide");
+  window.scrollTo({top:0});
+  renderNotes();
+}
+function renderNotes(){
+  var body=$("notesBody"); if(!body) return;
+  var all=collectNotes();
+  var q=(($("notesSearch")||{}).value||"").trim().toLowerCase();
+  var files={}; all.forEach(function(x){ files[x.slug]=1; });
+  var cnt=$("notesCount"); if(cnt) cnt.textContent=all.length+" ghi chú · "+Object.keys(files).length+" đề";
+  if(!all.length){ body.innerHTML='<div class="nt-empty">Bạn chưa ghi chú câu nào.<br>Mở một đề bất kỳ và gõ vào ô 📝 <b>Ghi chú</b> bên phải mỗi câu — mọi ghi chú sẽ được gom về đây để tìm lại.</div>'; return; }
+  var list = q ? all.filter(function(x){ return (x.text+" "+x.subj+" "+x.mod+" câu "+x.qnum).toLowerCase().indexOf(q)>=0; }) : all;
+  if(!list.length){ body.innerHTML='<div class="nt-empty">Không có ghi chú nào khớp “'+q.replace(/</g,"")+'”.</div>'; return; }
+  body.innerHTML="";
+  var curSubj=null, grid=null;
+  list.forEach(function(x){
+    if(x.subj!==curSubj){ curSubj=x.subj;
+      var hh=document.createElement("h3"); hh.className="nt-subjhead"; hh.textContent=x.subj; body.appendChild(hh);
+      grid=document.createElement("div"); grid.className="nt-grid"; body.appendChild(grid);
+    }
+    var a=document.createElement("a");
+    a.className="nt-card"; a.href=x.file+"#q-"+x.qk; a.target="_blank"; a.rel="noopener";
+    a.style.setProperty("--c", x.color);
+    a.innerHTML='<div class="nt-meta"><span class="nt-mod"></span><span class="nt-q">Câu '+x.qnum+'</span></div><div class="nt-txt">'+noteHi(x.text,q)+'</div>';
+    a.querySelector(".nt-mod").textContent=x.mod;
+    grid.appendChild(a);
+  });
+}
+
+/* Khi chuyển sang view khác qua nav, ẩn luôn progressView + formulaView + notesView (bọc các hàm điều hướng sẵn có) */
 (function(){
   ["showSources","showSource","showSubjects","showModules"].forEach(function(fn){
     var orig = window[fn]; if(typeof orig!=="function") return;
     window[fn] = function(){
       var pv=document.getElementById("progressView"); if(pv) pv.classList.add("hide");
       var fv=document.getElementById("formulaView"); if(fv) fv.classList.add("hide");
+      var nv=document.getElementById("notesView"); if(nv) nv.classList.add("hide");
       return orig.apply(this, arguments);
     };
   });
