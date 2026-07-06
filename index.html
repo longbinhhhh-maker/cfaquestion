@@ -619,6 +619,10 @@
     #notesSearch{width:100%;box-sizing:border-box;margin:6px 0 16px;padding:11px 14px;border-radius:11px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:15px;font-family:inherit}
     #notesSearch:focus{outline:none;border-color:var(--accent)}
     .nt-subjhead{font-size:15px;font-weight:700;color:var(--accent);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+    .nt-modhead{display:flex;align-items:center;gap:9px;margin:16px 0 9px}
+    .nt-moddot{width:9px;height:9px;border-radius:3px;background:var(--c,var(--accent));flex:none}
+    .nt-modname{font-size:13.5px;font-weight:700;color:var(--txt)}
+    .nt-modcount{font-size:11.5px;font-weight:600;color:var(--muted)}
     .nt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start;margin-bottom:6px}
     .nt-card{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,var(--accent));border-radius:14px;padding:13px 16px;box-shadow:var(--shadow);transition:border-color .15s,transform .12s}
     .nt-card:hover{transform:translateY(-2px);border-color:var(--c,var(--accent))}
@@ -1617,17 +1621,26 @@ function renderNotes(){
   var list = q ? all.filter(function(x){ return (x.text+" "+x.subj+" "+x.mod+" câu "+x.qnum).toLowerCase().indexOf(q)>=0; }) : all;
   if(!list.length){ body.innerHTML='<div class="nt-empty">Không có ghi chú nào khớp “'+q.replace(/</g,"")+'”.</div>'; return; }
   body.innerHTML="";
-  var curSubj=null, grid=null;
+  /* Đếm số ghi chú cho mỗi bài tập (theo môn + module) để hiện cạnh tiêu đề */
+  var modCount={};
+  list.forEach(function(x){ var k=x.subj+" "+x.mod; modCount[k]=(modCount[k]||0)+1; });
+  var curSubj=null, curMod=null, grid=null;
   list.forEach(function(x){
-    if(x.subj!==curSubj){ curSubj=x.subj;
+    if(x.subj!==curSubj){ curSubj=x.subj; curMod=null;
       var hh=document.createElement("h3"); hh.className="nt-subjhead"; hh.textContent=x.subj; body.appendChild(hh);
+    }
+    if(x.mod!==curMod){ curMod=x.mod;
+      var mh=document.createElement("div"); mh.className="nt-modhead"; mh.style.setProperty("--c", x.color);
+      var n=modCount[x.subj+" "+x.mod]||0;
+      mh.innerHTML='<span class="nt-moddot"></span><span class="nt-modname"></span><span class="nt-modcount">'+n+' ghi chú</span>';
+      mh.querySelector(".nt-modname").textContent=x.mod;
+      body.appendChild(mh);
       grid=document.createElement("div"); grid.className="nt-grid"; body.appendChild(grid);
     }
     var a=document.createElement("a");
     a.className="nt-card"; a.href=x.file+"#q-"+x.qk; a.target="_blank"; a.rel="noopener";
     a.style.setProperty("--c", x.color);
-    a.innerHTML='<div class="nt-meta"><span class="nt-mod"></span><span class="nt-q">Câu '+x.qnum+'</span></div><div class="nt-txt">'+noteHi(x.text,q)+'</div>';
-    a.querySelector(".nt-mod").textContent=x.mod;
+    a.innerHTML='<div class="nt-meta"><span class="nt-q">Câu '+x.qnum+'</span></div><div class="nt-txt">'+noteHi(x.text,q)+'</div>';
     grid.appendChild(a);
   });
 }
