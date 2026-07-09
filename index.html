@@ -624,13 +624,20 @@
     .nt-modname{font-size:13.5px;font-weight:700;color:var(--txt)}
     .nt-modcount{font-size:11.5px;font-weight:600;color:var(--muted)}
     .nt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;align-items:start;margin-bottom:6px}
-    .nt-card{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,var(--accent));border-radius:14px;padding:13px 16px;box-shadow:var(--shadow);transition:border-color .15s,transform .12s}
-    .nt-card:hover{transform:translateY(-2px);border-color:var(--c,var(--accent))}
+    .nt-card{display:block;text-decoration:none;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,var(--accent));border-radius:14px;padding:13px 16px;box-shadow:var(--shadow);transition:border-color .15s}
+    .nt-card:hover{border-color:var(--c,var(--accent))}
+    .nt-card:focus-within{border-color:var(--c,var(--accent))}
     .nt-meta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px}
     .nt-mod{font-size:12.5px;font-weight:700;color:var(--muted);line-height:1.35}
     .nt-q{flex:none;font-size:11.5px;font-weight:700;color:#fff;background:var(--c,var(--accent));border-radius:999px;padding:2px 9px;white-space:nowrap}
+    .nt-open{flex:none;font-size:11.5px;font-weight:700;color:var(--c,var(--accent));text-decoration:none;white-space:nowrap}
+    .nt-open:hover{text-decoration:underline}
     .nt-txt{font-size:14px;line-height:1.55;color:var(--txt);white-space:pre-wrap;word-break:break-word}
     .nt-txt mark{background:color-mix(in srgb,var(--pin) 45%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+    .nt-note{width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2,var(--panel));color:var(--txt);font:14px/1.55 inherit;resize:vertical;min-height:54px;overflow:hidden}
+    .nt-note:focus{outline:none;border-color:var(--c,var(--accent));background:var(--panel)}
+    .nt-status{display:block;min-height:14px;margin-top:5px;font-size:11px;font-weight:600;color:var(--muted)}
+    .nt-status.saved{color:var(--ok)}
     .nt-empty{color:var(--muted);text-align:center;padding:44px 16px;line-height:1.6}
     @media(max-width:860px){.nt-grid{grid-template-columns:1fr}}
   </style>
@@ -1637,12 +1644,40 @@ function renderNotes(){
       body.appendChild(mh);
       grid=document.createElement("div"); grid.className="nt-grid"; body.appendChild(grid);
     }
-    var a=document.createElement("a");
-    a.className="nt-card"; a.href=x.file+"#q-"+x.qk; a.target="_blank"; a.rel="noopener";
-    a.style.setProperty("--c", x.color);
-    a.innerHTML='<div class="nt-meta"><span class="nt-q">Câu '+x.qnum+'</span></div><div class="nt-txt">'+noteHi(x.text,q)+'</div>';
-    grid.appendChild(a);
+    var card=document.createElement("div");
+    card.className="nt-card"; card.style.setProperty("--c", x.color);
+    var meta=document.createElement("div"); meta.className="nt-meta";
+    var qb=document.createElement("span"); qb.className="nt-q"; qb.textContent="Câu "+x.qnum;
+    var open=document.createElement("a"); open.className="nt-open";
+    open.href=x.file+"#q-"+x.qk; open.target="_blank"; open.rel="noopener"; open.textContent="Mở đề ↗";
+    meta.appendChild(qb); meta.appendChild(open);
+    var ta=document.createElement("textarea"); ta.className="nt-note"; ta.spellcheck=false;
+    ta.value=x.text; ta.setAttribute("aria-label","Ghi chú câu "+x.qnum);
+    var st=document.createElement("span"); st.className="nt-status";
+    card.appendChild(meta); card.appendChild(ta); card.appendChild(st);
+    grid.appendChild(card);
+    ntAutoGrow(ta);
+    (function(slug,qk,ta,st){
+      ta.addEventListener("input", function(){ ntAutoGrow(ta); ntScheduleSave(slug,qk,ta.value,st); });
+    })(x.slug, x.qk, ta, st);
   });
+}
+function ntAutoGrow(ta){ ta.style.height="auto"; ta.style.height=(ta.scrollHeight+2)+"px"; }
+var NT_SAVE_TIMERS={};
+function ntScheduleSave(slug,qk,val,st){
+  if(st){ st.textContent="Đang lưu…"; st.className="nt-status"; }
+  var id=slug+"|"+qk;
+  if(NT_SAVE_TIMERS[id]) clearTimeout(NT_SAVE_TIMERS[id]);
+  NT_SAVE_TIMERS[id]=setTimeout(function(){ ntSaveNote(slug,qk,val,st); }, 500);
+}
+function ntSaveNote(slug,qk,val,st){
+  var key="cfa:note:"+slug, m;
+  try{ m=JSON.parse(localStorage.getItem(key)||"{}")||{}; }catch(e){ m={}; }
+  var t=(val||"").trim();
+  if(t) m[qk]=val; else delete m[qk];
+  try{ localStorage.setItem(key, JSON.stringify(m)); }catch(e){}
+  if(st){ st.textContent = t ? "Đã lưu ✓" : "Đã xoá ghi chú"; st.className="nt-status saved";
+    setTimeout(function(){ if(st) st.textContent=""; }, 1800); }
 }
 
 /* Khi chuyển sang view khác qua nav, ẩn luôn progressView + formulaView + notesView (bọc các hàm điều hướng sẵn có) */
