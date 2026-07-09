@@ -1569,11 +1569,11 @@ var NOTE_FILE_MAP=null;
 function noteFileMap(){
   if(NOTE_FILE_MAP) return NOTE_FILE_MAP;
   var map={};
-  HUB.forEach(function(s){
-    (s.modules||[]).forEach(function(m){
+  HUB.forEach(function(s,si){
+    (s.modules||[]).forEach(function(m,mi){
       if(!m.file) return;
       var slug=m.file.replace(/\.html$/i,"").toLowerCase();
-      map[slug]={subj:s.name, subjId:s.id, mod:m.title, file:m.file, color:subjColor(s)};
+      map[slug]={subj:s.name, subjId:s.id, mod:m.title, file:m.file, color:subjColor(s), subjOrder:si, modOrder:mi};
     });
   });
   NOTE_FILE_MAP=map; return map;
@@ -1594,11 +1594,13 @@ function collectNotes(){
         mod: info?info.mod:(slug+".html"),
         file: info?info.file:(slug+".html"),
         color: info?info.color:"var(--accent)",
+        subjOrder: info?info.subjOrder:9999,
+        modOrder: info?info.modOrder:9999,
         qnum: (parseInt(qk,10)||0)+1
       });
     }
   }
-  out.sort(function(a,b){ return a.subj.localeCompare(b.subj)||a.mod.localeCompare(b.mod)||(a.qnum-b.qnum); });
+  out.sort(function(a,b){ return (a.subjOrder-b.subjOrder)||a.subj.localeCompare(b.subj)||(a.modOrder-b.modOrder)||a.mod.localeCompare(b.mod)||(a.qnum-b.qnum); });
   return out;
 }
 function noteHi(text,q){
