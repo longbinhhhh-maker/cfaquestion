@@ -639,12 +639,24 @@
     .nt-status{display:block;min-height:14px;margin-top:5px;font-size:11px;font-weight:600;color:var(--muted)}
     .nt-status.saved{color:var(--ok)}
     .nt-empty{color:var(--muted);text-align:center;padding:44px 16px;line-height:1.6}
+    .nt-add{flex:none;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:10px 16px;font:600 14px/1 inherit;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+    .nt-add:hover{opacity:.88}
+    .nt-freehead{display:flex;align-items:center;gap:9px;margin:6px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+    .nt-freehead .nt-modname{font-size:15px;font-weight:700;color:var(--accent)}
+    .nt-fcard{border-left-color:var(--accent)}
+    .nt-fcard .nt-meta{align-items:center}
+    .nt-ftitle{flex:1;min-width:0;border:none;background:transparent;color:var(--txt);font:700 14px inherit;padding:0}
+    .nt-ftitle:focus{outline:none}
+    .nt-ftitle::placeholder{color:var(--muted);font-weight:600}
+    .nt-del{flex:none;border:none;background:transparent;color:var(--muted);font:600 11.5px inherit;cursor:pointer;padding:2px 6px;border-radius:6px}
+    .nt-del:hover{color:#e5484d;background:color-mix(in srgb,#e5484d 12%,transparent)}
     @media(max-width:860px){.nt-grid{grid-template-columns:1fr}}
   </style>
   <section id="notesView" class="hide">
     <div class="crumb"><button onclick="showSources()">Trang chủ</button><span>›</span><span>Ghi chú</span></div>
     <div class="subj-head">
-      <div><h2>Ghi chú của tôi</h2><p>Mọi câu bạn đã ghi chú · <span id="notesCount">—</span></p></div>
+      <div><h2>Ghi chú của tôi</h2><p>Ghi chú theo câu &amp; ghi chú tự do · <span id="notesCount">—</span></p></div>
+      <button type="button" class="nt-add" onclick="fnAddNote()">+ Thêm ghi chú</button>
     </div>
     <input id="notesSearch" type="search" autocomplete="off" placeholder="Tìm trong ghi chú: theo nội dung bạn viết, tên môn, module…" oninput="renderNotes()">
     <div id="notesBody"></div>
@@ -1625,11 +1637,20 @@ function renderNotes(){
   var all=collectNotes();
   var q=(($("notesSearch")||{}).value||"").trim().toLowerCase();
   var files={}; all.forEach(function(x){ files[x.slug]=1; });
-  var cnt=$("notesCount"); if(cnt) cnt.textContent=all.length+" ghi chú · "+Object.keys(files).length+" đề";
-  if(!all.length){ body.innerHTML='<div class="nt-empty">Bạn chưa ghi chú câu nào.<br>Mở một đề bất kỳ và gõ vào ô 📝 <b>Ghi chú</b> bên phải mỗi câu — mọi ghi chú sẽ được gom về đây để tìm lại.</div>'; return; }
-  var list = q ? all.filter(function(x){ return (x.text+" "+x.subj+" "+x.mod+" câu "+x.qnum).toLowerCase().indexOf(q)>=0; }) : all;
-  if(!list.length){ body.innerHTML='<div class="nt-empty">Không có ghi chú nào khớp “'+q.replace(/</g,"")+'”.</div>'; return; }
+  var fnAll=freeNotes();
+  var cnt=$("notesCount"); if(cnt){
+    var parts=[all.length+" ghi chú câu"];
+    if(fnAll.length) parts.push(fnAll.length+" ghi chú tự do");
+    parts.push(Object.keys(files).length+" đề");
+    cnt.textContent=parts.join(" · ");
+  }
   body.innerHTML="";
+  var freeShown=renderFreeNotes(body,q);
+  var list = q ? all.filter(function(x){ return (x.text+" "+x.subj+" "+x.mod+" câu "+x.qnum).toLowerCase().indexOf(q)>=0; }) : all;
+  if(!all.length && !fnAll.length){ body.innerHTML='<div class="nt-empty">Bạn chưa có ghi chú nào.<br>Nhấn <b>+ Thêm ghi chú</b> để tạo một ghi chú tự do, hoặc mở một đề bất kỳ và gõ vào ô 📝 <b>Ghi chú</b> bên phải mỗi câu.</div>'; return; }
+  if(q && !freeShown && !list.length){ body.innerHTML='<div class="nt-empty">Không có ghi chú nào khớp “'+q.replace(/</g,"")+'”.</div>'; return; }
+  if(!list.length) return;
+  if(freeShown){ var qh=document.createElement("div"); qh.className="nt-freehead"; qh.innerHTML='<span class="nt-modname">Ghi chú theo câu hỏi</span>'; body.appendChild(qh); }
   /* Đếm số ghi chú cho mỗi bài tập (theo môn + module) để hiện cạnh tiêu đề */
   var modCount={};
   list.forEach(function(x){ var k=x.subj+" "+x.mod; modCount[k]=(modCount[k]||0)+1; });
@@ -1680,6 +1701,63 @@ function ntSaveNote(slug,qk,val,st){
   try{ localStorage.setItem(key, JSON.stringify(m)); }catch(e){}
   if(st){ st.textContent = t ? "Đã lưu ✓" : "Đã xoá ghi chú"; st.className="nt-status saved";
     setTimeout(function(){ if(st) st.textContent=""; }, 1800); }
+}
+
+/* ===== Ghi chú tự do — note tự tạo, không gắn với câu hỏi (localStorage cfa:freenotes = [{id,title,body,ts}]) ===== */
+function freeNotes(){ try{ var a=JSON.parse(localStorage.getItem("cfa:freenotes")||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function freeNotesSave(a){ try{ localStorage.setItem("cfa:freenotes", JSON.stringify(a)); }catch(e){} }
+function fnAddNote(){
+  var arr=freeNotes();
+  arr.unshift({id:"fn"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), title:"", body:"", ts:Date.now()});
+  freeNotesSave(arr);
+  var s=$("notesSearch"); if(s) s.value="";
+  showNotes();
+  var el=document.querySelector(".nt-fcard .nt-ftitle"); if(el) el.focus();
+}
+var FN_SAVE_TIMERS={};
+function fnScheduleSave(id,field,val,st){
+  if(st){ st.textContent="Đang lưu…"; st.className="nt-status"; }
+  var k=id+"|"+field;
+  if(FN_SAVE_TIMERS[k]) clearTimeout(FN_SAVE_TIMERS[k]);
+  FN_SAVE_TIMERS[k]=setTimeout(function(){ fnUpdate(id,field,val,st); }, 500);
+}
+function fnUpdate(id,field,val,st){
+  var arr=freeNotes(), found=false;
+  for(var i=0;i<arr.length;i++){ if(arr[i].id===id){ arr[i][field]=val; arr[i].ts=Date.now(); found=true; break; } }
+  if(found){ freeNotesSave(arr);
+    if(st){ st.textContent="Đã lưu ✓"; st.className="nt-status saved"; setTimeout(function(){ if(st) st.textContent=""; }, 1800); } }
+}
+function fnDelete(id){
+  if(!confirm("Xoá ghi chú tự do này?")) return;
+  freeNotesSave(freeNotes().filter(function(x){ return x.id!==id; }));
+  renderNotes();
+}
+function renderFreeNotes(body,q){
+  var arr=freeNotes();
+  var list = q ? arr.filter(function(x){ return ((x.title||"")+" "+(x.body||"")).toLowerCase().indexOf(q)>=0; }) : arr;
+  if(!list.length) return 0;
+  var hh=document.createElement("div"); hh.className="nt-freehead";
+  hh.innerHTML='<span class="nt-modname">Ghi chú tự do</span><span class="nt-modcount">'+list.length+' ghi chú</span>';
+  body.appendChild(hh);
+  var grid=document.createElement("div"); grid.className="nt-grid"; body.appendChild(grid);
+  list.forEach(function(x){
+    var card=document.createElement("div"); card.className="nt-card nt-fcard";
+    var meta=document.createElement("div"); meta.className="nt-meta";
+    var ti=document.createElement("input"); ti.className="nt-ftitle"; ti.type="text"; ti.placeholder="Tiêu đề (tuỳ chọn)"; ti.value=x.title||""; ti.spellcheck=false;
+    var del=document.createElement("button"); del.className="nt-del"; del.type="button"; del.textContent="Xoá"; del.title="Xoá ghi chú";
+    meta.appendChild(ti); meta.appendChild(del);
+    var ta=document.createElement("textarea"); ta.className="nt-note"; ta.spellcheck=false; ta.value=x.body||""; ta.placeholder="Nội dung ghi chú…";
+    var st=document.createElement("span"); st.className="nt-status";
+    card.appendChild(meta); card.appendChild(ta); card.appendChild(st);
+    grid.appendChild(card);
+    ntAutoGrow(ta);
+    (function(id,ti,ta,del,st){
+      ti.addEventListener("input", function(){ fnScheduleSave(id,"title",ti.value,st); });
+      ta.addEventListener("input", function(){ ntAutoGrow(ta); fnScheduleSave(id,"body",ta.value,st); });
+      del.addEventListener("click", function(){ fnDelete(id); });
+    })(x.id,ti,ta,del,st);
+  });
+  return list.length;
 }
 
 /* Khi chuyển sang view khác qua nav, ẩn luôn progressView + formulaView + notesView (bọc các hàm điều hướng sẵn có) */
