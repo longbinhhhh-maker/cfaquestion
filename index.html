@@ -654,6 +654,20 @@
     .nt-fsubj{flex:none;max-width:64%;border:1px solid var(--line);background:var(--panel2,var(--panel));color:var(--txt);font:600 12px inherit;padding:5px 8px;border-radius:8px;cursor:pointer}
     .nt-fsubj:focus{outline:none;border-color:var(--c,var(--accent))}
     .nt-fbar .nt-status{margin-top:0}
+    .nt-exp{flex:none;margin-left:auto;border:none;background:transparent;color:var(--muted);font:600 15px/1 inherit;cursor:pointer;padding:1px 6px;border-radius:6px}
+    .nt-exp:hover{color:var(--c,var(--accent));background:color-mix(in srgb,var(--c,var(--accent)) 12%,transparent)}
+    .nt-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:24px}
+    .nt-modal.hide{display:none}
+    .nt-modal-box{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--c,var(--accent));border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.4);width:min(780px,100%);max-height:88vh;display:flex;flex-direction:column;padding:18px 20px;box-sizing:border-box}
+    .nt-modal-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    .nt-modal-head .nt-ftitle{font-size:17px}
+    .nt-modal-htext{flex:1;min-width:0;font-size:14px;font-weight:700;color:var(--txt)}
+    .nt-modal-actions{flex:none;display:flex;align-items:center;gap:14px;margin-left:auto}
+    .nt-modal-x{border:none;background:transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+    .nt-modal-x:hover{color:var(--txt);background:var(--panel2,var(--line))}
+    .nt-modal-ta{flex:1;width:100%;box-sizing:border-box;min-height:340px;resize:none;border:1px solid var(--line);border-radius:12px;background:var(--panel2,var(--panel));color:var(--txt);font:15px/1.6 inherit;padding:14px 16px}
+    .nt-modal-ta:focus{outline:none;border-color:var(--c,var(--accent))}
+    .nt-modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
     @media(max-width:860px){.nt-grid{grid-template-columns:1fr}}
   </style>
   <section id="notesView" class="hide">
@@ -665,6 +679,23 @@
     <input id="notesSearch" type="search" autocomplete="off" placeholder="Tìm trong ghi chú: theo nội dung bạn viết, tên môn, module…" oninput="renderNotes()">
     <div id="notesBody"></div>
   </section>
+  <div id="ntModal" class="nt-modal hide" onclick="if(event.target===this)ntCloseModal()">
+    <div class="nt-modal-box">
+      <div class="nt-modal-head">
+        <input id="ntmTitle" class="nt-ftitle" type="text" placeholder="Tiêu đề (tuỳ chọn)" spellcheck="false">
+        <span id="ntmHeadText" class="nt-modal-htext"></span>
+        <div class="nt-modal-actions">
+          <a id="ntmOpen" class="nt-open" target="_blank" rel="noopener">Mở đề ↗</a>
+          <button type="button" class="nt-modal-x" onclick="ntCloseModal()" title="Đóng (Esc)">✕</button>
+        </div>
+      </div>
+      <textarea id="ntmBody" class="nt-modal-ta" spellcheck="false" placeholder="Nội dung ghi chú…"></textarea>
+      <div class="nt-modal-foot">
+        <select id="ntmSubj" class="nt-fsubj" title="Gán cho môn"></select>
+        <span id="ntmStatus" class="nt-status"></span>
+      </div>
+    </div>
+  </div>
 </main>
 </div><!--/fx-main-->
 </div><!--/fx-app-->
@@ -1675,18 +1706,20 @@ function renderNotes(){
     card.className="nt-card"; card.style.setProperty("--c", x.color);
     var meta=document.createElement("div"); meta.className="nt-meta";
     var qb=document.createElement("span"); qb.className="nt-q"; qb.textContent="Câu "+x.qnum;
+    var exp=document.createElement("button"); exp.className="nt-exp"; exp.type="button"; exp.textContent="⤢"; exp.title="Phóng to";
     var open=document.createElement("a"); open.className="nt-open";
     open.href=x.file+"#q-"+x.qk; open.target="_blank"; open.rel="noopener"; open.textContent="Mở đề ↗";
-    meta.appendChild(qb); meta.appendChild(open);
+    meta.appendChild(qb); meta.appendChild(exp); meta.appendChild(open);
     var ta=document.createElement("textarea"); ta.className="nt-note"; ta.spellcheck=false;
     ta.value=x.text; ta.setAttribute("aria-label","Ghi chú câu "+x.qnum);
     var st=document.createElement("span"); st.className="nt-status";
     card.appendChild(meta); card.appendChild(ta); card.appendChild(st);
     grid.appendChild(card);
     ntAutoGrow(ta);
-    (function(slug,qk,ta,st){
+    (function(slug,qk,ta,st,exp){
       ta.addEventListener("input", function(){ ntAutoGrow(ta); ntScheduleSave(slug,qk,ta.value,st); });
-    })(x.slug, x.qk, ta, st);
+      exp.addEventListener("click", function(){ ntOpenQ(slug,qk); });
+    })(x.slug, x.qk, ta, st, exp);
   });
 }
 function ntAutoGrow(ta){ ta.style.height="auto"; ta.style.height=(ta.scrollHeight+2)+"px"; }
@@ -1741,8 +1774,9 @@ function fnCard(x,color){
   var card=document.createElement("div"); card.className="nt-card nt-fcard"; if(color) card.style.setProperty("--c",color);
   var meta=document.createElement("div"); meta.className="nt-meta";
   var ti=document.createElement("input"); ti.className="nt-ftitle"; ti.type="text"; ti.placeholder="Tiêu đề (tuỳ chọn)"; ti.value=x.title||""; ti.spellcheck=false;
+  var exp=document.createElement("button"); exp.className="nt-exp"; exp.type="button"; exp.textContent="⤢"; exp.title="Phóng to";
   var del=document.createElement("button"); del.className="nt-del"; del.type="button"; del.textContent="Xoá"; del.title="Xoá ghi chú";
-  meta.appendChild(ti); meta.appendChild(del);
+  meta.appendChild(ti); meta.appendChild(exp); meta.appendChild(del);
   var ta=document.createElement("textarea"); ta.className="nt-note"; ta.spellcheck=false; ta.value=x.body||""; ta.placeholder="Nội dung ghi chú…";
   var bar=document.createElement("div"); bar.className="nt-fbar";
   var sel=document.createElement("select"); sel.className="nt-fsubj"; sel.title="Gán cho môn";
@@ -1757,6 +1791,7 @@ function fnCard(x,color){
   ti.addEventListener("input", function(){ fnScheduleSave(id,"title",ti.value,st); });
   ta.addEventListener("input", function(){ ntAutoGrow(ta); fnScheduleSave(id,"body",ta.value,st); });
   sel.addEventListener("change", function(){ fnUpdate(id,"subjId",sel.value); renderNotes(); });
+  exp.addEventListener("click", function(){ ntOpenFree(id); });
   del.addEventListener("click", function(){ fnDelete(id); });
   return card;
 }
@@ -1786,6 +1821,54 @@ function renderFreeNotes(body,q){
   });
   return list.length;
 }
+
+/* ===== Phóng to ghi chú — mở modal soạn thảo lớn cho note tự do hoặc note theo câu ===== */
+var NTM={type:null,id:null,slug:null,qk:null};
+function ntShowModal(){ var m=$("ntModal"); if(m){ m.classList.remove("hide"); document.body.style.overflow="hidden"; } }
+function ntCloseModal(){
+  var m=$("ntModal"); if(m) m.classList.add("hide");
+  document.body.style.overflow=""; NTM={type:null,id:null,slug:null,qk:null};
+  renderNotes();
+}
+function ntOpenFree(id){
+  var n=freeNotes().filter(function(x){ return x.id===id; })[0]; if(!n) return;
+  NTM={type:"free",id:id,slug:null,qk:null};
+  var box=document.querySelector("#ntModal .nt-modal-box");
+  var ti=$("ntmTitle"), sel=$("ntmSubj"), ta=$("ntmBody"), ht=$("ntmHeadText"), op=$("ntmOpen"), st=$("ntmStatus");
+  var sm=fnSubjMeta(); if(box) box.style.setProperty("--c", (n.subjId&&sm[n.subjId])?sm[n.subjId].color:"var(--accent)");
+  ti.style.display=""; sel.style.display=""; ht.style.display="none"; op.style.display="none"; st.textContent="";
+  ti.value=n.title||""; ta.value=n.body||"";
+  sel.innerHTML=""; var o0=document.createElement("option"); o0.value=""; o0.textContent="— Chọn môn —"; sel.appendChild(o0);
+  HUB.forEach(function(s){ var o=document.createElement("option"); o.value=s.id; o.textContent=s.name; sel.appendChild(o); });
+  sel.value=n.subjId||"";
+  ntShowModal(); ti.focus();
+}
+function ntOpenQ(slug,qk){
+  NTM={type:"q",id:null,slug:slug,qk:qk};
+  var meta=noteFileMap()[slug]||null;
+  var m; try{ m=JSON.parse(localStorage.getItem("cfa:note:"+slug)||"{}")||{}; }catch(e){ m={}; }
+  var box=document.querySelector("#ntModal .nt-modal-box");
+  var ti=$("ntmTitle"), sel=$("ntmSubj"), ta=$("ntmBody"), ht=$("ntmHeadText"), op=$("ntmOpen"), st=$("ntmStatus");
+  if(box) box.style.setProperty("--c", meta?meta.color:"var(--accent)");
+  ti.style.display="none"; sel.style.display="none"; ht.style.display=""; op.style.display=""; st.textContent="";
+  var qnum=(parseInt(qk,10)||0)+1;
+  ht.textContent=(meta?meta.subj+" · "+meta.mod+" · ":"")+"Câu "+qnum;
+  op.href=(meta?meta.file:(slug+".html"))+"#q-"+qk;
+  ta.value=m[qk]||"";
+  ntShowModal(); ta.focus();
+}
+function ntModalWire(){
+  var ti=$("ntmTitle"), ta=$("ntmBody"), sel=$("ntmSubj"), st=$("ntmStatus");
+  if(!ti||!ta||ta.__wired) return; ta.__wired=true;
+  ti.addEventListener("input", function(){ if(NTM.type==="free") fnScheduleSave(NTM.id,"title",ti.value,st); });
+  ta.addEventListener("input", function(){
+    if(NTM.type==="free") fnScheduleSave(NTM.id,"body",ta.value,st);
+    else if(NTM.type==="q") ntScheduleSave(NTM.slug,NTM.qk,ta.value,st);
+  });
+  sel.addEventListener("change", function(){ if(NTM.type==="free") fnUpdate(NTM.id,"subjId",sel.value,st); });
+  document.addEventListener("keydown", function(e){ var m=$("ntModal"); if(e.key==="Escape" && m && !m.classList.contains("hide")) ntCloseModal(); });
+}
+ntModalWire();
 
 /* Khi chuyển sang view khác qua nav, ẩn luôn progressView + formulaView + notesView (bọc các hàm điều hướng sẵn có) */
 (function(){
