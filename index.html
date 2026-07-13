@@ -650,6 +650,10 @@
     .nt-ftitle::placeholder{color:var(--muted);font-weight:600}
     .nt-del{flex:none;border:none;background:transparent;color:var(--muted);font:600 11.5px inherit;cursor:pointer;padding:2px 6px;border-radius:6px}
     .nt-del:hover{color:#e5484d;background:color-mix(in srgb,#e5484d 12%,transparent)}
+    .nt-fbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+    .nt-fsubj{flex:none;max-width:64%;border:1px solid var(--line);background:var(--panel2,var(--panel));color:var(--txt);font:600 12px inherit;padding:5px 8px;border-radius:8px;cursor:pointer}
+    .nt-fsubj:focus{outline:none;border-color:var(--c,var(--accent))}
+    .nt-fbar .nt-status{margin-top:0}
     @media(max-width:860px){.nt-grid{grid-template-columns:1fr}}
   </style>
   <section id="notesView" class="hide">
@@ -1708,12 +1712,13 @@ function freeNotes(){ try{ var a=JSON.parse(localStorage.getItem("cfa:freenotes"
 function freeNotesSave(a){ try{ localStorage.setItem("cfa:freenotes", JSON.stringify(a)); }catch(e){} }
 function fnAddNote(){
   var arr=freeNotes();
-  arr.unshift({id:"fn"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), title:"", body:"", ts:Date.now()});
+  arr.unshift({id:"fn"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), title:"", body:"", subjId:"", ts:Date.now()});
   freeNotesSave(arr);
   var s=$("notesSearch"); if(s) s.value="";
   showNotes();
   var el=document.querySelector(".nt-fcard .nt-ftitle"); if(el) el.focus();
 }
+function fnSubjMeta(){ var m={}; HUB.forEach(function(s,i){ m[s.id]={name:s.name,color:subjColor(s),order:i}; }); return m; }
 var FN_SAVE_TIMERS={};
 function fnScheduleSave(id,field,val,st){
   if(st){ st.textContent="Đang lưu…"; st.className="nt-status"; }
@@ -1732,30 +1737,52 @@ function fnDelete(id){
   freeNotesSave(freeNotes().filter(function(x){ return x.id!==id; }));
   renderNotes();
 }
+function fnCard(x,color){
+  var card=document.createElement("div"); card.className="nt-card nt-fcard"; if(color) card.style.setProperty("--c",color);
+  var meta=document.createElement("div"); meta.className="nt-meta";
+  var ti=document.createElement("input"); ti.className="nt-ftitle"; ti.type="text"; ti.placeholder="Tiêu đề (tuỳ chọn)"; ti.value=x.title||""; ti.spellcheck=false;
+  var del=document.createElement("button"); del.className="nt-del"; del.type="button"; del.textContent="Xoá"; del.title="Xoá ghi chú";
+  meta.appendChild(ti); meta.appendChild(del);
+  var ta=document.createElement("textarea"); ta.className="nt-note"; ta.spellcheck=false; ta.value=x.body||""; ta.placeholder="Nội dung ghi chú…";
+  var bar=document.createElement("div"); bar.className="nt-fbar";
+  var sel=document.createElement("select"); sel.className="nt-fsubj"; sel.title="Gán cho môn";
+  var o0=document.createElement("option"); o0.value=""; o0.textContent="— Chọn môn —"; sel.appendChild(o0);
+  HUB.forEach(function(s){ var o=document.createElement("option"); o.value=s.id; o.textContent=s.name; sel.appendChild(o); });
+  sel.value=x.subjId||"";
+  var st=document.createElement("span"); st.className="nt-status";
+  bar.appendChild(sel); bar.appendChild(st);
+  card.appendChild(meta); card.appendChild(ta); card.appendChild(bar);
+  ntAutoGrow(ta);
+  var id=x.id;
+  ti.addEventListener("input", function(){ fnScheduleSave(id,"title",ti.value,st); });
+  ta.addEventListener("input", function(){ ntAutoGrow(ta); fnScheduleSave(id,"body",ta.value,st); });
+  sel.addEventListener("change", function(){ fnUpdate(id,"subjId",sel.value); renderNotes(); });
+  del.addEventListener("click", function(){ fnDelete(id); });
+  return card;
+}
 function renderFreeNotes(body,q){
-  var arr=freeNotes();
-  var list = q ? arr.filter(function(x){ return ((x.title||"")+" "+(x.body||"")).toLowerCase().indexOf(q)>=0; }) : arr;
+  var arr=freeNotes(), sm=fnSubjMeta();
+  var list = q ? arr.filter(function(x){
+    var sn=(x.subjId&&sm[x.subjId])?sm[x.subjId].name:"";
+    return ((x.title||"")+" "+(x.body||"")+" "+sn).toLowerCase().indexOf(q)>=0;
+  }) : arr;
   if(!list.length) return 0;
   var hh=document.createElement("div"); hh.className="nt-freehead";
   hh.innerHTML='<span class="nt-modname">Ghi chú tự do</span><span class="nt-modcount">'+list.length+' ghi chú</span>';
   body.appendChild(hh);
-  var grid=document.createElement("div"); grid.className="nt-grid"; body.appendChild(grid);
-  list.forEach(function(x){
-    var card=document.createElement("div"); card.className="nt-card nt-fcard";
-    var meta=document.createElement("div"); meta.className="nt-meta";
-    var ti=document.createElement("input"); ti.className="nt-ftitle"; ti.type="text"; ti.placeholder="Tiêu đề (tuỳ chọn)"; ti.value=x.title||""; ti.spellcheck=false;
-    var del=document.createElement("button"); del.className="nt-del"; del.type="button"; del.textContent="Xoá"; del.title="Xoá ghi chú";
-    meta.appendChild(ti); meta.appendChild(del);
-    var ta=document.createElement("textarea"); ta.className="nt-note"; ta.spellcheck=false; ta.value=x.body||""; ta.placeholder="Nội dung ghi chú…";
-    var st=document.createElement("span"); st.className="nt-status";
-    card.appendChild(meta); card.appendChild(ta); card.appendChild(st);
-    grid.appendChild(card);
-    ntAutoGrow(ta);
-    (function(id,ti,ta,del,st){
-      ti.addEventListener("input", function(){ fnScheduleSave(id,"title",ti.value,st); });
-      ta.addEventListener("input", function(){ ntAutoGrow(ta); fnScheduleSave(id,"body",ta.value,st); });
-      del.addEventListener("click", function(){ fnDelete(id); });
-    })(x.id,ti,ta,del,st);
+  /* Gom nhóm theo môn (theo thứ tự HUB); ghi chú chưa chọn môn xếp cuối */
+  var groups={};
+  list.forEach(function(x){ var k=(x.subjId&&sm[x.subjId])?x.subjId:""; (groups[k]=groups[k]||[]).push(x); });
+  var order=HUB.map(function(s){ return s.id; }).filter(function(id){ return groups[id]; });
+  if(groups[""]) order.push("");
+  order.forEach(function(sid){
+    var meta = sid ? sm[sid] : {name:"Chưa thuộc môn", color:"var(--muted)"};
+    var mh=document.createElement("div"); mh.className="nt-modhead"; mh.style.setProperty("--c", meta.color);
+    mh.innerHTML='<span class="nt-moddot"></span><span class="nt-modname"></span><span class="nt-modcount">'+groups[sid].length+' ghi chú</span>';
+    mh.querySelector(".nt-modname").textContent=meta.name;
+    body.appendChild(mh);
+    var grid=document.createElement("div"); grid.className="nt-grid"; body.appendChild(grid);
+    groups[sid].forEach(function(x){ grid.appendChild(fnCard(x, sid?meta.color:"var(--accent)")); });
   });
   return list.length;
 }
