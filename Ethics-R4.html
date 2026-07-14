@@ -880,5 +880,87 @@ render();
 })();
 </script>
 <!--qnotes-panel-end-->
+<!--qcheck-start-->
+<style id="qcheck-css">
+  .qcheck-wrap{margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .qcheck-btn{background:var(--panel2);border:1px solid var(--accent);color:var(--accent2);
+    font-weight:600;padding:8px 14px;border-radius:10px}
+  .qcheck-btn:hover{border-color:var(--accent2)}
+  .qcheck-btn.done{opacity:.55;cursor:default;border-color:var(--line);color:var(--muted);
+    background:transparent}
+  .qcheck-btn.done:hover{transform:none;border-color:var(--line)}
+  .qcheck-msg{font-size:13.5px;font-weight:700}
+  .qcheck-msg.ok{color:var(--ok)}
+  .qcheck-msg.bad{color:var(--bad)}
+  .qcheck-msg.warn{color:var(--pin)}
+  .card.qc-locked .opt{pointer-events:none}
+  body.qc-graded .qcheck-wrap{display:none}
+</style>
+<script id="qcheck-js">
+/* Kiểm tra đáp án từng câu (chỉ áp dụng cho các đề Ethics theo Reading). */
+(function(){
+  function idx(card){ return (card.id && card.id.indexOf("q-")===0) ? +card.id.slice(2) : -1; }
+  function addBtn(card){
+    if(!card.classList || !card.classList.contains("card")) return;
+    if(card.querySelector(".qcheck-wrap")) return;
+    var i = idx(card); if(i<0) return;
+    if(typeof CFG!=="undefined" && CFG && CFG.hasAnswers===false) return; // không có đáp án -> bỏ qua
+    var wrap=document.createElement("div"); wrap.className="qcheck-wrap";
+    var btn=document.createElement("button"); btn.type="button"; btn.className="qcheck-btn";
+    btn.textContent="Kiểm tra đáp án";
+    var msg=document.createElement("span"); msg.className="qcheck-msg";
+    btn.onclick=function(){ checkOne(i, card, btn, msg); };
+    wrap.appendChild(btn); wrap.appendChild(msg);
+    var expl=card.querySelector(".expl");
+    if(expl) card.insertBefore(wrap, expl); else card.appendChild(wrap);
+  }
+  function checkOne(i, card, btn, msg){
+    if(typeof graded!=="undefined" && graded) return;      // đã nộp cả bài
+    if(btn.classList.contains("done")) return;             // đã kiểm tra câu này
+    var pick = (typeof answers!=="undefined") ? answers[i] : undefined;
+    if(pick===undefined){
+      msg.textContent="Hãy chọn một đáp án để kiểm tra."; msg.className="qcheck-msg warn";
+      return;
+    }
+    var ans = (typeof DATA!=="undefined" && DATA[i]) ? DATA[i].ans : null;
+    if(ans){
+      var cb=document.getElementById("opt-"+i+"-"+ans);
+      if(cb) cb.classList.add("correct");
+      if(pick===ans){
+        msg.textContent="Chính xác ✓"; msg.className="qcheck-msg ok";
+      }else{
+        var wb=document.getElementById("opt-"+i+"-"+pick);
+        if(wb) wb.classList.add("wrong");
+        msg.textContent="Chưa đúng — đáp án đúng là "+ans; msg.className="qcheck-msg bad";
+      }
+    }
+    var e=document.getElementById("expl-"+i); if(e) e.classList.add("show");
+    card.classList.add("qc-locked");
+    btn.classList.add("done"); btn.textContent="Đã kiểm tra";
+  }
+  function scan(){
+    if(document.body.classList.contains("qc-graded")) return;
+    var cards=document.querySelectorAll("#quiz .card");
+    for(var k=0;k<cards.length;k++) addBtn(cards[k]);
+  }
+  // Sau khi NỘP CẢ BÀI: ẩn nút kiểm tra từng câu (bài đã được chấm toàn bộ).
+  if(typeof grade==="function"){
+    var _g=grade;
+    grade=function(a){ _g(a); document.body.classList.add("qc-graded"); };
+  }
+  // LÀM LẠI: bỏ trạng thái đã-chấm để nút kiểm tra từng câu hiện lại.
+  if(typeof restart==="function"){
+    var _r=restart;
+    restart=function(){ document.body.classList.remove("qc-graded"); _r(); };
+  }
+  var quiz=document.getElementById("quiz");
+  if(quiz){
+    scan();
+    new MutationObserver(function(){ scan(); }).observe(quiz,{childList:true});
+  }
+})();
+</script>
+<!--qcheck-end-->
+
 </body>
 </html>
