@@ -668,6 +668,10 @@
     .nt-modal-ta{flex:1;width:100%;box-sizing:border-box;min-height:340px;resize:none;border:1px solid var(--line);border-radius:12px;background:var(--panel2,var(--panel));color:var(--txt);font:15px/1.6 inherit;padding:14px 16px}
     .nt-modal-ta:focus{outline:none;border-color:var(--c,var(--accent))}
     .nt-modal-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+    html.embed-notes .fx-side,html.embed-notes .fx-main>header,html.embed-notes #quoteBar,html.embed-notes #notesView .crumb{display:none!important}
+    html.embed-notes .fx-app{grid-template-columns:1fr}
+    html.embed-notes main{max-width:100%;padding:14px 16px 28px}
+    html.embed-notes #notesView .subj-head{margin-top:0}
     @media(max-width:860px){.nt-grid{grid-template-columns:1fr}}
   </style>
   <section id="notesView" class="hide">
@@ -1869,6 +1873,15 @@ function ntModalWire(){
   document.addEventListener("keydown", function(e){ var m=$("ntModal"); if(e.key==="Escape" && m && !m.classList.contains("hide")) ntCloseModal(); });
 }
 ntModalWire();
+
+/* Chế độ nhúng (embed) + mở thẳng mục "Ghi chú" khi index.html được gọi từ trang làm bài qua iframe */
+(function(){
+  try{
+    var p=new URLSearchParams(location.search);
+    if(p.get("embed")==="1") document.documentElement.classList.add("embed-notes");
+    if(p.get("view")==="notes" || location.hash==="#notes"){ showNotes(); }
+  }catch(e){}
+})();
 
 /* Khi chuyển sang view khác qua nav, ẩn luôn progressView + formulaView + notesView (bọc các hàm điều hướng sẵn có) */
 (function(){
