@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BA II Plus (Web) — Full</title>
+<style>
+  :root{
+    --body:#1b2a2f; --body2:#22353b; --screen:#a9c2a4; --screentxt:#14241a;
+    --key:#39494f; --key2:#48595f; --keytxt:#eef3f2; --keyactive:#6d8a8f;
+    --gold:#e9bd1f; --fin:#4d6b72; --eq:#2f9e8c; --shadow:rgba(0,0,0,.38);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:#0f1a1d;padding:14px}
+  .baii-wrap{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    width:360px;max-width:100%;margin:0 auto;background:linear-gradient(160deg,var(--body),var(--body2));
+    border-radius:22px;padding:16px 14px 18px;box-shadow:0 12px 40px var(--shadow),inset 0 1px 0 rgba(255,255,255,.05);
+    user-select:none}
+  .baii-brand{display:flex;justify-content:space-between;align-items:baseline;color:#cfe0dd;
+    font-size:11px;letter-spacing:.5px;margin:0 4px 10px;font-weight:600}
+  .baii-brand b{color:var(--gold);font-size:13px;letter-spacing:1px}
+  .baii-screen{background:var(--screen);border-radius:8px;padding:7px 12px 9px;margin-bottom:12px;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.4);border:2px solid #14241a}
+  .baii-ind{display:flex;gap:8px;height:13px;font-size:9px;font-weight:800;color:var(--screentxt);
+    letter-spacing:.4px;align-items:center}
+  .baii-ind span{opacity:.22;transition:opacity .1s}
+  .baii-ind span.on{opacity:1}
+  .baii-line{display:flex;justify-content:space-between;align-items:flex-end;color:var(--screentxt)}
+  .baii-label{font-size:14px;font-weight:800;letter-spacing:.5px;min-width:52px;white-space:nowrap}
+  .baii-value{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:27px;font-weight:700;
+    line-height:1.05;text-align:right;flex:1;overflow:hidden}
+  .baii-pad{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+  .k{position:relative;border:none;border-radius:8px;background:linear-gradient(180deg,var(--key2),var(--key));
+    color:var(--keytxt);font-size:14px;font-weight:700;padding:13px 0 9px;cursor:pointer;
+    box-shadow:0 2px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.07);transition:transform .05s,background .1s;min-height:42px}
+  .k:active,.k.pressed{transform:translateY(2px);box-shadow:0 0 0 rgba(0,0,0,.35);background:var(--keyactive)}
+  .k .sec{position:absolute;top:2px;left:0;right:0;font-size:7.5px;font-weight:800;color:var(--gold);
+    letter-spacing:.2px;line-height:1}
+  .k .main{position:relative;top:3px;pointer-events:none}
+  .k.fin{background:linear-gradient(180deg,#5a787f,#45636a)}
+  .k.op{background:linear-gradient(180deg,#42565c,#334349)}
+  .k.eq{background:linear-gradient(180deg,#38b09b,#2c8073);color:#fff}
+  .k.second{background:linear-gradient(180deg,#f2cb3f,#d9a400);color:#2a2200}
+  .k.second.on{outline:2px solid #fff;box-shadow:0 0 12px var(--gold)}
+  .k.small .main{font-size:12px}
+  .baii-hint{margin-top:11px;font-size:10px;color:#8fa6a3;text-align:center;line-height:1.6}
+  .baii-hint b{color:var(--gold)}
+  .baii-hint code{color:#cfe0dd;background:rgba(255,255,255,.06);padding:0 3px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="baii-wrap" id="baii">
+  <div class="baii-brand"><span>FINANCIAL CALCULATOR</span><b>BA II PLUS</b></div>
+  <div class="baii-screen">
+    <div class="baii-ind">
+      <span id="i2nd">2ND</span>
+      <span id="iinv">INV</span>
+      <span id="icpt">CPT</span>
+      <span id="ients">ENTER</span>
+      <span id="idn">↓</span>
+      <span id="iup">↑</span>
+      <span id="ibgn">BGN</span>
+      <span id="irad" style="margin-left:auto">P/Y <b id="pyval">1</b></span>
+    </div>
+    <div class="baii-line">
+      <div class="baii-label" id="lbl"></div>
+      <div class="baii-value" id="disp">0.00</div>
+    </div>
+  </div>
+  <div class="baii-pad" id="pad"></div>
+  <div class="baii-hint">
+    <b>CPT</b>+phím = giải · <b>2ND</b>+phím vàng mở worksheet · <b>↑↓</b> cuộn biến · <b>ENTER</b> lưu · <b>SET</b>(2ND ENTER) đổi tùy chọn
+  </div>
+</div>
+
+<script>
+"use strict";
+(function(){
+/* ============================================================
+   TI BA II Plus — full emulator
+   Worksheets: TVM, Amort, CashFlow(NPV/IRR), Bond, Depreciation,
+   Statistics, Interest-Conv, Date, %Change, ProfitMargin,
+   Breakeven, Memory, P/Y.  Plus scientific standard calculator.
+   ============================================================ */
+
+  // ---------------- State ----------------
+  var S = {
+    entry:"0", entryActive:false, display:0, label:"",
+    second:false, inv:false, cpt:false, dec:2, bgn:false,
+    // standard-calc expression (AOS)
+    tokens:[], // [{n:num} | {op:'+'} | '(' ...]
+    pendingUnaryChain:false,
+    // TVM
+    tvm:{N:0,IY:0,PV:0,PMT:0,FV:0,PY:1,CY:1},
+    // worksheets data
+    amort:{P1:1,P2:1},
+    cf:{cf0:0,c:[],f:[]},
+    npvRate:0, npvVal:null, irrVal:null,
+    bond:{SDT:"12.3190",CPN:0,RDT:"12.3190",RV:100,day:"ACT",freq:2,YLD:0,PRI:0,AI:0},
+    dep:{method:"SL",LIF:1,M01:1,CST:0,SAL:0,YR:1,DB:200,DEP:0,RBV:0,RDV:0},
+    stat:{X:[],Y:[],method:"LIN",Xp:0,Yp:0},
+    iconv:{NOM:0,EFF:0,CY:1},
+    date:{DT1:"12.3190",DT2:"12.3190",DBD:0,day:"ACT"},
+    pch:{OLD:0,NEW:0,CH:0,PD:1},
+    pm:{CST:0,SEL:0,MAR:0},
+    brk:{FC:0,VC:0,P:0,PFT:0,Q:0},
+    mem:[0,0,0,0,0,0,0,0,0,0],
+    // active worksheet
+    ws:null, wsIdx:0,
+    stoMode:null // 'STO' | 'RCL' waiting for digit
+  };
+
+  // ---------------- Formatting ----------------
+  function round(n,d){ var f=Math.pow(10,d); return Math.round((n+(n>=0?1e-12:-1e-12))*f)/f; }
+  function fmt(n){
+    if(n===null||n===undefined) return "";
+    if(typeof n==="number" && !isFinite(n)) return "Error";
+    var v=Number(n); if(Object.is(v,-0)) v=0;
+    var a=Math.abs(v);
+    var s;
+    if(a!==0 && (a>=1e10 || a<1e-3 && S.dec>=3)) { s=v.toExponential(S.dec); return s; }
+    s=v.toFixed(S.dec);
+    var p=s.split("."); p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,",");
+    return p.join(".");
+  }
+  function groupEntry(str){
+    var neg=str.charAt(0)==="-"; if(neg) str=str.slice(1);
+    var p=str.split("."); p[0]=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,",");
+    return (neg?"-":"")+p.join(".");
+  }
+  function render(){
+    var d=document.getElementById("disp");
+    if(S.dispText!==undefined && S.dispText!==null){ d.textContent=S.dispText; }
+    else d.textContent = S.entryActive ? groupEntry(S.entry) : fmt(S.display);
+    document.getElementById("lbl").textContent = S.label;
+    document.getElementById("i2nd").classList.toggle("on",S.second);
+    document.getElementById("iinv").classList.toggle("on",S.inv);
+    document.getElementById("icpt").classList.toggle("on",S.cpt);
+    document.getElementById("ibgn").classList.toggle("on",S.bgn);
+    document.getElementById("pyval").textContent = S.tvm.PY;
+    var nav=!!S.ws;
+    document.getElementById("idn").classList.toggle("on",nav);
+    document.getElementById("iup").classList.toggle("on",nav);
+    document.getElementById("ients").classList.toggle("on",nav);
+    var b=document.getElementById("btn2nd"); if(b) b.classList.toggle("on",S.second);
+  }
+  function show(n,label){ if(label!==undefined) S.label=label; S.display=n; S.entryActive=false; S.entry=String(n); S.dispText=null; }
+  function currentValue(){ return S.entryActive?parseFloat(S.entry||"0"):S.display; }
+
+  // ---------------- Number entry ----------------
+  function inputDigit(d){
+    S.dispText=null;
+    if(!S.entryActive){ S.entry=(d==="."?"0.":d); S.entryActive=true; }
+    else {
+      if(d==="."){ if(S.entry.indexOf(".")<0) S.entry+="."; }
+      else if(S.entry==="0") S.entry=d;
+      else if(S.entry==="-0") S.entry="-"+d;
+      else if(S.entry.replace(/[-.]/g,"").length<10) S.entry+=d;
+    }
+  }
+  function toggleSign(){
+    if(S.entryActive) S.entry = S.entry.charAt(0)==="-"?S.entry.slice(1):"-"+S.entry;
+    else { S.display=-S.display; S.entry=String(S.display); }
+  }
+
+  // ---------------- Standard calculator (AOS) ----------------
+  var PREC={'+':1,'-':1,'*':2,'/':2,'nCr':3,'nPr':3,'^':4};
+  var RIGHT={'^':true};
+  function evalTokens(tok){
+    var out=[],ops=[];
+    function apply(){
+      var op=ops.pop(), b=out.pop(), a=out.pop();
+      out.push(binop(a,b,op));
+    }
+    for(var i=0;i<tok.length;i++){
+      var t=tok[i];
+      if(typeof t==="number") out.push(t);
+      else if(t==="(") ops.push(t);
+      else if(t===")"){ while(ops.length&&ops[ops.length-1]!=="(") apply(); ops.pop(); }
+      else {
+        while(ops.length){ var top=ops[ops.length-1];
+          if(top==="(") break;
+          if(PREC[top]>PREC[t] || (PREC[top]===PREC[t] && !RIGHT[t])) apply(); else break;
+        }
+        ops.push(t);
+      }
+    }
+    while(ops.length) apply();
+    return out.length?out[out.length-1]:0;
+  }
+  function binop(a,b,op){
+    switch(op){
+      case '+':return a+b; case '-':return a-b; case '*':return a*b;
+      case '/':return b===0?NaN:a/b; case '^':return Math.pow(a,b);
+      case 'nCr':return nCr(a,b); case 'nPr':return nPr(a,b);
+    } return b;
+  }
+  function factorial(n){ if(n<0||n!==Math.floor(n)||n>170) return NaN; var r=1; for(var k=2;k<=n;k++) r*=k; return r; }
+  function nPr(n,r){ if(n<0||r<0||r>n) return NaN; return factorial(n)/factorial(n-r); }
+  function nCr(n,r){ if(n<0||r<0||r>n) return NaN; return factorial(n)/(factorial(r)*factorial(n-r)); }
+
+  function endsWithValue(){ var t=S.tokens; if(!t.length) return false; var l=t[t.length-1]; return (typeof l==="number"||l===")"); }
+  function needOperand(){ return S.entryActive || !endsWithValue(); }
+  function pushOp(op){
+    // only supply an operand if one isn't already at the end of the stream (a number or ')')
+    if(needOperand()) S.tokens.push(currentValue());
+    S.tokens.push(op);
+    var v=currentValue(); S.entryActive=false; S.display=v; S.entry=String(v); S.dispText=null;
+  }
+  function pushParen(p){
+    if(p==="("){ S.tokens.push("("); }
+    else { if(needOperand()) S.tokens.push(currentValue()); S.tokens.push(")"); S.entryActive=false; }
+  }
+  function equals(){
+    var tk=S.tokens.slice();
+    if(needOperand()) tk.push(currentValue());
+    var r=evalTokens(tk);
+    S.tokens=[]; show(r);
+  }
+  // immediate unary functions
+  function unary(fn){
+    var v=currentValue(), r;
+    switch(fn){
+      case 'x2':r=v*v;break; case 'sqrt':r=Math.sqrt(v);break;
+      case 'inv':r=v===0?NaN:1/v;break; case 'ln':r=Math.log(v);break;
+      case 'ex':r=Math.exp(v);break; case 'fact':r=factorial(v);break;
+      case 'neg':r=-v;break; case 'round':r=round(v,S.dec);break;
+    }
+    show(r);
+  }
+  function percent(){
+    // % of pending: if last op + - and prior operand, compute pct of it
+    var v=currentValue()/100;
+    var tk=S.tokens;
+    if(tk.length>=2 && (tk[tk.length-1]==='+'||tk[tk.length-1]==='-'||tk[tk.length-1]==='*'||tk[tk.length-1]==='/')){
+      var op=tk[tk.length-1];
+      if(op==='+'||op==='-'){ var base=evalTokens(tk.slice(0,tk.length-1)); v=base*v; }
+    }
+    S.entry=String(v); S.entryActive=true; S.dispText=null;
+  }
+  function rand(){ show(Math.random()); }
+
+  // ---------------- Memory / STO-RCL ----------------
+  function doSto(d){ S.mem[d]=currentValue(); S.stoMode=null; }
+  function doRcl(d){ show(S.mem[d]); S.stoMode=null; }
+
+  // ---------------- TVM ----------------
+  function periodRate(IY,PY,CY){ if(IY===0) return 0; return Math.pow(1+(IY/100)/CY, CY/PY)-1; }
+  function tvmEq(t,i,bgn){
+    var b=bgn?1:0, N=t.N;
+    if(Math.abs(i)<1e-12) return t.PV + t.PMT*N + t.FV;
+    var a=Math.pow(1+i,N);
+    return t.PV + t.PMT*(1+i*b)*(1-1/a)/i + t.FV/a;
+  }
+  function tvmSolve(which){
+    var t=S.tvm, i=periodRate(t.IY,t.PY,t.CY), b=S.bgn?1:0, N=t.N;
+    if(which==="FV"){ if(i===0) return -(t.PV+t.PMT*N); var a=Math.pow(1+i,N),ann=(1-1/a)/i*(1+i*b); return -(t.PV+t.PMT*ann)*a; }
+    if(which==="PV"){ if(i===0) return -(t.FV+t.PMT*N); var a=Math.pow(1+i,N),ann=(1-1/a)/i*(1+i*b); return -(t.FV/a+t.PMT*ann); }
+    if(which==="PMT"){ if(i===0) return N===0?NaN:-(t.PV+t.FV)/N; var a=Math.pow(1+i,N),ann=(1-1/a)/i*(1+i*b); return -(t.PV+t.FV/a)/ann; }
+    if(which==="N"){
+      if(i===0){ if(t.PMT===0) return NaN; return -(t.PV+t.FV)/t.PMT; }
+      var k=t.PMT*(1+i*b)/i, num=k-t.FV, den=t.PV+k;
+      if(den===0||num/den<=0) return NaN; return Math.log(num/den)/Math.log(1+i);
+    }
+    if(which==="IY"){
+      var f=function(iy){ return tvmEq({N:t.N,PV:t.PV,PMT:t.PMT,FV:t.FV}, periodRate(iy,t.PY,t.CY), S.bgn); };
+      var r=bisect(f,-99.9999,1e6); return r===null?NaN:r;
+    }
+    return NaN;
+  }
+  function bisect(f,lo,hi){
+    var steps=4000,prev=lo,pv,a=null,bb=null;
+    try{pv=f(lo);}catch(e){pv=NaN;}
+    for(var k=1;k<=steps;k++){
+      var x=lo+(hi-lo)*k/steps, v; try{v=f(x);}catch(e){v=NaN;}
+      if(isFinite(pv)&&isFinite(v)&&pv*v<=0){a=prev;bb=x;break;} prev=x;pv=v;
+    }
+    if(a===null) return null;
+    var fa=f(a);
+    for(var j=0;j<200;j++){ var m=(a+bb)/2,fm=f(m); if(!isFinite(fm))return null;
+      if(Math.abs(fm)<1e-11||(bb-a)/2<1e-13) return m;
+      if(fa*fm<=0) bb=m; else {a=m;fa=fm;} }
+    return (a+bb)/2;
+  }
+  function tvmKey(which){
+    if(S.ws) exitWs();
+    S.label = which==="IY"?"I/Y":which;
+    if(S.cpt){ var r=tvmSolve(which); S.tvm[which]=isFinite(r)?r:0; show(isFinite(r)?r:NaN); S.cpt=false; }
+    else if(S.entryActive){ S.tvm[which]=parseFloat(S.entry||"0"); if(which==="PY") S.tvm.CY=S.tvm.PY; show(S.tvm[which]); }
+    else show(S.tvm[which]);
+  }
+  function xPY(){ var v=currentValue()*S.tvm.PY; show(v); }
+
+  // ---------------- Cash Flow / NPV / IRR ----------------
+  function npv(ratePct){ var r=ratePct/100,t=0,s=S.cf.cf0;
+    for(var g=0;g<S.cf.c.length;g++){ var amt=S.cf.c[g],fr=S.cf.f[g]||1; for(var k=0;k<fr;k++){t++;s+=amt/Math.pow(1+r,t);} } return s; }
+  function irr(){ var root=bisect(function(r){return npv(r);},-99.9999,1e5); return root===null?NaN:root; }
+
+  // ---------------- Amortization ----------------
+  function amortRange(P1,P2){
+    var t=S.tvm, i=periodRate(t.IY,t.PY,t.CY), b=S.bgn?1:0;
+    var PMT=round(t.PMT,S.dec);
+    var bal=t.PV, prn=0, intr=0;
+    for(var p=1;p<=P2;p++){
+      var ip;
+      if(b){ ip = -((bal+PMT)*i); } else { ip = -(bal*i); }
+      var pr = PMT - ip;
+      bal = bal + pr;
+      if(p>=P1){ prn+=pr; intr+=ip; }
+    }
+    return {BAL:bal, PRN:prn, INT:intr};
+  }
+
+  // ---------------- Interest conversion / %chg / profit / breakeven ----------------
+  function iconvEFF(NOM,CY){ return (Math.pow(1+(NOM/100)/CY,CY)-1)*100; }
+  function iconvNOM(EFF,CY){ return (Math.pow(1+EFF/100,1/CY)-1)*CY*100; }
+
+  // ---------------- Date math ----------------
+  function parseDate(str){ // "mm.ddyy"
+    var f=parseFloat(str); if(!isFinite(f)) return null;
+    var mm=Math.floor(f+1e-9);
+    var rest=Math.round((f-mm)*10000);
+    var dd=Math.floor(rest/100), yy=rest%100;
+    var year = yy>=80 ? 1900+yy : 2000+yy;
+    return {y:year,m:mm,d:dd};
+  }
+  function jdn(dt){ var a=Math.floor((14-dt.m)/12),y=dt.y+4800-a,m=dt.m+12*a-3;
+    return dt.d+Math.floor((153*m+2)/5)+365*y+Math.floor(y/4)-Math.floor(y/100)+Math.floor(y/400)-32045; }
+  function daysACT(d1,d2){ return jdn(d2)-jdn(d1); }
+  function days360(d1,d2){ var D1=d1.d,D2=d2.d; if(D1===31)D1=30; if(D2===31&&D1>=30)D2=30;
+    return (d2.y-d1.y)*360+(d2.m-d1.m)*30+(D2-D1); }
+  var WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  function weekday(dt){ return WD[(jdn(dt)+1)%7]; }
+  function fmtDate(dt){ function p(n){return (n<10?"0":"")+n;} return p(dt.m)+"-"+p(dt.d)+"-"+dt.y; }
+  function addMonths(dt,n){ var idx=dt.y*12+(dt.m-1)+n; var y=Math.floor(idx/12),m=idx%12+1;
+    var dim=[31,(y%4===0&&(y%100!==0||y%400===0))?29:28,31,30,31,30,31,31,30,31,30,31][m-1];
+    return {y:y,m:m,d:Math.min(dt.d,dim)}; }
+
+  // ---------------- Bond ----------------
+  function bondCompute(want){
+    var bd=S.bond, SDT=parseDate(bd.SDT), RDT=parseDate(bd.RDT);
+    if(!SDT||!RDT) return NaN;
+    var M=bd.freq, per=12/M;
+    var dc = bd.day==="ACT"?daysACT:days360;
+    // coupon dates back from RDT
+    var NCD=RDT, PCD=addMonths(RDT,-per), k=0;
+    while(jdn(PCD) > jdn(SDT)){ NCD=PCD; PCD=addMonths(PCD,-per); k++; }
+    // now PCD <= SDT < NCD ; number of coupons remaining N
+    // count coupon dates from NCD..RDT inclusive
+    var N=0, cd=NCD; while(jdn(cd)<=jdn(RDT)){ N++; cd=addMonths(cd,per); if(N>2000)break; }
+    var E=dc(PCD,NCD); if(E===0) E=1;
+    var A=dc(PCD,SDT); var DSC=dc(SDT,NCD);
+    var v=DSC/E;
+    var coupon=bd.CPN/M;
+    var AI=(A/E)*coupon;
+    function priceFromYield(YLD){
+      var r=(YLD/100)/M;
+      if(N<=1){ var dsr=DSC; return (bd.RV+coupon)/(1+ (dsr/E)*r ) - A/E*coupon; }
+      var dirty = bd.RV/Math.pow(1+r, N-1+v);
+      for(var kk=1;kk<=N;kk++) dirty += coupon/Math.pow(1+r,kk-1+v);
+      return dirty - AI;
+    }
+    S.bond.AI=AI;
+    if(want==="AI") return AI;
+    if(want==="PRI") return priceFromYield(bd.YLD);
+    if(want==="YLD"){ var root=bisect(function(y){return priceFromYield(y)-bd.PRI;},-99.9,1000); return root===null?NaN:root; }
+    return NaN;
+  }
+
+  // ---------------- Depreciation ----------------
+  function depSchedule(){
+    var d=S.dep, cost=d.CST, sal=d.SAL, life=d.LIF, m01=d.M01, dbr=d.DB;
+    var base=cost-sal;
+    var frac1=(12-(m01-1))/12; if(frac1>1)frac1=1; if(frac1<=0)frac1=1;
+    var sched=[]; // 1-indexed by year
+    var bookRDV=base; // remaining depreciable value
+    var bookRBV=cost;
+    var method=d.method;
+    if(method==="SL"){
+      var yr=base/life;
+      var y=1, rem=base;
+      while(rem>1e-9 && y<life+3){
+        var dep=(y===1)?yr*frac1:yr;
+        if(dep>rem) dep=rem; rem-=dep;
+        // last stretch: if near end put remainder
+        sched.push(dep); y++;
+      }
+      // distribute so total=base handled by rem
+    } else if(method==="SYD"){
+      var sum=life*(life+1)/2;
+      // with partial first year, use fractional weighting across life+1
+      var y=1, rem=base, remLife=life;
+      var carry=0;
+      var y2=1;
+      // simple approach: year weight
+      var weights=[];
+      for(var yy=1;yy<=life;yy++) weights.push((life-yy+1)/sum);
+      // apply first-year fraction split into next
+      var deps=[];
+      for(var yy=0;yy<life;yy++) deps.push(base*weights[yy]);
+      if(frac1<1){
+        var out=[]; var prevLeft=0;
+        for(var yy=0;yy<deps.length;yy++){
+          var full=deps[yy];
+          var thisYear=(yy===0)?full*frac1:deps[yy-1]*(1-frac1)+full*frac1;
+          out.push(thisYear);
+        }
+        out.push(deps[deps.length-1]*(1-frac1));
+        sched=out;
+      } else sched=deps;
+    } else if(method==="DB"||method==="DBX"){
+      var rate=(dbr/100)/life;
+      var rbv=cost, y=1, rem=base;
+      var slSwitch=false;
+      while(rbv-sal>1e-9 && y<life+3){
+        var dep;
+        if(method==="DBX" && !slSwitch){
+          var slDep=(rbv-sal)/(life-y+1);
+          var dbDep=rbv*rate*((y===1)?frac1:1);
+          if(slDep>=dbDep){ dep=slDep; slSwitch=true; } else dep=dbDep;
+        } else if(method==="DBX" && slSwitch){
+          dep=(rbv-sal)/(life-y+1);
+        } else {
+          dep=rbv*rate*((y===1)?frac1:1);
+          if(dep>rbv-sal) dep=rbv-sal;
+        }
+        if(dep>rbv-sal) dep=rbv-sal;
+        rbv-=dep; sched.push(dep); y++;
+      }
+    }
+    // build cumulative
+    var out=[], cum=0;
+    for(var y=0;y<sched.length;y++){ cum+=sched[y];
+      out.push({DEP:sched[y], RBV:cost-cum, RDV:base-cum}); }
+    return out;
+  }
+  function depCompute(){
+    var sch=depSchedule(), yr=Math.round(S.dep.YR);
+    if(yr<1) yr=1;
+    var r = sch[yr-1] || {DEP:0,RBV:S.dep.CST-(S.dep.CST-S.dep.SAL),RDV:0};
+    S.dep.DEP=round(r.DEP,S.dec); S.dep.RBV=round(r.RBV,S.dec); S.dep.RDV=round(r.RDV,S.dec);
+  }
+
+  // ---------------- Statistics ----------------
+  function statResults(){
+    var xs=S.stat.X, ys=S.stat.Y, m=S.stat.method, n=xs.length;
+    var R={n:n};
+    if(n===0) return R;
+    // transform
+    function tx(x){ return (m==="Ln"||m==="PWR")?Math.log(x):x; }
+    function ty(y){ return (m==="EXP"||m==="PWR")?Math.log(y):y; }
+    var sx=0,sy=0,sxx=0,syy=0,sxy=0, rawSx=0,rawSxx=0;
+    var oneV = (m==="1-V");
+    for(var i=0;i<n;i++){
+      var freq = oneV ? (ys[i]||1) : 1;
+      var X=oneV?xs[i]:tx(xs[i]), Y=oneV?0:ty(ys[i]);
+      for(var q=0;q<(oneV?freq:1);q++){}
+      if(oneV){
+        var f=ys[i]||1;
+        sx+=xs[i]*f; sxx+=xs[i]*xs[i]*f; R.__ncount=(R.__ncount||0)+f;
+      } else {
+        sx+=X; sy+=Y; sxx+=X*X; syy+=Y*Y; sxy+=X*Y;
+      }
+    }
+    if(oneV){
+      var N=R.__ncount; R.n=N;
+      R.mx=sx/N; R.Sx=Math.sqrt((sxx-sx*sx/N)/(N-1)); R.sx=Math.sqrt((sxx-sx*sx/N)/N);
+      R.sumX=sx; R.sumX2=sxx;
+      return R;
+    }
+    var mx=sx/n,my=sy/n;
+    R.mx=mx; R.my=my;
+    R.Sx=Math.sqrt((sxx-sx*sx/n)/(n-1)); R.sx=Math.sqrt((sxx-sx*sx/n)/n);
+    R.Sy=Math.sqrt((syy-sy*sy/n)/(n-1)); R.sy=Math.sqrt((syy-sy*sy/n)/n);
+    var Sxx=sxx-sx*sx/n, Syy=syy-sy*sy/n, Sxy=sxy-sx*sy/n;
+    R.b=Sxy/Sxx; R.a=my-R.b*mx; R.r=Sxy/Math.sqrt(Sxx*Syy);
+    R.sumX=sx;R.sumY=sy;R.sumX2=sxx;R.sumY2=syy;R.sumXY=sxy;
+    R.method=m;
+    return R;
+  }
+
+  /* ========================================================
+     WORKSHEET ENGINE
+     Each worksheet = ordered list of fields.
+     field = {label, type, get, set, compute, options, cycle}
+     type: 'enter','compute','auto','setting'
+     ======================================================== */
+  function W(){ return WS[S.ws]; }
+  var WS = {};
+
+  // ---- P/Y ----
+  WS.PY = function(){ return [
+    {label:"P/Y", type:"enter", get:function(){return S.tvm.PY;}, set:function(v){S.tvm.PY=Math.max(1,v); S.tvm.CY=S.tvm.PY;}},
+    {label:"C/Y", type:"enter", get:function(){return S.tvm.CY;}, set:function(v){S.tvm.CY=Math.max(1,v);}}
+  ];};
+  // ---- Amortization ----
+  WS.AMORT = function(){ return [
+    {label:"P1", type:"enter", get:function(){return S.amort.P1;}, set:function(v){S.amort.P1=Math.max(1,Math.round(v));}},
+    {label:"P2", type:"enter", get:function(){return S.amort.P2;}, set:function(v){S.amort.P2=Math.max(1,Math.round(v));}},
+    {label:"BAL", type:"auto", get:function(){return round(amortRange(S.amort.P1,S.amort.P2).BAL,S.dec);}},
+    {label:"PRN", type:"auto", get:function(){return round(amortRange(S.amort.P1,S.amort.P2).PRN,S.dec);}},
+    {label:"INT", type:"auto", get:function(){return round(amortRange(S.amort.P1,S.amort.P2).INT,S.dec);}}
+  ];};
+  // ---- Bond ----
+  WS.BOND = function(){ return [
+    {label:"SDT", type:"date", get:function(){return S.bond.SDT;}, set:function(v){S.bond.SDT=v;}},
+    {label:"CPN", type:"enter", get:function(){return S.bond.CPN;}, set:function(v){S.bond.CPN=v;}},
+    {label:"RDT", type:"date", get:function(){return S.bond.RDT;}, set:function(v){S.bond.RDT=v;}},
+    {label:"RV",  type:"enter", get:function(){return S.bond.RV;}, set:function(v){S.bond.RV=v;}},
+    {label:"DAY", type:"setting", get:function(){return S.bond.day;}, options:["ACT","360"], set:function(v){S.bond.day=v;}},
+    {label:"CPN/Y", type:"setting", get:function(){return S.bond.freq===2?"2/Y":"1/Y";}, cycle:function(){S.bond.freq=S.bond.freq===2?1:2;}},
+    {label:"YLD", type:"compute", get:function(){return S.bond.YLD;}, set:function(v){S.bond.YLD=v;}, compute:function(){var r=bondCompute("YLD"); S.bond.YLD=isFinite(r)?r:0; return S.bond.YLD;}},
+    {label:"PRI", type:"compute", get:function(){return S.bond.PRI;}, set:function(v){S.bond.PRI=v;}, compute:function(){var r=bondCompute("PRI"); S.bond.PRI=isFinite(r)?r:0; return S.bond.PRI;}},
+    {label:"AI",  type:"auto", get:function(){var r=bondCompute("AI"); return isFinite(r)?round(r,S.dec):NaN;}}
+  ];};
+  // ---- Depreciation ----
+  WS.DEPR = function(){ return [
+    {label:"METH", type:"setting", get:function(){return S.dep.method;}, options:["SL","SYD","DB","DBX"], set:function(v){S.dep.method=v;}},
+    {label:"LIF", type:"enter", get:function(){return S.dep.LIF;}, set:function(v){S.dep.LIF=Math.max(1,v);}},
+    {label:"M01", type:"enter", get:function(){return S.dep.M01;}, set:function(v){S.dep.M01=v;}},
+    {label:"CST", type:"enter", get:function(){return S.dep.CST;}, set:function(v){S.dep.CST=v;}},
+    {label:"SAL", type:"enter", get:function(){return S.dep.SAL;}, set:function(v){S.dep.SAL=v;}},
+    {label:"YR",  type:"enter", get:function(){return S.dep.YR;}, set:function(v){S.dep.YR=Math.max(1,Math.round(v));}},
+    {label:"DEP", type:"auto", get:function(){depCompute();return S.dep.DEP;}},
+    {label:"RBV", type:"auto", get:function(){depCompute();return S.dep.RBV;}},
+    {label:"RDV", type:"auto", get:function(){depCompute();return S.dep.RDV;}}
+  ];};
+  // ---- Interest conversion ----
+  WS.ICONV = function(){ return [
+    {label:"NOM", type:"compute", get:function(){return S.iconv.NOM;}, set:function(v){S.iconv.NOM=v;}, compute:function(){S.iconv.NOM=iconvNOM(S.iconv.EFF,S.iconv.CY); return S.iconv.NOM;}},
+    {label:"EFF", type:"compute", get:function(){return S.iconv.EFF;}, set:function(v){S.iconv.EFF=v;}, compute:function(){S.iconv.EFF=iconvEFF(S.iconv.NOM,S.iconv.CY); return S.iconv.EFF;}},
+    {label:"C/Y", type:"enter", get:function(){return S.iconv.CY;}, set:function(v){S.iconv.CY=Math.max(1,v);}}
+  ];};
+  // ---- Date ----
+  WS.DATE = function(){ return [
+    {label:"DT1", type:"date", get:function(){return S.date.DT1;}, set:function(v){S.date.DT1=v;}},
+    {label:"DT2", type:"date", get:function(){return S.date.DT2;}, set:function(v){S.date.DT2=v;}},
+    {label:"DBD", type:"compute", get:function(){return S.date.DBD;}, set:function(v){S.date.DBD=v;},
+      compute:function(){var a=parseDate(S.date.DT1),b=parseDate(S.date.DT2); var dc=S.date.day==="ACT"?daysACT:days360; S.date.DBD=dc(a,b); return S.date.DBD;}},
+    {label:"DAY", type:"setting", get:function(){return S.date.day;}, options:["ACT","360"], set:function(v){S.date.day=v;}}
+  ];};
+  // ---- Percent change ----
+  WS.PCH = function(){ return [
+    {label:"OLD", type:"compute", get:function(){return S.pch.OLD;}, set:function(v){S.pch.OLD=v;}, compute:function(){var p=S.pch; p.OLD=p.NEW/Math.pow(1+p.CH/100,p.PD); return p.OLD;}},
+    {label:"NEW", type:"compute", get:function(){return S.pch.NEW;}, set:function(v){S.pch.NEW=v;}, compute:function(){var p=S.pch; p.NEW=p.OLD*Math.pow(1+p.CH/100,p.PD); return p.NEW;}},
+    {label:"%CH", type:"compute", get:function(){return S.pch.CH;}, set:function(v){S.pch.CH=v;}, compute:function(){var p=S.pch; p.CH=(Math.pow(p.NEW/p.OLD,1/p.PD)-1)*100; return p.CH;}},
+    {label:"#PD", type:"compute", get:function(){return S.pch.PD;}, set:function(v){S.pch.PD=v;}, compute:function(){var p=S.pch; p.PD=Math.log(p.NEW/p.OLD)/Math.log(1+p.CH/100); return p.PD;}}
+  ];};
+  // ---- Profit margin ----
+  WS.PM = function(){ return [
+    {label:"CST", type:"compute", get:function(){return S.pm.CST;}, set:function(v){S.pm.CST=v;}, compute:function(){var p=S.pm; p.CST=p.SEL*(1-p.MAR/100); return p.CST;}},
+    {label:"SEL", type:"compute", get:function(){return S.pm.SEL;}, set:function(v){S.pm.SEL=v;}, compute:function(){var p=S.pm; p.SEL=p.CST/(1-p.MAR/100); return p.SEL;}},
+    {label:"MAR", type:"compute", get:function(){return S.pm.MAR;}, set:function(v){S.pm.MAR=v;}, compute:function(){var p=S.pm; p.MAR=(p.SEL-p.CST)/p.SEL*100; return p.MAR;}}
+  ];};
+  // ---- Breakeven ----
+  WS.BRK = function(){ return [
+    {label:"FC",  type:"compute", get:function(){return S.brk.FC;}, set:function(v){S.brk.FC=v;}, compute:function(){var p=S.brk; p.FC=(p.P-p.VC)*p.Q-p.PFT; return p.FC;}},
+    {label:"VC",  type:"compute", get:function(){return S.brk.VC;}, set:function(v){S.brk.VC=v;}, compute:function(){var p=S.brk; p.VC=p.P-(p.FC+p.PFT)/p.Q; return p.VC;}},
+    {label:"P",   type:"compute", get:function(){return S.brk.P;}, set:function(v){S.brk.P=v;}, compute:function(){var p=S.brk; p.P=(p.FC+p.PFT)/p.Q+p.VC; return p.P;}},
+    {label:"PFT", type:"compute", get:function(){return S.brk.PFT;}, set:function(v){S.brk.PFT=v;}, compute:function(){var p=S.brk; p.PFT=(p.P-p.VC)*p.Q-p.FC; return p.PFT;}},
+    {label:"Q",   type:"compute", get:function(){return S.brk.Q;}, set:function(v){S.brk.Q=v;}, compute:function(){var p=S.brk; p.Q=(p.FC+p.PFT)/(p.P-p.VC); return p.Q;}}
+  ];};
+  // ---- Memory ----
+  WS.MEM = function(){ var a=[]; for(var i=0;i<10;i++){ (function(i){ a.push(
+    {label:"M"+i, type:"enter", get:function(){return S.mem[i];}, set:function(v){S.mem[i]=v;}}); })(i);} return a; };
+
+  // ---- Statistics: data entry ----
+  WS.STATD = function(){
+    var fs=[]; var n=Math.max(S.stat.X.length, S.stat.Y.length);
+    for(var i=0;i<=n;i++){ (function(i){
+      fs.push({label:"X"+String(i+1).padStart(2,"0"), type:"enter",
+        get:function(){return S.stat.X[i]||0;}, set:function(v){ while(S.stat.X.length<=i){S.stat.X.push(0);S.stat.Y.push(S.stat.Y.length<=i?0:S.stat.Y[S.stat.Y.length]||0);} S.stat.X[i]=v; if(S.stat.Y[i]===undefined)S.stat.Y[i]=0;}});
+      fs.push({label:"Y"+String(i+1).padStart(2,"0"), type:"enter",
+        get:function(){return (S.stat.Y[i]!==undefined?S.stat.Y[i]:(S.stat.method==="1-V"?1:0));}, set:function(v){ while(S.stat.Y.length<=i){S.stat.Y.push(0);} S.stat.Y[i]=v;}});
+    })(i);}
+    return fs;
+  };
+  // ---- Statistics: calc ----
+  WS.STATC = function(){
+    var f=[{label:"METH", type:"setting", get:function(){return S.stat.method;}, options:["LIN","Ln","EXP","PWR","1-V"], set:function(v){S.stat.method=v;}}];
+    var oneV=S.stat.method==="1-V";
+    f.push({label:"n", type:"auto", get:function(){return statResults().n;}});
+    f.push({label:"x̄", type:"auto", get:function(){return round(statResults().mx,S.dec);}});
+    f.push({label:"Sx", type:"auto", get:function(){return round(statResults().Sx,S.dec);}});
+    f.push({label:"σx", type:"auto", get:function(){return round(statResults().sx,S.dec);}});
+    if(!oneV){
+      f.push({label:"ȳ", type:"auto", get:function(){return round(statResults().my,S.dec);}});
+      f.push({label:"Sy", type:"auto", get:function(){return round(statResults().Sy,S.dec);}});
+      f.push({label:"σy", type:"auto", get:function(){return round(statResults().sy,S.dec);}});
+      f.push({label:"a", type:"auto", get:function(){return round(statResults().a,S.dec);}});
+      f.push({label:"b", type:"auto", get:function(){return round(statResults().b,S.dec);}});
+      f.push({label:"r", type:"auto", get:function(){return round(statResults().r,S.dec);}});
+      f.push({label:"X'", type:"compute", get:function(){return S.stat.Xp;}, set:function(v){S.stat.Xp=v;},
+        compute:function(){var R=statResults(); S.stat.Yp=R.a+R.b*S.stat.Xp; return S.stat.Yp; /*note computes Y'*/}});
+      f.push({label:"Y'", type:"compute", get:function(){return S.stat.Yp;}, set:function(v){S.stat.Yp=v;},
+        compute:function(){var R=statResults(); S.stat.Xp=(S.stat.Yp-R.a)/R.b; return S.stat.Xp;}});
+    }
+    f.push({label:"ΣX", type:"auto", get:function(){return round(statResults().sumX,S.dec);}});
+    f.push({label:"ΣX²", type:"auto", get:function(){return round(statResults().sumX2,S.dec);}});
+    if(!oneV){
+      f.push({label:"ΣY", type:"auto", get:function(){return round(statResults().sumY,S.dec);}});
+      f.push({label:"ΣY²", type:"auto", get:function(){return round(statResults().sumY2,S.dec);}});
+      f.push({label:"ΣXY", type:"auto", get:function(){return round(statResults().sumXY,S.dec);}});
+    }
+    return f;
+  };
+
+  // ---- Worksheet control ----
+  function enterWS(name){
+    exitStdPending();
+    S.ws=name; S.wsIdx=0; S.cpt=false;
+    // reset amort defaults display etc.
+    refreshField(true);
+  }
+  function exitWs(){ S.ws=null; S.wsIdx=0; S.dispText=null; S.label=""; }
+  function curField(){ var fs=W()(); return fs[Math.min(S.wsIdx,fs.length-1)]; }
+  function refreshField(fresh){
+    var f=curField(); if(!f) return;
+    S.label=f.label;
+    if(f.type==="date"){ S.dispText=fmtDateStr(f.get()); S.entryActive=false; }
+    else { var v=f.get(); S.display=(v===null||v===undefined)?0:v; S.entry=String(S.display); S.entryActive=false; S.dispText=(f.type==="setting")?String(v):null; }
+  }
+  function fmtDateStr(raw){ var dt=parseDate(raw); return dt?fmtDate(dt):String(raw); }
+  function commitField(){
+    if(!S.entryActive) return;
+    var f=curField();
+    if(f.type==="setting"||f.type==="auto") return;
+    if(f.type==="date"){ f.set(S.entry); S.dispText=fmtDateStr(f.get()); S.entryActive=false; return; }
+    f.set(parseFloat(S.entry||"0")); S.entryActive=false; S.dispText=null; S.display=f.get(); S.entry=String(S.display);
+  }
+  function wsNav(dir){
+    if(!S.ws) return;
+    commitField();
+    var fs=W()();
+    var next=S.wsIdx+dir;
+    // dynamic extension for CF handled separately; STATD auto-extends by rebuilding
+    if(next<0) next=0;
+    if(next>=fs.length){ next=fs.length-1; }
+    S.wsIdx=next; refreshField();
+  }
+  function wsEnter(){ if(!S.ws) return; commitField(); }
+  function wsSet(){ // 2ND ENTER -> cycle setting option
+    var f=curField(); if(!f) return;
+    if(f.type==="setting"){
+      if(f.cycle){ f.cycle(); } else { var o=f.options, cur=f.get(), i=o.indexOf(cur); f.set(o[(i+1)%o.length]); }
+      refreshField();
+    }
+  }
+  function wsCPT(){
+    var f=curField(); if(!f) return;
+    if(f.type==="compute"){ var r=f.compute(); S.dispText=null; S.display=r; S.entry=String(r); S.entryActive=false;
+      // some compute() alter a *different* field (X'/Y'); refresh label value stays
+      var v=f.get(); if(f.label==="X'"||f.label==="Y'"){ S.display=(f.label==="X'"?S.stat.Yp:S.stat.Xp);}
+    }
+  }
+
+  // ---------------- CashFlow special worksheet ----------------
+  function cfFields(){ var arr=[{key:"CF0"}]; for(var g=0;g<S.cf.c.length;g++){ arr.push({key:"C",i:g}); arr.push({key:"F",i:g}); } return arr; }
+  function cfLabel(fl){ if(fl.key==="CF0")return"CF0"; if(fl.key==="C")return"C"+String(fl.i+1).padStart(2,"0"); return "F"+String(fl.i+1).padStart(2,"0"); }
+  function cfGet(fl){ if(fl.key==="CF0")return S.cf.cf0; if(fl.key==="C")return S.cf.c[fl.i]||0; return S.cf.f[fl.i]||1; }
+  function cfEnsure(g){ while(S.cf.c.length<=g){S.cf.c.push(0);S.cf.f.push(1);} }
+  function cfRefresh(){ var fl=cfFields()[S.wsIdx]; S.label=cfLabel(fl); var v=cfGet(fl); S.display=v; S.entry=String(v); S.entryActive=false; S.dispText=null; }
+  function cfCommit(){ if(!S.entryActive)return; var fl=cfFields()[S.wsIdx]; var v=parseFloat(S.entry||"0");
+    if(fl.key==="CF0")S.cf.cf0=v; else if(fl.key==="C"){cfEnsure(fl.i);S.cf.c[fl.i]=v;} else {cfEnsure(fl.i);S.cf.f[fl.i]=Math.max(1,Math.round(v));v=S.cf.f[fl.i];}
+    S.display=v;S.entry=String(v);S.entryActive=false; }
+  function cfNav(dir){ cfCommit(); var fs=cfFields(); var next=S.wsIdx+dir; if(next<0)next=0;
+    if(next>=fs.length){ cfEnsure(S.cf.c.length); fs=cfFields(); } if(next>=fs.length)next=fs.length-1; S.wsIdx=next; cfRefresh(); }
+
+  // ---------------- Clears / reset ----------------
+  function clrTVM(){ S.tvm={N:0,IY:0,PV:0,PMT:0,FV:0,PY:S.tvm.PY,CY:S.tvm.CY}; show(0,""); }
+  function clrWork(){
+    if(S.ws==="CF_"){ S.cf={cf0:0,c:[],f:[]}; S.wsIdx=0; cfRefresh(); return; }
+    if(S.ws==="NPV_"){ S.npvRate=0;S.npvVal=null;S.wsIdx=0; npvRefresh(); return; }
+    if(S.ws==="IRR_"){ S.irrVal=null; irrRefresh(); return; }
+    if(S.ws){ // reset current worksheet's simple vars to 0
+      var fs=W()(); for(var i=0;i<fs.length;i++){ if(fs[i].set && fs[i].type!=="setting" && fs[i].type!=="date") try{fs[i].set(0);}catch(e){} }
+      refreshField(); return;
+    }
+    show(0,"");
+  }
+  function resetAll(){
+    S.tvm={N:0,IY:0,PV:0,PMT:0,FV:0,PY:1,CY:1}; S.bgn=false;
+    S.cf={cf0:0,c:[],f:[]}; S.npvRate=0;S.npvVal=null;S.irrVal=null;
+    S.dep={method:"SL",LIF:1,M01:1,CST:0,SAL:0,YR:1,DB:200,DEP:0,RBV:0,RDV:0};
+    S.iconv={NOM:0,EFF:0,CY:1}; S.pch={OLD:0,NEW:0,CH:0,PD:1};
+    S.pm={CST:0,SEL:0,MAR:0}; S.brk={FC:0,VC:0,P:0,PFT:0,Q:0};
+    S.stat={X:[],Y:[],method:"LIN",Xp:0,Yp:0}; S.mem=[0,0,0,0,0,0,0,0,0,0];
+    S.bond={SDT:"12.3190",CPN:0,RDT:"12.3190",RV:100,day:"ACT",freq:2,YLD:0,PRI:0,AI:0};
+    S.date={DT1:"12.3190",DT2:"12.3190",DBD:0,day:"ACT"};
+    S.amort={P1:1,P2:1}; S.dec=2; S.tokens=[]; exitWs(); show(0,"RST");
+  }
+
+  // ---- NPV/IRR sub-worksheets ----
+  function npvRefresh(){ if(S.wsIdx===0){S.label="I";S.display=S.npvRate;} else {S.label="NPV";S.display=S.npvVal===null?0:S.npvVal;} S.entry=String(S.display);S.entryActive=false;S.dispText=null; }
+  function irrRefresh(){ S.label="IRR"; S.display=S.irrVal===null?0:S.irrVal; S.entry=String(S.display);S.entryActive=false;S.dispText=null; }
+
+  // ============================================================
+  //  KEY DISPATCH
+  // ============================================================
+  function exitStdPending(){ /* keep tokens; entering worksheet doesn't clear std */ }
+
+  function handleSecond(code){
+    switch(code){
+      case "N": xPY(); return true;                 // xP/Y
+      case "IY": enterWS("PY"); return true;         // P/Y
+      case "PV": afterTVMenter(); enterWS("AMORT"); return true; // AMORT
+      case "PMT": S.bgn=!S.bgn; return true;         // BGN
+      case "FV": clrTVM(); return true;              // CLR TVM
+      case "ENTER": wsSet(); return true;            // SET
+      case "CE": clrWork(); return true;             // CLR WORK
+      case "DOT": S.dec=(S.dec>=9?2:(S.dec===2?4:S.dec===4?6:S.dec===6?9:2)); return true; // FORMAT
+      case "OFF": resetAll(); return true;           // RESET
+      case "PM": percent(); return true;             // %
+      case "yx": inverseRoot(); return true;         // x√y
+      case "fact": unary('round'); return true;      // ROUND
+      case "x2": rand(); return true;                // RAND
+      case "7": enterWS("STATD"); return true;       // DATA
+      case "8": enterWS("STATC"); return true;       // STAT
+      case "9": enterBOND(); return true;            // BOND
+      case "4": enterWS("PCH"); return true;         // Δ%
+      case "5": enterWS("PM"); return true;          // PROFIT
+      case "6": enterWS("BRK"); return true;         // BRKEVN
+      case "1": enterWS("DATE"); return true;        // DATE
+      case "2": enterWS("ICONV"); return true;       // ICONV
+      case "3": enterWS("DEPR"); return true;        // DEPR
+      case "0": enterWS("MEM"); return true;         // MEM
+      default: return false;
+    }
+  }
+
+  function handle(code){
+    // STO/RCL pending digit capture
+    if(S.stoMode && /^[0-9]$/.test(code)){ var d=+code; if(S.stoMode==="STO") doSto(d); else doRcl(d); after(); return; }
+    S.stoMode=null;
+
+    if(code==="2ND"){ S.second=!S.second; render(); return; }
+
+    // 2ND-shifted: resolve BEFORE digit routing (worksheet shortcuts live on number keys)
+    if(S.second){
+      S.second=false;
+      if(handleSecond(code)){ after(); return; }
+      // not a 2ND function for this key: fall through as primary (2ND already cleared)
+    }
+
+    if(/^[0-9]$/.test(code)){ routeDigit(code); after(); return; }
+    if(code==="."){ routeDigit("."); after(); return; }
+
+    switch(code){
+      case "N": case "IY": case "PV": case "PMT": case "FV": tvmKey(code); break;
+      case "OFF": if(S.ws) exitWs(); S.entry="0"; S.entryActive=false; S.display=0; S.tokens=[]; S.dispText=null; S.label=""; break;
+      case "CPT":
+        if(S.ws==="NPV_"||S.ws==="IRR_"){ computeNPVIRR(); }
+        else if(S.ws){ wsCPT(); }
+        else { S.cpt=!S.cpt; }
+        break;
+      case "CF": enterCF(); break;
+      case "NPV": enterNPV(); break;
+      case "IRR": enterIRR(); break;
+      case "ENTER":
+        if(S.ws==="CF_") cfCommit();
+        else if(S.ws==="NPV_"){ npvCapture(); npvRefresh(); }
+        else if(S.ws) wsEnter();
+        else equals();
+        break;
+      case "UP":
+        if(S.ws==="CF_") cfNav(-1);
+        else if(S.ws==="NPV_"){ npvCapture(); S.wsIdx=Math.max(0,S.wsIdx-1); npvRefresh(); }
+        else if(S.ws) wsNav(-1);
+        break;
+      case "DN":
+        if(S.ws==="CF_") cfNav(1);
+        else if(S.ws==="NPV_"){ npvCapture(); S.wsIdx=Math.min(1,S.wsIdx+1); npvRefresh(); }
+        else if(S.ws) wsNav(1);
+        break;
+      case "=":
+        if(S.ws==="NPV_"||S.ws==="IRR_") computeNPVIRR();
+        else if(S.ws) wsEnter();
+        else equals();
+        break;
+      case "PM": toggleSign(); break;
+      case "CE":
+        if(S.ws){ S.entry="0"; S.entryActive=false; refreshCurrent(); }
+        else { S.entry="0"; S.entryActive=false; S.display=0; S.tokens=[]; S.dispText=null; S.label=""; }
+        break;
+      case "+": case "-": case "*": case "/":
+        if(S.ws) exitWs(); pushOp(code); break;
+      case "OPEN": if(S.ws) exitWs(); pushParen("("); break;
+      case "CLOSE": if(S.ws) exitWs(); pushParen(")"); break;
+      case "yx": if(S.ws) exitWs(); pushOp("^"); break;
+      case "nCr": if(S.ws) exitWs(); pushOp("nCr"); break;
+      case "nPr": if(S.ws) exitWs(); pushOp("nPr"); break;
+      case "x2": if(S.ws) exitWs(); unary('x2'); break;
+      case "sqrt": if(S.ws) exitWs(); unary('sqrt'); break;
+      case "inv": if(S.ws) exitWs(); unary('inv'); break;
+      case "ln": if(S.ws) exitWs(); unary('ln'); break;
+      case "ex": if(S.ws) exitWs(); unary('ex'); break;
+      case "fact": if(S.ws) exitWs(); unary('fact'); break;
+      case "%": percent(); break;
+      case "STO": S.stoMode="STO"; break;
+      case "RCL": S.stoMode="RCL"; break;
+    }
+    after();
+  }
+
+  function inverseRoot(){ // x√y : uses previous as y, current as x -> y^(1/x)
+    pushOp("^"); // then we need reciprocal exponent; simpler: treat as y^(1/x)
+    // implement directly:
+    S.tokens.pop(); // remove ^ pushed by pushOp? pushOp already pushed number+^. adjust:
+  }
+
+  function routeDigit(d){
+    if(S.ws==="CF_"){ if(!S.entryActive){S.entry=(d==="."?"0.":d);S.entryActive=true;} else inputDigitRaw(d); S.dispText=null; }
+    else if(S.ws==="NPV_"||S.ws==="IRR_"){ if(!S.entryActive){S.entry=(d==="."?"0.":d);S.entryActive=true;} else inputDigitRaw(d); S.dispText=null; }
+    else if(S.ws){ if(!S.entryActive){S.entry=(d==="."?"0.":d);S.entryActive=true;} else inputDigitRaw(d); S.dispText=null; }
+    else inputDigit(d);
+  }
+  function inputDigitRaw(d){ if(d==="."){ if(S.entry.indexOf(".")<0)S.entry+="."; } else if(S.entry==="0")S.entry=d; else if(S.entry==="-0")S.entry="-"+d; else S.entry+=d; }
+
+  function afterTVMenter(){ /* commit any pending TVM entry before AMORT */ }
+  function refreshCurrent(){ if(S.ws==="CF_")cfRefresh(); else if(S.ws==="NPV_")npvRefresh(); else if(S.ws==="IRR_")irrRefresh(); else refreshField(); }
+
+  function enterCF(){ exitWs(); S.ws="CF_"; S.wsIdx=0; cfRefresh(); }
+  function enterNPV(){ exitWs(); S.ws="NPV_"; S.wsIdx=0; npvRefresh(); }
+  function enterIRR(){ exitWs(); S.ws="IRR_"; S.wsIdx=0; S.irrVal=null; irrRefresh(); }
+  function enterBOND(){ enterWS("BOND"); }
+  function npvCapture(){ if(S.wsIdx===0 && S.entryActive){ S.npvRate=parseFloat(S.entry||"0"); } S.entryActive=false; }
+  function computeNPVIRR(){
+    if(S.ws==="NPV_"){ npvCapture(); S.npvVal=npv(S.npvRate); S.wsIdx=1; S.label="NPV"; S.display=S.npvVal; S.entryActive=false; S.dispText=null; }
+    else if(S.ws==="IRR_"){ S.irrVal=irr(); S.label="IRR"; S.display=S.irrVal; S.entryActive=false; S.dispText=null; }
+  }
+  function after(){ render(); }
+
+  // ---------- Fix x√y properly ----------
+  handle._patchRoot=true;
+  // Replace inverseRoot with correct implementation using tokens:
+  inverseRoot=function(){
+    // current display = index x ; previous entered = y. Compute y^(1/x).
+    // We take current value as x, pop last number as y via tokens if present else use display.
+    var x=currentValue();
+    // Look back: if tokens end with number, that's y
+    var y;
+    if(S.tokens.length && typeof S.tokens[S.tokens.length-1]==="number"){ y=S.tokens.pop(); if(S.tokens.length&&typeof S.tokens[S.tokens.length-1]==="string")S.tokens.pop(); }
+    else y=x, x=x; // fallback
+    show(Math.pow(y,1/x));
+  };
+
+  // ============================================================
+  //  BUILD KEYPAD
+  // ============================================================
+  // [mainLabel, code, class, secondaryLabel]
+  // Physical BA II Plus order: top control row, TVM row, 2ND/CF/NPV/IRR/CE, then
+  // number pad (cols 1-3) + scientific col (4) + arithmetic col (5), = bottom-right.
+  var ROWS=[
+    [["CPT","CPT","fin small",""],["ENTER","ENTER","fin small","SET"],["↑","UP","",""],["↓","DN","",""],["OFF","OFF","op small","RESET"]],
+    [["N","N","fin","xP/Y"],["I/Y","IY","fin small","P/Y"],["PV","PV","fin","AMORT"],["PMT","PMT","fin small","BGN"],["FV","FV","fin","CLR TVM"]],
+    [["2ND","2ND","second",""],["CF","CF","fin",""],["NPV","NPV","fin",""],["IRR","IRR","fin",""],["CE/C","CE","op small","CLR WK"]],
+    [["7","7","","DATA"],["8","8","","STAT"],["9","9","","BOND"],["x²","x2","op small","RAND"],["÷","/","op",""]],
+    [["4","4","","Δ%"],["5","5","","PROFIT"],["6","6","","BRKEVN"],["√x","sqrt","op small",""],["×","*","op",""]],
+    [["1","1","","DATE"],["2","2","","ICONV"],["3","3","","DEPR"],["yˣ","yx","op small","x√y"],["−","-","op",""]],
+    [["0","0","","MEM"],[".","DOT","","FORMAT"],["+/−","PM","","%"],["1/x","inv","op small",""],["+","+","op",""]],
+    [["(","OPEN","op small",""],[")","CLOSE","op small",""],["LN","ln","op small",""],["eˣ","ex","op small",""],["=","=","eq",""]],
+    [["STO","STO","op small",""],["RCL","RCL","op small",""],["nCr","nCr","op small",""],["nPr","nPr","op small",""],["x!","fact","op small","ROUND"]]
+  ];
+  var pad=document.getElementById("pad");
+  ROWS.forEach(function(row){ row.forEach(function(k){
+    var main=k[0],code=k[1],cls=k[2],sec=k[3];
+    var b=document.createElement("button"); b.className="k "+(cls||"");
+    if(code==="2ND") b.id="btn2nd";
+    // route '.' digit key: DOT primary is '.', but 2ND DOT is FORMAT
+    if(sec){ var s=document.createElement("span"); s.className="sec"; s.textContent=sec; b.appendChild(s); }
+    var m=document.createElement("span"); m.className="main"; m.textContent=main; b.appendChild(m);
+    b.addEventListener("click",function(){ b.classList.add("pressed"); setTimeout(function(){b.classList.remove("pressed");},90);
+      handle(code==="DOT"?(S.second?"DOT":"."):code); });
+    pad.appendChild(b);
+  });});
+
+  // Keyboard
+  window.addEventListener("keydown",function(e){
+    var t=e.target; if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA")) return;
+    if(/^[0-9]$/.test(e.key)){ handle(e.key); e.preventDefault(); return; }
+    var m={".":".","+":"+","-":"-","*":"*","/":"/","(":"OPEN",")":"CLOSE","^":"yx","%":"%"};
+    if(e.key==="Enter"||e.key==="="){ handle("="); e.preventDefault(); return; }
+    if(e.key in m){ handle(m[e.key]); e.preventDefault(); return; }
+    if(e.key==="Backspace"){ handle("CE"); e.preventDefault(); }
+    if(e.key==="ArrowUp"){ handle("UP"); e.preventDefault(); }
+    if(e.key==="ArrowDown"){ handle("DN"); e.preventDefault(); }
+  });
+
+  render();
+  // expose for tests
+  window.__baii={handle:handle,S:S,npv:npv,irr:irr,tvmSolve:tvmSolve,bondCompute:bondCompute,depSchedule:depSchedule,statResults:statResults,amortRange:amortRange};
+})();
+</script>
+</body>
+</html>
