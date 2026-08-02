@@ -259,7 +259,7 @@
   <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Câu hỏi</button>
   <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
   <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Làm lại</button>
-  <button class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
+  <button id="submitBtn" class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
 </header>
 <div class="progress-wrap"><div id="progress" class="progress"></div></div>
 <div id="resumeNote" class="resume-note"></div>
@@ -571,8 +571,19 @@ function refreshNav(){
 }
 
 // ---- submit / grade ------------------------------------------------------ //
+function setSubmitButtonMode(showResults){
+  const btn=$("submitBtn"); if(!btn) return;
+  const label=showResults?"Xem kết quả":"Nộp bài";
+  const textNode=Array.from(btn.childNodes).find(n=>n.nodeType===3);
+  if(textNode) textNode.nodeValue=label;
+  btn.title=showResults?"Xem lại điểm tổng và điểm theo môn":"";
+}
 function requestSubmit(){
-  if(graded) return;
+  if(graded){
+    if(typeof window.showGradedResult==="function") window.showGradedResult();
+    else $("resultOverlay").classList.add("show");
+    return;
+  }
   const unanswered = DATA.length - Object.keys(answers).length;
   $("confirmMsg").textContent = unanswered>0
     ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
@@ -629,6 +640,7 @@ function paintResults(){
   b.className = "badge show " + (pass?"pass":"fail");
   refreshNav();
   renderSubjectBreakdown();
+  setSubmitButtonMode(true);
 }
 
 
@@ -680,6 +692,7 @@ function restart(){
   if(timerId) clearInterval(timerId);
   remaining = (CFG.minutes||0)*60;
   clearProg();
+  setSubmitButtonMode(false);
   $("badge").className = "badge";
   $("pauseBtn").textContent = "⏸ Tạm dừng";
   $("pauseOverlay").classList.remove("show");
@@ -696,19 +709,20 @@ render();
 (function(){
   if(typeof grade!=='function') return;
   var _grade=grade;
-  grade=function(a){ _grade(a); try{ afterGrade(); }catch(e){} };
+  grade=function(a){ _grade(a); try{ afterGrade(false); }catch(e){} };
+  window.showGradedResult=function(){ try{ afterGrade(true); }catch(e){} };
 
-  function afterGrade(){
+  function afterGrade(restored){
     if(!CFG.hasAnswers) return;
     var pass=document.getElementById('badge').classList.contains('pass');
-    showResult(pass, document.getElementById('badge').textContent);
+    showResult(pass, document.getElementById('badge').textContent, !restored);
   }
   function addMark(el,sym){
     if(el.querySelector('.fx-mark')) return;
     var s=document.createElement('span'); s.className='fx-mark'; s.textContent=sym;
     el.appendChild(s);
   }
-  function showResult(pass, badgeText){
+  function showResult(pass, badgeText, celebrate){
     var ov=document.getElementById('resultOverlay');
     var icon=document.getElementById('rIcon');
     var title=document.getElementById('rTitle');
@@ -719,8 +733,7 @@ render();
       title.textContent='Chúc mừng! Bạn đã ĐẠT'; title.className='pass';
       icon.setAttribute('src','https://cdn.lordicon.com/lupuorrc.json');
       emoji.textContent='🎉';
-      fetchEmoji('face-positive', emoji);
-      confetti();
+      if(celebrate){ fetchEmoji('face-positive', emoji); confetti(); }
     }else{
       title.textContent='Chưa đạt — cố lên nhé!'; title.className='fail';
       icon.setAttribute('src','https://cdn.lordicon.com/jdgfsfzr.json');
@@ -739,6 +752,8 @@ render();
       }})
       .catch(function(){});
   }
+  if(graded) window.showGradedResult();
+
   function confetti(){
     var cols=['#538297','#86a7b5','#22c55e','#f59e0b','#f43f5e','#38bdf8'];
     for(var i=0;i<70;i++){(function(){
