@@ -330,7 +330,7 @@
 </div>
 
 <script>
-const DATA = [{"n": 1, "q": "Which of the following statements regarding exchange-traded derivatives is least accurate?\nExchange-traded derivatives:", "opts": ["are backed by a central clearinghouse.", "often trade in a physical location.", "are illiquid."], "ans": "C", "expl": "Derivatives that trade on exchanges have good liquidity in most cases. They have the other\ncharacteristics listed.\n(Module 66.1, LOS 66.b)"}, {"n": 2, "q": "A derivative is defined as a security that has a value:", "opts": ["stated in a contract between two counterparties.", "established outside an organized exchange.", "based on another security, commodity, or index."], "ans": "C", "expl": "A derivative is a security the value of which is derived from the value of some other\nunderlying asset. Some derivatives trade on organized exchanges. The price at which a\ntransaction will (or may) take place in the future is stated in a derivatives contract.\n(Module 66.1, LOS 66.b)"}, {"n": 3, "q": "In futures markets, the primary role of the clearinghouse is to:", "opts": ["prevent arbitrage and enforce federal regulations.", "act as guarantor to both sides of a futures trade.", "reduce transaction costs by making contract prices public."], "ans": "B", "expl": "Acting as the counterparty for all buyers and sellers is the primary role of the\nclearinghouse. By providing liquidity, the clearinghouse may also help lower transaction\ncosts indirectly.\n(Module 66.1, LOS 66.b)"}, {"n": 4, "q": "For exchange-traded derivatives, the role of the central clearinghouse is to:", "opts": ["guarantee that all obligations by traders will be honored.", "maintain private insurance that can be used to provide funds if a trader defaults.", "stabilize the market price fluctuations of the underlying commodity."], "ans": "A", "expl": "The central clearinghouse does not originate trades, it acts as the opposite party to all\ntrades. In other words, it is the buyer to every seller and the seller to every buyer. This\naction guarantees that all obligations under the terms of the contract will be fulfilled.\n(Module 66.1, LOS 66.b)"}];
+const DATA = [{"n":1,"q":"Which of the following statements regarding exchange-traded derivatives is least accurate?\nExchange-traded derivatives:","opts":["are backed by a central clearinghouse.","often trade in a physical location.","are illiquid."],"ans":"C","expl":"Các công cụ phái sinh giao dịch trên các sàn giao dịch có tính thanh khoản tốt trong hầu hết các trường hợp. Chúng có các\nđặc điểm khác được liệt kê.\n(Mô-đun 66.1, LOS 66.b)"},{"n":2,"q":"A derivative is defined as a security that has a value:","opts":["stated in a contract between two counterparties.","established outside an organized exchange.","based on another security, commodity, or index."],"ans":"C","expl":"Công cụ phái sinh là chứng khoán có giá trị được lấy từ giá trị của một số tài sản cơ bản\nkhác. Một số công cụ phái sinh giao dịch trên các sàn giao dịch có tổ chức. Giá mà tại đó một\ngiao dịch sẽ (hoặc có thể) diễn ra trong tương lai được nêu trong hợp đồng phái sinh.\n(Mô-đun 66.1, LOS 66.b)"},{"n":3,"q":"In futures markets, the primary role of the clearinghouse is to:","opts":["prevent arbitrage and enforce federal regulations.","act as guarantor to both sides of a futures trade.","reduce transaction costs by making contract prices public."],"ans":"B","expl":"Làm đối tác cho tất cả người mua và người bán là vai trò chính của cơ quan thanh toán bù trừ\n. Bằng cách cung cấp tính thanh khoản, cơ quan thanh toán bù trừ cũng có thể gián tiếp giúp giảm chi phí giao dịch\n.\n(Mô-đun 66.1, LOS 66.b)"},{"n":4,"q":"For exchange-traded derivatives, the role of the central clearinghouse is to:","opts":["guarantee that all obligations by traders will be honored.","maintain private insurance that can be used to provide funds if a trader defaults.","stabilize the market price fluctuations of the underlying commodity."],"ans":"A","expl":"Trung tâm thanh toán bù trừ trung tâm không khởi tạo các giao dịch, nó hoạt động như một bên đối lập với tất cả các giao dịch\n. Nói cách khác, đó là người mua đối với mọi người bán và là người bán đối với mọi người mua. Hành động\nnày đảm bảo rằng mọi nghĩa vụ theo điều khoản của hợp đồng sẽ được thực hiện.\n(Mô-đun 66.1, LOS 66.b)"}];
 const CFG = {"title": "Derivative Instrument and Derivative Market Features", "subtitle": "CFA · Derivatives · Reading 66 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
 
 const LETTERS = "ABCDEFGHIJ".split("");
@@ -466,12 +466,12 @@ function render(){
 
 // ---- readable explanations ---------------------------------------------- //
 function explanationData(raw){
-  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|\(?required\)?|[?①θi1])$/i;
+  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|thảo luận|lọc|giải pháp|bạn muốn thảo luận.*|lý do cho đáp án đúng|câu hỏi\s+\d+\s+trên\s+\d+|\(?required\)?|\(?bắt buộc\)?|[?①θi1])$/i;
   let lines=String(raw||"").replace(/\r/g,"").split("\n")
     .map(line=>line.replace(/\s+/g," ").trim())
     .filter(line=>line&&!noise.test(line));
   let reading="",los="",losIndex=-1;
-  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss)\b/i;
+  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss|tính|mô tả|giải thích|so sánh|phân tích|đánh giá|diễn giải|nhận diện|xác định|định nghĩa|thảo luận)\b/i;
   for(let i=Math.max(1,lines.length-10);i<lines.length;i++){
     const candidate=lines[i].replace(/^[·•?]\s*/,"").replace(/^i(?=(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss))/i,"").trim();
     const previous=lines[i-1]||"";
@@ -482,10 +482,10 @@ function explanationData(raw){
   return {text:lines.join(" ").replace(/\s+/g," ").trim(),reading,los};
 }
 function explanationSections(text,correctLetter){
-  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect)\b)/gi,"\n$1. ");
+  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\b)/gi,"\n$1. ");
   const chunks=broken.split(/\n(?=[A-J]\.\s+)/).map(s=>s.trim()).filter(Boolean);
   const sections=chunks.map(chunk=>{
-    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect)\.?\s*)?(?:because\s+)?/i);
+    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\.?\s*)?(?:because\s+)?/i);
     if(!match) return {letter:"",text:chunk};
     return {letter:match[1].toUpperCase(),text:chunk.slice(match[0].length).trim()};
   });

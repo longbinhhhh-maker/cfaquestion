@@ -330,7 +330,7 @@
 </div>
 
 <script>
-const DATA = [{"n": 1, "q": "Smith Company's board of directors assigns responsibilities to several committees. The\ncommittee that is most likely to be responsible for establishing the chief executive officer's\ncompensation package is Smith's:", "opts": ["governance committee.", "remuneration committee.", "risk committee."], "ans": "B", "expl": "Compensation for a company's senior executives is typically a responsibility of a\nremuneration or compensation committee.\n(Module 22.1, LOS 22.b)"}, {"n": 2, "q": "A principal-agent relationship most likely exists between a company's:", "opts": ["shareholders and managers.", "directors and regulators.", "customers and suppliers."], "ans": "A", "expl": "The relationship between shareholders and managers is a principal-agent relationship.\nShareholders, as principals, through the board of directors hire managers, as agents, to\nact in the best interests of the shareholders.\n(Module 22.1, LOS 22.a)"}, {"n": 3, "q": "Responsibilities of a board of directors' nominations committee are least likely to include:", "opts": ["selecting an external auditor for the company.", "recruiting qualified members to the board.", "evaluating the independence of directors."], "ans": "A", "expl": "Selecting an external auditor (subject to shareholder approval) is a responsibility of the\nBoard's audit committee. (Module 22.1, LOS 22.b)"}, {"n": 4, "q": "Risks that may arise from ineffective corporate governance least likely include:", "opts": ["reduced default risk.", "less effective decision making.", "weaker financial performance."], "ans": "A", "expl": "Ineffective corporate governance is likely to increase default risk.\n(Module 22.1, LOS 22.c)"}];
+const DATA = [{"n":1,"q":"Smith Company's board of directors assigns responsibilities to several committees. The\ncommittee that is most likely to be responsible for establishing the chief executive officer's\ncompensation package is Smith's:","opts":["governance committee.","remuneration committee.","risk committee."],"ans":"B","expl":"Việc đền bù cho các giám đốc điều hành cấp cao của công ty thường là trách nhiệm của a\nủy ban thù lao hoặc bồi thường.\n(Mô-đun 22.1, LOS 22.b)"},{"n":2,"q":"A principal-agent relationship most likely exists between a company's:","opts":["shareholders and managers.","directors and regulators.","customers and suppliers."],"ans":"A","expl":"Mối quan hệ giữa cổ đông và người quản lý là một mối quan hệ mối quan hệ người đại diện-người ủy quyền.\nCác cổ đông, với tư cách là người ủy quyền, thông qua ban giám đốc thuê người quản lý, với tư cách là người đại diện, để\nhành động vì lợi ích tốt nhất của cổ đông.\n(Mô-đun 22.1, LOS 22.a)"},{"n":3,"q":"Responsibilities of a board of directors' nominations committee are least likely to include:","opts":["selecting an external auditor for the company.","recruiting qualified members to the board.","evaluating the independence of directors."],"ans":"A","expl":"Việc lựa chọn kiểm toán viên bên ngoài (phải được sự chấp thuận của cổ đông) là trách nhiệm của\nỦy ban kiểm toán của Hội đồng quản trị. (Mô-đun 22.1, LOS 22.b)"},{"n":4,"q":"Risks that may arise from ineffective corporate governance least likely include:","opts":["reduced default risk.","less effective decision making.","weaker financial performance."],"ans":"A","expl":"Quản trị doanh nghiệp kém hiệu quả có thể làm tăng rủi ro vỡ nợ.\n(Mô-đun 22.1, LOS 22.c)"}];
 const CFG = {"title": "Corporate Governance Conflicts, Mechanisms, Risks, and Benefits", "subtitle": "CFA · Corporate Issuers · Reading 22 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
 
 const LETTERS = "ABCDEFGHIJ".split("");
@@ -466,12 +466,12 @@ function render(){
 
 // ---- readable explanations ---------------------------------------------- //
 function explanationData(raw){
-  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|\(?required\)?|[?①θi1])$/i;
+  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|thảo luận|lọc|giải pháp|bạn muốn thảo luận.*|lý do cho đáp án đúng|câu hỏi\s+\d+\s+trên\s+\d+|\(?required\)?|\(?bắt buộc\)?|[?①θi1])$/i;
   let lines=String(raw||"").replace(/\r/g,"").split("\n")
     .map(line=>line.replace(/\s+/g," ").trim())
     .filter(line=>line&&!noise.test(line));
   let reading="",los="",losIndex=-1;
-  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss)\b/i;
+  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss|tính|mô tả|giải thích|so sánh|phân tích|đánh giá|diễn giải|nhận diện|xác định|định nghĩa|thảo luận)\b/i;
   for(let i=Math.max(1,lines.length-10);i<lines.length;i++){
     const candidate=lines[i].replace(/^[·•?]\s*/,"").replace(/^i(?=(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss))/i,"").trim();
     const previous=lines[i-1]||"";
@@ -482,10 +482,10 @@ function explanationData(raw){
   return {text:lines.join(" ").replace(/\s+/g," ").trim(),reading,los};
 }
 function explanationSections(text,correctLetter){
-  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect)\b)/gi,"\n$1. ");
+  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\b)/gi,"\n$1. ");
   const chunks=broken.split(/\n(?=[A-J]\.\s+)/).map(s=>s.trim()).filter(Boolean);
   const sections=chunks.map(chunk=>{
-    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect)\.?\s*)?(?:because\s+)?/i);
+    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\.?\s*)?(?:because\s+)?/i);
     if(!match) return {letter:"",text:chunk};
     return {letter:match[1].toUpperCase(),text:chunk.slice(match[0].length).trim()};
   });

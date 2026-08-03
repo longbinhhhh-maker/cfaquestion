@@ -330,7 +330,7 @@
 </div>
 
 <script>
-const DATA = [{"n": 1, "q": "Carr Funds is a hedge fund with $125 million of assets under management at the end of the\nprior year. The fund has a \"1 and 10\" fee structure. Incentive fees are calculated on gains net\nof management fees at the end of the year. In the current year, Carr Funds had a 5% gross\nreturn. An investor's after-fee return for the year is closest to:", "opts": ["4.1%.", "3.6%.", "–6.0%."], "ans": "B", "expl": "Gross value end of year: $125 million × 1.05 = $131.25 million\nManagement fee: $131.25 million × 1% = $1.3125 million\nIncentive fee: ($131.25 – $125 – $1.3125) × 10% = $493,750\nTotal fees to Carr Funds = $1.3125 million + $493,750 = $1,806,250\nThe after-fee return: [($131.25 – $1.80625) / 125] – 1 = 3.56%.\n(Module 77.1, LOS 77.b)"}, {"n": 2, "q": "Jem Capital is a hedge fund with $150 million of initial investment capital. The fund charges a\n2% management fee based on assets under management at the end of the year and a 20%\nincentive fee. Incentive fees and management fees are calculated independently. In the first\nyear, Jem Capital has a 25% return. What is an investor's after-fee return for the year?", "opts": ["22.5%.", "17.5%.", "3.0%."], "ans": "B", "expl": "Gross value end of year: $150 million × 1.25 = $187.5 million\nManagement fee: $187.5 million × 2% = $3.75 million\nIncentive fee: ($187.5 million – $150 million) × 20% = $7.5 million\nTotal fees to Jem Capital: $11.25 million\nThe after-fee return: [(187.5 – 11.25) / 150] – 1 = 17.5%.\n(Module 77.1, LOS 77.b)"}, {"n": 3, "q": "A hedge fund has a 2-and-20 fee structure with a soft hurdle rate of 5% and a high water\nmark. Incentive fees are calculated net of management fees. The fund's gross return is 15%\nin Year 1, −10% in Year 2, and 30% in Year 3. Incentive fees for Year 3 will be:", "opts": ["less than 20% of the increase in value in Year 3 after management fees.", "equal to 20% of the increase in value in Year 3 after management fees.", "greater than 20% of the increase in value in Year 3 after management fees."], "ans": "A", "expl": "Because the fund lost value in Year 2 and has a high water mark, incentive fees for Year 3\nwill be 20% of only the portion of the Year 3 gain that exceeds the previous highest value.\n(Module 77.1, LOS 77.b)"}];
+const DATA = [{"n":1,"q":"Carr Funds is a hedge fund with $125 million of assets under management at the end of the\nprior year. The fund has a \"1 and 10\" fee structure. Incentive fees are calculated on gains net\nof management fees at the end of the year. In the current year, Carr Funds had a 5% gross\nreturn. An investor's after-fee return for the year is closest to:","opts":["4.1%.","3.6%.","–6.0%."],"ans":"B","expl":"Tổng giá trị cuối năm: 125 triệu USD × 1,05 = 131,25 triệu USD\nPhí quản lý: 131,25 triệu USD × 1% = 1,3125 triệu USD\nPhí ưu đãi: ($131,25 – $125 – $1,3125) × 10% = $493.750\nTổng phí cho Quỹ Carr = 1,3125 triệu USD + 493.750 USD = 1.806.250 USD\nThe hoàn trả sau phí: [($131,25 – $1,80625) / 125] – 1 = 3,56%.\n(Mô-đun 77.1, LOS 77.b)"},{"n":2,"q":"Jem Capital is a hedge fund with $150 million of initial investment capital. The fund charges a\n2% management fee based on assets under management at the end of the year and a 20%\nincentive fee. Incentive fees and management fees are calculated independently. In the first\nyear, Jem Capital has a 25% return. What is an investor's after-fee return for the year?","opts":["22.5%.","17.5%.","3.0%."],"ans":"B","expl":"Tổng giá trị cuối năm: 150 triệu USD × 1,25 = 187,5 triệu USD\nPhí quản lý: 187,5 triệu USD × 2% = 3,75 triệu USD\nPhí khuyến khích: (187,5 triệu USD – 150 triệu USD) × 20% = 7,5 triệu USD\nTổng phí dành cho Jem Capital: 11,25 triệu USD\nTiền lãi sau phí: [(187,5 – 11,25) / 150] – 1 = 17,5%.\n(Mô-đun 77.1, LOS 77.b)"},{"n":3,"q":"A hedge fund has a 2-and-20 fee structure with a soft hurdle rate of 5% and a high water\nmark. Incentive fees are calculated net of management fees. The fund's gross return is 15%\nin Year 1, −10% in Year 2, and 30% in Year 3. Incentive fees for Year 3 will be:","opts":["less than 20% of the increase in value in Year 3 after management fees.","equal to 20% of the increase in value in Year 3 after management fees.","greater than 20% of the increase in value in Year 3 after management fees."],"ans":"A","expl":"Vì quỹ mất giá trị trong Năm 2 và có mức nước cao nên phí khuyến khích cho Năm 3\nsẽ chỉ bằng 20% phần lợi nhuận của Năm 3 vượt quá mức giá trị cao nhất trước đó.\n(Mô-đun 77.1, LOS 77.b)"}];
 const CFG = {"title": "Alternative Investment Performance and Returns", "subtitle": "CFA · Alternative Investments · Reading 77 (Schweser)", "minutes": 0, "passMark": 70, "hasAnswers": true, "hasExpl": true};
 
 const LETTERS = "ABCDEFGHIJ".split("");
@@ -466,12 +466,12 @@ function render(){
 
 // ---- readable explanations ---------------------------------------------- //
 function explanationData(raw){
-  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|\(?required\)?|[?①θi1])$/i;
+  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|thảo luận|lọc|giải pháp|bạn muốn thảo luận.*|lý do cho đáp án đúng|câu hỏi\s+\d+\s+trên\s+\d+|\(?required\)?|\(?bắt buộc\)?|[?①θi1])$/i;
   let lines=String(raw||"").replace(/\r/g,"").split("\n")
     .map(line=>line.replace(/\s+/g," ").trim())
     .filter(line=>line&&!noise.test(line));
   let reading="",los="",losIndex=-1;
-  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss)\b/i;
+  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss|tính|mô tả|giải thích|so sánh|phân tích|đánh giá|diễn giải|nhận diện|xác định|định nghĩa|thảo luận)\b/i;
   for(let i=Math.max(1,lines.length-10);i<lines.length;i++){
     const candidate=lines[i].replace(/^[·•?]\s*/,"").replace(/^i(?=(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss))/i,"").trim();
     const previous=lines[i-1]||"";
@@ -482,10 +482,10 @@ function explanationData(raw){
   return {text:lines.join(" ").replace(/\s+/g," ").trim(),reading,los};
 }
 function explanationSections(text,correctLetter){
-  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect)\b)/gi,"\n$1. ");
+  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\b)/gi,"\n$1. ");
   const chunks=broken.split(/\n(?=[A-J]\.\s+)/).map(s=>s.trim()).filter(Boolean);
   const sections=chunks.map(chunk=>{
-    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect)\.?\s*)?(?:because\s+)?/i);
+    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\.?\s*)?(?:because\s+)?/i);
     if(!match) return {letter:"",text:chunk};
     return {letter:match[1].toUpperCase(),text:chunk.slice(match[0].length).trim()};
   });
