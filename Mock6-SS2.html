@@ -524,7 +524,17 @@ function explanationSections(text,correctLetter){
   });
   const hasCorrect=sections.some(section=>section.letter===correctLetter);
   if(!hasCorrect&&sections.length>1&&!sections[0].letter) sections[0].letter=correctLetter;
-  return sections;
+  const unique=[];
+  sections.forEach(section=>{
+    if(!section.letter){
+      if(section.text&&!unique.some(item=>!item.letter)) unique.push(section);
+      return;
+    }
+    const duplicateIndex=unique.findIndex(item=>item.letter===section.letter);
+    if(duplicateIndex<0) unique.push(section);
+    else if((section.text||"").length>(unique[duplicateIndex].text||"").length) unique[duplicateIndex]=section;
+  });
+  return unique;
 }
 function buildExplanation(raw,correctLetter,options){
   const data=explanationData(raw);
