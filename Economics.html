@@ -47,7 +47,7 @@
   .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
   main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:16px;margin:0 0 16px}
+    padding:16px;margin:0 0 16px;scroll-margin-top:92px}
   .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
   .qnum{font-weight:700;color:var(--accent2)}
   .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
@@ -56,6 +56,21 @@
   .pin.on::after{content:"";}
   .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
   .stem p{white-space:normal;margin:0 0 10px}
+  .stem-data{display:grid;gap:12px;white-space:normal}
+  .stem-intro,.stem-question{margin:0}
+  .stem-question{padding-top:11px;border-top:1px solid var(--line);font-weight:650;color:var(--txt)}
+  .fact-list{display:grid;gap:7px}
+  .fact-row{display:grid;grid-template-columns:8px minmax(0,1fr);gap:10px;align-items:start;
+    padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+  .fact-row::before{content:"";width:7px;height:7px;margin-top:.5em;border-radius:50%;background:var(--accent2)}
+  .rate-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:11px;background:var(--panel2)}
+  table.rate-table{width:100%;border-collapse:collapse;table-layout:fixed;white-space:normal;font-size:14px}
+  .rate-table th,.rate-table td{padding:10px 12px;border:0;border-bottom:1px solid var(--line);text-align:right}
+  .rate-table th:first-child,.rate-table td:first-child{width:48%;text-align:left}
+  .rate-table thead th{color:var(--accent2);font-size:12px;font-weight:800;letter-spacing:.02em;background:var(--panel)}
+  .rate-table tbody tr:last-child td{border-bottom:0}
+  .stem-notes{display:grid;gap:4px;color:var(--muted);font-size:13px}
+  .stem-notes p{margin:0}
   table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
   table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
   table.qt thead th{background:var(--panel2);font-weight:600}
@@ -101,7 +116,7 @@
   .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
   .pause-box{text-align:center}
   .pause-box .big{font-size:40px;margin-bottom:6px}
-  @media (max-width:520px){.htext h1{font-size:16px}}
+  @media (max-width:520px){.htext h1{font-size:16px}.card{scroll-margin-top:154px}.rate-table th,.rate-table td{padding:9px 7px;font-size:12.5px}.rate-table th:first-child,.rate-table td:first-child{width:44%}.stem-data{gap:10px}}
   /* ===== theme sáng ===== */
   #themeBtn::after{content:"🌙"}
   html[data-theme="light"] #themeBtn::after{content:"☀️"}
@@ -404,6 +419,46 @@ function applySaved(){
 }
 
 // ---- render -------------------------------------------------------------- //
+function appendParagraph(parent,className,text){
+  if(!text) return;
+  const p=document.createElement("p"); p.className=className; p.textContent=text; parent.appendChild(p);
+}
+function buildStem(q){
+  const stem=document.createElement("div"); stem.className="stem";
+  if(q.qhtml){ stem.innerHTML=q.qhtml; return stem; }
+  const lines=String(q.q||"").split("\n").map(line=>line.trim()).filter(Boolean);
+  const firstBullet=lines.findIndex(line=>line.startsWith("●"));
+  if(firstBullet<0){ stem.textContent=q.q; return stem; }
+
+  stem.classList.add("stem-data");
+  const introLines=lines.slice(0,firstBullet);
+  if(q.n===40&&introLines[introLines.length-1]==="CAD/USD JPY/USD") introLines.pop();
+  appendParagraph(stem,"stem-intro",introLines.join(" "));
+  let cursor=firstBullet;
+  const bullets=[];
+  while(cursor<lines.length&&lines[cursor].startsWith("●")){
+    bullets.push(lines[cursor].replace(/^●\s*/,"")); cursor++;
+  }
+
+  if(q.n===40&&bullets.length===2){
+    const wrap=document.createElement("div"); wrap.className="rate-table-wrap";
+    const table=document.createElement("table"); table.className="rate-table";
+    table.innerHTML='<thead><tr><th>Thời điểm</th><th>CAD/USD</th><th>JPY/USD</th></tr></thead><tbody><tr><td>Đầu kỳ</td><td>1.3216</td><td>105.42</td></tr><tr><td>Cuối kỳ</td><td>1.2944</td><td>104.74</td></tr></tbody>';
+    wrap.appendChild(table); stem.appendChild(wrap);
+  }else{
+    const list=document.createElement("div"); list.className="fact-list";
+    bullets.forEach(text=>{const row=document.createElement("div");row.className="fact-row";const value=document.createElement("span");value.textContent=text;row.appendChild(value);list.appendChild(row)});
+    stem.appendChild(list);
+  }
+
+  const tail=lines.slice(cursor);
+  const questionIndex=tail.findIndex(line=>/\b(?:is|are|will|should)\s+(?:most\s+)?likely\b|\bclosest to:\s*$/i.test(line));
+  const notes=questionIndex<0?tail:tail.slice(0,questionIndex);
+  const question=questionIndex<0?[]:tail.slice(questionIndex);
+  if(notes.length){const noteBox=document.createElement("div");noteBox.className="stem-notes";notes.forEach(text=>appendParagraph(noteBox,"",text));stem.appendChild(noteBox)}
+  appendParagraph(stem,"stem-question",question.join(" "));
+  return stem;
+}
 function render(){
   $("title").textContent = CFG.title || "Quiz";
   $("subtitle").textContent = CFG.subtitle || "";
@@ -422,8 +477,7 @@ function render(){
     head.appendChild(num); head.appendChild(pin);
     card.appendChild(head);
 
-    const stem = document.createElement("div");
-    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    const stem = buildStem(q);
     card.appendChild(stem);
 
     const opts = document.createElement("div");
@@ -615,13 +669,19 @@ function togglePause(){
 
 // ---- navigator ----------------------------------------------------------- //
 function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function scrollToQuestion(i){
+  const target=$("q-"+i), header=document.querySelector("header");
+  if(!target) return;
+  const offset=(header?header.offsetHeight:0)+12;
+  const top=target.getBoundingClientRect().top+window.scrollY-offset;
+  window.scrollTo({top:Math.max(0,top),behavior:"auto"});
+}
 function buildNav(){
   const g = $("navGrid"); g.innerHTML = "";
   DATA.forEach((q,i)=>{
     const c = document.createElement("div");
     c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
-    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
-                      toggleNav(); };
+    c.onclick = ()=>{ scrollToQuestion(i); toggleNav(); };
     g.appendChild(c);
   });
 }
