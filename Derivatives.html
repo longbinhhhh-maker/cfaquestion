@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script>
-  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"light"); }catch(e){} })();
   function toggleTheme(){
     var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
     try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
     document.documentElement.setAttribute("data-theme", nx);
   }
 </script>
-<title>Quiz</title>
+<title>Derivatives | CFA Level I Practice</title>
 <style>
   :root{
     --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
@@ -266,21 +266,103 @@
   }
 </style>
 <!--explanation-redesign-end-->
+<style id="readability-refresh">
+  /* Readability pass: stronger contrast, calmer surfaces, clearer focus states. */
+  html[data-theme="light"]{
+    --bg:#eef3f7;--panel:#ffffff;--panel2:#f3f6f9;--line:#c8d4de;
+    --txt:#15222e;--muted:#526575;--accent:#176b7d;--accent2:#225f70;
+    --shadow:0 5px 18px rgba(21,34,46,.08);
+  }
+  html[data-theme="dark"]{
+    --bg:#0c1520;--panel:#152230;--panel2:#1c2c3c;--line:#3b5062;
+    --txt:#f2f6f9;--muted:#b1c0cc;--accent:#51a6b8;--accent2:#8bc2ce;
+  }
+  body{font-size:16px;line-height:1.65;letter-spacing:.002em}
+  header{display:grid;grid-template-columns:minmax(270px,1fr) auto auto;
+    align-items:center;gap:10px 14px;padding:11px 16px}
+  .header-brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .back-btn{white-space:nowrap}
+  .header-brand .htext{min-width:0}
+  .header-status,.header-actions{display:flex;align-items:center;gap:8px}
+  .header-actions{min-width:0}
+  .htext h1{font-size:20px;line-height:1.2}
+  .htext p{font-size:12.5px;line-height:1.35}
+  button{min-height:42px}
+  button:focus-visible,.qnote textarea:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 32%,transparent);outline-offset:2px}
+  main#quiz{max-width:1120px;padding:22px 18px 140px}
+  .qrow{gap:14px;margin-bottom:18px}
+  .qrow>.card{box-shadow:var(--shadow)}
+  .card{padding:20px;border-color:var(--line)}
+  .card-head{margin-bottom:10px}
+  .qnum{font-size:14px;letter-spacing:.02em}
+  .stem{font-size:16.5px;line-height:1.72;margin-bottom:15px;color:var(--txt)}
+  .opt{margin:8px 0;padding:12px 14px;font-size:15.5px;font-weight:500;line-height:1.55;
+    border-color:var(--line);background:var(--panel2)}
+  .opt .lead{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;
+    margin-right:9px;border-radius:8px;background:color-mix(in srgb,var(--accent) 11%,var(--panel));
+    color:var(--accent);font-weight:800}
+  .opt:hover{transform:none;box-shadow:0 0 0 1px var(--accent) inset}
+  table.qt{width:100%;font-size:14.5px}
+  table.qt th,table.qt td{padding:8px 10px}
+  .qnote{flex-basis:260px;padding:10px;background:color-mix(in srgb,var(--accent) 5%,var(--panel))}
+  .qnote textarea{min-height:88px;background:var(--panel);border-color:var(--line)}
+  #qnotesFab,#baiiFab{box-shadow:0 8px 22px rgba(12,21,32,.28)}
+  @media(max-width:1020px){
+    header{grid-template-columns:minmax(250px,1fr) auto}
+    .header-actions{grid-column:1/-1;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+    .header-actions::-webkit-scrollbar{display:none}
+    .header-actions>button{flex:0 0 auto}
+  }
+  @media(max-width:860px){
+    main#quiz{max-width:760px}
+    .qnote{width:100%;padding:8px 10px}
+    .qnote textarea{height:46px;min-height:46px;resize:none}
+    .qnote:focus-within textarea{height:120px;min-height:120px;resize:vertical}
+  }
+  @media(max-width:600px){
+    header{grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:8px 12px}
+    .header-brand{gap:9px}
+    .header-brand .back-btn{padding:7px 9px;min-height:38px;font-size:13px}
+    .htext h1{font-size:17px}.htext p{display:none}
+    .header-status{justify-content:flex-end}.timer{font-size:17px;min-width:75px;padding:3px 8px}
+    .header-actions{gap:6px;margin:0 -2px}
+    .header-actions>button{min-height:38px;padding:7px 10px;font-size:13px}
+    .header-actions lord-icon{width:16px!important;height:16px!important;margin-right:3px!important}
+    main#quiz{padding:14px 12px 112px}
+    .qrow{gap:7px;margin-bottom:14px}
+    .card{padding:15px 14px;border-radius:13px}
+    .stem{font-size:16px;line-height:1.68;margin-bottom:12px}
+    .opt{padding:11px 12px;font-size:15px;line-height:1.5;margin:7px 0}
+    .opt .lead{min-width:25px;height:25px;margin-right:7px}
+    .qnote{border-radius:11px}
+    .qnote-head{margin-bottom:4px}
+    #qnotesFab,#baiiFab{bottom:14px;width:48px;height:48px;padding:0!important;
+      align-items:center;justify-content:center;border-radius:50%}
+    #qnotesFab{right:14px}#baiiFab{right:70px}
+    #qnotesFab svg,#baiiFab svg{width:19px;height:19px}
+  }
+</style>
 </head>
 <body>
 <header>
-  <button class="back-btn" onclick="location.href='index.html#resume'" title="Quay lại danh sách">← Quay lại</button>
-  <div class="htext">
-    <h1 id="title"></h1>
-    <p id="subtitle"></p>
+  <div class="header-brand">
+    <button class="back-btn" onclick="location.href='index.html#resume'" title="Quay lại danh sách">← Quay lại</button>
+    <div class="htext">
+      <h1 id="title"></h1>
+      <p id="subtitle"></p>
+    </div>
   </div>
-  <span id="badge" class="badge"></span>
-  <span id="timer" class="timer hidden">--:--</span>
-  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
-  <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Câu hỏi</button>
-  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
-  <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Làm lại</button>
-  <button class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
+  <div class="header-status">
+    <span id="badge" class="badge"></span>
+    <span id="timer" class="timer hidden">--:--</span>
+  </div>
+  <div class="header-actions" aria-label="Điều khiển bài thi">
+    <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối" aria-label="Đổi giao diện sáng hoặc tối"></button>
+    <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Câu hỏi</button>
+    <button class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
+    <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+    <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Làm lại</button>
+  </div>
 </header>
 <div class="progress-wrap"><div id="progress" class="progress"></div></div>
 <div id="resumeNote" class="resume-note"></div>
