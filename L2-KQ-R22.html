@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading 22 — Private Company Valuation · Kaplan QBank</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(83,130,151,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(134,167,181,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(83,130,151,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(83,130,151,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+<!-- ===== Lordicon + feedback sinh động ===== -->
+<script src="https://cdn.lordicon.com/lordicon.js" defer></script>
+<style id="fx-css">
+  .btn-primary lord-icon{width:20px;height:20px;vertical-align:-4px;margin-right:6px}
+  .opt .fx-mark{display:inline-block;margin-left:8px;font-size:16px;
+    transform:scale(0);animation:fxPop .42s cubic-bezier(.18,1.5,.5,1) forwards}
+  @keyframes fxPop{0%{transform:scale(0) rotate(-25deg)}
+    70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  #resultOverlay .modal{max-width:380px;text-align:center}
+  #resultOverlay lord-icon{width:120px;height:120px;margin:0 auto 6px}
+  #resultOverlay .r-emoji{font-size:46px;line-height:1;margin-bottom:4px;
+    display:block;animation:fxPop .5s cubic-bezier(.18,1.5,.5,1) both}
+  #resultOverlay h3{font-size:22px;margin:4px 0 6px}
+  #resultOverlay .r-score{font-size:15px;color:var(--muted);margin:0}
+  #resultOverlay h3.pass{color:var(--ok)}
+  #resultOverlay h3.fail{color:var(--bad)}
+  .fx-confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:60;
+    pointer-events:none;border-radius:2px;animation:fxFall linear forwards}
+  @keyframes fxFall{to{transform:translateY(105vh) rotate(640deg);opacity:.9}}
+</style>
+<style id="lord2-css">
+  header button lord-icon.hi{width:18px;height:18px;vertical-align:-4px;margin-right:5px}
+  .pause-box .big lord-icon{width:56px;height:56px}
+</style>
+
+<!--subject-breakdown-start-->
+<style id="subject-breakdown-css">
+  #resultOverlay .modal{max-width:720px;max-height:90vh;overflow-y:auto;text-align:center}
+  .subject-breakdown{margin-top:18px;text-align:left}
+  .subject-breakdown h4{margin:0 0 10px;font-size:15px;text-align:center}
+  .subject-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .subject-row{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+  .subject-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:12px}
+  .subject-name{font-weight:650;min-width:0}
+  .subject-score{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+  .subject-bar{height:6px;margin-top:7px;border-radius:999px;overflow:hidden;background:var(--line)}
+  .subject-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  @media(max-width:600px){.subject-grid{grid-template-columns:1fr}}
+
+  /* Subject label shown on each question after grading */
+  .question-subject{max-width:min(58vw,360px);overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;
+    letter-spacing:.01em;color:var(--accent2);background:color-mix(in srgb,var(--accent) 18%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent2) 42%,var(--line))}
+  @media(max-width:520px){.question-subject{max-width:52vw;font-size:10px;padding:3px 7px}}
+</style>
+<!--subject-breakdown-end-->
+
+<!--explanation-redesign-start-->
+<style id="explanation-redesign-css">
+  .expl{padding:0!important;white-space:normal!important;overflow:hidden;
+    background:color-mix(in srgb,var(--panel2) 82%,var(--panel))!important;
+    border:1px solid var(--line)!important;border-radius:14px!important}
+  .expl-shell{display:flex;flex-direction:column}
+  .expl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--panel));
+    border-bottom:1px solid var(--line)}
+  .expl-title{font-size:13px;font-weight:800;color:var(--txt)}
+  .expl-answer{flex:0 0 auto;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;
+    color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent);
+    border:1px solid color-mix(in srgb,var(--ok) 42%,var(--line))}
+  .expl-content{display:grid;gap:10px;padding:12px}
+  .expl-choice{padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
+  .expl-choice.is-correct{border-color:color-mix(in srgb,var(--ok) 56%,var(--line));
+    background:color-mix(in srgb,var(--okbg) 58%,var(--panel))}
+  .expl-choice-top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .expl-letter{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:7px;font-size:12px;font-weight:900;color:var(--muted);background:var(--panel2)}
+  .expl-choice.is-correct .expl-letter{color:#fff;background:var(--ok)}
+  .expl-state{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.045em;color:var(--muted)}
+  .expl-choice.is-correct .expl-state{color:var(--ok)}
+  .expl-option-copy{margin:0 0 8px;font-size:13px;font-weight:650;line-height:1.5;color:var(--txt)}
+  .expl-reason{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-note{padding:11px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+  .expl-note p{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-meta{display:grid;gap:5px;padding:10px 12px;border-radius:10px;
+    border:1px dashed color-mix(in srgb,var(--accent2) 50%,var(--line));
+    background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+  .expl-meta-row{display:flex;gap:7px;align-items:flex-start;font-size:12px;line-height:1.5;color:var(--muted)}
+  .expl-meta-row b{flex:0 0 auto;color:var(--accent2)}
+  @media(max-width:520px){
+    .expl-head{align-items:flex-start;padding:10px 11px}.expl-content{padding:9px;gap:8px}
+    .expl-choice{padding:10px}.expl-option-copy,.expl-reason,.expl-note p{font-size:12.5px}
+  }
+</style>
+<!--explanation-redesign-end-->
+<!--l2-vignette-start-->
+<style id="l2-css">
+  .stem .vig,.stem .qtext{white-space:normal}
+  .vig{border:1px solid var(--line);border-radius:12px;background:var(--panel2);margin:0 0 14px;overflow:hidden}
+  .vig>summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:13px;color:var(--muted);
+    list-style:none;display:flex;gap:8px;align-items:center;user-select:none}
+  .vig>summary::-webkit-details-marker{display:none}
+  .vig>summary::before{content:"▸";font-size:12px;transition:transform .15s}
+  .vig[open]>summary::before{transform:rotate(90deg)}
+  .vig>summary .vig-tag{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);
+    padding:2px 8px;border-radius:999px;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+  .vig>summary .vig-hint{margin-left:auto;font-weight:500;font-size:12px}
+  .vig[open]>summary .vig-hint{display:none}
+  .vig[open]>summary{border-bottom:1px solid var(--line)}
+  .vig-body{padding:12px 16px;max-height:62vh;overflow:auto;font-size:15px;line-height:1.65}
+  .vig-body p,.qtext p,.expl-html p{margin:0 0 10px}
+  .qtext{font-size:16px;line-height:1.65}
+  .tbl{overflow-x:auto;margin:6px 0 12px}
+  .tbl table{border-collapse:collapse;font-size:14px;line-height:1.45}
+  .tbl td,.tbl th{border:1px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top}
+  .tbl tr:first-child td,.tbl th{font-weight:600;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+  .pimg{display:block;margin:8px 0 12px;border-radius:8px;background:#fff;height:auto}
+  .expl-html{padding:14px 16px;line-height:1.65;font-size:14.5px}
+  .pp-topic{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.03em;color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 12%,transparent);padding:3px 10px;border-radius:999px;margin:0 0 10px}
+  .eimg{display:block;width:100%;max-width:900px;height:auto;border-radius:8px;background:#fff;margin:4px 0}
+  .qorig{margin:10px 0 0;font-size:12.5px;color:var(--muted)} .qorig summary{cursor:pointer}
+  .qorig img{display:block;max-width:100%;height:auto;margin-top:8px;border-radius:8px;background:#fff}
+  .kq-note{font-size:12.5px;line-height:1.5;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin:0 0 12px;background:var(--panel2)}
+  .pp-topic.set{color:#a855f7;background:color-mix(in srgb,#a855f7 12%,transparent)}
+</style>
+<script id="l2-js">
+function buildExplHtml(q){
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+q.ans;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content expl-html"; content.innerHTML=q.explhtml;
+  shell.appendChild(content); return shell;
+}
+</script>
+<!--l2-vignette-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='index.html#resume'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Làm lại</button>
+  <button id="submitBtn" class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big"><lord-icon src="https://cdn.lordicon.com/kbtmbyzy.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon></div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<div id="resultOverlay" class="overlay">
+  <div class="modal">
+    <span id="rEmoji" class="r-emoji">🎉</span>
+    <lord-icon id="rIcon" src="https://cdn.lordicon.com/lupuorrc.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon>
+    <h3 id="rTitle"></h3>
+    <p id="rScore" class="r-score"></p>
+
+    <!--subject-breakdown-panel-start-->
+    <div id="subjectBreakdown" class="subject-breakdown" aria-live="polite"></div>
+    <!--subject-breakdown-panel-end-->
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="document.getElementById('resultOverlay').classList.remove('show')">Xem lại bài</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Compared to a public company, it is most likely that as a private company Timber Industries will have greater:", "opts": ["focus on the short-term.", "quality and depth of management.", "concerns related to taxes."], "ans": "C", "expl": "Private firms may be more concerned with taxes than public firms due to the impact of taxes on private equity owners/managers. Private firms are likely to have lower quality and depth of management, as private firms are likely to be smaller and thus may not be able to attract as many qualified applicants as public firms. Private firms are more likely to focus on the long-term than public companies, since in most private firms, external shareholders have less influence and the firm is able to take a longer-term perspective.", "explhtml": "<p>Private firms may be more concerned with taxes than public firms due to the impact of taxes on private equity owners/managers. Private firms are likely to have lower quality and depth of management, as private firms are likely to be smaller and thus may not be able to attract as many qualified applicants as public firms. Private firms are more likely to focus on the long-term than public companies, since in most private firms, external shareholders have less influence and the firm is able to take a longer-term perspective.<\/p>", "qhtml": "<details class=\"vig\" open><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–4<\/summary><div class=\"vig-body\"><p>Paul Smith is an analyst performing valuations for Lumber Limited. Smith has been given a project to value Timber Industries, a firm that Lumber Limited is considering acquiring. Smith is aware that a number of characteristics distinguish private and public companies, and that these characteristics must be considered during his process of valuing Timber Industries. A number of issues complicate Smith's valuation: Timber Industries pays its CEO well below a market- based compensation figure, leases a warehouse at an above-market rate, and owns a vacant office building that is not needed for core operations. Smith is also aware that discounts and premiums based on control and marketability must be considered in his valuation of Timber Industries.<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.1, LOS 22.a<\/div><div class=\"qtext\"><p>Compared to a public company, it is most likely that as a private company Timber Industries will have greater:<\/p><\/div>", "subj": "equity"}, {"n": 2, "q": "One valuation method that Smith is considering for Timber Industries involves using a growing perpetuity formula to estimate the value of intangible assets, and then adding this value to the values of working capital and fixed assets. This method is most accurately described as the:", "opts": ["free cash flow method.", "excess earnings method.", "capitalized cash flow method."], "ans": "B", "expl": "The excess earnings method values tangible and intangible assets separately; this method is useful for small firms and when there are intangible assets to value. In the free cash flow method, a firm is valued by discounting a series of discrete cash flows plus a terminal value. In the capitalized cash flow method, a firm is valued by discounting a single cash flow by the capitalization rate.", "explhtml": "<p>The excess earnings method values tangible and intangible assets separately; this method is useful for small firms and when there are intangible assets to value. In the free cash flow method, a firm is valued by discounting a series of discrete cash flows plus a terminal value. In the capitalized cash flow method, a firm is valued by discounting a single cash flow by the capitalization rate.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–4<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Paul Smith is an analyst performing valuations for Lumber Limited. Smith has been given a project to value Timber Industries, a firm that Lumber Limited is considering acquiring. Smith is aware that a number of characteristics distinguish private and public companies, and that these characteristics must be considered during his process of valuing Timber Industries. A number of issues complicate Smith's valuation: Timber Industries pays its CEO well below a market- based compensation figure, leases a warehouse at an above-market rate, and owns a vacant office building that is not needed for core operations. Smith is also aware that discounts and premiums based on control and marketability must be considered in his valuation of Timber Industries.<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.3, LOS 22.h<\/div><div class=\"qtext\"><p>One valuation method that Smith is considering for Timber Industries involves using a growing perpetuity formula to estimate the value of intangible assets, and then adding this value to the values of working capital and fixed assets. This method is most accurately described as the:<\/p><\/div>", "subj": "equity"}, {"n": 3, "q": "The asset-based approach to private company valuation that Smith is considering for Timber Industries is most likely to be appropriate in the case of a:", "opts": ["finance firm such as a bank.", "mature company with many intangible assets.", "firm with strong profits and growth potential."], "ans": "A", "expl": "The asset-based approach is usually not used for most going concerns, but is appropriate for troubled firms, finance firms, investment companies, firms with few intangible assets, and natural resource firms. It values equity as the asset value of a firm minus the debt value of the firm.", "explhtml": "<p>The asset-based approach is usually not used for most going concerns, but is appropriate for troubled firms, finance firms, investment companies, firms with few intangible assets, and natural resource firms. It values equity as the asset value of a firm minus the debt value of the firm.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–4<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Paul Smith is an analyst performing valuations for Lumber Limited. Smith has been given a project to value Timber Industries, a firm that Lumber Limited is considering acquiring. Smith is aware that a number of characteristics distinguish private and public companies, and that these characteristics must be considered during his process of valuing Timber Industries. A number of issues complicate Smith's valuation: Timber Industries pays its CEO well below a market- based compensation figure, leases a warehouse at an above-market rate, and owns a vacant office building that is not needed for core operations. Smith is also aware that discounts and premiums based on control and marketability must be considered in his valuation of Timber Industries.<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.3, LOS 22.g<\/div><div class=\"qtext\"><p>The asset-based approach to private company valuation that Smith is considering for Timber Industries is most likely to be appropriate in the case of a:<\/p><\/div>", "subj": "equity"}, {"n": 4, "q": "Which of the following statements related to discounts and premiums to benchmark for Smith's private company valuation of Timber Industries is most accurate?", "opts": ["A discount for lack of marketability should be applied when the comparables are based on public shares, and the interest in the target company is a minority interest in a private firm.", "A discount for lack of control should be applied when the comparable company values are for public shares, and the target company valuation is for a controlling interest.", "A control premium should be added when the comparable values are for the sale of an entire company, and the valuation is being done for a minority interest in the target company."], "ans": "A", "expl": "Discounts for lack of marketability are applied when the comparables are based on highly marketable securities, such as public shares, and the interest in the target company is less marketable, as in the case of a minority interest in a private firm. A discount for lack of control is applied when the comparable values are for the sale of an entire company, and the valuation is being done for a minority interest in the target company. A control premium is added when the comparable company values are for public shares or other minority interests, and the target company valuation is for a controlling interest.", "explhtml": "<p>Discounts for lack of marketability are applied when the comparables are based on highly marketable securities, such as public shares, and the interest in the target company is less marketable, as in the case of a minority interest in a private firm. A discount for lack of control is applied when the comparable values are for the sale of an entire company, and the valuation is being done for a minority interest in the target company. A control premium is added when the comparable company values are for public shares or other minority interests, and the target company valuation is for a controlling interest.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–4<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Paul Smith is an analyst performing valuations for Lumber Limited. Smith has been given a project to value Timber Industries, a firm that Lumber Limited is considering acquiring. Smith is aware that a number of characteristics distinguish private and public companies, and that these characteristics must be considered during his process of valuing Timber Industries. A number of issues complicate Smith's valuation: Timber Industries pays its CEO well below a market- based compensation figure, leases a warehouse at an above-market rate, and owns a vacant office building that is not needed for core operations. Smith is also aware that discounts and premiums based on control and marketability must be considered in his valuation of Timber Industries.<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.2, LOS 22.f<\/div><div class=\"qtext\"><p>Which of the following statements related to discounts and premiums to benchmark for Smith&#x27;s private company valuation of Timber Industries is most accurate?<\/p><\/div>", "subj": "equity"}, {"n": 5, "q": "An analyst is valuing a firm's equity using the price-to-book-value ratio of similar firms. Which of the following is the most likely valuation approach the analyst will use?", "opts": ["The income approach.", "The asset-based approach.", "The market approach."], "ans": "C", "expl": "The market approach values a firm using the price-multiples such as the price-to-book-value ratio and price-earnings ratio of comparable assets. The income approach values a firm as the present value of its future income. The asset-based approach values a firm as its assets minus liabilities.", "explhtml": "<p>The market approach values a firm using the price-multiples such as the price-to-book-value ratio and price-earnings ratio of comparable assets. The income approach values a firm as the present value of its future income. The asset-based approach values a firm as its assets minus liabilities.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.g<\/div><div class=\"qtext\"><p>An analyst is valuing a firm&#x27;s equity using the price-to-book-value ratio of similar firms. Which of the following is the most likely valuation approach the analyst will use?<\/p><\/div>", "subj": "equity"}, {"n": 6, "q": "Using the following figures, calculate the value of the firm using the excess earnings method (EEM). Working capital $600,000 Fixed assets $2,300,000 Normalized earnings $340,000 Required return for working\ncapital 5% Required return for fixed assets 13% Growth rate of residual income 4% Discount rate for intangible\nassets 18%", "opts": ["$3,073,199.", "$2,981,714.", "$3,027,111."], "ans": "B", "expl": "The answer is calculated using the following steps. Step 1: Calculate the required return for working capital and fixed assets. Given the required returns in percent, the monetary returns are: Working Capital: $600,000 × 5% = $30,000. Fixed Assets: $2,300,000 × 13% = $299,000. Step 2: Calculate the residual income. After the monetary returns to assets are calculated, the residual income is that which is left over in the normalized earnings: Residual Income = $340,000 − $30,000 − $299,000 = $11,000. Step 3: Value the intangible assets. Using the formula for a growing perpetuity, the discount rate for intangible assets, and the growth rate for residual income: Value of Intangible Assets = ($11,000 × 1.04) / (0.18 − 0.04) = $81,714. Step 4: Sum the asset values to arrive at the total firm value. Firm Value = $600,000 + $2,300,000 + $81,714 = $2,981,714.", "explhtml": "<p>The answer is calculated using the following steps.<\/p><p>Step 1: Calculate the required return for working capital and fixed assets.<\/p><p>Given the required returns in percent, the monetary returns are:<\/p><p>Working Capital: $600,000 × 5% = $30,000.<\/p><p>Fixed Assets: $2,300,000 × 13% = $299,000.<\/p><p>Step 2: Calculate the residual income.<\/p><p>After the monetary returns to assets are calculated, the residual income is that which is left over in the normalized earnings:<\/p><p>Residual Income = $340,000 − $30,000 − $299,000 = $11,000.<\/p><p>Step 3: Value the intangible assets.<\/p><p>Using the formula for a growing perpetuity, the discount rate for intangible assets, and the growth rate for residual income:<\/p><p>Value of Intangible Assets = ($11,000 × 1.04) / (0.18 − 0.04) = $81,714.<\/p><p>Step 4: Sum the asset values to arrive at the total firm value.<\/p><p>Firm Value = $600,000 + $2,300,000 + $81,714 = $2,981,714.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.h<\/div><div class=\"qtext\"><p>Using the following figures, calculate the value of the firm using the excess earnings method (EEM).<\/p><div class=\"tbl\"><table><tr><td>Working capital<\/td><td>$600,000<\/td><\/tr><tr><td>Fixed assets<\/td><td>$2,300,000<\/td><\/tr><tr><td>Normalized earnings<\/td><td>$340,000<\/td><\/tr><tr><td>Required return for working<br>capital<\/td><td>5%<\/td><\/tr><tr><td>Required return for fixed assets<\/td><td>13%<\/td><\/tr><tr><td>Growth rate of residual income<\/td><td>4%<\/td><\/tr><tr><td>Discount rate for intangible<br>assets<\/td><td>18%<\/td><\/tr><\/table><\/div><\/div>", "subj": "equity"}, {"n": 7, "q": "An analyst is examining the stock of three companies. Given the information below, which of them is most likely to be the stock of a private firm? Firm Restrictions on Sale\nof Stock? DLOM Stock Ownership of\n5 Largest Owners A Yes 0% 28% B No 5% 35% C Yes 15% 64%", "opts": ["Firm C.", "Firm A.", "Firm B."], "ans": "A", "expl": "The stock most likely to be that of a private firm is Firm C. Compared to public stock, private firm stock often has agreements that prevent shareholders from selling, is less liquid (discounts for lack of marketability (DLOM) of C is 15%), and control is usually concentrated in the hands of a few shareholders (stock ownership of largest owners of Firm C is 64%).", "explhtml": "<p>The stock most likely to be that of a private firm is Firm C. Compared to public stock, private firm stock often has agreements that prevent shareholders from selling, is less liquid (discounts for lack of marketability (DLOM) of C is 15%), and control is usually concentrated in the hands of a few shareholders (stock ownership of largest owners of Firm C is 64%).<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.a<\/div><div class=\"qtext\"><p>An analyst is examining the stock of three companies. Given the information below, which of them is most likely to be the stock of a private firm?<\/p><div class=\"tbl\"><table><tr><td>Firm<\/td><td>Restrictions on Sale<br>of Stock?<\/td><td>DLOM<\/td><td>Stock Ownership of<br>5 Largest Owners<\/td><\/tr><tr><td>A<\/td><td>Yes<\/td><td>0%<\/td><td>28%<\/td><\/tr><tr><td>B<\/td><td>No<\/td><td>5%<\/td><td>35%<\/td><\/tr><tr><td>C<\/td><td>Yes<\/td><td>15%<\/td><td>64%<\/td><\/tr><\/table><\/div><\/div>", "subj": "equity"}, {"n": 8, "q": "Which of the following best describes the use of FCFF and FCFE when used in private firm valuation?", "opts": ["FCFF is usually favored if the firm is going to change its capital structure because the WACC is less sensitive to leverage changes than the cost of equity.", "FCFE is usually favored if the firm is going to change its capital structure because the equityholders are usually the investors requesting the valuation.", "FCFE is usually favored if the firm is going to change its capital structure because the cost of equity is less sensitive to leverage changes than the WACC."], "ans": "A", "expl": "Free cash flow to the firm (FCFF) can be used to value the firm as a whole and free cash flow to equity (FCFE) can be used for equity. FCFF is usually favored if the firm is going to significantly change its capital structure. The reason is that the discount rate used for FCFF valuation, the weighted average cost of capital (WACC), is less sensitive to leverage changes than the discount rate used for FCFE valuation, the cost of equity. Thus, the FCFF valuation will not vary as much as the FCFE valuation.", "explhtml": "<p>Free cash flow to the firm (FCFF) can be used to value the firm as a whole and free cash flow to equity (FCFE) can be used for equity. FCFF is usually favored if the firm is going to significantly change its capital structure. The reason is that the discount rate used for FCFF valuation, the weighted average cost of capital (WACC), is less sensitive to leverage changes than the discount rate used for FCFE valuation, the cost of equity. Thus, the FCFF valuation will not vary as much as the FCFE valuation.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.c<\/div><div class=\"qtext\"><p>Which of the following best describes the use of FCFF and FCFE when used in private firm valuation?<\/p><\/div>", "subj": "equity"}, {"n": 9, "q": "Which of the following mentioned in Comment 1 is least likely to be a company specific characteristic of a private company?", "opts": ["Tax consideration.", "Quality and depth of management.", "Shareholders agreements that restrict liquidity."], "ans": "C", "expl": "Company specific characteristics include: Stage in life-cycle Size Overlap of shareholders and management Quality and depth of management Quality of financial and other information Less pressure from short-term investors Tax consideration", "explhtml": "<p>Company specific characteristics include:<\/p><p>Stage in life-cycle Size Overlap of shareholders and management Quality and depth of management Quality of financial and other information Less pressure from short-term investors Tax consideration<\/p>", "qhtml": "<details class=\"vig\" open><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 9–12<\/summary><div class=\"vig-body\"><p>Stan Bowles works for Marsh Inc. and has been tasked with the valuation of Park Limited, a small private footwear producer. Bowles prepares a valuation report on Park Limited and his report contains the following:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v001.webp\" style=\"max-width:min(100%,652px)\" alt=\"Company-specific characteristics such as the quality and depth of management,\"><p>Comment 1: tax considerations, and shareholders agreements that restrict liquidity mark the<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v002.webp\" style=\"max-width:min(100%,652px)\" alt=\"main differences between a private and public company. The value of a private company depends on the investor&#x27;s expectations and\"><p>Comment 2: investment requirements and could differ from one buyer to the next due to<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v003.webp\" style=\"max-width:min(100%,654px)\" alt=\"different perception of risk and future potential. To obtain an appropriate discount rate for Park, we have assumed the following: • Estimated beta of Park: 0.75 • Company specific risk premium: 1.2% Comment 3: • Small stock premium: 2.8% • Risk free rate: 3% • Equity risk premium: 4.5%\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v004.webp\" style=\"max-width:min(100%,638px)\" alt=\"If we are valuing Park for non-controlling equity interest, a discount for lack of\"><p>Comment 4:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v005.webp\" style=\"max-width:min(100%,638px)\" alt=\"control might be required.\"><\/div><\/details><div class=\"pp-topic\">Module 22.1, LOS 22.a<\/div><div class=\"qtext\"><p>Which of the following mentioned in Comment 1 is least likely to be a company specific characteristic of a private company?<\/p><\/div>", "subj": "equity"}, {"n": 10, "q": "Comment 2 is describing:", "opts": ["fair value.", "investment value.", "fair market value."], "ans": "B", "expl": "Investment value is the value of a private company that depends on the investor's expectations and investment requirements. Investment value could differ from one buyer to the next due to different perception of risk and future potential.", "explhtml": "<p>Investment value is the value of a private company that depends on the investor&#x27;s expectations and investment requirements. Investment value could differ from one buyer to the next due to different perception of risk and future potential.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 9–12<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Stan Bowles works for Marsh Inc. and has been tasked with the valuation of Park Limited, a small private footwear producer. Bowles prepares a valuation report on Park Limited and his report contains the following:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v001.webp\" style=\"max-width:min(100%,652px)\" alt=\"Company-specific characteristics such as the quality and depth of management,\"><p>Comment 1: tax considerations, and shareholders agreements that restrict liquidity mark the<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v002.webp\" style=\"max-width:min(100%,652px)\" alt=\"main differences between a private and public company. The value of a private company depends on the investor&#x27;s expectations and\"><p>Comment 2: investment requirements and could differ from one buyer to the next due to<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v003.webp\" style=\"max-width:min(100%,654px)\" alt=\"different perception of risk and future potential. To obtain an appropriate discount rate for Park, we have assumed the following: • Estimated beta of Park: 0.75 • Company specific risk premium: 1.2% Comment 3: • Small stock premium: 2.8% • Risk free rate: 3% • Equity risk premium: 4.5%\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v004.webp\" style=\"max-width:min(100%,638px)\" alt=\"If we are valuing Park for non-controlling equity interest, a discount for lack of\"><p>Comment 4:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v005.webp\" style=\"max-width:min(100%,638px)\" alt=\"control might be required.\"><\/div><\/details><div class=\"pp-topic\">Module 22.2, LOS 22.f<\/div><div class=\"qtext\"><p>Comment 2 is describing:<\/p><\/div>", "subj": "equity"}, {"n": 11, "q": "Calculate Park's discount rate using the build-up method and the information in Comment 3.", "opts": ["9.375%.", "10.375%.", "11.5%."], "ans": "C", "expl": "Using the build-up method, there is no beta adjustment on the equity risk premium. The discount rate is calculated as follows: Risk free rate:  3% | Equity risk premium:  4.5% Company specific risk premium: 1.2% Small stock premium:  2.8% | Return on equity:  11.5%", "explhtml": "<p>Using the build-up method, there is no beta adjustment on the equity risk premium. The discount rate is calculated as follows:<\/p><div class=\"tbl\"><table><tr><td>Risk free rate:<\/td><td>3%<\/td><\/tr><tr><td>Equity risk premium:<\/td><td>4.5%<\/td><\/tr><\/table><\/div><p>Company specific risk premium: 1.2%<\/p><div class=\"tbl\"><table><tr><td>Small stock premium:<\/td><td>2.8%<\/td><\/tr><tr><td>Return on equity:<\/td><td>11.5%<\/td><\/tr><\/table><\/div>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 9–12<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Stan Bowles works for Marsh Inc. and has been tasked with the valuation of Park Limited, a small private footwear producer. Bowles prepares a valuation report on Park Limited and his report contains the following:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v001.webp\" style=\"max-width:min(100%,652px)\" alt=\"Company-specific characteristics such as the quality and depth of management,\"><p>Comment 1: tax considerations, and shareholders agreements that restrict liquidity mark the<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v002.webp\" style=\"max-width:min(100%,652px)\" alt=\"main differences between a private and public company. The value of a private company depends on the investor&#x27;s expectations and\"><p>Comment 2: investment requirements and could differ from one buyer to the next due to<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v003.webp\" style=\"max-width:min(100%,654px)\" alt=\"different perception of risk and future potential. To obtain an appropriate discount rate for Park, we have assumed the following: • Estimated beta of Park: 0.75 • Company specific risk premium: 1.2% Comment 3: • Small stock premium: 2.8% • Risk free rate: 3% • Equity risk premium: 4.5%\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v004.webp\" style=\"max-width:min(100%,638px)\" alt=\"If we are valuing Park for non-controlling equity interest, a discount for lack of\"><p>Comment 4:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v005.webp\" style=\"max-width:min(100%,638px)\" alt=\"control might be required.\"><\/div><\/details><div class=\"pp-topic\">Module 22.2, LOS 22.e<\/div><div class=\"qtext\"><p>Calculate Park&#x27;s discount rate using the build-up method and the information in Comment 3.<\/p><\/div>", "subj": "equity"}, {"n": 12, "q": "Using Comment 4, which of the following method is least likely to require a discount for lack of control?", "opts": ["Guideline Transaction Method.", "Capitalized Cash Flow Method.", "Guideline Public Company Method."], "ans": "C", "expl": "Guideline Public Company Method uses the price multiples of comparable public companies as Park Limited. This method typically assumes minority control. Guideline Transaction Method uses the price multiples of acquisitions of the entire public or private companies, thus reflecting controlling interest. Depending on the cash flows and discount rate estimated, the capitalized cash flow method can be applied towards the valuation of minority or control interest.", "explhtml": "<p>Guideline Public Company Method uses the price multiples of comparable public companies as Park Limited. This method typically assumes minority control. Guideline Transaction Method uses the price multiples of acquisitions of the entire public or private companies, thus reflecting controlling interest. Depending on the cash flows and discount rate estimated, the capitalized cash flow method can be applied towards the valuation of minority or control interest.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 9–12<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Stan Bowles works for Marsh Inc. and has been tasked with the valuation of Park Limited, a small private footwear producer. Bowles prepares a valuation report on Park Limited and his report contains the following:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v001.webp\" style=\"max-width:min(100%,652px)\" alt=\"Company-specific characteristics such as the quality and depth of management,\"><p>Comment 1: tax considerations, and shareholders agreements that restrict liquidity mark the<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v002.webp\" style=\"max-width:min(100%,652px)\" alt=\"main differences between a private and public company. The value of a private company depends on the investor&#x27;s expectations and\"><p>Comment 2: investment requirements and could differ from one buyer to the next due to<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v003.webp\" style=\"max-width:min(100%,654px)\" alt=\"different perception of risk and future potential. To obtain an appropriate discount rate for Park, we have assumed the following: • Estimated beta of Park: 0.75 • Company specific risk premium: 1.2% Comment 3: • Small stock premium: 2.8% • Risk free rate: 3% • Equity risk premium: 4.5%\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v004.webp\" style=\"max-width:min(100%,638px)\" alt=\"If we are valuing Park for non-controlling equity interest, a discount for lack of\"><p>Comment 4:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v005.webp\" style=\"max-width:min(100%,638px)\" alt=\"control might be required.\"><\/div><\/details><div class=\"pp-topic\">Module 22.2, LOS 22.f<\/div><div class=\"qtext\"><p>Using Comment 4, which of the following method is least likely to require a discount for lack of control?<\/p><\/div>", "subj": "equity"}, {"n": 13, "q": "The asset-based approach values a firm based on:", "opts": ["book values.", "fair values.", "investment values."], "ans": "B", "expl": "The asset-based approach values firm equity as the fair value of its assets minus the fair value of its liabilities.", "explhtml": "<p>The asset-based approach values firm equity as the fair value of its assets minus the fair value of its liabilities.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.g<\/div><div class=\"qtext\"><p>The asset-based approach values a firm based on:<\/p><\/div>", "subj": "equity"}, {"n": 14, "q": "The capitalized cash flow method (CCM) used in private firm valuation is most appropriate when:", "opts": ["there are many intangible assets to value.", "earnings are growing quickly in an initial period.", "stable growth is expected."], "ans": "C", "expl": "The CCM is a growing perpetuity model that assumes stable growth and is in effect a single-stage free cash flow model. It may be suitable when no comparables or projections are available and when stable growth is expected. The excess earnings method (EEM) is useful when there are intangible assets to value. The free cash flow method assumes high growth in an initial period followed by constant growth thereafter.", "explhtml": "<p>The CCM is a growing perpetuity model that assumes stable growth and is in effect a single-stage free cash flow model. It may be suitable when no comparables or projections are available and when stable growth is expected. The excess earnings method (EEM) is useful when there are intangible assets to value. The free cash flow method assumes high growth in an initial period followed by constant growth thereafter.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.h<\/div><div class=\"qtext\"><p>The capitalized cash flow method (CCM) used in private firm valuation is most appropriate when:<\/p><\/div>", "subj": "equity"}, {"n": 15, "q": "Which of the following statements related to the market approaches to private company valuation is most accurate?", "opts": ["The guideline transactions method (GTM) is based on historical stock sales of the actual subject company.", "The prior transaction method (PTM) is based on price multiples from the sale of whole public and private companies.", "The guideline public company method (GPCM) is based on price multiples from comparable traded firms."], "ans": "C", "expl": "The guideline public company method (GPCM) approach to private company valuation uses price multiples from traded public companies with adjustments for risk differences. The guideline transactions method (GTM) uses the price multiples from the sale of whole public and private companies, again with adjustments for risk differences. The prior transaction method (PTM) uses historical stock sales of the subject company; it works best when using recent, arm's-length data of the same motivation.", "explhtml": "<p>The guideline public company method (GPCM) approach to private company valuation uses price multiples from traded public companies with adjustments for risk differences. The guideline transactions method (GTM) uses the price multiples from the sale of whole public and private companies, again with adjustments for risk differences. The prior transaction method (PTM) uses historical stock sales of the subject company; it works best when using recent, arm&#x27;s-length data of the same motivation.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.i<\/div><div class=\"qtext\"><p>Which of the following statements related to the market approaches to private company valuation is most accurate?<\/p><\/div>", "subj": "equity"}, {"n": 16, "q": "Which of the following is least likely an example of a litigation-related valuation for a private company?", "opts": ["Bankruptcy proceeding.", "Divorce settlements.", "Lost profits claims."], "ans": "A", "expl": "Litigation-related valuations may be required for shareholder suits, damage claims, lost profits claims, or divorce settlements. A bankruptcy proceeding is an example of a transaction-related valuation for a private company.", "explhtml": "<p>Litigation-related valuations may be required for shareholder suits, damage claims, lost profits claims, or divorce settlements. A bankruptcy proceeding is an example of a transaction-related valuation for a private company.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.b<\/div><div class=\"qtext\"><p>Which of the following is least likely an example of a litigation-related valuation for a private company?<\/p><\/div>", "subj": "equity"}, {"n": 17, "q": "An analyst values a private company using a price multiple based on recent sales of comparable assets. This approach to private company valuation is best described as the:", "opts": ["income approach", "market approach", "asset-based approach"], "ans": "B", "expl": "Under the market approach, a firm is valued using price multiples based on recent sales of comparable assets. Under the income approach, a firm is valued according to the present value of its expected future income. Under the asset-based approach, the value of a firm is calculated as the firm's assets minus its liabilities.", "explhtml": "<p>Under the market approach, a firm is valued using price multiples based on recent sales of comparable assets. Under the income approach, a firm is valued according to the present value of its expected future income. Under the asset-based approach, the value of a firm is calculated as the firm&#x27;s assets minus its liabilities.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.g<\/div><div class=\"qtext\"><p>An analyst values a private company using a price multiple based on recent sales of comparable assets. This approach to private company valuation is best described as the:<\/p><\/div>", "subj": "equity"}, {"n": 18, "q": "Which of the following statements most accurately describes the difference between private and public firm managers?", "opts": ["Although managers in a public firm are often paid with incentive compensation, public managers may take a shorter term view than private managers because shareholders often focus on the short-term.", "Because managers in a public firm are often paid with incentive compensation, public managers may take a longer term view than private managers.", "Because managers in a private firm are concerned with having the firm go public, private managers may take a shorter term view than public managers."], "ans": "A", "expl": "Although managers in a public firm are often paid with incentive compensation such as options, shareholders often focus on short-term measures such as quarterly earnings and the consistency of such. Management may therefore take a shorter term view than they otherwise would. Private firms should be able to take a longer term view.", "explhtml": "<p>Although managers in a public firm are often paid with incentive compensation such as options, shareholders often focus on short-term measures such as quarterly earnings and the consistency of such. Management may therefore take a shorter term view than they otherwise would. Private firms should be able to take a longer term view.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.a<\/div><div class=\"qtext\"><p>Which of the following statements most accurately describes the difference between private and public firm managers?<\/p><\/div>", "subj": "equity"}, {"n": 19, "q": "An analyst is valuing a small private firm that is still developing and has yet to generate any earnings. Which of the following best describes the approach that should be used?", "opts": ["Nonoperating assets are not crucial to the firm and should be excluded in any valuation.", "A market approach based on public comparables would be utilized.", "An asset-based approach would be used."], "ans": "C", "expl": "The valuation approach used will depend on the firm's operations and its lifecycle stage. Early in its life, a firm's future cash flows may be so uncertain that an asset-based approach would be selected. The price multiples from large public firms should not be used for a small private firm when using the market approach. Although a firm's nonoperating assets are not crucial to the firm, they should be included in any valuation.", "explhtml": "<p>The valuation approach used will depend on the firm&#x27;s operations and its lifecycle stage. Early in its life, a firm&#x27;s future cash flows may be so uncertain that an asset-based approach would be selected. The price multiples from large public firms should not be used for a small private firm when using the market approach. Although a firm&#x27;s nonoperating assets are not crucial to the firm, they should be included in any valuation.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.g<\/div><div class=\"qtext\"><p>An analyst is valuing a small private firm that is still developing and has yet to generate any earnings. Which of the following best describes the approach that should be used?<\/p><\/div>", "subj": "equity"}, {"n": 20, "q": "Which of the following best describes the use of size premiums when estimating the discount rate for private company valuations?", "opts": ["When using data from comparable public firms, a distress premium may be inadvertently added in.", "A size premium is subtracted when calculating the discount rate.", "The treatment is similar to that for public firms."], "ans": "A", "expl": "For private company valuations, a size premium is often added in when calculating the discount rate. This is not typically done for public firms. To get the size premium, the appraiser may use data from the smallest cap segment of public equity. This however may include a distress premium that is not applicable to the private firm.", "explhtml": "<p>For private company valuations, a size premium is often added in when calculating the discount rate. This is not typically done for public firms. To get the size premium, the appraiser may use data from the smallest cap segment of public equity. This however may include a distress premium that is not applicable to the private firm.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.d<\/div><div class=\"qtext\"><p>Which of the following best describes the use of size premiums when estimating the discount rate for private company valuations?<\/p><\/div>", "subj": "equity"}, {"n": 21, "q": "Using the following information, calculate the required return on equity using the expanded CAPM. Income return on bonds 6.0% Capital return on bonds 2.0% Long-term Treasury yield 3.5% Beta 1.4 Equity risk premium 6.0% Small stock premium 4.0% Company-specific risk premium 3.0% Industry risk-premium 2.0% Pretax cost of debt 11.0% Optimal Debt/Total Cap 16% Current Debt/Total 7% Debt/Total Cap for public firms in\nindustry 33% Tax Rate 30%", "opts": ["18.9%.", "11.9%.", "15.9%."], "ans": "A", "expl": "The required return on equity using the CAPM is: 3.5% + 1.4(6%) = 11.9%. Note that the risk-free rate is the Treasury yield, not the returns for bonds in general. Using the expanded CAPM, a small stock premium and company-specific risk premium are added: 11.9% + 4% + 3% = 18.9%.", "explhtml": "<p>The required return on equity using the CAPM is: 3.5% + 1.4(6%) = 11.9%.<\/p><p>Note that the risk-free rate is the Treasury yield, not the returns for bonds in general.<\/p><p>Using the expanded CAPM, a small stock premium and company-specific risk premium are added: 11.9% + 4% + 3% = 18.9%.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.e<\/div><div class=\"qtext\"><p>Using the following information, calculate the required return on equity using the expanded CAPM.<\/p><div class=\"tbl\"><table><tr><td>Income return on bonds<\/td><td>6.0%<\/td><\/tr><tr><td>Capital return on bonds<\/td><td>2.0%<\/td><\/tr><tr><td>Long-term Treasury yield<\/td><td>3.5%<\/td><\/tr><tr><td>Beta<\/td><td>1.4<\/td><\/tr><tr><td>Equity risk premium<\/td><td>6.0%<\/td><\/tr><tr><td>Small stock premium<\/td><td>4.0%<\/td><\/tr><tr><td>Company-specific risk premium<\/td><td>3.0%<\/td><\/tr><tr><td>Industry risk-premium<\/td><td>2.0%<\/td><\/tr><tr><td>Pretax cost of debt<\/td><td>11.0%<\/td><\/tr><tr><td>Optimal Debt/Total Cap<\/td><td>16%<\/td><\/tr><tr><td>Current Debt/Total<\/td><td>7%<\/td><\/tr><tr><td>Debt/Total Cap for public firms in<br>industry<\/td><td>33%<\/td><\/tr><tr><td>Tax Rate<\/td><td>30%<\/td><\/tr><\/table><\/div><\/div>", "subj": "equity"}, {"n": 22, "q": "Which of the following best describes how debt is incorporated into the estimation of the discount rate for private company valuations, relative to that for public firms? In general, the cost of debt:", "opts": ["is higher for private firms and debt capacity is lower for private firms.", "and debt capacity is the same for both private and public firms.", "is higher for private firms and debt capacity is the same for both private and public firms."], "ans": "A", "expl": "A private firm may not be able to obtain as much debt financing as a public firm. The small size of private firms may result in higher operating risk and a higher cost of debt.", "explhtml": "<p>A private firm may not be able to obtain as much debt financing as a public firm. The small size of private firms may result in higher operating risk and a higher cost of debt.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.d<\/div><div class=\"qtext\"><p>Which of the following best describes how debt is incorporated into the estimation of the discount rate for private company valuations, relative to that for public firms? In general, the cost of debt:<\/p><\/div>", "subj": "equity"}, {"n": 23, "q": "Which of the following is least likely an example of a compliance-related valuation for a private company?", "opts": ["Bankruptcy proceeding.", "Tax purposes.", "Financial reporting."], "ans": "A", "expl": "A bankruptcy proceeding is an example of a transaction-related valuation for a private company.", "explhtml": "<p>A bankruptcy proceeding is an example of a transaction-related valuation for a private company.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.b<\/div><div class=\"qtext\"><p>Which of the following is least likely an example of a compliance-related valuation for a private company?<\/p><\/div>", "subj": "equity"}, {"n": 24, "q": "Which of the following best describes the estimation of discounts for lack of marketability (DLOM) in private company valuations? The primary advantage of using put prices to estimate the DLOM over the other two methods is:", "opts": ["exchange traded put prices are readily available.", "the Black-Scholes model has been shown to be valid for private firms.", "the volatility of the firm can be incorporated into the analysis."], "ans": "C", "expl": "If an interest in a firm cannot be easily sold, a DLOM is applied. The DLOM can be estimated using restricted share versus publicly traded share prices, pre-IPO versus post-IPO prices, and put prices. The advantage of using put prices over the other two DLOM estimation methods is that the estimated risk of the firm can be factored into the option price.", "explhtml": "<p>If an interest in a firm cannot be easily sold, a DLOM is applied. The DLOM can be estimated using restricted share versus publicly traded share prices, pre-IPO versus post-IPO prices, and put prices. The advantage of using put prices over the other two DLOM estimation methods is that the estimated risk of the firm can be factored into the option price.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.f<\/div><div class=\"qtext\"><p>Which of the following best describes the estimation of discounts for lack of marketability (DLOM) in private company valuations? The primary advantage of using put prices to estimate the DLOM over the other two methods is:<\/p><\/div>", "subj": "equity"}, {"n": 25, "q": "Given the following figures, calculate the normalized EBITDA for a financial and strategic buyer. Reported EBITDA $4,500,000 Current Executive Compensation $700,000 Market-Based Executive\nCompensation $620,000 Current SG&A expenses $6,300,000 SG&A expenses after synergistic\nsavings $5,600,000 Current Lease Rate $300,000 Market-Based Lease Rate $390,000 The normalized EBITDA for each type of buyer is: Financial Buyer  Strategic Buyer", "opts": ["$4,670,000 $5,370,000", "$4,490,000 $5,190,000", "$4,190,000 $4,890,000"], "ans": "B", "expl": "Both strategic and financial buyers will attempt to reduce executive compensation to market levels by $80,000 ($700,000 − $620,000). They will also have to pay a higher lease rate of $90,000 ($390,000 − $300,000). So the adjustment for both buyers to generate normalized EBITDA is $4,500,000 + $80,000 − $90,000 = $4,490,000. However, only a strategic buyer will be able to realize synergistic savings of $700,000 ($6,300,000 − $5,600,000). So normalized EBITDA for a strategic buyer is $5,190,000 and for a financial buyer it is $4,490,000.", "explhtml": "<p>Both strategic and financial buyers will attempt to reduce executive compensation to market levels by $80,000 ($700,000 − $620,000). They will also have to pay a higher lease rate of $90,000 ($390,000 − $300,000). So the adjustment for both buyers to generate normalized EBITDA is $4,500,000 + $80,000 − $90,000 = $4,490,000.<\/p><p>However, only a strategic buyer will be able to realize synergistic savings of $700,000 ($6,300,000 − $5,600,000). So normalized EBITDA for a strategic buyer is $5,190,000 and for a financial buyer it is $4,490,000.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.c<\/div><div class=\"qtext\"><p>Given the following figures, calculate the normalized EBITDA for a financial and strategic buyer.<\/p><div class=\"tbl\"><table><tr><td>Reported EBITDA<\/td><td>$4,500,000<\/td><\/tr><tr><td>Current Executive Compensation<\/td><td>$700,000<\/td><\/tr><tr><td>Market-Based Executive<br>Compensation<\/td><td>$620,000<\/td><\/tr><tr><td>Current SG&amp;A expenses<\/td><td>$6,300,000<\/td><\/tr><tr><td>SG&amp;A expenses after synergistic<br>savings<\/td><td>$5,600,000<\/td><\/tr><tr><td>Current Lease Rate<\/td><td>$300,000<\/td><\/tr><tr><td>Market-Based Lease Rate<\/td><td>$390,000<\/td><\/tr><\/table><\/div><p>The normalized EBITDA for each type of buyer is: Financial Buyer &nbsp; Strategic Buyer<\/p><\/div>", "subj": "equity"}, {"n": 26, "q": "Using the following figures, calculate the value of the equity using the capitalized cash flow method (CCM), assuming the firm will be acquired. Normalized FCFE in current\nyear $3,000,000 Reported FCFE in current year $2,400,000 Growth rate of FCFE 7.0% Equity discount rate 16.0% WACC 13.0% Risk-free rate 3.5% Cost of debt 10.5% Market value of debt $3,000,000 The value of the equity is:", "opts": ["$32,666,667.", "$35,666,667.", "$28,533,333."], "ans": "B", "expl": "To arrive at the value of the equity using the CCM, it can be estimated using the free cash flows to equity and the required return on equity (r): FCFE₁ value of equity = r −g $3,000,000 × (1.07) value of equity =  = $35,666,667 0.16 −0.07 Note that we grow the FCFE at the growth rate because the current year FCFE is provided in the problem (not next year's FCFE). We use normalized earnings, not reported earnings, given that normalized earnings are most relevant for the acquirers of the firm. The relevant required return for FCFE is the equity discount rate, not the WACC. An alternative approach to calculate the value of the equity would be to subtract the market value of the firm's debt from total firm value. However, the FCFF are not provided so a total firm value cannot be calculated.", "explhtml": "<p>To arrive at the value of the equity using the CCM, it can be estimated using the free cash flows to equity and the required return on equity (r):<\/p><p>FCFE<sub>1<\/sub><\/p><p>value of equity =<\/p><p>r −g<\/p><p>$3,000,000 × (1.07) value of equity = &nbsp; = $35,666,667<\/p><p>0.16 −0.07<\/p><p>Note that we grow the FCFE at the growth rate because the current year FCFE is provided in the problem (not next year&#x27;s FCFE). We use normalized earnings, not reported earnings, given that normalized earnings are most relevant for the acquirers of the firm. The relevant required return for FCFE is the equity discount rate, not the WACC.<\/p><p>An alternative approach to calculate the value of the equity would be to subtract the market value of the firm&#x27;s debt from total firm value. However, the FCFF are not provided so a total firm value cannot be calculated.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.h<\/div><div class=\"qtext\"><p>Using the following figures, calculate the value of the equity using the capitalized cash flow method (CCM), assuming the firm will be acquired.<\/p><div class=\"tbl\"><table><tr><td>Normalized FCFE in current<br>year<\/td><td>$3,000,000<\/td><\/tr><tr><td>Reported FCFE in current year<\/td><td>$2,400,000<\/td><\/tr><tr><td>Growth rate of FCFE<\/td><td>7.0%<\/td><\/tr><tr><td>Equity discount rate<\/td><td>16.0%<\/td><\/tr><tr><td>WACC<\/td><td>13.0%<\/td><\/tr><tr><td>Risk-free rate<\/td><td>3.5%<\/td><\/tr><tr><td>Cost of debt<\/td><td>10.5%<\/td><\/tr><tr><td>Market value of debt<\/td><td>$3,000,000<\/td><\/tr><\/table><\/div><p>The value of the equity is:<\/p><\/div>", "subj": "equity"}, {"n": 27, "q": "When would the asset-based approach result in a higher valuation than its going concern value, in the case of private company valuation?", "opts": ["When valuing biotech firms.", "When valuing pharmaceutical firms.", "If the firm has minimal profits and poor prospects."], "ans": "C", "expl": "If a firm has minimal profits and little hope for better prospects; it might be valued more highly for its liquidation value than as a going concern if another firm can put the assets to better use. Because the asset-based approach values firm equity as the fair value of its assets minus the fair value of its liabilities, it would capture this liquidation value. Pharmaceutical and biotech firms have a high degree of intangible assets. In these cases, the going concern value is likely to be higher than the value from the asset-based approach.", "explhtml": "<p>If a firm has minimal profits and little hope for better prospects; it might be valued more highly for its liquidation value than as a going concern if another firm can put the assets to better use. Because the asset-based approach values firm equity as the fair value of its assets minus the fair value of its liabilities, it would capture this liquidation value.<\/p><p>Pharmaceutical and biotech firms have a high degree of intangible assets. In these cases, the going concern value is likely to be higher than the value from the asset-based approach.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.g<\/div><div class=\"qtext\"><p>When would the asset-based approach result in a higher valuation than its going concern value, in the case of private company valuation?<\/p><\/div>", "subj": "equity"}, {"n": 28, "q": "An analyst is examining three companies. Given the information below, which of them is most likely to be a private firm? Firm Number of Years in\nOperation Market\nCapitalization Required Return for\nCommon Stock A 12 years $1,324.8 million 14.8% B 4 years $1,313.9 million 18.3% C 19 years $2,231.0 million 16.4%", "opts": ["Firm C.", "Firm A.", "Firm B."], "ans": "C", "expl": "The firm most likely to be a private firm is Firm B. Compared to public firms, private firms are less mature (4 years for Firm B), smaller (market cap of B is $1,313.9 million), and have higher required returns (required return for B is 18.3%).", "explhtml": "<p>The firm most likely to be a private firm is Firm B. Compared to public firms, private firms are less mature (4 years for Firm B), smaller (market cap of B is $1,313.9 million), and have higher required returns (required return for B is 18.3%).<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.a<\/div><div class=\"qtext\"><p>An analyst is examining three companies. Given the information below, which of them is most likely to be a private firm?<\/p><div class=\"tbl\"><table><tr><td>Firm<\/td><td>Number of Years in<br>Operation<\/td><td>Market<br>Capitalization<\/td><td>Required Return for<br>Common Stock<\/td><\/tr><tr><td>A<\/td><td>12 years<\/td><td>$1,324.8 million<\/td><td>14.8%<\/td><\/tr><tr><td>B<\/td><td>4 years<\/td><td>$1,313.9 million<\/td><td>18.3%<\/td><\/tr><tr><td>C<\/td><td>19 years<\/td><td>$2,231.0 million<\/td><td>16.4%<\/td><\/tr><\/table><\/div><\/div>", "subj": "equity"}, {"n": 29, "q": "A private pharmaceutical firm is under consideration for acquisition where the financial buyer will pay with equity. Part of the payment to the sellers is based on FDA approval of the firm's drug. If the analyst uses a market approach and comparable data from public firms, which of the following would most likely result in a price-multiple that is too high? The comparable data is:", "opts": ["for transactions where the consideration was non-contingent.", "for strategic buyers.", "from transactions where the buyer used cash."], "ans": "B", "expl": "In market approaches, the analyst values the subject private firm using price multiples from previous public and private transactions. A strategic buyer is one who will have synergies with the target whereas a financial buyer does not. A financial transaction typically has a smaller price premium. So in this case, the comparable price-multiple will be too high. If the acquisition involves the acquirer's stock, the acquirer may be using overvalued shares to buy their target. Using comparables where cash is the consideration would result in lower price multiples. Contingent consideration is payment to the sellers based on the achievement of specific goals such as FDA approval. Contingent consideration increases the risk to the seller and ceteris paribus, they would demand a higher price. Using comparables where the consideration was non-contingent would result in lower price multiples.", "explhtml": "<p>In market approaches, the analyst values the subject private firm using price multiples from previous public and private transactions. A strategic buyer is one who will have synergies with the target whereas a financial buyer does not. A financial transaction typically has a smaller price premium. So in this case, the comparable price-multiple will be too high.<\/p><p>If the acquisition involves the acquirer&#x27;s stock, the acquirer may be using overvalued shares to buy their target. Using comparables where cash is the consideration would result in lower price multiples.<\/p><p>Contingent consideration is payment to the sellers based on the achievement of specific goals such as FDA approval. Contingent consideration increases the risk to the seller and ceteris paribus, they would demand a higher price. Using comparables where the consideration was non-contingent would result in lower price multiples.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.d<\/div><div class=\"qtext\"><p>A private pharmaceutical firm is under consideration for acquisition where the financial buyer will pay with equity. Part of the payment to the sellers is based on FDA approval of the firm&#x27;s drug. If the analyst uses a market approach and comparable data from public firms, which of the following would most likely result in a price-multiple that is too high? The comparable data is:<\/p><\/div>", "subj": "equity"}, {"n": 30, "q": "Which of the following is least likely an example of a transaction-related valuation for a private company?", "opts": ["Performance-based managerial compensation.", "Bankruptcy proceeding.", "Financial reporting."], "ans": "C", "expl": "Venture capital financing, initial public offering (IPO), bankruptcy proceeding, performance-based managerial compensation, and sale in an acquisition are all examples of transaction-related valuations for a private company.", "explhtml": "<p>Venture capital financing, initial public offering (IPO), bankruptcy proceeding, performance-based managerial compensation, and sale in an acquisition are all examples of transaction-related valuations for a private company.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.b<\/div><div class=\"qtext\"><p>Which of the following is least likely an example of a transaction-related valuation for a private company?<\/p><\/div>", "subj": "equity"}, {"n": 31, "q": "An analyst is valuing a private firm on the behalf of a strategic buyer and deflates the average public company multiple by 15% to account for the higher risk of the private firm. Given the following figures, calculate the value of firm equity using the guideline public company method (GPCM). Market value of debt  $4,100,000 | Normalized EBITDA  $42,800,000 | Average EV/EBITDA multiple  8.5 Control premium from past 25% transaction The equity value of the firm is closest to:", "opts": ["$386,484,000.", "$382,384,000.", "$304,060,000."], "ans": "B", "expl": "The adjustment to the EV/EBITDA multiple for the higher risk of the private firm is 8.5 × (1 − 0.15) = 7.225. Given that the buyer is a strategic buyer, a control premium adjustment should be made. Adjusted multiple = 7.225 × (1.25) = 9.03. EV = 9.03 × $42,800,000 = $386,484,000. Subtracting out the debt results in the equity value: $386,484,000 − $4,100,000 = $382,384,000", "explhtml": "<p>The adjustment to the EV/EBITDA multiple for the higher risk of the private firm is 8.5 × (1 − 0.15) = 7.225. Given that the buyer is a strategic buyer, a control premium adjustment should be made. Adjusted multiple = 7.225 × (1.25) = 9.03.<\/p><p>EV = 9.03 × $42,800,000 = $386,484,000.<\/p><p>Subtracting out the debt results in the equity value:<\/p><p>$386,484,000 − $4,100,000 = $382,384,000<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.i<\/div><div class=\"qtext\"><p>An analyst is valuing a private firm on the behalf of a strategic buyer and deflates the average public company multiple by 15% to account for the higher risk of the private firm. Given the following figures, calculate the value of firm equity using the guideline public company method (GPCM).<\/p><div class=\"tbl\"><table><tr><td>Market value of debt<\/td><td>$4,100,000<\/td><\/tr><tr><td>Normalized EBITDA<\/td><td>$42,800,000<\/td><\/tr><tr><td>Average EV/EBITDA multiple<\/td><td>8.5<\/td><\/tr><\/table><\/div><p>Control premium from past<\/p><p>25%<\/p><p>transaction<\/p><p>The equity value of the firm is closest to:<\/p><\/div>", "subj": "equity"}, {"n": 32, "q": "Which of the following approaches to private company valuation uses discounted cash flow analysis?", "opts": ["The income approach.", "The market approach.", "The asset-based approach."], "ans": "A", "expl": "The income approach values a firm as the present value of its future income. The asset-based approach values a firm as its assets minus liabilities. The market approach values a firm using the price-multiples from the sales of comparable assets.", "explhtml": "<p>The income approach values a firm as the present value of its future income. The asset-based approach values a firm as its assets minus liabilities. The market approach values a firm using the price-multiples from the sales of comparable assets.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.g<\/div><div class=\"qtext\"><p>Which of the following approaches to private company valuation uses discounted cash flow analysis?<\/p><\/div>", "subj": "equity"}, {"n": 33, "q": "Using the following information, calculate the WACC using the build-up method, assuming the firm is being acquired. Income return on bonds 6.0% Capital return on bonds 2.0% Long-term Treasury yield 3.5% Beta 1.4 Equity risk premium 6.0% Small stock premium 4.0% Company-specific risk premium 3.0% Industry risk-premium 2.0% Pretax cost of debt 11.0% Optimal Debt/Total Cap 20% Current Debt/Total 7% Debt/Total Cap for public firms in\nindustry 33% Tax Rate 30%", "opts": ["16.3%.", "17.7%.", "18.5%."], "ans": "A", "expl": "Using the build-up method: the risk-free rate, the equity risk premium, the small stock premium, a company-specific risk premium, and an industry risk premium are added together: 3.5% + 6.0% + 4.0% + 3.0% + 2.0% = 18.5%. Note that the risk-free rate is the Treasury yield, not the returns for bonds in general. Because the firm is being acquired, we assume the new owners will utilize an optimal capital structure and weights in the WACC calculation. The capital structure for public firms should not be used because public firms have better access to debt financing. The WACC using the optimal capital structure factors in the debt to total cap, the cost of debt, the tax rate, and the given cost of equity: [20% × 11% × (1-30%)] + [(1-20%) × 18.5%] = 16.3%.", "explhtml": "<p>Using the build-up method: the risk-free rate, the equity risk premium, the small stock premium, a company-specific risk premium, and an industry risk premium are added together: 3.5% + 6.0% + 4.0% + 3.0% + 2.0% = 18.5%. Note that the risk-free rate is the Treasury yield, not the returns for bonds in general.<\/p><p>Because the firm is being acquired, we assume the new owners will utilize an optimal capital structure and weights in the WACC calculation. The capital structure for public firms should not be used because public firms have better access to debt financing.<\/p><p>The WACC using the optimal capital structure factors in the debt to total cap, the cost of debt, the tax rate, and the given cost of equity:<\/p><p>[20% × 11% × (1-30%)] + [(1-20%) × 18.5%] = 16.3%.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.e<\/div><div class=\"qtext\"><p>Using the following information, calculate the WACC using the build-up method, assuming the firm is being acquired.<\/p><div class=\"tbl\"><table><tr><td>Income return on bonds<\/td><td>6.0%<\/td><\/tr><tr><td>Capital return on bonds<\/td><td>2.0%<\/td><\/tr><tr><td>Long-term Treasury yield<\/td><td>3.5%<\/td><\/tr><tr><td>Beta<\/td><td>1.4<\/td><\/tr><tr><td>Equity risk premium<\/td><td>6.0%<\/td><\/tr><tr><td>Small stock premium<\/td><td>4.0%<\/td><\/tr><tr><td>Company-specific risk premium<\/td><td>3.0%<\/td><\/tr><tr><td>Industry risk-premium<\/td><td>2.0%<\/td><\/tr><tr><td>Pretax cost of debt<\/td><td>11.0%<\/td><\/tr><tr><td>Optimal Debt/Total Cap<\/td><td>20%<\/td><\/tr><tr><td>Current Debt/Total<\/td><td>7%<\/td><\/tr><tr><td>Debt/Total Cap for public firms in<br>industry<\/td><td>33%<\/td><\/tr><tr><td>Tax Rate<\/td><td>30%<\/td><\/tr><\/table><\/div><\/div>", "subj": "equity"}, {"n": 34, "q": "An analyst calculates a control premium of 15% and discount for lack of marketability (DLOM) of 20%. Which of the following is closest to the total discount for valuing minority equity interests in the private firm?", "opts": ["35.0%.", "35.7%.", "30.4%."], "ans": "C", "expl": "The discount for lack of control (DLOC) can be backed out of the control premium. 1 DLOC = 1 -  [  ] 1 + Control Premium 1 DLOC = 1 -  [  ]  = 13.04% 1 + 0.15 The total discount also uses the DLOM. Total Discount = 1 − [(1 − DLOC)(1 − DLOM)] Total Discount = 1 − [(1 − 0.1304)(1 − 0.20)] = 30.4%", "explhtml": "<p>The discount for lack of control (DLOC) can be backed out of the control premium.<\/p><p>1 DLOC = 1 -  [ &nbsp; ]<\/p><p>1 + Control Premium<\/p><p>1 DLOC = 1 -  [ &nbsp; ]  = 13.04%<\/p><p>1 + 0.15<\/p><p>The total discount also uses the DLOM.<\/p><p>Total Discount = 1 − [(1 − DLOC)(1 − DLOM)]<\/p><p>Total Discount = 1 − [(1 − 0.1304)(1 − 0.20)] = 30.4%<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.f<\/div><div class=\"qtext\"><p>An analyst calculates a control premium of 15% and discount for lack of marketability (DLOM) of 20%. Which of the following is closest to the total discount for valuing minority equity interests in the private firm?<\/p><\/div>", "subj": "equity"}, {"n": 35, "q": "An analyst values a private firm by using price multiples from the sale of whole companies, with adjustments for risk differences. Which of the following best describes the valuation method that the analyst is using?", "opts": ["The guideline public company method.", "The prior transaction method.", "The guideline transactions method."], "ans": "C", "expl": "The guideline transactions method (GTM) generates a value estimate based on pricing multiples associated with the acquisition of control of entire companies. The guideline public company method (GPCM) generates an estimate of value based on the multiples from trading activity in the shares of public companies that are similar to the private company in question. The prior transaction method (PTM) uses actual transactions in the stock of the subject private company.", "explhtml": "<p>The guideline transactions method (GTM) generates a value estimate based on pricing multiples associated with the acquisition of control of entire companies. The guideline public company method (GPCM) generates an estimate of value based on the multiples from trading activity in the shares of public companies that are similar to the private company in question. The prior transaction method (PTM) uses actual transactions in the stock of the subject private company.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.i<\/div><div class=\"qtext\"><p>An analyst values a private firm by using price multiples from the sale of whole companies, with adjustments for risk differences. Which of the following best describes the valuation method that the analyst is using?<\/p><\/div>", "subj": "equity"}, {"n": 36, "q": "Which of the following is most accurate regarding the asset-based approach? Of the three valuation methods for private firms, it usually:", "opts": ["is the most appropriate for going concerns.", "is not difficult to apply.", "results in the lowest valuation."], "ans": "C", "expl": "The asset-based approach is generally not used for going concerns. Because it is easier to find comparable data at the firm level compared to the asset level, the income and market approaches would be preferred to value going concerns. Because it is difficult to find data for individual intangible assets and specialized assets, the asset-based approach can be difficult to apply. It generally results in the lowest valuation because the use of a firm's assets in combination usually results in greater value creation than each of its parts individually.", "explhtml": "<p>The asset-based approach is generally not used for going concerns. Because it is easier to find comparable data at the firm level compared to the asset level, the income and market approaches would be preferred to value going concerns.<\/p><p>Because it is difficult to find data for individual intangible assets and specialized assets, the asset-based approach can be difficult to apply. It generally results in the lowest valuation because the use of a firm&#x27;s assets in combination usually results in greater value creation than each of its parts individually.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.3, LOS 22.g<\/div><div class=\"qtext\"><p>Which of the following is most accurate regarding the asset-based approach? Of the three valuation methods for private firms, it usually:<\/p><\/div>", "subj": "equity"}, {"n": 37, "q": "Which of the following statements related to the models used to estimate the required rate of return to private company equity is most accurate:", "opts": ["The CAPM model uses betas estimated from firm returns of other private firms.", "The expanded CAPM model adds premiums for size and firm-specific risk.", "The build-up method begins with betas for comparable public firms and adds risk premiums."], "ans": "B", "expl": "Expanded CAPM adds premiums for size and firm-specific risk. CAPM may not be appropriate for private firms because beta is usually estimated from public firm returns. The build-up method adds an industry risk and other risk premiums to market rate of return; it is used when betas for comparable public firms are not available.", "explhtml": "<p>Expanded CAPM adds premiums for size and firm-specific risk. CAPM may not be appropriate for private firms because beta is usually estimated from public firm returns. The build-up method adds an industry risk and other risk premiums to market rate of return; it is used when betas for comparable public firms are not available.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.e<\/div><div class=\"qtext\"><p>Which of the following statements related to the models used to estimate the required rate of return to private company equity is most accurate:<\/p><\/div>", "subj": "equity"}, {"n": 38, "q": "Given the following figures, calculate the FCFF. Assume the earnings and expenses are normalized and that capital expenditures will cover depreciation plus 3 percent of the firm's incremental revenues. Current Revenues $30,000,000 Revenue growth 6% Gross profit margin 20% Depreciation expense as a percent of\nsales 1% Working capital as a percent of sales 15% SG&A expenses $3,800,000 Tax rate 30%", "opts": ["$927,400.", "$1,245,400.", "$1,785,400."], "ans": "B", "expl": "The answer is calculated as follows: Pro forma Income\nStatement  Revenues $31,800,000 Cost of Goods Sold $25,440,000 Gross Profit $6,360,000 SG&A Expenses $3,800,000 Pro forma EBITDA $2,560,000 Depreciation and\namortization $318,000 Pro forma EBIT $2,242,000 Pro forma taxes on EBIT $672,600 Operating income after tax $1,569,400   Adjustments to obtain FCFF  Plus: Depreciation and\namortization $318,000 Minus: Capital expenditures $372,000 Minus: Increase in working\ncapital $270,000 FCFF $1,245,400 The following provides a line by line explanation for the above calculations. Pro forma Income\nStatement Explanation Revenues Current revenues times the growth rate:\n$30,000,000 × (1.06) Cost of Goods Sold Revenues times one minus the gross profit margin:\n$31,800,000 × (1 − 0.20) Gross Profit Revenues times the gross profit margin: $31,800,000\n× 0.20 SG&A Expenses Given in the question Pro forma EBITDA Gross Profit minus SG&A expenses: $6,360,000 −\n$3,800,000 Depreciation and\namortization Revenues times the given depreciation expense:\n$31,800,000 × 0.01 Pro forma EBIT EBITDA minus depreciation and amortization:\n$2,560,000 − $318,000 Pro forma taxes on EBIT EBIT times tax rate: $2,242,000 × 0.30 Operating income after tax EBIT minus taxes: $2,242,000 − $672,600   Adjustments to obtain FCFF  Plus: Depreciation and\namort. Add back noncash charges from above Minus: Capital expenditures Expenditures cover depreciation and increase with\nrevenues: $318,000 + (0.03 × $31,800,000 −\n$30,000,000) Minus: Increase in working\ncapital The working capital will increase as revenues\nincrease: (0.15 × $31,800,000 − $30,000,000) FCFF Operating income net of the adjustments above", "explhtml": "<p>The answer is calculated as follows:<\/p><div class=\"tbl\"><table><tr><td>Pro forma Income<br>Statement<\/td><td><\/td><\/tr><tr><td>Revenues<\/td><td>$31,800,000<\/td><\/tr><tr><td>Cost of Goods Sold<\/td><td>$25,440,000<\/td><\/tr><tr><td>Gross Profit<\/td><td>$6,360,000<\/td><\/tr><tr><td>SG&amp;A Expenses<\/td><td>$3,800,000<\/td><\/tr><tr><td>Pro forma EBITDA<\/td><td>$2,560,000<\/td><\/tr><tr><td>Depreciation and<br>amortization<\/td><td>$318,000<\/td><\/tr><tr><td>Pro forma EBIT<\/td><td>$2,242,000<\/td><\/tr><tr><td>Pro forma taxes on EBIT<\/td><td>$672,600<\/td><\/tr><tr><td>Operating income after tax<\/td><td>$1,569,400<\/td><\/tr><tr><td>Adjustments to obtain FCFF<\/td><td><\/td><\/tr><tr><td>Plus: Depreciation and<br>amortization<\/td><td>$318,000<\/td><\/tr><tr><td>Minus: Capital expenditures<\/td><td>$372,000<\/td><\/tr><tr><td>Minus: Increase in working<br>capital<\/td><td>$270,000<\/td><\/tr><tr><td>FCFF<\/td><td>$1,245,400<\/td><\/tr><\/table><\/div><p>The following provides a line by line explanation for the above calculations.<\/p><div class=\"tbl\"><table><tr><td>Pro forma Income<br>Statement<\/td><td>Explanation<\/td><\/tr><tr><td>Revenues<\/td><td>Current revenues times the growth rate:<br>$30,000,000 × (1.06)<\/td><\/tr><tr><td>Cost of Goods Sold<\/td><td>Revenues times one minus the gross profit margin:<br>$31,800,000 × (1 − 0.20)<\/td><\/tr><tr><td>Gross Profit<\/td><td>Revenues times the gross profit margin: $31,800,000<br>× 0.20<\/td><\/tr><tr><td>SG&amp;A Expenses<\/td><td>Given in the question<\/td><\/tr><tr><td>Pro forma EBITDA<\/td><td>Gross Profit minus SG&amp;A expenses: $6,360,000 −<br>$3,800,000<\/td><\/tr><tr><td>Depreciation and<br>amortization<\/td><td>Revenues times the given depreciation expense:<br>$31,800,000 × 0.01<\/td><\/tr><\/table><\/div><div class=\"tbl\"><table><tr><td>Pro forma EBIT<\/td><td>EBITDA minus depreciation and amortization:<br>$2,560,000 − $318,000<\/td><\/tr><tr><td>Pro forma taxes on EBIT<\/td><td>EBIT times tax rate: $2,242,000 × 0.30<\/td><\/tr><tr><td>Operating income after tax<\/td><td>EBIT minus taxes: $2,242,000 − $672,600<\/td><\/tr><tr><td>Adjustments to obtain FCFF<\/td><td><\/td><\/tr><tr><td>Plus: Depreciation and<br>amort.<\/td><td>Add back noncash charges from above<\/td><\/tr><tr><td>Minus: Capital expenditures<\/td><td>Expenditures cover depreciation and increase with<br>revenues: $318,000 + (0.03 × $31,800,000 −<br>$30,000,000)<\/td><\/tr><tr><td>Minus: Increase in working<br>capital<\/td><td>The working capital will increase as revenues<br>increase: (0.15 × $31,800,000 − $30,000,000)<\/td><\/tr><tr><td>FCFF<\/td><td>Operating income net of the adjustments above<\/td><\/tr><\/table><\/div>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.c<\/div><div class=\"qtext\"><p>Given the following figures, calculate the FCFF. Assume the earnings and expenses are normalized and that capital expenditures will cover depreciation plus 3 percent of the firm&#x27;s incremental revenues.<\/p><div class=\"tbl\"><table><tr><td>Current Revenues<\/td><td>$30,000,000<\/td><\/tr><tr><td>Revenue growth<\/td><td>6%<\/td><\/tr><tr><td>Gross profit margin<\/td><td>20%<\/td><\/tr><tr><td>Depreciation expense as a percent of<br>sales<\/td><td>1%<\/td><\/tr><tr><td>Working capital as a percent of sales<\/td><td>15%<\/td><\/tr><tr><td>SG&amp;A expenses<\/td><td>$3,800,000<\/td><\/tr><tr><td>Tax rate<\/td><td>30%<\/td><\/tr><\/table><\/div><\/div>", "subj": "equity"}, {"n": 39, "q": "Assuming Choo uses price multiples based on the four years of financial information from Bakan, ignoring his additional notes regarding 2x10, which of the following statements is least accurate?", "opts": ["Price to Earnings ratios would be meaningless.", "Price to Book ratios would be the most useful as they would take account of the human capital in a start-up business such as Bakan.", "Price to Cash Flow ratios are theoretically better if calculated using free cash flow to equity rather than CFO."], "ans": "B", "expl": "As Bakan has negative earnings over the period, a P/E ratio would be negative and hence meaningless, so A is correct. Book values do not take account of human capital, as it is not on the Balance Sheet within Net Assets. FCFE is preferable to CFO.", "explhtml": "<p>As Bakan has negative earnings over the period, a P/E ratio would be negative and hence meaningless, so A is correct. Book values do not take account of human capital, as it is not on the Balance Sheet within Net Assets. FCFE is preferable to CFO.<\/p>", "qhtml": "<details class=\"vig\" open><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 39–44<\/summary><div class=\"vig-body\"><p>Jimmy Choo, CFA, works for Joel Constable, a high net worth investor who invests a large proportion of his portfolio speculatively in order to chase high returns. Choo is usually tasked with carrying out initial analysis on investment opportunities, which Constable has identified and may proceed further with.<\/p><p>Most of the opportunities identified by Constable are investments in private companies with little history of profits or dividends. Some, however, are more stable growth companies, which Constable still believes to be undervalued.<\/p><p>One opportunity recently identified by Constable is a private company, Bakan Fashion. Bakan is a fashion retailer, which started up recently with an online presence and a retail unit in a high- end location on a city high street. The company began trading four years ago and has published the following financial information for the benefit of its investors:<\/p><p>Bakan Fashion<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v006.webp\" style=\"max-width:min(100%,447px)\" alt=\"Income Statement ($m) (extracts) 2x07 2x08 2x09 2x10 1.9 Revenue 0.3 0.8 1.9 Net income (0.9) (0.9) (0.3) 0.1\"><p>Cash flow statement ($m) (extracts) 2x07 2x08 2x09 2x10<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v007.webp\" style=\"max-width:min(100%,658px)\" alt=\"CFO (0.6) (0.7) (0.3) 0.2 CFI (3.6) (3.2) (1.0) (0.4) CFF 5.6 0.4 1.0 0.4 Balance sheet ($m) (extracts) 2x07 2x08 2x09 2x10 2.9 3.0 2.6 3.2 Net assets\"><p>Choo has also made some additional notes regarding the 2x10 net income figure after meeting briefly with the finance director of Bakan.<\/p><p>Notes Re: 2x10 Net Income<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v008.webp\" style=\"max-width:min(100%,630px)\" alt=\"• CEO compensation package is $650,000 per annum • A leading fashion supplier provided the retail outlet at a rate of $120,000 per annum for the first four years • A friend of the CEO helped set up the online operations for a discounted cost of $20,000\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v009.webp\" style=\"max-width:min(100%,638px)\" alt=\"• The CEO agreed to the compensation package in a bid to help the company breakeven as quickly as possible. Choo estimates that a market based compensation figure would be $850,000 • The market lease rate for the retail unit is $170,000 • The set up cost for the online operation should have been $50,000\"><p>In addition to the financial information for Bakan, Choo has also identified the following specific factors, which he always takes into account in any analysis of private companies for Constable:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v010.webp\" style=\"max-width:min(100%,640px)\" alt=\"Private company equity typically has fewer potential owners and is less liquid than\"><p>Factor 1: publicly traded shares; hence a discount should be applied in any valuation of<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v011.webp\" style=\"max-width:min(100%,640px)\" alt=\"Bakan. One key objective of the board of Bakan may be to limit exposure to taxes, as 75%\"><p>Factor 2:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v012.webp\" style=\"max-width:min(100%,653px)\" alt=\"of the board members also own substantial equity in the company. Due to the significant ownership of equity by the board of Bakan, management may\"><p>Factor 3:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v013.webp\" style=\"max-width:min(100%,653px)\" alt=\"be tempted to take a shorter-term view than that typically taken by public firms.\"><p>Constable always prefers to see a basic analysis of price multiples for companies before any valuation.<\/p><p>Choo produces this where possible, but usually follows it with a valuation of the private company-using price multiples based on recent sales of comparable assets. He calls this the \"Choo Comparison Method (CCM).\" The CCM valuation is then adjusted by Constable and Choo to take account of Constable's individual financing costs and any perceived synergies with his existing assets.<\/p><p>Choo refers to this final valuation after adjustments in his reports as the \"Intrinsic Value.\" Constable has recently taken him to task on this and suggested that as the valuation focuses on the value to him as a specific investor it should be called the \"Investment Value.\"<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.3, LOS 22.i<\/div><div class=\"qtext\"><p>Assuming Choo uses price multiples based on the four years of financial information from Bakan, ignoring his additional notes regarding 2x10, which of the following statements is least accurate?<\/p><\/div>", "subj": "equity"}, {"n": 40, "q": "When valuing private companies, how would the factors described by Choo usually be classified?", "opts": ["Factor 1 Stock-specific, Factor 2 Stock-specific.", "Factor 1 Stock-specific, Factor 2 Company-specific.", "Factor 1 Company-specific, Factor 2 Company-specific."], "ans": "B", "expl": "Stock-specific factors are liquidity, restrictions on marketability, concentration of control. Company-specific are stage of lifecycle, size, quality and depth of management, management shareholder overlap, short-term investors, quality of information, taxes.", "explhtml": "<p>Stock-specific factors are liquidity, restrictions on marketability, concentration of control.<\/p><p>Company-specific are stage of lifecycle, size, quality and depth of management, management shareholder overlap, short-term investors, quality of information, taxes.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 39–44<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Jimmy Choo, CFA, works for Joel Constable, a high net worth investor who invests a large proportion of his portfolio speculatively in order to chase high returns. Choo is usually tasked with carrying out initial analysis on investment opportunities, which Constable has identified and may proceed further with.<\/p><p>Most of the opportunities identified by Constable are investments in private companies with little history of profits or dividends. Some, however, are more stable growth companies, which Constable still believes to be undervalued.<\/p><p>One opportunity recently identified by Constable is a private company, Bakan Fashion. Bakan is a fashion retailer, which started up recently with an online presence and a retail unit in a high- end location on a city high street. The company began trading four years ago and has published the following financial information for the benefit of its investors:<\/p><p>Bakan Fashion<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v006.webp\" style=\"max-width:min(100%,447px)\" alt=\"Income Statement ($m) (extracts) 2x07 2x08 2x09 2x10 1.9 Revenue 0.3 0.8 1.9 Net income (0.9) (0.9) (0.3) 0.1\"><p>Cash flow statement ($m) (extracts) 2x07 2x08 2x09 2x10<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v007.webp\" style=\"max-width:min(100%,658px)\" alt=\"CFO (0.6) (0.7) (0.3) 0.2 CFI (3.6) (3.2) (1.0) (0.4) CFF 5.6 0.4 1.0 0.4 Balance sheet ($m) (extracts) 2x07 2x08 2x09 2x10 2.9 3.0 2.6 3.2 Net assets\"><p>Choo has also made some additional notes regarding the 2x10 net income figure after meeting briefly with the finance director of Bakan.<\/p><p>Notes Re: 2x10 Net Income<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v008.webp\" style=\"max-width:min(100%,630px)\" alt=\"• CEO compensation package is $650,000 per annum • A leading fashion supplier provided the retail outlet at a rate of $120,000 per annum for the first four years • A friend of the CEO helped set up the online operations for a discounted cost of $20,000\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v009.webp\" style=\"max-width:min(100%,638px)\" alt=\"• The CEO agreed to the compensation package in a bid to help the company breakeven as quickly as possible. Choo estimates that a market based compensation figure would be $850,000 • The market lease rate for the retail unit is $170,000 • The set up cost for the online operation should have been $50,000\"><p>In addition to the financial information for Bakan, Choo has also identified the following specific factors, which he always takes into account in any analysis of private companies for Constable:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v010.webp\" style=\"max-width:min(100%,640px)\" alt=\"Private company equity typically has fewer potential owners and is less liquid than\"><p>Factor 1: publicly traded shares; hence a discount should be applied in any valuation of<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v011.webp\" style=\"max-width:min(100%,640px)\" alt=\"Bakan. One key objective of the board of Bakan may be to limit exposure to taxes, as 75%\"><p>Factor 2:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v012.webp\" style=\"max-width:min(100%,653px)\" alt=\"of the board members also own substantial equity in the company. Due to the significant ownership of equity by the board of Bakan, management may\"><p>Factor 3:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v013.webp\" style=\"max-width:min(100%,653px)\" alt=\"be tempted to take a shorter-term view than that typically taken by public firms.\"><p>Constable always prefers to see a basic analysis of price multiples for companies before any valuation.<\/p><p>Choo produces this where possible, but usually follows it with a valuation of the private company-using price multiples based on recent sales of comparable assets. He calls this the \"Choo Comparison Method (CCM).\" The CCM valuation is then adjusted by Constable and Choo to take account of Constable's individual financing costs and any perceived synergies with his existing assets.<\/p><p>Choo refers to this final valuation after adjustments in his reports as the \"Intrinsic Value.\" Constable has recently taken him to task on this and suggested that as the valuation focuses on the value to him as a specific investor it should be called the \"Investment Value.\"<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.1, LOS 22.a<\/div><div class=\"qtext\"><p>When valuing private companies, how would the factors described by Choo usually be classified?<\/p><\/div>", "subj": "equity"}, {"n": 41, "q": "Is Choo correct in his assessment of Factor 3?", "opts": ["Yes.", "No, it is rare for private companies to allow key management to own equity.", "No, board equity ownership usually results in a longer-term view than public companies."], "ans": "C", "expl": "Shareholders in public firms often focus on short-term measures of performance due to pressure from institutional investors, whereas the equity ownership leads to a longer-term view for owner managers.", "explhtml": "<p>Shareholders in public firms often focus on short-term measures of performance due to pressure from institutional investors, whereas the equity ownership leads to a longer-term view for owner managers.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 39–44<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Jimmy Choo, CFA, works for Joel Constable, a high net worth investor who invests a large proportion of his portfolio speculatively in order to chase high returns. Choo is usually tasked with carrying out initial analysis on investment opportunities, which Constable has identified and may proceed further with.<\/p><p>Most of the opportunities identified by Constable are investments in private companies with little history of profits or dividends. Some, however, are more stable growth companies, which Constable still believes to be undervalued.<\/p><p>One opportunity recently identified by Constable is a private company, Bakan Fashion. Bakan is a fashion retailer, which started up recently with an online presence and a retail unit in a high- end location on a city high street. The company began trading four years ago and has published the following financial information for the benefit of its investors:<\/p><p>Bakan Fashion<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v006.webp\" style=\"max-width:min(100%,447px)\" alt=\"Income Statement ($m) (extracts) 2x07 2x08 2x09 2x10 1.9 Revenue 0.3 0.8 1.9 Net income (0.9) (0.9) (0.3) 0.1\"><p>Cash flow statement ($m) (extracts) 2x07 2x08 2x09 2x10<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v007.webp\" style=\"max-width:min(100%,658px)\" alt=\"CFO (0.6) (0.7) (0.3) 0.2 CFI (3.6) (3.2) (1.0) (0.4) CFF 5.6 0.4 1.0 0.4 Balance sheet ($m) (extracts) 2x07 2x08 2x09 2x10 2.9 3.0 2.6 3.2 Net assets\"><p>Choo has also made some additional notes regarding the 2x10 net income figure after meeting briefly with the finance director of Bakan.<\/p><p>Notes Re: 2x10 Net Income<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v008.webp\" style=\"max-width:min(100%,630px)\" alt=\"• CEO compensation package is $650,000 per annum • A leading fashion supplier provided the retail outlet at a rate of $120,000 per annum for the first four years • A friend of the CEO helped set up the online operations for a discounted cost of $20,000\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v009.webp\" style=\"max-width:min(100%,638px)\" alt=\"• The CEO agreed to the compensation package in a bid to help the company breakeven as quickly as possible. Choo estimates that a market based compensation figure would be $850,000 • The market lease rate for the retail unit is $170,000 • The set up cost for the online operation should have been $50,000\"><p>In addition to the financial information for Bakan, Choo has also identified the following specific factors, which he always takes into account in any analysis of private companies for Constable:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v010.webp\" style=\"max-width:min(100%,640px)\" alt=\"Private company equity typically has fewer potential owners and is less liquid than\"><p>Factor 1: publicly traded shares; hence a discount should be applied in any valuation of<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v011.webp\" style=\"max-width:min(100%,640px)\" alt=\"Bakan. One key objective of the board of Bakan may be to limit exposure to taxes, as 75%\"><p>Factor 2:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v012.webp\" style=\"max-width:min(100%,653px)\" alt=\"of the board members also own substantial equity in the company. Due to the significant ownership of equity by the board of Bakan, management may\"><p>Factor 3:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v013.webp\" style=\"max-width:min(100%,653px)\" alt=\"be tempted to take a shorter-term view than that typically taken by public firms.\"><p>Constable always prefers to see a basic analysis of price multiples for companies before any valuation.<\/p><p>Choo produces this where possible, but usually follows it with a valuation of the private company-using price multiples based on recent sales of comparable assets. He calls this the \"Choo Comparison Method (CCM).\" The CCM valuation is then adjusted by Constable and Choo to take account of Constable's individual financing costs and any perceived synergies with his existing assets.<\/p><p>Choo refers to this final valuation after adjustments in his reports as the \"Intrinsic Value.\" Constable has recently taken him to task on this and suggested that as the valuation focuses on the value to him as a specific investor it should be called the \"Investment Value.\"<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.1, LOS 22.a<\/div><div class=\"qtext\"><p>Is Choo correct in his assessment of Factor 3?<\/p><\/div>", "subj": "equity"}, {"n": 42, "q": "The \"Choo Comparison Method\" of valuing a private company is consistent with which major approach?", "opts": ["Income Approach.", "Multiple Approach.", "Market Approach."], "ans": "C", "expl": "The three major approaches are income—pv of future incomes, market—as described by Choo and asset-based—net asset valuation.", "explhtml": "<p>The three major approaches are income—pv of future incomes, market—as described by Choo and asset-based—net asset valuation.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 39–44<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Jimmy Choo, CFA, works for Joel Constable, a high net worth investor who invests a large proportion of his portfolio speculatively in order to chase high returns. Choo is usually tasked with carrying out initial analysis on investment opportunities, which Constable has identified and may proceed further with.<\/p><p>Most of the opportunities identified by Constable are investments in private companies with little history of profits or dividends. Some, however, are more stable growth companies, which Constable still believes to be undervalued.<\/p><p>One opportunity recently identified by Constable is a private company, Bakan Fashion. Bakan is a fashion retailer, which started up recently with an online presence and a retail unit in a high- end location on a city high street. The company began trading four years ago and has published the following financial information for the benefit of its investors:<\/p><p>Bakan Fashion<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v006.webp\" style=\"max-width:min(100%,447px)\" alt=\"Income Statement ($m) (extracts) 2x07 2x08 2x09 2x10 1.9 Revenue 0.3 0.8 1.9 Net income (0.9) (0.9) (0.3) 0.1\"><p>Cash flow statement ($m) (extracts) 2x07 2x08 2x09 2x10<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v007.webp\" style=\"max-width:min(100%,658px)\" alt=\"CFO (0.6) (0.7) (0.3) 0.2 CFI (3.6) (3.2) (1.0) (0.4) CFF 5.6 0.4 1.0 0.4 Balance sheet ($m) (extracts) 2x07 2x08 2x09 2x10 2.9 3.0 2.6 3.2 Net assets\"><p>Choo has also made some additional notes regarding the 2x10 net income figure after meeting briefly with the finance director of Bakan.<\/p><p>Notes Re: 2x10 Net Income<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v008.webp\" style=\"max-width:min(100%,630px)\" alt=\"• CEO compensation package is $650,000 per annum • A leading fashion supplier provided the retail outlet at a rate of $120,000 per annum for the first four years • A friend of the CEO helped set up the online operations for a discounted cost of $20,000\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v009.webp\" style=\"max-width:min(100%,638px)\" alt=\"• The CEO agreed to the compensation package in a bid to help the company breakeven as quickly as possible. Choo estimates that a market based compensation figure would be $850,000 • The market lease rate for the retail unit is $170,000 • The set up cost for the online operation should have been $50,000\"><p>In addition to the financial information for Bakan, Choo has also identified the following specific factors, which he always takes into account in any analysis of private companies for Constable:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v010.webp\" style=\"max-width:min(100%,640px)\" alt=\"Private company equity typically has fewer potential owners and is less liquid than\"><p>Factor 1: publicly traded shares; hence a discount should be applied in any valuation of<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v011.webp\" style=\"max-width:min(100%,640px)\" alt=\"Bakan. One key objective of the board of Bakan may be to limit exposure to taxes, as 75%\"><p>Factor 2:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v012.webp\" style=\"max-width:min(100%,653px)\" alt=\"of the board members also own substantial equity in the company. Due to the significant ownership of equity by the board of Bakan, management may\"><p>Factor 3:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v013.webp\" style=\"max-width:min(100%,653px)\" alt=\"be tempted to take a shorter-term view than that typically taken by public firms.\"><p>Constable always prefers to see a basic analysis of price multiples for companies before any valuation.<\/p><p>Choo produces this where possible, but usually follows it with a valuation of the private company-using price multiples based on recent sales of comparable assets. He calls this the \"Choo Comparison Method (CCM).\" The CCM valuation is then adjusted by Constable and Choo to take account of Constable's individual financing costs and any perceived synergies with his existing assets.<\/p><p>Choo refers to this final valuation after adjustments in his reports as the \"Intrinsic Value.\" Constable has recently taken him to task on this and suggested that as the valuation focuses on the value to him as a specific investor it should be called the \"Investment Value.\"<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.3, LOS 22.g<\/div><div class=\"qtext\"><p>The &quot;Choo Comparison Method&quot; of valuing a private company is consistent with which major approach?<\/p><\/div>", "subj": "equity"}, {"n": 43, "q": "Is Constable right in his suggested renaming of the final valuation?", "opts": ["Yes.", "No, a valuation based on analysis of company fundamentals should be referred to as an Intrinsic Value.", "No, it should be renamed Market Value as it uses primarily market information."], "ans": "A", "expl": "Investment value focuses on the value to a particular buyer and is important in private company valuation.", "explhtml": "<p>Investment value focuses on the value to a particular buyer and is important in private company valuation.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 39–44<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Jimmy Choo, CFA, works for Joel Constable, a high net worth investor who invests a large proportion of his portfolio speculatively in order to chase high returns. Choo is usually tasked with carrying out initial analysis on investment opportunities, which Constable has identified and may proceed further with.<\/p><p>Most of the opportunities identified by Constable are investments in private companies with little history of profits or dividends. Some, however, are more stable growth companies, which Constable still believes to be undervalued.<\/p><p>One opportunity recently identified by Constable is a private company, Bakan Fashion. Bakan is a fashion retailer, which started up recently with an online presence and a retail unit in a high- end location on a city high street. The company began trading four years ago and has published the following financial information for the benefit of its investors:<\/p><p>Bakan Fashion<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v006.webp\" style=\"max-width:min(100%,447px)\" alt=\"Income Statement ($m) (extracts) 2x07 2x08 2x09 2x10 1.9 Revenue 0.3 0.8 1.9 Net income (0.9) (0.9) (0.3) 0.1\"><p>Cash flow statement ($m) (extracts) 2x07 2x08 2x09 2x10<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v007.webp\" style=\"max-width:min(100%,658px)\" alt=\"CFO (0.6) (0.7) (0.3) 0.2 CFI (3.6) (3.2) (1.0) (0.4) CFF 5.6 0.4 1.0 0.4 Balance sheet ($m) (extracts) 2x07 2x08 2x09 2x10 2.9 3.0 2.6 3.2 Net assets\"><p>Choo has also made some additional notes regarding the 2x10 net income figure after meeting briefly with the finance director of Bakan.<\/p><p>Notes Re: 2x10 Net Income<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v008.webp\" style=\"max-width:min(100%,630px)\" alt=\"• CEO compensation package is $650,000 per annum • A leading fashion supplier provided the retail outlet at a rate of $120,000 per annum for the first four years • A friend of the CEO helped set up the online operations for a discounted cost of $20,000\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v009.webp\" style=\"max-width:min(100%,638px)\" alt=\"• The CEO agreed to the compensation package in a bid to help the company breakeven as quickly as possible. Choo estimates that a market based compensation figure would be $850,000 • The market lease rate for the retail unit is $170,000 • The set up cost for the online operation should have been $50,000\"><p>In addition to the financial information for Bakan, Choo has also identified the following specific factors, which he always takes into account in any analysis of private companies for Constable:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v010.webp\" style=\"max-width:min(100%,640px)\" alt=\"Private company equity typically has fewer potential owners and is less liquid than\"><p>Factor 1: publicly traded shares; hence a discount should be applied in any valuation of<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v011.webp\" style=\"max-width:min(100%,640px)\" alt=\"Bakan. One key objective of the board of Bakan may be to limit exposure to taxes, as 75%\"><p>Factor 2:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v012.webp\" style=\"max-width:min(100%,653px)\" alt=\"of the board members also own substantial equity in the company. Due to the significant ownership of equity by the board of Bakan, management may\"><p>Factor 3:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v013.webp\" style=\"max-width:min(100%,653px)\" alt=\"be tempted to take a shorter-term view than that typically taken by public firms.\"><p>Constable always prefers to see a basic analysis of price multiples for companies before any valuation.<\/p><p>Choo produces this where possible, but usually follows it with a valuation of the private company-using price multiples based on recent sales of comparable assets. He calls this the \"Choo Comparison Method (CCM).\" The CCM valuation is then adjusted by Constable and Choo to take account of Constable's individual financing costs and any perceived synergies with his existing assets.<\/p><p>Choo refers to this final valuation after adjustments in his reports as the \"Intrinsic Value.\" Constable has recently taken him to task on this and suggested that as the valuation focuses on the value to him as a specific investor it should be called the \"Investment Value.\"<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.2, LOS 22.f<\/div><div class=\"qtext\"><p>Is Constable right in his suggested renaming of the final valuation?<\/p><\/div>", "subj": "equity"}, {"n": 44, "q": "Using Choo's additional notes on Bakan's 2x10 Net Income, which of the following is the most accurate estimate of normalized earnings for 2x10?", "opts": ["Loss $150,000.", "Profit $250,000.", "Loss $180,000."], "ans": "A", "expl": "Net Income $100,000 – $200,000 – $50,000 = –$150,000 Deduct $200,000 for extra CEO compensation Deduct $50,000 for extra lease cost One off online set up cost is sunk and not relevant to future earnings.", "explhtml": "<p>Net Income $100,000 – $200,000 – $50,000 = –$150,000<\/p><p>Deduct $200,000 for extra CEO compensation<\/p><p>Deduct $50,000 for extra lease cost<\/p><p>One off online set up cost is sunk and not relevant to future earnings.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 39–44<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Jimmy Choo, CFA, works for Joel Constable, a high net worth investor who invests a large proportion of his portfolio speculatively in order to chase high returns. Choo is usually tasked with carrying out initial analysis on investment opportunities, which Constable has identified and may proceed further with.<\/p><p>Most of the opportunities identified by Constable are investments in private companies with little history of profits or dividends. Some, however, are more stable growth companies, which Constable still believes to be undervalued.<\/p><p>One opportunity recently identified by Constable is a private company, Bakan Fashion. Bakan is a fashion retailer, which started up recently with an online presence and a retail unit in a high- end location on a city high street. The company began trading four years ago and has published the following financial information for the benefit of its investors:<\/p><p>Bakan Fashion<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v006.webp\" style=\"max-width:min(100%,447px)\" alt=\"Income Statement ($m) (extracts) 2x07 2x08 2x09 2x10 1.9 Revenue 0.3 0.8 1.9 Net income (0.9) (0.9) (0.3) 0.1\"><p>Cash flow statement ($m) (extracts) 2x07 2x08 2x09 2x10<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v007.webp\" style=\"max-width:min(100%,658px)\" alt=\"CFO (0.6) (0.7) (0.3) 0.2 CFI (3.6) (3.2) (1.0) (0.4) CFF 5.6 0.4 1.0 0.4 Balance sheet ($m) (extracts) 2x07 2x08 2x09 2x10 2.9 3.0 2.6 3.2 Net assets\"><p>Choo has also made some additional notes regarding the 2x10 net income figure after meeting briefly with the finance director of Bakan.<\/p><p>Notes Re: 2x10 Net Income<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v008.webp\" style=\"max-width:min(100%,630px)\" alt=\"• CEO compensation package is $650,000 per annum • A leading fashion supplier provided the retail outlet at a rate of $120,000 per annum for the first four years • A friend of the CEO helped set up the online operations for a discounted cost of $20,000\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v009.webp\" style=\"max-width:min(100%,638px)\" alt=\"• The CEO agreed to the compensation package in a bid to help the company breakeven as quickly as possible. Choo estimates that a market based compensation figure would be $850,000 • The market lease rate for the retail unit is $170,000 • The set up cost for the online operation should have been $50,000\"><p>In addition to the financial information for Bakan, Choo has also identified the following specific factors, which he always takes into account in any analysis of private companies for Constable:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v010.webp\" style=\"max-width:min(100%,640px)\" alt=\"Private company equity typically has fewer potential owners and is less liquid than\"><p>Factor 1: publicly traded shares; hence a discount should be applied in any valuation of<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v011.webp\" style=\"max-width:min(100%,640px)\" alt=\"Bakan. One key objective of the board of Bakan may be to limit exposure to taxes, as 75%\"><p>Factor 2:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v012.webp\" style=\"max-width:min(100%,653px)\" alt=\"of the board members also own substantial equity in the company. Due to the significant ownership of equity by the board of Bakan, management may\"><p>Factor 3:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r22/v013.webp\" style=\"max-width:min(100%,653px)\" alt=\"be tempted to take a shorter-term view than that typically taken by public firms.\"><p>Constable always prefers to see a basic analysis of price multiples for companies before any valuation.<\/p><p>Choo produces this where possible, but usually follows it with a valuation of the private company-using price multiples based on recent sales of comparable assets. He calls this the \"Choo Comparison Method (CCM).\" The CCM valuation is then adjusted by Constable and Choo to take account of Constable's individual financing costs and any perceived synergies with his existing assets.<\/p><p>Choo refers to this final valuation after adjustments in his reports as the \"Intrinsic Value.\" Constable has recently taken him to task on this and suggested that as the valuation focuses on the value to him as a specific investor it should be called the \"Investment Value.\"<\/p><\/div><\/details><div class=\"pp-topic\">Module 22.1, LOS 22.c<\/div><div class=\"qtext\"><p>Using Choo&#x27;s additional notes on Bakan&#x27;s 2x10 Net Income, which of the following is the most accurate estimate of normalized earnings for 2x10?<\/p><\/div>", "subj": "equity"}, {"n": 45, "q": "Which of the following best describes projection risk in the estimation of the discount rate for private company valuations?", "opts": ["Projection risk results in higher discount rates.", "If the availability of information from private firms is poor, the uncertainty of projected cash flows may increase.", "Management will always be overly optimistic to increase the acquisition price."], "ans": "B", "expl": "Projection risk refers to the risk of misestimating future cash flows. Given the lower availability of information from private firms, the uncertainty of projected cash flows may increase. However, management may not be experienced with projections and may underestimate or overestimate future prospects. The discount rate would then be decreased or increased accordingly. So management is not always overly optimistic and projection risk does not always result in higher discount rates.", "explhtml": "<p>Projection risk refers to the risk of misestimating future cash flows. Given the lower availability of information from private firms, the uncertainty of projected cash flows may increase.<\/p><p>However, management may not be experienced with projections and may underestimate or overestimate future prospects. The discount rate would then be decreased or increased accordingly. So management is not always overly optimistic and projection risk does not always result in higher discount rates.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.d<\/div><div class=\"qtext\"><p>Which of the following best describes projection risk in the estimation of the discount rate for private company valuations?<\/p><\/div>", "subj": "equity"}, {"n": 46, "q": "Which of the following best describes the build-up method used for the estimation of the discount rate in private company valuations?", "opts": ["An industry risk premium is not included because it is captured in the equity risk premium.", "It is useful when there are no comparable public firms.", "Because it is not used in the calculation, beta is assumed to be zero."], "ans": "B", "expl": "If it is not possible to find comparable public firms with which to estimate beta by, the build-up method can be used for a private firm. It is similar to the expanded CAPM except that beta is not used. Implicitly, beta is assumed to be one. Both industry risk premiums and equity risk premiums are used. The risk-free rate, the equity risk premium, the small stock premium, a company-specific risk premium, and an industry risk premium are added together in the build-up method.", "explhtml": "<p>If it is not possible to find comparable public firms with which to estimate beta by, the build-up method can be used for a private firm. It is similar to the expanded CAPM except that beta is not used. Implicitly, beta is assumed to be one. Both industry risk premiums and equity risk premiums are used. The risk-free rate, the equity risk premium, the small stock premium, a company-specific risk premium, and an industry risk premium are added together in the build-up method.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.e<\/div><div class=\"qtext\"><p>Which of the following best describes the build-up method used for the estimation of the discount rate in private company valuations?<\/p><\/div>", "subj": "equity"}, {"n": 47, "q": "Assume a minority shareholder holds 10% of a private firm's equity, with the CEO holding the other 90%. Using normalized earnings, the value of the firm's equity is estimated at $20 million. The CEO refuses to sell the firm and the minority shareholder cannot sell their interest easily. A discount for lack of marketability (DLOM) of 15% will be applied. A discount for lack of control (DLOC) will also be estimated. Using reported earnings instead of normalized earnings provides an estimated firm equity value of $19 million. Which of the following is closest to the value of the minority shareholder's equity interest?", "opts": ["$1,900,000.", "$1,615,000.", "$1,700,000."], "ans": "B", "expl": "Given these figures, the value of the minority shareholder's equity interest is: Firm's equity value $19,000,000 Minority interest 10% Value of minority interest without\ndiscounts $1,900,000 minus DLOC of 0% 0 Value of interest if marketable $1,900,000 minus DLOM of 15% $285,000 Value of minority interest $1,615,000", "explhtml": "<p>Given these figures, the value of the minority shareholder&#x27;s equity interest is:<\/p><div class=\"tbl\"><table><tr><td>Firm&#x27;s equity value<\/td><td>$19,000,000<\/td><\/tr><tr><td>Minority interest<\/td><td>10%<\/td><\/tr><tr><td>Value of minority interest without<br>discounts<\/td><td>$1,900,000<\/td><\/tr><tr><td>minus DLOC of 0%<\/td><td>0<\/td><\/tr><tr><td>Value of interest if marketable<\/td><td>$1,900,000<\/td><\/tr><tr><td>minus DLOM of 15%<\/td><td>$285,000<\/td><\/tr><tr><td>Value of minority interest<\/td><td>$1,615,000<\/td><\/tr><\/table><\/div>", "qhtml": "<div class=\"pp-topic\">Module 22.2, LOS 22.f<\/div><div class=\"qtext\"><p>Assume a minority shareholder holds 10% of a private firm&#x27;s equity, with the CEO holding the other 90%. Using normalized earnings, the value of the firm&#x27;s equity is estimated at $20 million. The CEO refuses to sell the firm and the minority shareholder cannot sell their interest easily. A discount for lack of marketability (DLOM) of 15% will be applied. A discount for lack of control (DLOC) will also be estimated. Using reported earnings instead of normalized earnings provides an estimated firm equity value of $19 million. Which of the following is closest to the value of the minority shareholder&#x27;s equity interest?<\/p><\/div>", "subj": "equity"}, {"n": 48, "q": "A private business is being valued for the purpose of determining the appropriate level of performance-based managerial compensation. This private company valuation would be best described as a:", "opts": ["Transaction-related valuation", "Litigation-related valuation", "Compliance-related valuation"], "ans": "A", "expl": "Transaction-related valuations may be performed for reasons related to venture capital financing, an IPO, a sale of the firm, bankruptcy, or performance-based managerial compensation. Compliance-related valuations are performed for financial reporting and tax purposes. Litigation-related valuations may be required for shareholder suits, damage claims, lost profits, or divorces.", "explhtml": "<p>Transaction-related valuations may be performed for reasons related to venture capital financing, an IPO, a sale of the firm, bankruptcy, or performance-based managerial compensation. Compliance-related valuations are performed for financial reporting and tax purposes. Litigation-related valuations may be required for shareholder suits, damage claims, lost profits, or divorces.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 22.1, LOS 22.b<\/div><div class=\"qtext\"><p>A private business is being valued for the purpose of determining the appropriate level of performance-based managerial compensation. This private company valuation would be best described as a:<\/p><\/div>", "subj": "equity"}];
+const CFG = {"title": "Reading 22 — Private Company Valuation", "subtitle": "CFA Level II · 48 câu · Kaplan Schweser QBank 2025 (34 câu đơn · 14 câu item set)", "minutes": 0, "passMark": 65, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    let prev = {}; try{ prev = JSON.parse(localStorage.getItem(PROG_KEY)||"null")||{}; }catch(e){}
+    const slug = PROG_KEY.replace(/^cfa:prog:/,"");
+    const _d=new Date(); const day=_d.getFullYear()+"-"+String(_d.getMonth()+1).padStart(2,"0")+"-"+String(_d.getDate()).padStart(2,"0");
+    let tbase = prev.tbase;
+    if(!tbase || tbase.d !== day) tbase = {d:day, base:(prev.done||0)};
+    const answeredToday = Math.max(0, done - tbase.base);
+    try{
+      const daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}");
+      (daily[day] = daily[day]||{})[slug] = {answered:answeredToday, done, total, graded, correct, pct, title:(CFG.title||slug), ts:Date.now()};
+      localStorage.setItem("cfa:daily", JSON.stringify(daily));
+    }catch(e){}
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, tbase, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); var __slug = PROG_KEY.replace(/^cfa:prog:/,""); var __daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}"), __ch=false; for(var __d in __daily){ if(__daily[__d] && __daily[__d][__slug]){ delete __daily[__d][__slug]; __ch=true; } if(__daily[__d] && Object.keys(__daily[__d]).length===0) delete __daily[__d]; } if(__ch) localStorage.setItem("cfa:daily", JSON.stringify(__daily)); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      e.appendChild(q.explhtml?buildExplHtml(q):buildExplanation(q.expl,q.ans,q.opts));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+
+// ---- readable explanations ---------------------------------------------- //
+function explanationData(raw){
+  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|thảo luận|lọc|giải pháp|bạn muốn thảo luận.*|lý do cho đáp án đúng|câu hỏi\s+\d+\s+trên\s+\d+|\(?required\)?|\(?bắt buộc\)?|[?①θi1])$/i;
+  let lines=String(raw||"").replace(/\r/g,"").split("\n")
+    .map(line=>line.replace(/\s+/g," ").trim())
+    .filter(line=>line&&!noise.test(line));
+  let reading="",los="",losIndex=-1;
+  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss|tính|mô tả|giải thích|so sánh|phân tích|đánh giá|diễn giải|nhận diện|xác định|định nghĩa|thảo luận)\b/i;
+  for(let i=Math.max(1,lines.length-10);i<lines.length;i++){
+    const candidate=lines[i].replace(/^[·•?]\s*/,"").replace(/^i(?=(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss))/i,"").trim();
+    const previous=lines[i-1]||"";
+    if(action.test(candidate)&&previous.length<120&&!/[.!?]$/.test(previous)&&!/^[A-J][.)]\s/i.test(previous)){
+      reading=previous; los=lines.slice(i).join(" "); lines=lines.slice(0,i-1); losIndex=i; break;
+    }
+  }
+  return {text:lines.join(" ").replace(/\s+/g," ").trim(),reading,los};
+}
+function explanationSections(text,correctLetter){
+  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\b)/gi,"\n$1. ");
+  const chunks=broken.split(/\n(?=[A-J]\.\s+)/).map(s=>s.trim()).filter(Boolean);
+  const sections=chunks.map(chunk=>{
+    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\.?\s*)?(?:because\s+)?/i);
+    if(!match) return {letter:"",text:chunk};
+    return {letter:match[1].toUpperCase(),text:chunk.slice(match[0].length).trim()};
+  });
+  const hasCorrect=sections.some(section=>section.letter===correctLetter);
+  if(!hasCorrect&&sections.length>1&&!sections[0].letter) sections[0].letter=correctLetter;
+  const unique=[];
+  sections.forEach(section=>{
+    if(!section.letter){
+      if(section.text&&!unique.some(item=>!item.letter)) unique.push(section);
+      return;
+    }
+    const duplicateIndex=unique.findIndex(item=>item.letter===section.letter);
+    if(duplicateIndex<0) unique.push(section);
+    else if((section.text||"").length>(unique[duplicateIndex].text||"").length) unique[duplicateIndex]=section;
+  });
+  return unique;
+}
+function buildExplanation(raw,correctLetter,options){
+  const data=explanationData(raw);
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+correctLetter;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content";
+  explanationSections(data.text,correctLetter).forEach(section=>{
+    if(section.letter){
+      const choice=document.createElement("article");
+      const isCorrect=section.letter===correctLetter;
+      choice.className="expl-choice "+(isCorrect?"is-correct":"is-other");
+      const top=document.createElement("div"); top.className="expl-choice-top";
+      const letter=document.createElement("span"); letter.className="expl-letter"; letter.textContent=section.letter;
+      const state=document.createElement("span"); state.className="expl-state"; state.textContent=isCorrect?"Đáp án đúng":"Không đúng";
+      top.appendChild(letter); top.appendChild(state); choice.appendChild(top);
+      const optionIndex=LETTERS.indexOf(section.letter);
+      if(options&&optionIndex>=0&&options[optionIndex]){
+        const option=document.createElement("p"); option.className="expl-option-copy"; option.textContent=options[optionIndex]; choice.appendChild(option);
+      }
+      if(section.text){ const reason=document.createElement("p"); reason.className="expl-reason"; reason.textContent=section.text; choice.appendChild(reason); }
+      content.appendChild(choice);
+    }else if(section.text){
+      const note=document.createElement("div"); note.className="expl-note";
+      const paragraph=document.createElement("p"); paragraph.textContent=section.text; note.appendChild(paragraph); content.appendChild(note);
+    }
+  });
+  if(data.reading||data.los){
+    const meta=document.createElement("div"); meta.className="expl-meta";
+    if(data.reading){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="Reading:"; const value=document.createElement("span"); value.textContent=data.reading; row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    if(data.los){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="LOS:"; const value=document.createElement("span"); value.textContent=data.los.replace(/^[·•?]\s*/,""); row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    content.appendChild(meta);
+  }
+  shell.appendChild(content); return shell;
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function setSubmitButtonMode(showResults){
+  const btn=$("submitBtn"); if(!btn) return;
+  const label=showResults?"Xem kết quả":"Nộp bài";
+  const textNode=Array.from(btn.childNodes).find(n=>n.nodeType===3);
+  if(textNode) textNode.nodeValue=label;
+  btn.title=showResults?"Xem lại điểm tổng và điểm theo môn":"";
+}
+function requestSubmit(){
+  if(graded){
+    if(typeof window.showGradedResult==="function") window.showGradedResult();
+    else $("resultOverlay").classList.add("show");
+    return;
+  }
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    showQuestionSubject(card,q);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+  renderSubjectBreakdown();
+  setSubmitButtonMode(true);
+}
+
+
+// ---- CFA subject score breakdown ---------------------------------------- //
+const CFA_SUBJECTS = [["ethics", "Ethical & Professional Standards"], ["quant", "Quantitative Methods"], ["economics", "Economics"], ["fsa", "Financial Statement Analysis"], ["corporate", "Corporate Issuers"], ["equity", "Equity Valuation"], ["fixed", "Fixed Income"], ["derivatives", "Derivatives"], ["alternatives", "Alternative Investments"], ["portfolio", "Portfolio Management"]];
+function getCfaSubjectRaw(question){
+  const text=((question.q||"")+"\n"+(question.expl||""))
+    .toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const prompt=(question.q||"").toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  if(session===1 && Number(question.n)<=27) return "ethics";
+  if(session===1 && /f-statistic|test statistic|hypothesis|regression|semideviation|probability|box and whisker|interquartile|quintile|percentile/.test(prompt)) return "quant";
+  if(session===1 && /structural deficit|budget deficit|exchange rate|forward points|currency|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity/.test(prompt)) return "economics";
+  if(session===1 && /cost of debt|cost of capital|capital structure|capital budgeting|\bnpv\b|internal rate of return|\birr\b|board of directors|proxy voting|stakeholders?/.test(prompt)) return "corporate";
+  if(session===1 && /code of ethics|professional conduct|professional integrity|guidance\s*for\s*standards|standards?\s+[ivxl]+\b|gips|global investment performance|ethics application|ethical decision|ethics and trust|explain ethics|level i candidate|exam content|market manipulation|situational influence|fair dealing/.test(text)) return "ethics";
+  if(session===2 && /derivative|forward commitment|forward contract|forward price|futures? contract|swap\b|option\b|put-call|put call|binomial model|contingent claim|arbitrage, replication|delta hedg|option replication|moneyness/.test(text)) return "derivatives";
+  if(session===2 && /alternative investment|private capital|private equity|private debt|hedge fund|real estate|infrastructure investment|natural resources|commodit(?:y|ies)|digital assets?|collectibles|venture capital|buyout|mezzanine financing|co-investing/.test(text)) return "alternatives";
+  if(session===2 && /fixed-income|fixed income|bond\b|bonds\b|yield curve|yield spread|yield-to-maturity|yield to maturity|duration|convexity|mortgage-backed|asset-backed|securiti[sz]ed debt|credit analysis|credit risk|term structure of interest rates|money market instrument|repo market/.test(text)) return "fixed";
+  if(session===1 && /financial statement|financial reporting|income statement|incomestatements|balance sheet|cash flow|inventor(?:y|ies)|long-term assets|long-termassets|long lived assets|income tax|deferred tax|revenue recognition|performance obligations|reporting quality|financial analysis techniques|financial analysistechniques|financial statement modeling|long-term liabilities and equity|long term liabilities and equity|common-size|common size|profitability ratios|liquidity ratios|solvency ratios|activity ratios|dupont|ebitda|diluted eps|gaap|ifrs/.test(text)) return "fsa";
+  if(session===2 && /portfolio management|portfolio risk and return|portfolio planning|portfolio construction|asset allocation|investment policy statement|\bips\b|behavioral bias|behavioral explanation|risk management|capital asset pricing model|\bcapm\b|security market line|capital market line|capital allocation line|efficient frontier|systematic risk|unsystematic risk|sharpe ratio|treynor ratio|information ratio|types of investors|mutual fund|correlation between the assets|correlation pattern|correlation coefficient between two assets|portfolio standard deviation|portfolio risk falls|diversification benefit/.test(text)) return "portfolio";
+  if(session===2 && /equity securit|equity valuation|equityvaluation|market organization and structure|security market index|securitymarket index|market efficiency|industry and competitive analysis|industry andcompetitiveanalysis|company analysis|companyanalysis|porter's five forces|dividend discount|gordon growth|sustainable growth rate|free cash flow to equity|price multiple|preferred stock|preference share|equity market|equity index|stock market|share valuation|enterprise value multiple|statutory voting|size effect anomaly|intrinsic value/.test(text)) return "equity";
+  if(session===1 && /economics|business cycle|monetary policy|fiscal policy|geopolitic|international trade|internationaltrade|exchange rate|currency exchange|capital flows and the fx market|aggregate output|aggregate demand|aggregate supply|inflation|unemployment|firm and market structures|market structure within which a firm|perfect competition|monopolistic competition|oligopoly|central bank|gross domestic product|\bgdp\b|herfindahl-hirschman|concentration ratio/.test(text)) return "economics";
+  if(session===1 && /corporate issuer|corporate governance|capital structure|capital allocation|capital budgeting|combination of projects|cost of capital|working capital|business model|organizational forms|investors and other stakeholders|weighted-average cost of capital|weighted average cost of capital|\bwacc\b|modigliani-miller|dividend policy|share repurchase|stakeholder groups|principal-agent/.test(text)) return "corporate";
+  if(session===1 && /quantitative methods|rates? and returns?|ratesand ?return|statistical measure|probability|random variable|sampling|estimation|hypothesis test|parametric|non-parametric|nonparametric|linear regression|correlation|covariance|time value of money|discounted cash flow|big data|machine learning|data science|central tendency|dispersion|skewness|kurtosis|confidence interval|standard deviation|coefficient of variation|major return measures|continuously compounded|monthly compounding|present value/.test(text)) return "quant";
+  if(session===1){
+    if(/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|cash paid|revenue|expense recognition|inventor(?:y|ies)|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|auditor|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible asset|long-lived asset|long lived asset|asset revaluation|revaluation surplus|impairment|amortization|depreciation|pension plan|financial ratio|liquidity ratio|solvency ratio|receivables turnover|payables turnover|cash conversion cycle|fixed charge coverage|creditworthiness|normalized earnings|management['’]?s commentary/.test(prompt)) return "fsa";
+    if(/business cycle|credit cycle|fiscal policy|monetary policy|structural deficit|budget deficit|central bank|lender of last resort|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic competition|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|usd\/?[a-z]{3}|eur\/?[a-z]{3}|appreciation of the|capital restriction|world bank|international monetary fund/.test(prompt)) return "economics";
+    if(/corporate|company lifecycle|company['’]?s lifecycle|start-up|startup|early-stage|business model|franchise model|board of directors|proxy voting|stakeholders?|shareholders?|creditors?|corporate governance|capital budgeting|capital investment|going concern project|real option|combination of projects|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|target weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|source of liquidity|pull on liquidity|drag on.*liquidity|compensation packages|competitive strategy|porter['’]?s five forces|economies of scale|information asymmetry|agency relationship/.test(prompt)) return "corporate";
+    return "quant";
+  }
+  if(/derivative|forward commitment|forward contract|forward rate agreement|futures? contract|swap\b|option\b|call buyer|call seller|put buyer|put seller|strike price|option premium|put-call|put call|binomial model|contingent claim|moneyness|value at expiration|profit.*expiration|arbitrage|replication/.test(prompt)) return "derivatives";
+  if(/alternative investment|private capital|private equity|private debt|hedge fund|real estate|\breit\b|\breits\b|infrastructure|natural resources|commodit(?:y|ies)|digital assets?|cryptocurrenc|bitcoin|collectibles|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption regime|pooled investment product|timberland|farmland/.test(prompt)) return "alternatives";
+  if(/fixed-income|fixed income|bond\b|bonds\b|debt rating|corporate debt|credit rating|credit spread|creditworthiness|yield curve|yield spread|spot rate|forward rate|yield-to-maturity|yield to maturity|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|\bcds\b|repo market|central bank funds|covenant|accrued interest|priority of claims|default risk|extension risk/.test(prompt)) return "fixed";
+  if(/portfolio|asset allocation|investment policy statement|\bips\b|behavioral finance|behavioral bias|cognitive error|risk aversion|utility function|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation between|covariance between|portfolio standard deviation|sharpe ratio|treynor ratio|jensen['’]?s alpha|information ratio|two-fund separation|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral investor/.test(prompt)) return "portfolio";
+  return "equity";
+}
+
+const CFA_SESSION_SUBJECT_RANGES = {
+  1:{ethics:[27,27],quant:[11,17],economics:[11,17],fsa:[20,25],corporate:[10,16]},
+  2:{equity:[20,25],fixed:[20,25],derivatives:[9,14],alternatives:[11,16],portfolio:[14,22]}
+};
+const CFA_SUBJECT_HINTS = {
+  quant:/probabilit|return measure|holding period|money-weighted|time-weighted|mean|median|mode|quintile|percentile|variance|standard deviation|semideviation|skew|kurtosis|hypothesis|test statistic|confidence interval|regression|correlation|covariance|sampling|estimation|bayes|box and whisker|interquartile|coefficient of variation|compound|present value|future value|interest rate|data science|machine learning|fintech/g,
+  economics:/business cycle|credit cycle|fiscal|monetary|central bank|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|capital restriction|world bank|international monetary fund/g,
+  fsa:/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|revenue|expense|inventory|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible|long-lived|revaluation|impairment|amortization|depreciation|pension|financial ratio|receivables turnover|payables turnover|cash conversion|fixed charge coverage|normalized earnings|management['’]?s commentary/g,
+  corporate:/corporate|company lifecycle|start-up|startup|early-stage|business model|franchise|board of directors|proxy voting|stakeholder|shareholder|creditor|governance|capital budgeting|capital investment|project|real option|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|liquidity|compensation|competitive strategy|porter|economies of scale|information asymmetry|agency relationship/g,
+  equity:/equity|common share|preferred share|stock|market index|index weighting|market efficiency|efficient market|security market|buy order|sell order|limit order|dealer|margin requirement|leverage ratio|industry classification|company analysis|enterprise value|price-to|free cash flow to equity|\bfcfe\b|dividend discount|earnings multiplier|book value per share|intrinsic value|voting|ex-dividend/g,
+  fixed:/fixed-income|fixed income|bond|debt|credit rating|credit spread|yield|spot rate|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|repo|covenant|accrued interest|priority of claims|default|extension risk|interest coverage/g,
+  derivatives:/derivative|forward|future|swap|option|call buyer|call seller|put buyer|put seller|strike price|premium|put-call|binomial|contingent claim|moneyness|expiration|arbitrage|replication/g,
+  alternatives:/alternative|private capital|private equity|private debt|hedge fund|real estate|\breit|infrastructure|natural resource|commodit|digital asset|cryptocurrenc|bitcoin|collectible|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption|timberland|farmland/g,
+  portfolio:/portfolio|asset allocation|investment policy|\bips\b|behavioral|cognitive error|risk aversion|utility|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation|covariance|sharpe|treynor|jensen|information ratio|two-fund|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral/g
+};
+let CFA_SUBJECT_ASSIGNMENTS=null;
+function getCfaSubjectHintScore(question,subject){
+  const prompt=((question.q||"")+" "+(question.opts||[]).join(" ")).toLowerCase().replace(/[‐‑–—]/g,"-");
+  const matches=prompt.match(CFA_SUBJECT_HINTS[subject]);
+  return matches?matches.length:0;
+}
+function buildCfaSubjectAssignments(){
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const ranges=CFA_SESSION_SUBJECT_RANGES[session];
+  const subjects=Object.keys(ranges);
+  const raw=DATA.map(getCfaSubjectRaw);
+  const assigned=raw.slice();
+  const counts={}; subjects.forEach(subject=>counts[subject]=0);
+  if(session===1){
+    DATA.forEach((question,index)=>{
+      if(Number(question.n)<=ranges.ethics[1]) assigned[index]="ethics";
+      else if(assigned[index]==="ethics") assigned[index]=null;
+    });
+  }
+  DATA.forEach((question,index)=>{
+    if(assigned[index]) return;
+    const eligible=subjects.filter(subject=>subject!=="ethics");
+    assigned[index]=eligible.sort((a,b)=>getCfaSubjectHintScore(question,b)-getCfaSubjectHintScore(question,a))[0];
+  });
+  assigned.forEach(subject=>counts[subject]++);
+  subjects.forEach(source=>{
+    const maximum=ranges[source][1];
+    if(counts[source]<=maximum) return;
+    const candidates=DATA.map((question,index)=>({index,score:getCfaSubjectHintScore(question,source)}))
+      .filter(item=>assigned[item.index]===source && !(session===1 && source==="ethics" && Number(DATA[item.index].n)<=27))
+      .sort((a,b)=>a.score-b.score||b.index-a.index);
+    for(const candidate of candidates){
+      if(counts[source]<=maximum) break;
+      const belowMinimum=subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][0]);
+      const destinations=(belowMinimum.length?belowMinimum:subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][1]))
+        .sort((a,b)=>getCfaSubjectHintScore(DATA[candidate.index],b)-getCfaSubjectHintScore(DATA[candidate.index],a)
+          ||(ranges[b][1]-counts[b])-(ranges[a][1]-counts[a]));
+      const destination=destinations[0]; if(!destination) break;
+      assigned[candidate.index]=destination; counts[source]--; counts[destination]++;
+    }
+  });
+  return assigned;
+}
+function getCfaSubject(question){
+  if(question&&question.subj) return question.subj;
+  if(!CFA_SUBJECT_ASSIGNMENTS) CFA_SUBJECT_ASSIGNMENTS=buildCfaSubjectAssignments();
+  const index=DATA.indexOf(question);
+  return index>=0?CFA_SUBJECT_ASSIGNMENTS[index]:getCfaSubjectRaw(question);
+}
+
+function showQuestionSubject(card, question){
+  const head=card.querySelector(".card-head"); if(!head) return;
+  let label=head.querySelector(".question-subject");
+  if(!label){
+    label=document.createElement("span"); label.className="question-subject";
+    const pin=head.querySelector(".pin"); head.insertBefore(label,pin||null);
+  }
+  const key=getCfaSubject(question);
+  const subject=CFA_SUBJECTS.find(item=>item[0]===key);
+  label.dataset.subject=key;
+  label.textContent=subject?subject[1]:"Chưa phân loại";
+  label.title="Môn CFA: "+label.textContent;
+}
+
+function renderSubjectBreakdown(){
+  const panel=$("subjectBreakdown"); if(!panel) return;
+  const scores={}; CFA_SUBJECTS.forEach(s=>scores[s[0]]={correct:0,total:0});
+  DATA.forEach((q,i)=>{
+    const key=getCfaSubject(q); if(!scores[key]) return;
+    scores[key].total++; if(answers[i]===q.ans) scores[key].correct++;
+  });
+  panel.innerHTML="";
+  const heading=document.createElement("h4"); heading.textContent="Điểm theo môn CFA · Tổng "+DATA.length+" câu"; panel.appendChild(heading);
+  const grid=document.createElement("div"); grid.className="subject-grid";
+  CFA_SUBJECTS.forEach(subject=>{
+    const score=scores[subject[0]]; if(!score.total) return;
+    const pct=Math.round(score.correct/score.total*100);
+    const row=document.createElement("div"); row.className="subject-row";
+    const top=document.createElement("div"); top.className="subject-top";
+    const name=document.createElement("span"); name.className="subject-name"; name.textContent=subject[1];
+    const value=document.createElement("span"); value.className="subject-score"; value.textContent=score.correct+"/"+score.total+" ("+pct+"%)";
+    const bar=document.createElement("div"); bar.className="subject-bar"; bar.setAttribute("role","progressbar"); bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax","100"); bar.setAttribute("aria-valuenow",String(pct));
+    const fill=document.createElement("div"); fill.className="subject-fill"; fill.style.width=pct+"%";
+    top.appendChild(name); top.appendChild(value); bar.appendChild(fill); row.appendChild(top); row.appendChild(bar); grid.appendChild(row);
+  });
+  panel.appendChild(grid);
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  setSubmitButtonMode(false);
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+<script>
+/* ===== Feedback sinh động: chạy sau khi chấm bài ===== */
+(function(){
+  if(typeof grade!=='function') return;
+  var _grade=grade;
+  grade=function(a){ _grade(a); try{ afterGrade(false); }catch(e){} };
+  window.showGradedResult=function(){ try{ afterGrade(true); }catch(e){} };
+
+  function afterGrade(restored){
+    if(!CFG.hasAnswers) return;
+    var pass=document.getElementById('badge').classList.contains('pass');
+    showResult(pass, document.getElementById('badge').textContent, !restored);
+  }
+  function addMark(el,sym){
+    if(el.querySelector('.fx-mark')) return;
+    var s=document.createElement('span'); s.className='fx-mark'; s.textContent=sym;
+    el.appendChild(s);
+  }
+  function showResult(pass, badgeText, celebrate){
+    var ov=document.getElementById('resultOverlay');
+    var icon=document.getElementById('rIcon');
+    var title=document.getElementById('rTitle');
+    var emoji=document.getElementById('rEmoji');
+    var score=document.getElementById('rScore');
+    var m=badgeText.split('·'); score.textContent=m.length>1?m[1].trim():'';
+    if(pass){
+      title.textContent='Chúc mừng! Bạn đã ĐẠT'; title.className='pass';
+      icon.setAttribute('src','https://cdn.lordicon.com/lupuorrc.json');
+      emoji.textContent='🎉';
+      if(celebrate){ fetchEmoji('face-positive', emoji); confetti(); }
+    }else{
+      title.textContent='Chưa đạt — cố lên nhé!'; title.className='fail';
+      icon.setAttribute('src','https://cdn.lordicon.com/jdgfsfzr.json');
+      emoji.textContent='💪';
+    }
+    ov.classList.add('show');
+  }
+  function fetchEmoji(group, el){
+    var ctrl=('AbortController'in window)?new AbortController():null;
+    if(ctrl) setTimeout(function(){try{ctrl.abort();}catch(e){}},3500);
+    fetch('https://emojihub.yurace.pro/api/random/group/'+group, ctrl?{signal:ctrl.signal}:{})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.htmlCode&&d.htmlCode.length){
+        el.innerHTML=d.htmlCode.join('');
+        el.style.animation='none'; void el.offsetWidth; el.style.animation='';
+      }})
+      .catch(function(){});
+  }
+  if(graded) window.showGradedResult();
+
+  function confetti(){
+    var cols=['#538297','#86a7b5','#22c55e','#f59e0b','#f43f5e','#38bdf8'];
+    for(var i=0;i<70;i++){(function(){
+      var d=document.createElement('i'); d.className='fx-confetti';
+      d.style.left=Math.random()*100+'vw';
+      d.style.background=cols[i%cols.length];
+      d.style.animationDuration=(2.2+Math.random()*1.6)+'s';
+      d.style.animationDelay=(Math.random()*0.5)+'s';
+      d.style.transform='rotate('+(Math.random()*360)+'deg)';
+      document.body.appendChild(d);
+      setTimeout(function(){d.remove();},4500);
+    })();}
+  }
+})();
+</script>
+<!--qnote-feature-start-->
+<style id="qnote-css">
+  main#quiz{max-width:1180px}
+  .qrow{display:flex;gap:16px;align-items:flex-start;margin:0 0 16px}
+  .qrow > .card{flex:1 1 auto;min-width:0;margin:0}
+  .qnote{flex:0 0 300px;align-self:stretch;display:flex;flex-direction:column;
+    border-radius:12px;border:1px solid var(--line);
+    background:color-mix(in srgb, var(--pin) 9%, var(--panel2));padding:10px}
+  .qnote-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;
+    font-size:12.5px;font-weight:600;color:var(--muted)}
+  .qnote-head .dot{color:var(--pin)}
+  .qnote-saved{margin-left:auto;font-size:11.5px;color:var(--ok);opacity:0;
+    transition:opacity .25s}
+  .qnote-saved.show{opacity:1}
+  .qnote textarea{flex:1 1 auto;width:100%;resize:vertical;min-height:96px;display:block;
+    font:inherit;font-size:14px;line-height:1.5;color:var(--txt);
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;outline:none}
+  .qnote textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 1.5px var(--accent) inset}
+  .qnote textarea::placeholder{color:var(--muted);opacity:.7}
+  @media (max-width:860px){
+    .qrow{flex-direction:column;gap:10px}
+    .qnote{flex-basis:auto;width:100%;align-self:auto}
+    .qnote textarea{min-height:52px}
+  }
+</style>
+<script>
+/* ===== Ghi chú cá nhân bên phải mỗi câu (lưu trong máy - localStorage) ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function load(){ try{ return JSON.parse(localStorage.getItem(NKEY)||"{}")||{}; }catch(e){ return {}; } }
+  function save(map){ try{ localStorage.setItem(NKEY, JSON.stringify(map)); }catch(e){} }
+  function keyFor(card){ var id=card.id||""; var m=id.match(/^q-(\d+)$/); return m?m[1]:null; }
+  function attach(){
+    var notes = load();
+    var cards = document.querySelectorAll("#quiz .card");
+    for(var c=0;c<cards.length;c++){
+      var card = cards[c];
+      var parent = card.parentNode;
+      if(parent && parent.classList && parent.classList.contains("qrow")) continue; // already wrapped
+      var k = keyFor(card);
+      if(k===null || !parent) continue;
+      var wrap = document.createElement("div");
+      wrap.className = "qnote";
+      var head = document.createElement("div");
+      head.className = "qnote-head";
+      head.innerHTML = '<span class="dot">📝</span><span>Ghi chú</span><span class="qnote-saved">Đã lưu ✓</span>';
+      var ta = document.createElement("textarea");
+      ta.setAttribute("placeholder","Ghi chú cho câu này…");
+      ta.value = notes[k] || "";
+      (function(ta,k,savedEl){
+        var t=null;
+        ta.addEventListener("input", function(){
+          var m=load();
+          if(ta.value && ta.value.trim()) m[k]=ta.value; else delete m[k];
+          save(m);
+          savedEl.classList.add("show");
+          clearTimeout(t); t=setTimeout(function(){ savedEl.classList.remove("show"); }, 1200);
+        });
+      })(ta, k, head.querySelector(".qnote-saved"));
+      wrap.appendChild(head); wrap.appendChild(ta);
+      var row = document.createElement("div");
+      row.className = "qrow";
+      parent.insertBefore(row, card);   // put row where the card was
+      row.appendChild(card);            // move question card into the row (left)
+      row.appendChild(wrap);            // note beside it (right)
+    }
+  }
+  function boot(){
+    attach();
+    var quiz = document.getElementById("quiz");
+    if(quiz && "MutationObserver" in window){
+      var pend=false;
+      new MutationObserver(function(){
+        if(pend) return; pend=true;
+        setTimeout(function(){ pend=false; attach(); }, 30);
+      }).observe(quiz,{childList:true});
+    }
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnote-feature-end-->
+<!--qnav-note-start-->
+<style id="qnav-note-css">
+  #navGrid .cell.noted::before{content:"\1F4DD";position:absolute;top:-4px;left:-3px;font-size:10px;line-height:1}
+</style>
+<script>
+/* ===== Đánh dấu câu có Ghi chú trong "Danh sách câu" + bộ lọc "Ghi chú" ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function noteSet(){
+    var s={};
+    try{ var m=JSON.parse(localStorage.getItem(NKEY)||"{}")||{};
+      for(var k in m){ if(m.hasOwnProperty(k) && m[k] && (""+m[k]).trim()) s[k]=1; } }catch(e){}
+    return s;
+  }
+  function addChip(){
+    var chips=document.getElementById("chips");
+    if(!chips || chips.querySelector('[data-f="note"]')) return;
+    var b=document.createElement("button");
+    b.className="chip"; b.setAttribute("data-f","note");
+    b.innerHTML='Ghi chú <span></span>';
+    b.onclick=function(){ if(typeof setFilter==="function") setFilter("note", b); };
+    chips.appendChild(b);
+  }
+  var wrapped=false;
+  function wrapRefresh(){
+    if(wrapped || typeof window.refreshNav!=="function") return;
+    wrapped=true;
+    var orig=window.refreshNav;
+    window.refreshNav=function(){
+      orig.apply(this, arguments);
+      var ns=noteSet(), cnt=0;
+      var active=document.querySelector('#chips .chip.active');
+      var f=active?active.getAttribute("data-f"):"all";
+      var cells=document.querySelectorAll("#navGrid .cell");
+      for(var j=0;j<cells.length;j++){
+        var c=cells[j], m=(c.id||"").match(/^cell-(\d+)$/); if(!m) continue;
+        var has=!!ns[m[1]];
+        c.classList.toggle("noted", has);
+        if(has) cnt++;
+        if(f==="note") c.classList.toggle("hide", !has);
+      }
+      var sp=document.querySelector('#chips [data-f="note"] span');
+      if(sp) sp.textContent="("+cnt+")";
+    };
+  }
+  function wrapToggle(){
+    if(typeof window.toggleNav!=="function" || window.toggleNav.__qnav) return;
+    var orig=window.toggleNav;
+    window.toggleNav=function(){
+      var r=orig.apply(this, arguments);
+      var p=document.getElementById("navPanel");
+      if(p && p.classList.contains("open") && typeof window.refreshNav==="function") window.refreshNav();
+      return r;
+    };
+    window.toggleNav.__qnav=true;
+  }
+  function boot(){
+    addChip(); wrapRefresh(); wrapToggle();
+    if(typeof window.refreshNav==="function") window.refreshNav();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnav-note-end-->
+
+<!--qnotes-panel-start-->
+<style id="qnotes-panel-css">
+  #qnotesFab{position:fixed;right:18px;bottom:18px;z-index:35;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #qnotesFab:hover{filter:brightness(1.06)}
+  #qnotesFab svg{width:17px;height:17px;flex:none}
+  #qnotesPanel{position:fixed;top:8vh;left:16px;width:min(470px,94vw);height:min(80vh,680px);z-index:70;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #qnotesPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #qnotesPanel .qnp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #qnotesPanel .qnp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #qnotesPanel .qnp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #qnotesPanel .qnp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #qnotesPanel .qnp-open:hover{text-decoration:underline}
+  #qnotesPanel .qnp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #qnotesPanel .qnp-x:hover{color:var(--txt)}
+  #qnotesPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #qnotesPanel.dragging #qnotesFrame{pointer-events:none}
+  #qnotesFrame{flex:1;width:100%;border:0;background:var(--bg)}
+  #qnotesOverlay{position:fixed;inset:0;background:transparent;z-index:65;display:none;pointer-events:none}
+  #qnotesOverlay.show{display:block}
+  @media(max-width:600px){#qnotesFab span{display:none}#qnotesFab{padding:12px}}
+</style>
+<button id="qnotesFab" type="button" onclick="qnotesOpen()" title="Ghi chú của tôi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 10h6M8 14h8M8 18h5"/></svg><span>Ghi chú</span></button>
+<div id="qnotesOverlay" onclick="qnotesClose()"></div>
+<div id="qnotesPanel" aria-hidden="true">
+  <div class="qnp-head" id="qnotesHead"><span class="qnp-grip" aria-hidden="true">⠿</span><b>Ghi chú của tôi</b><a class="qnp-open" href="index.html?view=notes" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="qnp-x" onclick="qnotesClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="qnotesFrame" title="Ghi chú của tôi" loading="lazy"></iframe>
+</div>
+<script id="qnotes-panel-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("qnotesPanel");}
+  window.qnotesOpen=function(){
+    var fr=document.getElementById("qnotesFrame");
+    if(!loaded){ fr.src="index.html?embed=1&view=notes"; loaded=true; }
+    P().classList.add("open"); document.getElementById("qnotesOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.qnotesClose=function(){
+    P().classList.remove("open"); document.getElementById("qnotesOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.qnotesClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("qnotesHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".qnp-x")||e.target.closest(".qnp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--qnotes-panel-end-->
+<!--baii-calc-start-->
+<style id="baii-calc-css">
+  #baiiFab{position:fixed;right:18px;bottom:70px;z-index:36;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent2,#0ea5e9);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #baiiFab:hover{filter:brightness(1.06)}
+  #baiiFab svg{width:17px;height:17px;flex:none}
+  #baiiPanel{position:fixed;top:8vh;right:16px;width:min(410px,94vw);height:min(80vh,680px);z-index:72;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #baiiPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #baiiPanel .bp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #baiiPanel .bp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #baiiPanel .bp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #baiiPanel .bp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #baiiPanel .bp-open:hover{text-decoration:underline}
+  #baiiPanel .bp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #baiiPanel .bp-x:hover{color:var(--txt)}
+  #baiiPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #baiiPanel.dragging #baiiFrame{pointer-events:none}
+  #baiiFrame{flex:1;width:100%;border:0;background:#0f1a1d}
+  #baiiOverlay{position:fixed;inset:0;background:transparent;z-index:67;display:none;pointer-events:none}
+  #baiiOverlay.show{display:block}
+  @media(max-width:600px){#baiiFab span{display:none}#baiiFab{padding:12px;bottom:74px}}
+</style>
+<button id="baiiFab" type="button" onclick="baiiOpen()" title="Máy tính BA II Plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="19"/><line x1="8" y1="19" x2="12" y2="19"/></svg><span>Máy tính</span></button>
+<div id="baiiOverlay" onclick="baiiClose()"></div>
+<div id="baiiPanel" aria-hidden="true">
+  <div class="bp-head" id="baiiHead"><span class="bp-grip" aria-hidden="true">⠿</span><b>Máy tính BA II Plus</b><a class="bp-open" href="baii-plus.html" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="bp-x" onclick="baiiClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="baiiFrame" title="BA II Plus" loading="lazy"></iframe>
+</div>
+<script id="baii-calc-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("baiiPanel");}
+  window.baiiOpen=function(){
+    var fr=document.getElementById("baiiFrame");
+    if(!loaded){ fr.src="baii-plus.html"; loaded=true; }
+    P().classList.add("open"); document.getElementById("baiiOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.baiiClose=function(){
+    P().classList.remove("open"); document.getElementById("baiiOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.baiiClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("baiiHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".bp-x")||e.target.closest(".bp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--baii-calc-end-->
+
+<!--restart-confirm-start-->
+<div id="restartOverlay" class="overlay">
+  <div class="modal">
+    <h3>Làm lại từ đầu?</h3>
+    <p>Toàn bộ đáp án đã chọn và tiến độ của đề này sẽ bị xoá và không thể khôi phục. Bạn chắc chắn muốn làm lại?</p>
+    <div class="modal-actions">
+      <button type="button" onclick="rcCancel()">Huỷ</button>
+      <button type="button" class="btn-primary" onclick="rcConfirm()">Làm lại</button>
+    </div>
+  </div>
+</div>
+<script id="restart-confirm-js">
+(function(){
+  if(typeof restart!=="function") return;
+  var _restart=restart;
+  function ov(){ return document.getElementById("restartOverlay"); }
+  function hasWork(){
+    try{
+      if(typeof graded!=="undefined" && graded) return true;
+      if(typeof answers==="object" && answers && Object.keys(answers).length>0) return true;
+      if(typeof pinned==="object" && pinned && Object.keys(pinned).length>0) return true;
+    }catch(e){}
+    return false;
+  }
+  window.rcCancel=function(){ var o=ov(); if(o) o.classList.remove("show"); };
+  window.rcConfirm=function(){ window.rcCancel(); _restart(); };
+  window.restart=function(){
+    var o=ov();
+    if(o && hasWork()){ o.classList.add("show"); return; }
+    _restart();
+  };
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){ var o=ov(); if(o && o.classList.contains("show")) window.rcCancel(); }
+  });
+  var o=ov(); if(o) o.addEventListener("click",function(e){ if(e.target===o) window.rcCancel(); });
+})();
+</script>
+<!--restart-confirm-end-->
+</body>
+</html>

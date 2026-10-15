@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading 13 — Analysis of Dividends and Share Repurchases · Kaplan QBank</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(83,130,151,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(134,167,181,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(83,130,151,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(83,130,151,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+<!-- ===== Lordicon + feedback sinh động ===== -->
+<script src="https://cdn.lordicon.com/lordicon.js" defer></script>
+<style id="fx-css">
+  .btn-primary lord-icon{width:20px;height:20px;vertical-align:-4px;margin-right:6px}
+  .opt .fx-mark{display:inline-block;margin-left:8px;font-size:16px;
+    transform:scale(0);animation:fxPop .42s cubic-bezier(.18,1.5,.5,1) forwards}
+  @keyframes fxPop{0%{transform:scale(0) rotate(-25deg)}
+    70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  #resultOverlay .modal{max-width:380px;text-align:center}
+  #resultOverlay lord-icon{width:120px;height:120px;margin:0 auto 6px}
+  #resultOverlay .r-emoji{font-size:46px;line-height:1;margin-bottom:4px;
+    display:block;animation:fxPop .5s cubic-bezier(.18,1.5,.5,1) both}
+  #resultOverlay h3{font-size:22px;margin:4px 0 6px}
+  #resultOverlay .r-score{font-size:15px;color:var(--muted);margin:0}
+  #resultOverlay h3.pass{color:var(--ok)}
+  #resultOverlay h3.fail{color:var(--bad)}
+  .fx-confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:60;
+    pointer-events:none;border-radius:2px;animation:fxFall linear forwards}
+  @keyframes fxFall{to{transform:translateY(105vh) rotate(640deg);opacity:.9}}
+</style>
+<style id="lord2-css">
+  header button lord-icon.hi{width:18px;height:18px;vertical-align:-4px;margin-right:5px}
+  .pause-box .big lord-icon{width:56px;height:56px}
+</style>
+
+<!--subject-breakdown-start-->
+<style id="subject-breakdown-css">
+  #resultOverlay .modal{max-width:720px;max-height:90vh;overflow-y:auto;text-align:center}
+  .subject-breakdown{margin-top:18px;text-align:left}
+  .subject-breakdown h4{margin:0 0 10px;font-size:15px;text-align:center}
+  .subject-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .subject-row{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+  .subject-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:12px}
+  .subject-name{font-weight:650;min-width:0}
+  .subject-score{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+  .subject-bar{height:6px;margin-top:7px;border-radius:999px;overflow:hidden;background:var(--line)}
+  .subject-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  @media(max-width:600px){.subject-grid{grid-template-columns:1fr}}
+
+  /* Subject label shown on each question after grading */
+  .question-subject{max-width:min(58vw,360px);overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;
+    letter-spacing:.01em;color:var(--accent2);background:color-mix(in srgb,var(--accent) 18%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent2) 42%,var(--line))}
+  @media(max-width:520px){.question-subject{max-width:52vw;font-size:10px;padding:3px 7px}}
+</style>
+<!--subject-breakdown-end-->
+
+<!--explanation-redesign-start-->
+<style id="explanation-redesign-css">
+  .expl{padding:0!important;white-space:normal!important;overflow:hidden;
+    background:color-mix(in srgb,var(--panel2) 82%,var(--panel))!important;
+    border:1px solid var(--line)!important;border-radius:14px!important}
+  .expl-shell{display:flex;flex-direction:column}
+  .expl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--panel));
+    border-bottom:1px solid var(--line)}
+  .expl-title{font-size:13px;font-weight:800;color:var(--txt)}
+  .expl-answer{flex:0 0 auto;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;
+    color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent);
+    border:1px solid color-mix(in srgb,var(--ok) 42%,var(--line))}
+  .expl-content{display:grid;gap:10px;padding:12px}
+  .expl-choice{padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
+  .expl-choice.is-correct{border-color:color-mix(in srgb,var(--ok) 56%,var(--line));
+    background:color-mix(in srgb,var(--okbg) 58%,var(--panel))}
+  .expl-choice-top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .expl-letter{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:7px;font-size:12px;font-weight:900;color:var(--muted);background:var(--panel2)}
+  .expl-choice.is-correct .expl-letter{color:#fff;background:var(--ok)}
+  .expl-state{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.045em;color:var(--muted)}
+  .expl-choice.is-correct .expl-state{color:var(--ok)}
+  .expl-option-copy{margin:0 0 8px;font-size:13px;font-weight:650;line-height:1.5;color:var(--txt)}
+  .expl-reason{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-note{padding:11px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+  .expl-note p{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-meta{display:grid;gap:5px;padding:10px 12px;border-radius:10px;
+    border:1px dashed color-mix(in srgb,var(--accent2) 50%,var(--line));
+    background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+  .expl-meta-row{display:flex;gap:7px;align-items:flex-start;font-size:12px;line-height:1.5;color:var(--muted)}
+  .expl-meta-row b{flex:0 0 auto;color:var(--accent2)}
+  @media(max-width:520px){
+    .expl-head{align-items:flex-start;padding:10px 11px}.expl-content{padding:9px;gap:8px}
+    .expl-choice{padding:10px}.expl-option-copy,.expl-reason,.expl-note p{font-size:12.5px}
+  }
+</style>
+<!--explanation-redesign-end-->
+<!--l2-vignette-start-->
+<style id="l2-css">
+  .stem .vig,.stem .qtext{white-space:normal}
+  .vig{border:1px solid var(--line);border-radius:12px;background:var(--panel2);margin:0 0 14px;overflow:hidden}
+  .vig>summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:13px;color:var(--muted);
+    list-style:none;display:flex;gap:8px;align-items:center;user-select:none}
+  .vig>summary::-webkit-details-marker{display:none}
+  .vig>summary::before{content:"▸";font-size:12px;transition:transform .15s}
+  .vig[open]>summary::before{transform:rotate(90deg)}
+  .vig>summary .vig-tag{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);
+    padding:2px 8px;border-radius:999px;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+  .vig>summary .vig-hint{margin-left:auto;font-weight:500;font-size:12px}
+  .vig[open]>summary .vig-hint{display:none}
+  .vig[open]>summary{border-bottom:1px solid var(--line)}
+  .vig-body{padding:12px 16px;max-height:62vh;overflow:auto;font-size:15px;line-height:1.65}
+  .vig-body p,.qtext p,.expl-html p{margin:0 0 10px}
+  .qtext{font-size:16px;line-height:1.65}
+  .tbl{overflow-x:auto;margin:6px 0 12px}
+  .tbl table{border-collapse:collapse;font-size:14px;line-height:1.45}
+  .tbl td,.tbl th{border:1px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top}
+  .tbl tr:first-child td,.tbl th{font-weight:600;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+  .pimg{display:block;margin:8px 0 12px;border-radius:8px;background:#fff;height:auto}
+  .expl-html{padding:14px 16px;line-height:1.65;font-size:14.5px}
+  .pp-topic{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.03em;color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 12%,transparent);padding:3px 10px;border-radius:999px;margin:0 0 10px}
+  .eimg{display:block;width:100%;max-width:900px;height:auto;border-radius:8px;background:#fff;margin:4px 0}
+  .qorig{margin:10px 0 0;font-size:12.5px;color:var(--muted)} .qorig summary{cursor:pointer}
+  .qorig img{display:block;max-width:100%;height:auto;margin-top:8px;border-radius:8px;background:#fff}
+  .kq-note{font-size:12.5px;line-height:1.5;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin:0 0 12px;background:var(--panel2)}
+  .pp-topic.set{color:#a855f7;background:color-mix(in srgb,#a855f7 12%,transparent)}
+</style>
+<script id="l2-js">
+function buildExplHtml(q){
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+q.ans;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content expl-html"; content.innerHTML=q.explhtml;
+  shell.appendChild(content); return shell;
+}
+</script>
+<!--l2-vignette-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='index.html#resume'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Làm lại</button>
+  <button id="submitBtn" class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big"><lord-icon src="https://cdn.lordicon.com/kbtmbyzy.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon></div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<div id="resultOverlay" class="overlay">
+  <div class="modal">
+    <span id="rEmoji" class="r-emoji">🎉</span>
+    <lord-icon id="rIcon" src="https://cdn.lordicon.com/lupuorrc.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon>
+    <h3 id="rTitle"></h3>
+    <p id="rScore" class="r-score"></p>
+
+    <!--subject-breakdown-panel-start-->
+    <div id="subjectBreakdown" class="subject-breakdown" aria-live="polite"></div>
+    <!--subject-breakdown-panel-end-->
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="document.getElementById('resultOverlay').classList.remove('show')">Xem lại bài</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "A periodic payment to shareholders in the form of additional shares of stock instead of cash is a:", "opts": ["stock repurchase", "dividend reinvestment plan", "stock dividend"], "ans": "C", "expl": "Stock dividends are dividends paid out in new shares of stock instead of cash. Unlike stock dividends, dividend reinvestment plans are at the discretion of individual shareholders. In the case of stock repurchases, the company is buying back shares so the number of shares in the investment public's hands is declining.", "explhtml": "<p>Stock dividends are dividends paid out in new shares of stock instead of cash. Unlike stock dividends, dividend reinvestment plans are at the discretion of individual shareholders. In the case of stock repurchases, the company is buying back shares so the number of shares in the investment public&#x27;s hands is declining.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.a<\/div><div class=\"qtext\"><p>A periodic payment to shareholders in the form of additional shares of stock instead of cash is a:<\/p><\/div>", "subj": "corporate"}, {"n": 2, "q": "Stock splits:", "opts": ["increase firm value.", "do not in and of themselves affect firm value.", "are less common than stock dividends."], "ans": "B", "expl": "Stock splits divide up each existing share into multiple shares. The price of each share will drop correspondingly to the number of shares created, so there is no change in the owner's wealth. Empirical research has shown that in the absence of a dividend yield increase, the stock price falls to the stock split ratio of the original price (i.e., to 25% of the original price in a 4-for-1 stock split). This makes sense, given that the investor's percentage ownership of the company has not changed.", "explhtml": "<p>Stock splits divide up each existing share into multiple shares. The price of each share will drop correspondingly to the number of shares created, so there is no change in the owner&#x27;s wealth. Empirical research has shown that in the absence of a dividend yield increase, the stock price falls to the stock split ratio of the original price (i.e., to 25% of the original price in a 4-for-1 stock split). This makes sense, given that the investor&#x27;s percentage ownership of the company has not changed.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.a<\/div><div class=\"qtext\"><p>Stock splits:<\/p><\/div>", "subj": "corporate"}, {"n": 3, "q": "Laura's Chocolates Inc. (LC) is a maker of nut-based toffees. LC is considering a cash dividend, but is concerned about the \"double taxation\" effect on their shareholders. If the corporate tax rate is 35%, and the tax on dividends is 20%, what is the effective tax rate on a dollar of corporate earnings?", "opts": ["42%.", "55%.", "48%."], "ans": "C", "expl": "0.35 + (1 − 0.35)(0.20) = 48%", "explhtml": "<p>0.35 + (1 − 0.35)(0.20) = 48%<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.f<\/div><div class=\"qtext\"><p>Laura&#x27;s Chocolates Inc. (LC) is a maker of nut-based toffees. LC is considering a cash dividend, but is concerned about the &quot;double taxation&quot; effect on their shareholders. If the corporate tax rate is 35%, and the tax on dividends is 20%, what is the effective tax rate on a dollar of corporate earnings?<\/p><\/div>", "subj": "corporate"}, {"n": 4, "q": "Sinclair Construction Company's Board of Directors is considering repurchasing $30,000,000 worth of common stock. Sinclair assumes that the stock can be repurchased at the market price of $50 per share. After much discussion Sinclair decides to borrow $30 million that it will use to repurchase shares. Sinclair's Chief Executive Officer (CEO) has compiled the following information regarding the repurchase of the firm's common stock: Share price at the time of buyback = $50 Shares outstanding before buyback = 30,600,000 EPS before buyback = $3.33 Earnings yield = $3.33 / $50 = 6.7% After-tax cost of borrowing = 8.0% Planned buyback = 600,000 shares Based on the information above, Sinclair's earnings per share (EPS) after the repurchase of its common stock will be closest to:", "opts": ["$3.32.", "$3.23.", "$3.18."], "ans": "A", "expl": "Total earnings = $3.33 × 30,600,000 = $101,898,000 total earnings - after-tax cost of funds EPS after buyback = shares outstanding after buyback $101,898,000  - (600,000 shares x  $50 x  0.08) = (30,600,000 - 600,000) shares $101,898,000 -  $2,400,000 = 30,000,000 shares $99,498,000 = 30,000,000 shares = $3.32 Since the 8.0% after-tax cost of borrowing is greater than the 6.7% earnings yield (E/P) of the shares, the share repurchase reduces Sinclair's EPS.", "explhtml": "<p>Total earnings = $3.33 × 30,600,000 = $101,898,000<\/p><p>total earnings - after-tax cost of funds<\/p><p>EPS after buyback =<\/p><p>shares outstanding after buyback<\/p><p>$101,898,000  - (600,000 shares x  $50 x  0.08)<\/p><p>=<\/p><p>(30,600,000 - 600,000) shares<\/p><p>$101,898,000 -  $2,400,000<\/p><p>=<\/p><p>30,000,000 shares<\/p><p>$99,498,000<\/p><p>=<\/p><p>30,000,000 shares<\/p><p>= $3.32<\/p><p>Since the 8.0% after-tax cost of borrowing is greater than the 6.7% earnings yield (E/P) of the shares, the share repurchase reduces Sinclair&#x27;s EPS.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.j<\/div><div class=\"qtext\"><p>Sinclair Construction Company&#x27;s Board of Directors is considering repurchasing $30,000,000 worth of common stock. Sinclair assumes that the stock can be repurchased at the market price of $50 per share. After much discussion Sinclair decides to borrow $30 million that it will use to repurchase shares. Sinclair&#x27;s Chief Executive Officer (CEO) has compiled the following information regarding the repurchase of the firm&#x27;s common stock:<\/p><p>Share price at the time of buyback = $50 Shares outstanding before buyback = 30,600,000 EPS before buyback = $3.33 Earnings yield = $3.33 / $50 = 6.7% After-tax cost of borrowing = 8.0% Planned buyback = 600,000 shares<\/p><p>Based on the information above, Sinclair&#x27;s earnings per share (EPS) after the repurchase of its common stock will be closest to:<\/p><\/div>", "subj": "corporate"}, {"n": 5, "q": "Financial managers utilize stock splits and stock dividends because they perceive that:", "opts": ["an optimal trading range exists.", "investors will double the share price if there is a 20% stock dividend.", "brokerage fees paid by shareholders will be reduced."], "ans": "A", "expl": "Although there is little empirical evidence to support the contention, there is nevertheless a widespread belief in financial circles that an optimal price range exists for stocks. \"Optimal\" means that if the price is within this range, the price/earnings ratio, price/sales and other relevant ratios will be maximized. Hence, the value of the firm will be maximized.", "explhtml": "<p>Although there is little empirical evidence to support the contention, there is nevertheless a widespread belief in financial circles that an optimal price range exists for stocks. &quot;Optimal&quot; means that if the price is within this range, the price/earnings ratio, price/sales and other relevant ratios will be maximized. Hence, the value of the firm will be maximized.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.a<\/div><div class=\"qtext\"><p>Financial managers utilize stock splits and stock dividends because they perceive that:<\/p><\/div>", "subj": "corporate"}, {"n": 6, "q": "Which of the following statements about a stock repurchase is least accurate?", "opts": ["Disgruntled stockholders are forced to sell their shares, improving management's position.", "A stock repurchase occurs when a large block of stock is removed from the marketplace.", "Management can distribute cash to shareholders at a favorable after-tax rate."], "ans": "A", "expl": "A repurchase gives stockholders a choice. They can sell or not sell. Stock repurchase is also more tax-efficient as only those shareholders that choose to sell their shares would potentially have a tax liability.", "explhtml": "<p>A repurchase gives stockholders a choice. They can sell or not sell. Stock repurchase is also more tax-efficient as only those shareholders that choose to sell their shares would potentially have a tax liability.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.i<\/div><div class=\"qtext\"><p>Which of the following statements about a stock repurchase is least accurate?<\/p><\/div>", "subj": "corporate"}, {"n": 7, "q": "When a firm pays a cash dividend, the dividend payment is most likely to:", "opts": ["cause financial leverage ratios to increase.", "cause liquidity ratios to increase.", "have no impact on financial leverage ratios and liquidity ratios."], "ans": "A", "expl": "All else equal, the result of a cash dividend is that financial leverage ratios (such as the debt-to-equity ratio) should increase, while liquidity ratios (such as the cash ratio) should decrease. Cash dividends reduce assets (as cash is paid out) and reduce shareholders' equity (by lowering retained earnings). (Stock dividends, on the other hand, do not impact liquidity ratios or financial leverage ratios.)", "explhtml": "<p>All else equal, the result of a cash dividend is that financial leverage ratios (such as the debt-to-equity ratio) should increase, while liquidity ratios (such as the cash ratio) should decrease. Cash dividends reduce assets (as cash is paid out) and reduce shareholders&#x27; equity (by lowering retained earnings). (Stock dividends, on the other hand, do not impact liquidity ratios or financial leverage ratios.)<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.a<\/div><div class=\"qtext\"><p>When a firm pays a cash dividend, the dividend payment is most likely to:<\/p><\/div>", "subj": "corporate"}, {"n": 8, "q": "Paying a cash dividend is most likely to result in:", "opts": ["the same impact on liquidity and leverage ratios as a stock dividend.", "an increase in financial leverage ratios.", "an increase in liquidity ratios."], "ans": "B", "expl": "A cash dividend will increase leverage ratios such as debt-to-equity and debt-to-assets, reflecting a decrease in the denominator. A cash dividend should decrease liquidity ratios such as the current ratio and cash ratio, due to the decrease in cash in the numerator. Unlike a cash dividend, a stock dividend or a stock split has no impact on liquidity or financial leverage ratios.", "explhtml": "<p>A cash dividend will increase leverage ratios such as debt-to-equity and debt-to-assets, reflecting a decrease in the denominator. A cash dividend should decrease liquidity ratios such as the current ratio and cash ratio, due to the decrease in cash in the numerator. Unlike a cash dividend, a stock dividend or a stock split has no impact on liquidity or financial leverage ratios.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.a<\/div><div class=\"qtext\"><p>Paying a cash dividend is most likely to result in:<\/p><\/div>", "subj": "corporate"}, {"n": 9, "q": "Which of the following statements about a stock repurchase is least accurate?", "opts": ["A stock repurchase occurs when a large block of stock is removed from the marketplace.", "Management can distribute cash to shareholders at a favorable after-tax rate.", "Disgruntled stockholders are forced to sell their shares, improving management's position."], "ans": "C", "expl": "A repurchase gives stockholders a choice. They can sell or not sell. Stock repurchase is also more tax-efficient as only those shareholders that choose to sell their shares would potentially have a tax liability.", "explhtml": "<p>A repurchase gives stockholders a choice. They can sell or not sell. Stock repurchase is also more tax-efficient as only those shareholders that choose to sell their shares would potentially have a tax liability.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.l<\/div><div class=\"qtext\"><p>Which of the following statements about a stock repurchase is least accurate?<\/p><\/div>", "subj": "corporate"}, {"n": 10, "q": "Jim Davis and Thurgood Owen, two equity analysts at Ferguson Capital Management, were reviewing the financial statements of Peregrine Foodstuffs Ltd. Davis and Owen noticed that Peregrine has been repurchasing its common shares in the market over the past three years. Owen thought this was an important issue to look into in greater detail. Upon completion of his review, Owen made the following two statements: Peregrine has bought back shares in the open market during its repurchase Statement 1  program. This method of repurchase gave the company the flexibility to choose the timing of the transaction. Peregrine plans to buy back shares by making tender offers during the Statement 2  coming year. By making tender offers, the company will be able to repurchase shares at a discount to the prevailing market price. With respect to Owen's statements:", "opts": ["both are incorrect.", "only one is correct.", "both are correct."], "ans": "B", "expl": "Buying in the open market gives the company the flexibility to choose the timing of the transaction. Thus, Statement 1 is correct. A second way is to buy a fixed number of shares at a fixed price. A company may repurchase stock by making a tender offer to repurchase a specific number of shares at a price that is at a premium to the current market price. They would not be willing to tender their shares for less than the prevailing market price, so Statement 2 is incorrect.", "explhtml": "<p>Buying in the open market gives the company the flexibility to choose the timing of the transaction. Thus, Statement 1 is correct. A second way is to buy a fixed number of shares at a fixed price. A company may repurchase stock by making a tender offer to repurchase a specific number of shares at a price that is at a premium to the current market price. They would not be willing to tender their shares for less than the prevailing market price, so Statement 2 is incorrect.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.i<\/div><div class=\"qtext\"><p>Jim Davis and Thurgood Owen, two equity analysts at Ferguson Capital Management, were reviewing the financial statements of Peregrine Foodstuffs Ltd. Davis and Owen noticed that Peregrine has been repurchasing its common shares in the market over the past three years. Owen thought this was an important issue to look into in greater detail. Upon completion of his review, Owen made the following two statements:<\/p><p>Peregrine has bought back shares in the open market during its repurchase Statement 1 &nbsp; program. This method of repurchase gave the company the flexibility to<\/p><p>choose the timing of the transaction.<\/p><p>Peregrine plans to buy back shares by making tender offers during the Statement 2 &nbsp; coming year. By making tender offers, the company will be able to<\/p><p>repurchase shares at a discount to the prevailing market price.<\/p><p>With respect to Owen&#x27;s statements:<\/p><\/div>", "subj": "corporate"}, {"n": 11, "q": "Pants R Us Inc.'s Board of Directors is considering repurchasing $30,000,000 worth of common stock. Pants R Us assumes that the stock can be repurchased at the market price of $50 per share. After much discussion Pants R Us decides to borrow $30 million that it will use to repurchase shares. Pants R Us' Chief Investment Officer (CIO) has compiled the following information regarding the repurchase of the firm's common stock: Share price at the time of buyback = $50 Shares outstanding before buyback = 30,600,000 EPS before buyback = $3.33 Earnings yield = $3.33 / $50 = 6.7% After-tax cost of borrowing = 6.7% Planned buyback = 600,000 shares Based on the information above, what will be Pants R Us' earnings per share (EPS) after the repurchase of its common stock?", "opts": ["$3.40.", "$3.33.", "$3.28."], "ans": "B", "expl": "Total earnings = $3.33 × 30,600,000 = $101,898,000 total earnings - after-tax cost of funds EPS after buyback = shares outstanding after buyback $101,898,000  - (600,000 shares x  $50 x  0.067) = (30,600,000 - 600,000) shares $101,898,000 -  $2,010,000 = 30,000,000 shares $99,888,000 = 30,000,000 shares = $3.33 Since the after-tax cost of borrowing of 6.7%% is equal to the 6.7% earnings yield (E/P) of the shares, the share repurchase has no effect on Pants R Us' EPS.", "explhtml": "<p>Total earnings = $3.33 × 30,600,000 = $101,898,000<\/p><p>total earnings - after-tax cost of funds<\/p><p>EPS after buyback =<\/p><p>shares outstanding after buyback<\/p><p>$101,898,000  - (600,000 shares x  $50 x  0.067)<\/p><p>=<\/p><p>(30,600,000 - 600,000) shares<\/p><p>$101,898,000 -  $2,010,000<\/p><p>=<\/p><p>30,000,000 shares<\/p><p>$99,888,000<\/p><p>=<\/p><p>30,000,000 shares<\/p><p>= $3.33<\/p><p>Since the after-tax cost of borrowing of 6.7%% is equal to the 6.7% earnings yield (E/P) of the shares, the share repurchase has no effect on Pants R Us&#x27; EPS.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.j<\/div><div class=\"qtext\"><p>Pants R Us Inc.&#x27;s Board of Directors is considering repurchasing $30,000,000 worth of common stock. Pants R Us assumes that the stock can be repurchased at the market price of $50 per share. After much discussion Pants R Us decides to borrow $30 million that it will use to repurchase shares. Pants R Us&#x27; Chief Investment Officer (CIO) has compiled the following information regarding the repurchase of the firm&#x27;s common stock:<\/p><p>Share price at the time of buyback = $50 Shares outstanding before buyback = 30,600,000 EPS before buyback = $3.33 Earnings yield = $3.33 / $50 = 6.7% After-tax cost of borrowing = 6.7% Planned buyback = 600,000 shares<\/p><p>Based on the information above, what will be Pants R Us&#x27; earnings per share (EPS) after the repurchase of its common stock?<\/p><\/div>", "subj": "corporate"}, {"n": 12, "q": "Armsware Industries' board is debating whether to issue a cash dividend or a stock dividend. Director Jones states, \"We should issue a cash dividend because our liquidity ratios will improve and the credit rating agencies will love it.\" Director Beane states, \"A stock dividend will improve our leverage ratios by increasing contributed capital, which is what the rating agencies are looking for.\" Are the statements by Jones and Beane accurate? Jones  Beane", "opts": ["Yes No", "Yes Yes", "No No"], "ans": "C", "expl": "Neither statement is accurate. Cash dividends will decrease both assets and equity, causing liquidity ratios to decline (assets fall, while liabilities stay the same). Stock dividends do not affect the firm's leverage ratios. Total equity remains unchanged because a stock dividend neither raises capital nor distributes earnings to shareholders.", "explhtml": "<p>Neither statement is accurate. Cash dividends will decrease both assets and equity, causing liquidity ratios to decline (assets fall, while liabilities stay the same). Stock dividends do not affect the firm&#x27;s leverage ratios. Total equity remains unchanged because a stock dividend neither raises capital nor distributes earnings to shareholders.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.a<\/div><div class=\"qtext\"><p>Armsware Industries&#x27; board is debating whether to issue a cash dividend or a stock dividend. Director Jones states, &quot;We should issue a cash dividend because our liquidity ratios will improve and the credit rating agencies will love it.&quot; Director Beane states, &quot;A stock dividend will improve our leverage ratios by increasing contributed capital, which is what the rating agencies are looking for.&quot; Are the statements by Jones and Beane accurate? Jones &nbsp; Beane<\/p><\/div>", "subj": "corporate"}, {"n": 13, "q": "Which of the following is most likely to be a symptom of a company that is able to sustain its cash dividend?", "opts": ["A low dividend yield compared to the company's historic average.", "A high dividend payout ratio compared to the industry average.", "Issuing new debt to fund projects and cover capital expenditures."], "ans": "A", "expl": "High dividend yields compared to the company's record suggest that investors are expecting dividends to be cut. Net borrowings are not sustainable, and will eventually require a cut in share repurchases and dividends. A higher-than-average dividend payout ratio creates the risk that dividends may be cut if earnings decline.", "explhtml": "<p>High dividend yields compared to the company&#x27;s record suggest that investors are expecting dividends to be cut. Net borrowings are not sustainable, and will eventually require a cut in share repurchases and dividends. A higher-than-average dividend payout ratio creates the risk that dividends may be cut if earnings decline.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.n<\/div><div class=\"qtext\"><p>Which of the following is most likely to be a symptom of a company that is able to sustain its cash dividend?<\/p><\/div>", "subj": "corporate"}, {"n": 14, "q": "Dan Bridges, head of equity strategies for Paca Inc. a consultant to institutional investors makes the following statement: Globally, the developed markets have seen a decline in proportion of companies paying cash dividends. Lately, we have also seen an increase in the proportion of companies engaging in share repurchases. Bridges' statement is most likely:", "opts": ["Correct.", "Incorrect as to dividend payout ratios.", "Incorrect as to companies engaging in share repurchases."], "ans": "A", "expl": "Bridges' statement is correct.", "explhtml": "<p>Bridges&#x27; statement is correct.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.h<\/div><div class=\"qtext\"><p>Dan Bridges, head of equity strategies for Paca Inc. a consultant to institutional investors makes the following statement:<\/p><p>Globally, the developed markets have seen a decline in proportion of companies paying cash dividends. Lately, we have also seen an increase in the proportion of companies engaging in share repurchases.<\/p><p>Bridges&#x27; statement is most likely:<\/p><\/div>", "subj": "corporate"}, {"n": 15, "q": "Which of the following is least likely a method by which firms repurchase their shares?", "opts": ["Direct negotiation.", "Tender offer.", "Exercise a call provision."], "ans": "C", "expl": "Call provisions are not relevant to common stock and are not considered a repurchase in any case. There are three repurchase methods. The first is to buy in the open market. A company may repurchase stock by making a tender offer to repurchase a specific number of shares at a price that is usually at a premium to the current market price. The third way is to repurchase by direct negotiation. Companies may negotiate directly with a large shareholder to buy back a block of shares, usually at a premium to the market price.", "explhtml": "<p>Call provisions are not relevant to common stock and are not considered a repurchase in any case. There are three repurchase methods. The first is to buy in the open market. A company may repurchase stock by making a tender offer to repurchase a specific number of shares at a price that is usually at a premium to the current market price. The third way is to repurchase by direct negotiation. Companies may negotiate directly with a large shareholder to buy back a block of shares, usually at a premium to the market price.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.i<\/div><div class=\"qtext\"><p>Which of the following is least likely a method by which firms repurchase their shares?<\/p><\/div>", "subj": "corporate"}, {"n": 16, "q": "Hikaru Takei is the portfolio manager for the Reliant Dividend Focused Fund. Takei wants to add a firm to his portfolio that follows a stable dividend policy. Takei is considering investing in one of three companies: Kirk Beauty Supplies maintains a constant dividend payout of 25 to 30%. Kelley Medical Devices increases its dividend each year in accordance with the company's long run growth rate of 4%. Barrett Satellite Systems has maintained a dividend of $2.00 per share over the last 6 years. Which stock best meets Takei's criteria?", "opts": ["Kirk Beauty Supplies.", "Kelley Medical Devices.", "Barrett Satellite Systems."], "ans": "B", "expl": "Due to inflation considerations, a company with a stable dividend policy will have stability in the rate of increase for its dividend each year. This typically means aligning the company's dividend growth rate with its long-term growth rate. Although the company with the fixed per share dividend is a tempting choice, once inflation is considered, a fixed $2.00 per share dividend is actually declining each year in terms of spending power.", "explhtml": "<p>Due to inflation considerations, a company with a stable dividend policy will have stability in the rate of increase for its dividend each year. This typically means aligning the company&#x27;s dividend growth rate with its long-term growth rate. Although the company with the fixed per share dividend is a tempting choice, once inflation is considered, a fixed $2.00 per share dividend is actually declining each year in terms of spending power.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.g<\/div><div class=\"qtext\"><p>Hikaru Takei is the portfolio manager for the Reliant Dividend Focused Fund. Takei wants to add a firm to his portfolio that follows a stable dividend policy. Takei is considering investing in one of three companies:<\/p><p>Kirk Beauty Supplies maintains a constant dividend payout of 25 to 30%. Kelley Medical Devices increases its dividend each year in accordance with the company&#x27;s long run growth rate of 4%. Barrett Satellite Systems has maintained a dividend of $2.00 per share over the last 6 years.<\/p><p>Which stock best meets Takei&#x27;s criteria?<\/p><\/div>", "subj": "corporate"}, {"n": 17, "q": "The share prices of Solar Automotive Industries and Winnipeg Auto Unlimited are both $50 per share, and each company has 50 million shares outstanding. On September 30, both companies announced a $10 million stock buyback. Solar has a book value of $500 million, while Winnipeg has a book value of $900 million. How much did the book value per share (BVPS) of each company increase or decrease after the share repurchase? Solar Automotive Industries  Winnipeg Auto Unlimited", "opts": ["Decrease by $0.16 Decrease by $0.13", "Increase by $0.13 Increase by $0.16", "Decrease by $0.13 Decrease by $0.13"], "ans": "A", "expl": "The share buyback for each company is $10 million / $50 per share = 200,000 shares. Remaining shares for each company = 50 million − 200,000 = 49.8 million shares. For Solar Automotive Industries: Solar Automotive Industries' current BVPS = $500 million / 50 million = $10. The market price per share of $50 is greater than the BVPS of $10. Book value after repurchase = $500 million – $10 million = $490 million BVPS = $490 million / 49.8 million = $9.84 BVPS decreased by $0.16 For Winnipeg Auto Unlimited: Winnipeg Auto Unlimited's current BVPS = $900 million / 50 million = $18. The market price per share of $50 is greater than the BVPS of $18. Book value after repurchase = $900 million – $10 million = $890 million BVPS = $890 million / 49.8 million = $17.87 BVPS decreased by $0.13. In the case of both Solar Automotive Industries and Winnipeg Auto Unlimited, book value per share (BVPS) decreased because the share price is greater than the original BVPS. If the share prices were less than the original BVPS, then the BVPS after the repurchase for each firm would have increased.", "explhtml": "<p>The share buyback for each company is $10 million / $50 per share = 200,000 shares.<\/p><p>Remaining shares for each company = 50 million − 200,000 = 49.8 million shares.<\/p><p>For Solar Automotive Industries:<\/p><p>Solar Automotive Industries&#x27; current BVPS = $500 million / 50 million = $10.<\/p><p>The market price per share of $50 is greater than the BVPS of $10.<\/p><p>Book value after repurchase = $500 million – $10 million = $490 million<\/p><p>BVPS = $490 million / 49.8 million = $9.84<\/p><p>BVPS decreased by $0.16<\/p><p>For Winnipeg Auto Unlimited:<\/p><p>Winnipeg Auto Unlimited&#x27;s current BVPS = $900 million / 50 million = $18.<\/p><p>The market price per share of $50 is greater than the BVPS of $18.<\/p><p>Book value after repurchase = $900 million – $10 million = $890 million<\/p><p>BVPS = $890 million / 49.8 million = $17.87<\/p><p>BVPS decreased by $0.13.<\/p><p>In the case of both Solar Automotive Industries and Winnipeg Auto Unlimited, book value per share (BVPS) decreased because the share price is greater than the original BVPS. If the share prices were less than the original BVPS, then the BVPS after the repurchase for each firm would have increased.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.k<\/div><div class=\"qtext\"><p>The share prices of Solar Automotive Industries and Winnipeg Auto Unlimited are both $50 per share, and each company has 50 million shares outstanding. On September 30, both companies announced a $10 million stock buyback. Solar has a book value of $500 million, while Winnipeg has a book value of $900 million. How much did the book value per share (BVPS) of each company increase or decrease after the share repurchase? Solar Automotive Industries &nbsp; Winnipeg Auto Unlimited<\/p><\/div>", "subj": "corporate"}, {"n": 18, "q": "Laura's Chocolates, Inc. (LC), is a maker of nut-based toffees. LC is considering a share repurchase and prefers the \"tender offer\" method. Which of the following is also known as a \"tender offer\"?", "opts": ["Buying in the open market.", "Buying a fixed number of shares at a fixed price.", "Repurchasing by direct negotiation."], "ans": "B", "expl": "A tender offer refers to buying a fixed number of shares at a fixed price (usually at a premium to the current market price).", "explhtml": "<p>A tender offer refers to buying a fixed number of shares at a fixed price (usually at a premium to the current market price).<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.i<\/div><div class=\"qtext\"><p>Laura&#x27;s Chocolates, Inc. (LC), is a maker of nut-based toffees. LC is considering a share repurchase and prefers the &quot;tender offer&quot; method. Which of the following is also known as a &quot;tender offer&quot;?<\/p><\/div>", "subj": "corporate"}, {"n": 19, "q": "The share price of Winnipeg Auto Unlimited is $5 per share. There are 50 million shares outstanding, and Winnipeg has a book value of $900 million. What is the book value per share (BVPS) after the share repurchase of $10 million?", "opts": ["$14.76.", "$21.24.", "$18.54."], "ans": "C", "expl": "The share buyback is $10 million / $5 per share = 2,000,000 shares. Remaining shares: 50 million − 2 million = 48 million shares. Winnipeg Auto Unlimited's current BVPS = $900 million / 50 million = $18. Book value after repurchase: $900 million − $10 million = $890 million. BVPS = $890 million / 48.0 million = $18.54. BVPS increased by $0.54. Book value per share (BVPS) increased because the share price is less than the original BVPS. If the share prices were more than the original BVPS, then the BVPS after the repurchase would have decreased.", "explhtml": "<p>The share buyback is $10 million / $5 per share = 2,000,000 shares.<\/p><p>Remaining shares: 50 million − 2 million = 48 million shares.<\/p><p>Winnipeg Auto Unlimited&#x27;s current BVPS = $900 million / 50 million = $18.<\/p><p>Book value after repurchase: $900 million − $10 million = $890 million.<\/p><p>BVPS = $890 million / 48.0 million = $18.54.<\/p><p>BVPS increased by $0.54.<\/p><p>Book value per share (BVPS) increased because the share price is less than the original BVPS. If the share prices were more than the original BVPS, then the BVPS after the repurchase would have decreased.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.k<\/div><div class=\"qtext\"><p>The share price of Winnipeg Auto Unlimited is $5 per share. There are 50 million shares outstanding, and Winnipeg has a book value of $900 million. What is the book value per share (BVPS) after the share repurchase of $10 million?<\/p><\/div>", "subj": "corporate"}, {"n": 20, "q": "Which of the following is least likely to discourage a company from making high dividend payouts? The company's:", "opts": ["bondholders are protected by strong debt covenants.", "shareholders are primarily tax-exempt institutions.", "flotation costs are high."], "ans": "B", "expl": "Taxes on dividends are one factor that sometimes discourages companies from paying dividends, however if most shareholders are tax exempt, tax considerations are unlikely to discourage a company from making dividend payouts. A company with high flotation costs is less likely to pay out high dividends, to ensure that projects can be financed through earnings and to thus avoid the expense of issuing new shares. Bondholders are often contractually protected from high dividend payouts; strong debt covenants are likely to prevent the company from making high dividend payouts.", "explhtml": "<p>Taxes on dividends are one factor that sometimes discourages companies from paying dividends, however if most shareholders are tax exempt, tax considerations are unlikely to discourage a company from making dividend payouts. A company with high flotation costs is less likely to pay out high dividends, to ensure that projects can be financed through earnings and to thus avoid the expense of issuing new shares. Bondholders are often contractually protected from high dividend payouts; strong debt covenants are likely to prevent the company from making high dividend payouts.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.e<\/div><div class=\"qtext\"><p>Which of the following is least likely to discourage a company from making high dividend payouts? The company&#x27;s:<\/p><\/div>", "subj": "corporate"}, {"n": 21, "q": "Dividend payments are most likely to be associated with:", "opts": ["increased agency conflict between bondholders and shareholders.", "increased agency conflict between bondholders and managers.", "increased agency conflict between shareholders and managers."], "ans": "A", "expl": "Paying dividends can be helpful in reducing agency conflicts between shareholders and managers because dividend payouts constrain managers' ability to invest in negative NPV projects that benefit the managers at the expense of shareholders. Paying dividends is likely to intensify the agency conflict between bondholders and shareholders, as it represents a transfer of wealth from bondholders to shareholders. There is no agency conflict between bondholders and managers.", "explhtml": "<p>Paying dividends can be helpful in reducing agency conflicts between shareholders and managers because dividend payouts constrain managers&#x27; ability to invest in negative NPV projects that benefit the managers at the expense of shareholders.<\/p><p>Paying dividends is likely to intensify the agency conflict between bondholders and shareholders, as it represents a transfer of wealth from bondholders to shareholders.<\/p><p>There is no agency conflict between bondholders and managers.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.d<\/div><div class=\"qtext\"><p>Dividend payments are most likely to be associated with:<\/p><\/div>", "subj": "corporate"}, {"n": 22, "q": "The share price of Solar Automotive Industries is $50 per share. It has a book value of $500 million and 50 million shares outstanding. What is the book value per share (BVPS) after a share repurchase of $10 million?", "opts": ["$9.84.", "$10.12.", "$10.00."], "ans": "A", "expl": "The share buyback is $10 million / $50 per share = 200,000 shares. Remaining shares: 50 million − 200,000 = 49.8 million shares. Solar Automotive Industries' current BVPS = $500 million / 50 million = $10. Book value after repurchase: $500 million − $10 million = $490 million. BVPS = $490 million / 49.8 million = $9.84. BVPS decreased by $0.16. Book value per share (BVPS) decreased because the share price is greater than the original BVPS. If the share prices were less than the original BVPS, then the BVPS after the repurchase would have increased.", "explhtml": "<p>The share buyback is $10 million / $50 per share = 200,000 shares.<\/p><p>Remaining shares: 50 million − 200,000 = 49.8 million shares.<\/p><p>Solar Automotive Industries&#x27; current BVPS = $500 million / 50 million = $10.<\/p><p>Book value after repurchase: $500 million − $10 million = $490 million.<\/p><p>BVPS = $490 million / 49.8 million = $9.84.<\/p><p>BVPS decreased by $0.16.<\/p><p>Book value per share (BVPS) decreased because the share price is greater than the original BVPS. If the share prices were less than the original BVPS, then the BVPS after the repurchase would have increased.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.k<\/div><div class=\"qtext\"><p>The share price of Solar Automotive Industries is $50 per share. It has a book value of $500 million and 50 million shares outstanding. What is the book value per share (BVPS) after a share repurchase of $10 million?<\/p><\/div>", "subj": "corporate"}, {"n": 23, "q": "At a recent conference, \"Dividends − Are They Increasing?\", several lecturers were discussing the signaling effect and their opinions on how changes in a company's dividend policy are often viewed by investors. Linda Travis, an equity analyst at Girthmore Capital Management and one of the guest lecturers at the conference, made the following observations: Observation 1: A dividend initiation is always viewed as a positive signal by investors. It\nis an indication that the company has so much cash at its disposal that it\ncan afford to pay it out to shareholders. Observation 2: A dividend decrease is typically a positive signal by a company's\nmanagement to its shareholders. It indicates that management has a\nvariety of positive NPV projects in its capital budget and would like to\nfinance as many of them as possible with retained earnings. With respect to Travis' observations:", "opts": ["only one is correct.", "both are correct.", "both are incorrect."], "ans": "C", "expl": "A dividend initiation is often viewed differently by different investors. On one hand, a dividend initiation could mean that a company is sharing its wealth with shareholders – a positive signal. On the other hand, initiating a dividend could mean that a company has a lack of profitable reinvestment opportunities – a negative signal. Dividend decreases or omissions are typically negative signals that current and future earnings prospects are not good and that management does not think the current dividend payment can be maintained.", "explhtml": "<p>A dividend initiation is often viewed differently by different investors. On one hand, a dividend initiation could mean that a company is sharing its wealth with shareholders – a positive signal. On the other hand, initiating a dividend could mean that a company has a lack of profitable reinvestment opportunities – a negative signal. Dividend decreases or omissions are typically negative signals that current and future earnings prospects are not good and that management does not think the current dividend payment can be maintained.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.c<\/div><div class=\"qtext\"><p>At a recent conference, &quot;Dividends − Are They Increasing?&quot;, several lecturers were discussing the signaling effect and their opinions on how changes in a company&#x27;s dividend policy are often viewed by investors. Linda Travis, an equity analyst at Girthmore Capital Management and one of the guest lecturers at the conference, made the following observations:<\/p><div class=\"tbl\"><table><tr><td>Observation 1:<\/td><td>A dividend initiation is always viewed as a positive signal by investors. It<br>is an indication that the company has so much cash at its disposal that it<br>can afford to pay it out to shareholders.<\/td><\/tr><tr><td>Observation 2:<\/td><td>A dividend decrease is typically a positive signal by a company&#x27;s<br>management to its shareholders. It indicates that management has a<br>variety of positive NPV projects in its capital budget and would like to<br>finance as many of them as possible with retained earnings.<\/td><\/tr><\/table><\/div><p>With respect to Travis&#x27; observations:<\/p><\/div>", "subj": "corporate"}, {"n": 24, "q": "David Drakar and Leslie O'Rourke both own 100 shares of stock in a German corporation that makes €1.00 per share in pre-tax income. The corporation pays out all of its income as dividends. Drakar is in the 30% individual tax bracket while O'Rourke is in the 40% individual tax bracket. The tax rate applicable to the corporation is 30%. Drakar and O'Rourke live in the United Kingdom, which uses an imputation tax system for corporate dividends. What is the effective tax rate on the dividend for each shareholder, assuming no effects from the exchange rate? Drakar  O'Rourke", "opts": ["38% 44%", "30% 40%", "40% 48%"], "ans": "B", "expl": "Under an imputation tax system, taxes are paid at the corporate level, but are attributed to the shareholder, so that all taxes are effectively paid at the shareholder rate.", "explhtml": "<p>Under an imputation tax system, taxes are paid at the corporate level, but are attributed to the shareholder, so that all taxes are effectively paid at the shareholder rate.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.f<\/div><div class=\"qtext\"><p>David Drakar and Leslie O&#x27;Rourke both own 100 shares of stock in a German corporation that makes €1.00 per share in pre-tax income. The corporation pays out all of its income as dividends. Drakar is in the 30% individual tax bracket while O&#x27;Rourke is in the 40% individual tax bracket. The tax rate applicable to the corporation is 30%. Drakar and O&#x27;Rourke live in the United Kingdom, which uses an imputation tax system for corporate dividends. What is the effective tax rate on the dividend for each shareholder, assuming no effects from the exchange rate? Drakar &nbsp; O&#x27;Rourke<\/p><\/div>", "subj": "corporate"}, {"n": 25, "q": "When a firm pays a stock dividend, the dividend is most likely to:", "opts": ["cause liquidity ratios to decrease.", "have no impact on financial leverage ratios and liquidity ratios.", "cause financial leverage ratios to increase."], "ans": "B", "expl": "Stock dividends do not affect assets or shareholders' equity, and financial leverage ratios and liquidity ratios are unaffected. Stock dividends have no economic impact on a company and do not affect a company's capital structure. (Cash dividends, on the other hand, decrease liquidity ratios and increase financial leverage ratios.)", "explhtml": "<p>Stock dividends do not affect assets or shareholders&#x27; equity, and financial leverage ratios and liquidity ratios are unaffected. Stock dividends have no economic impact on a company and do not affect a company&#x27;s capital structure. (Cash dividends, on the other hand, decrease liquidity ratios and increase financial leverage ratios.)<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.a<\/div><div class=\"qtext\"><p>When a firm pays a stock dividend, the dividend is most likely to:<\/p><\/div>", "subj": "corporate"}, {"n": 26, "q": "Global Development expects to earn $6 million next year. 40% of this amount, or $2.4 million, has been allocated for distribution to common shareholders. There are 2.4 million shares outstanding, and the market price is $30 a share. If Global uses the $2.4 million to repurchase shares at the current price of $30 per share, its share price after the repurchase will be closest to:", "opts": ["$30.00.", "$31.00.", "$29.00."], "ans": "A", "expl": "Market value of equity before the repurchase is $30 × 2.4 million = $72 million. Shares Repurchased = $2.4 million / $30 = 80,000 shares. Shares remaining = Shares outstanding − Shares repurchased = 2,400,000 − 80,000 = 2,320,000. Share price after the repurchase = ($72 million − $2.4 million) / 2,320,000 = $30.", "explhtml": "<p>Market value of equity before the repurchase is $30 × 2.4 million = $72 million.<\/p><p>Shares Repurchased = $2.4 million / $30 = 80,000 shares.<\/p><p>Shares remaining = Shares outstanding − Shares repurchased = 2,400,000 − 80,000 = 2,320,000.<\/p><p>Share price after the repurchase = ($72 million − $2.4 million) / 2,320,000 = $30.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.l<\/div><div class=\"qtext\"><p>Global Development expects to earn $6 million next year. 40% of this amount, or $2.4 million, has been allocated for distribution to common shareholders. There are 2.4 million shares outstanding, and the market price is $30 a share. If Global uses the $2.4 million to repurchase shares at the current price of $30 per share, its share price after the repurchase will be closest to:<\/p><\/div>", "subj": "corporate"}, {"n": 27, "q": "If Modigliani and Miller's dividend irrelevancy theory is correct, what is the impact on a firm's cost of capital and stockholder wealth if its dividend payout increases? Stockholder Cost of Capital wealth", "opts": ["None None", "An increase A decrease", "None A decrease"], "ans": "A", "expl": "If investors do not consider dividends to be relevant, the dividend payout will not affect the required rate of return. If the required rate of return does not change, stockholder wealth will be unchanged despite the change in its dividend payout rate.", "explhtml": "<p>If investors do not consider dividends to be relevant, the dividend payout will not affect the required rate of return. If the required rate of return does not change, stockholder wealth will be unchanged despite the change in its dividend payout rate.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.b<\/div><div class=\"qtext\"><p>If Modigliani and Miller&#x27;s dividend irrelevancy theory is correct, what is the impact on a firm&#x27;s cost of capital and stockholder wealth if its dividend payout increases?<\/p><p>Stockholder<\/p><p>Cost of Capital<\/p><p>wealth<\/p><\/div>", "subj": "corporate"}, {"n": 28, "q": "Francis Investment Inc.'s Board of Directors is considering repurchasing $30,000,000 worth of common stock. Francis assumes that the stock can be repurchased at the market price of $50 per share. After much discussion Francis decides to borrow $30 million that it will use to repurchase shares. Francis' Chief Financial Officer (CFO) has compiled the following information regarding the repurchase of the firm's common stock: Share price at the time of buyback = $50 Shares outstanding before buyback = 30,600,000 EPS before buyback = $3.33 Earnings yield = $3.33 / $50 = 6.7% After-tax cost of borrowing = 4.0% Planned buyback = 600,000 shares Based on the information above, after the repurchase of its common stock, Francis' EPS will be closest to:", "opts": ["$3.39.", "$3.41.", "$3.36."], "ans": "C", "expl": "Total earnings = $3.33 × 30,600,000 = $101,898,000 total earnings - after-tax cost of funds EPS after buyback = shares outstanding after buyback $101,898,000  - (600,000 shares x  $50 x  0.04) = (30,600,000 - 600,000) shares $101,898,000 -  $1,200,000 = 30,000,000 shares $100,698,000 = 30,000,000 shares = $3.36 Since the after-tax cost of borrowing of 4% is less than the 6.7% earnings yield (E/P) of the shares, the share repurchase will increase Francis's EPS.", "explhtml": "<p>Total earnings = $3.33 × 30,600,000 = $101,898,000<\/p><p>total earnings - after-tax cost of funds<\/p><p>EPS after buyback =<\/p><p>shares outstanding after buyback<\/p><p>$101,898,000  - (600,000 shares x  $50 x  0.04)<\/p><p>=<\/p><p>(30,600,000 - 600,000) shares<\/p><p>$101,898,000 -  $1,200,000<\/p><p>=<\/p><p>30,000,000 shares<\/p><p>$100,698,000<\/p><p>=<\/p><p>30,000,000 shares<\/p><p>= $3.36<\/p><p>Since the after-tax cost of borrowing of 4% is less than the 6.7% earnings yield (E/P) of the shares, the share repurchase will increase Francis&#x27;s EPS.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.j<\/div><div class=\"qtext\"><p>Francis Investment Inc.&#x27;s Board of Directors is considering repurchasing $30,000,000 worth of common stock. Francis assumes that the stock can be repurchased at the market price of $50 per share. After much discussion Francis decides to borrow $30 million that it will use to repurchase shares. Francis&#x27; Chief Financial Officer (CFO) has compiled the following information regarding the repurchase of the firm&#x27;s common stock:<\/p><p>Share price at the time of buyback = $50 Shares outstanding before buyback = 30,600,000 EPS before buyback = $3.33 Earnings yield = $3.33 / $50 = 6.7% After-tax cost of borrowing = 4.0% Planned buyback = 600,000 shares<\/p><p>Based on the information above, after the repurchase of its common stock, Francis&#x27; EPS will be closest to:<\/p><\/div>", "subj": "corporate"}, {"n": 29, "q": "Grommetco produces plastic insulators for the electrical appliance industry. Excerpts from Grommetco's financial results for 2010 are as follows: Net Income (earnings) $10 Free Cash Flow to Equity $8 Dividends Paid $1 Stock Repurchases $3 Which of the following statements is most accurate? Grommetco's:", "opts": ["FCFE coverage ratio is 2.0.", "dividend coverage ratio is 2.5.", "dividend payout ratio is 0.4."], "ans": "A", "expl": "Dividend coverage ratio = Net Income / Dividends = $10 / $1 = 10. FCFE coverage ratio = FCFE / (dividends + share repurchases) = $8 / ($1 + $3) = 2.0. Dividend payout ratio = Dividends / Net Income = $1 / $10 = 0.1.", "explhtml": "<p>Dividend coverage ratio = Net Income / Dividends = $10 / $1 = 10.<\/p><p>FCFE coverage ratio = FCFE / (dividends + share repurchases) = $8 / ($1 + $3) = 2.0.<\/p><p>Dividend payout ratio = Dividends / Net Income = $1 / $10 = 0.1.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.m<\/div><div class=\"qtext\"><p>Grommetco produces plastic insulators for the electrical appliance industry. Excerpts from Grommetco&#x27;s financial results for 2010 are as follows:<\/p><div class=\"tbl\"><table><tr><td>Net Income (earnings)<\/td><td>$10<\/td><\/tr><tr><td>Free Cash Flow to Equity<\/td><td>$8<\/td><\/tr><tr><td>Dividends Paid<\/td><td>$1<\/td><\/tr><tr><td>Stock Repurchases<\/td><td>$3<\/td><\/tr><\/table><\/div><p>Which of the following statements is most accurate? Grommetco&#x27;s:<\/p><\/div>", "subj": "corporate"}, {"n": 30, "q": "Belden Engineering Corporation (BEC) is considering a share repurchase program. David Gudzanski, the firm's executive vice president prepares a memo to the board of directors detailing reasons why a share repurchase would be favorable at this time. Reasons listed in the memo are as follows: Reason 1: The resulting capital structure from the share repurchase would be more\nfavorable for investors in BEC's bonds. Reason 2: BEC's stock is currently selling at $37 in the marketplace. Our discounted\ncash flow analysis values the company at $48 per share. Reason 3: The share repurchase could be used to offset dilution caused by the exercise\nof employee stock options. Reason 4: BEC can use the repurchase to send a signal to investors that management\nhas a positive future outlook for the company. Reason 5: The share repurchase could be used as an alternative to a cash dividend,\nthat does not create the expectation of continuance in the future. Which of Gudzanski's reasons in favor of the share repurchase is most accurate?", "opts": ["Reasons 2 and 3 only.", "Reasons 2, 3, 4, and 5.", "Reasons 1 and 3 only."], "ans": "B", "expl": "A share repurchase would decrease the percentage of equity in a firm's capital structure, which would in turn increase the percentage of debt. An increase in debt would add more leverage to the firm which would be negative for the firm's bondholders. The other reasons listed are all rationales for a share repurchase.", "explhtml": "<p>A share repurchase would decrease the percentage of equity in a firm&#x27;s capital structure, which would in turn increase the percentage of debt. An increase in debt would add more leverage to the firm which would be negative for the firm&#x27;s bondholders. The other reasons listed are all rationales for a share repurchase.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.l<\/div><div class=\"qtext\"><p>Belden Engineering Corporation (BEC) is considering a share repurchase program. David Gudzanski, the firm&#x27;s executive vice president prepares a memo to the board of directors detailing reasons why a share repurchase would be favorable at this time. Reasons listed in the memo are as follows:<\/p><div class=\"tbl\"><table><tr><td>Reason 1:<\/td><td>The resulting capital structure from the share repurchase would be more<br>favorable for investors in BEC&#x27;s bonds.<\/td><\/tr><tr><td>Reason 2:<\/td><td>BEC&#x27;s stock is currently selling at $37 in the marketplace. Our discounted<br>cash flow analysis values the company at $48 per share.<\/td><\/tr><tr><td>Reason 3:<\/td><td>The share repurchase could be used to offset dilution caused by the exercise<br>of employee stock options.<\/td><\/tr><tr><td>Reason 4:<\/td><td>BEC can use the repurchase to send a signal to investors that management<br>has a positive future outlook for the company.<\/td><\/tr><tr><td>Reason 5:<\/td><td>The share repurchase could be used as an alternative to a cash dividend,<br>that does not create the expectation of continuance in the future.<\/td><\/tr><\/table><\/div><p>Which of Gudzanski&#x27;s reasons in favor of the share repurchase is most accurate?<\/p><\/div>", "subj": "corporate"}, {"n": 31, "q": "Pearl City Breweries has 8 million shares outstanding that are currently trading at $34 per share. The company is choosing whether to distribute $22 million as dividends or to use the same amount to repurchase its shares. Ignoring tax effects, what will be the amount of total wealth from owning one share of Pearl City Breweries under each of these alternatives? Share Cash dividend repurchase", "opts": ["$31.25 $34.00", "$31.25 $37.00", "$34.00 $34.00"], "ans": "C", "expl": "If the company pays a cash dividend, the dividend per share will be $22 million/8 million = $2.75. The value of its shares will be: 8,000,000 ($34) −$22,000,000  $250,000,000 | =  = $31.25 | 8,000,000  8,000,000 So the total wealth from owning one share will be $31.25 + $2.75 = $34.00. If the company repurchases shares, it can buy $22 million/$34 = 647,058 shares. The value of one share would then be: 8,000,000 ($34) −$22,000,000  $250,000,000 | =  = $34.00 7,352,942 8,000,000 −647,058 If you remember that both a cash dividend and a share repurchase for cash leave shareholder wealth unchanged, this question does not require calculations of the amounts.", "explhtml": "<p>If the company pays a cash dividend, the dividend per share will be $22 million/8 million = $2.75. The value of its shares will be:<\/p><div class=\"tbl\"><table><tr><td>8,000,000 ($34) −$22,000,000<\/td><td>$250,000,000<\/td><\/tr><tr><td>=<\/td><td>= $31.25<\/td><\/tr><tr><td>8,000,000<\/td><td>8,000,000<\/td><\/tr><\/table><\/div><p>So the total wealth from owning one share will be $31.25 + $2.75 = $34.00.<\/p><p>If the company repurchases shares, it can buy $22 million/$34 = 647,058 shares. The value of one share would then be:<\/p><div class=\"tbl\"><table><tr><td>8,000,000 ($34) −$22,000,000<\/td><td>$250,000,000<\/td><\/tr><tr><td>=<\/td><td>= $34.00<\/td><\/tr><\/table><\/div><p>7,352,942<\/p><p>8,000,000 −647,058<\/p><p>If you remember that both a cash dividend and a share repurchase for cash leave shareholder wealth unchanged, this question does not require calculations of the amounts.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.l<\/div><div class=\"qtext\"><p>Pearl City Breweries has 8 million shares outstanding that are currently trading at $34 per share. The company is choosing whether to distribute $22 million as dividends or to use the same amount to repurchase its shares. Ignoring tax effects, what will be the amount of total wealth from owning one share of Pearl City Breweries under each of these alternatives?<\/p><p>Share<\/p><p>Cash dividend<\/p><p>repurchase<\/p><\/div>", "subj": "corporate"}, {"n": 32, "q": "According to Modigliani and Miller's dividend irrelevancy theory, an investor in a firm that does not pay a dividend can still earn a \"dividend\" on that company by:", "opts": ["slowly liquidating the fixed income portion of the investor’s portfolio.", "writing covered call options on the underlying stock.", "selling a portion of the company's stock each year."], "ans": "C", "expl": "Miller and Modigliani's dividend irrelevancy theory states that shareholders can create their own dividend policy. If a firm does not pay dividends, a shareholder who wants a 4% dividend can \"create\" it by selling 4% of his or her stock. Note that Modigliani and Miller's theory assumes zero transaction costs or taxes. In actual practice, shareholders will have to pay transaction costs, and tax on any capital gains.", "explhtml": "<p>Miller and Modigliani&#x27;s dividend irrelevancy theory states that shareholders can create their own dividend policy. If a firm does not pay dividends, a shareholder who wants a 4% dividend can &quot;create&quot; it by selling 4% of his or her stock. Note that Modigliani and Miller&#x27;s theory assumes zero transaction costs or taxes. In actual practice, shareholders will have to pay transaction costs, and tax on any capital gains.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.b<\/div><div class=\"qtext\"><p>According to Modigliani and Miller&#x27;s dividend irrelevancy theory, an investor in a firm that does not pay a dividend can still earn a &quot;dividend&quot; on that company by:<\/p><\/div>", "subj": "corporate"}, {"n": 33, "q": "According to Gordon, Litner, and Graham, what will be the impact of the dividend initiation on the cost of equity of Rainham Inc.?", "opts": ["Unchanged.", "It will decrease.", "It will increase."], "ans": "B", "expl": "According to the dividend preference theory (bird-in-the-hand argument), dividends are perceived to be of a lower risk than potential capital gains from reinvested earnings. Dividends have certainly, whereas future capital gains do not. A company that pays dividends will, therefore, have a lower cost of equity compared to a similar non-dividend paying firm.", "explhtml": "<p>According to the dividend preference theory (bird-in-the-hand argument), dividends are perceived to be of a lower risk than potential capital gains from reinvested earnings. Dividends have certainly, whereas future capital gains do not. A company that pays dividends will, therefore, have a lower cost of equity compared to a similar non-dividend paying firm.<\/p>", "qhtml": "<details class=\"vig\" open><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 33–36<\/summary><div class=\"vig-body\"><p>Rainham Inc. has never paid a dividend from the cash flows it generates from its projects; rather it likes to reinvest them in growing the business. Rainham Inc. has experienced a period of sustained growth but management is of the opinion that this growth rate will moderate and they have therefore decided to move to a dividend pay-out. The company's cost of equity is currently estimated to be 16%, with the industry's cost of equity at around 12%. The firm has set the objective of achieving a 70% pay-out ratio.<\/p><p>The board of directors of Rainham Inc. is worried about the impact of moving immediately to a 70% pay-out ratio; whilst this remains their long term objective they feel that a gradual build-up of the pay-out ratio to 70% would be more appropriate. The proposal is to set an initial dividend pay-out ratio in year 1 of 30% and then increase this over the following five years to 70%.<\/p><p>Rainham Inc. has set a growth rate in earnings consistent with their long run ROE and target pay-out ratio.<\/p><p>The Commercial Director of Rainham Inc. believes that the board is overly concerned about investors' reaction to the change in dividend policy. He believes that dividend policy is influenced by the availability of investment opportunities, the future volatility of earnings, flotation costs and legal restrictions.<\/p><\/div><\/details><div class=\"pp-topic\">Module 13.1, LOS 13.b<\/div><div class=\"qtext\"><p>According to Gordon, Litner, and Graham, what will be the impact of the dividend initiation on the cost of equity of Rainham Inc.?<\/p><\/div>", "subj": "corporate"}, {"n": 34, "q": "Which of the following dividend policy is consistent with the Rainham Inc.'s proposed dividend policy of setting an initial dividend payout ratio to 30% and then increase this over the following five years to 70%?", "opts": ["Target payout ratio.", "Dividend stability.", "Residual dividend model."], "ans": "A", "expl": "Target payout ratio is consistent with the proposed dividend policy of Rainham Inc. Under the target payout ratio approach, the management would define a target payout ratio and move toward the target payout ratio over time.", "explhtml": "<p>Target payout ratio is consistent with the proposed dividend policy of Rainham Inc. Under the target payout ratio approach, the management would define a target payout ratio and move toward the target payout ratio over time.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 33–36<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Rainham Inc. has never paid a dividend from the cash flows it generates from its projects; rather it likes to reinvest them in growing the business. Rainham Inc. has experienced a period of sustained growth but management is of the opinion that this growth rate will moderate and they have therefore decided to move to a dividend pay-out. The company's cost of equity is currently estimated to be 16%, with the industry's cost of equity at around 12%. The firm has set the objective of achieving a 70% pay-out ratio.<\/p><p>The board of directors of Rainham Inc. is worried about the impact of moving immediately to a 70% pay-out ratio; whilst this remains their long term objective they feel that a gradual build-up of the pay-out ratio to 70% would be more appropriate. The proposal is to set an initial dividend pay-out ratio in year 1 of 30% and then increase this over the following five years to 70%.<\/p><p>Rainham Inc. has set a growth rate in earnings consistent with their long run ROE and target pay-out ratio.<\/p><p>The Commercial Director of Rainham Inc. believes that the board is overly concerned about investors' reaction to the change in dividend policy. He believes that dividend policy is influenced by the availability of investment opportunities, the future volatility of earnings, flotation costs and legal restrictions.<\/p><\/div><\/details><div class=\"pp-topic\">Module 13.2, LOS 13.g<\/div><div class=\"qtext\"><p>Which of the following dividend policy is consistent with the Rainham Inc.&#x27;s proposed dividend policy of setting an initial dividend payout ratio to 30% and then increase this over the following five years to 70%?<\/p><\/div>", "subj": "corporate"}, {"n": 35, "q": "The Commercial Director has mentioned four out of six factors that influence dividend policy. Which of the following is least likely to be one of the remaining two factors not mentioned?", "opts": ["Taxation.", "Clientele effect.", "Financial flexibility."], "ans": "B", "expl": "The six factors that affect dividend policy are: Availability of investment opportunities Future earnings volatility Financial flexibility Tax considerations Flotation costs Contractual and legal restrictions", "explhtml": "<p>The six factors that affect dividend policy are:<\/p><p>Availability of investment opportunities Future earnings volatility Financial flexibility Tax considerations Flotation costs Contractual and legal restrictions<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 33–36<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Rainham Inc. has never paid a dividend from the cash flows it generates from its projects; rather it likes to reinvest them in growing the business. Rainham Inc. has experienced a period of sustained growth but management is of the opinion that this growth rate will moderate and they have therefore decided to move to a dividend pay-out. The company's cost of equity is currently estimated to be 16%, with the industry's cost of equity at around 12%. The firm has set the objective of achieving a 70% pay-out ratio.<\/p><p>The board of directors of Rainham Inc. is worried about the impact of moving immediately to a 70% pay-out ratio; whilst this remains their long term objective they feel that a gradual build-up of the pay-out ratio to 70% would be more appropriate. The proposal is to set an initial dividend pay-out ratio in year 1 of 30% and then increase this over the following five years to 70%.<\/p><p>Rainham Inc. has set a growth rate in earnings consistent with their long run ROE and target pay-out ratio.<\/p><p>The Commercial Director of Rainham Inc. believes that the board is overly concerned about investors' reaction to the change in dividend policy. He believes that dividend policy is influenced by the availability of investment opportunities, the future volatility of earnings, flotation costs and legal restrictions.<\/p><\/div><\/details><div class=\"pp-topic\">Module 13.1, LOS 13.e<\/div><div class=\"qtext\"><p>The Commercial Director has mentioned four out of six factors that influence dividend policy. Which of the following is least likely to be one of the remaining two factors not mentioned?<\/p><\/div>", "subj": "corporate"}, {"n": 36, "q": "Rainham Inc. pays 35% taxes based on the U.S. tax laws and pays a dividend of $0.90 a share. Assuming that the investor who receives Rainham Inc.'s dividend is in the 15% tax bracket. The effective tax rate on a dollar of earnings paid out as dividends will be:", "opts": ["Equal to the investor’s tax bracket of 15%.", "Equal to the corporate tax rate of 35%.", "Higher than 35%."], "ans": "C", "expl": "U.S. tax rules are based on a double taxation system. As such, the effective tax rate will be higher than just the corporate tax rate of 35% as taxes paid would include both corporate tax and the tax paid on the dividend.", "explhtml": "<p>U.S. tax rules are based on a double taxation system. As such, the effective tax rate will be higher than just the corporate tax rate of 35% as taxes paid would include both corporate tax and the tax paid on the dividend.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 33–36<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Rainham Inc. has never paid a dividend from the cash flows it generates from its projects; rather it likes to reinvest them in growing the business. Rainham Inc. has experienced a period of sustained growth but management is of the opinion that this growth rate will moderate and they have therefore decided to move to a dividend pay-out. The company's cost of equity is currently estimated to be 16%, with the industry's cost of equity at around 12%. The firm has set the objective of achieving a 70% pay-out ratio.<\/p><p>The board of directors of Rainham Inc. is worried about the impact of moving immediately to a 70% pay-out ratio; whilst this remains their long term objective they feel that a gradual build-up of the pay-out ratio to 70% would be more appropriate. The proposal is to set an initial dividend pay-out ratio in year 1 of 30% and then increase this over the following five years to 70%.<\/p><p>Rainham Inc. has set a growth rate in earnings consistent with their long run ROE and target pay-out ratio.<\/p><p>The Commercial Director of Rainham Inc. believes that the board is overly concerned about investors' reaction to the change in dividend policy. He believes that dividend policy is influenced by the availability of investment opportunities, the future volatility of earnings, flotation costs and legal restrictions.<\/p><\/div><\/details><div class=\"pp-topic\">Module 13.1, LOS 13.f<\/div><div class=\"qtext\"><p>Rainham Inc. pays 35% taxes based on the U.S. tax laws and pays a dividend of $0.90 a share. Assuming that the investor who receives Rainham Inc.&#x27;s dividend is in the 15% tax bracket. The effective tax rate on a dollar of earnings paid out as dividends will be:<\/p><\/div>", "subj": "corporate"}, {"n": 37, "q": "Which type of cash dividend is most likely to be declared by a cyclical firm during good times?", "opts": ["Liquidating dividend.", "Stock dividend.", "Special dividend."], "ans": "C", "expl": "Special dividends are used when favorable circumstances allow the firm to make a one-time cash payment to shareholders, in addition to any regular dividends the firm pays. Many cyclical firms (e.g., automakers) will use a special dividend to share profits with shareholders when times are good but maintain the flexibility to conserve cash when profits are down. Other names for special dividends include extra dividends and irregular dividends. Liquidating dividends occur when a company ceases to operate and distributes any equity proceeds to shareholders. Stock dividends are paid out in shares of stock rather than cash and are similar to stock splits.", "explhtml": "<p>Special dividends are used when favorable circumstances allow the firm to make a one-time cash payment to shareholders, in addition to any regular dividends the firm pays. Many cyclical firms (e.g., automakers) will use a special dividend to share profits with shareholders when times are good but maintain the flexibility to conserve cash when profits are down. Other names for special dividends include extra dividends and irregular dividends.<\/p><p>Liquidating dividends occur when a company ceases to operate and distributes any equity proceeds to shareholders. Stock dividends are paid out in shares of stock rather than cash and are similar to stock splits.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.a<\/div><div class=\"qtext\"><p>Which type of cash dividend is most likely to be declared by a cyclical firm during good times?<\/p><\/div>", "subj": "corporate"}, {"n": 38, "q": "Compared to a Dutch auction tender offer, when a firm uses a fixed price tender offer it is more likely that the fixed price tender offer will:", "opts": ["result in a lower buyback price.", "send a positive signal to investors.", "require a greater amount of time to complete."], "ans": "B", "expl": "The premium offered in a fixed price tender offer provides a positive signal to investors about management's view of the stock's value. Dutch auctions can be accomplished quickly, but usually not as quickly as fixed price tender offers. Dutch auctions generally enable a company to do the buyback at a lower price than with a fixed price tender offer.", "explhtml": "<p>The premium offered in a fixed price tender offer provides a positive signal to investors about management&#x27;s view of the stock&#x27;s value. Dutch auctions can be accomplished quickly, but usually not as quickly as fixed price tender offers. Dutch auctions generally enable a company to do the buyback at a lower price than with a fixed price tender offer.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.i<\/div><div class=\"qtext\"><p>Compared to a Dutch auction tender offer, when a firm uses a fixed price tender offer it is more likely that the fixed price tender offer will:<\/p><\/div>", "subj": "corporate"}, {"n": 39, "q": "Dividend safety is most likely evidenced by:", "opts": ["Increase in FCFE coverage ratio but not be dividend coverage ratio.", "Increase in dividend and FCFE coverage ratios.", "Increase in dividend coverage ratio but not by FCFE coverage ratio."], "ans": "B", "expl": "Both dividend and FCFE coverage ratios are indicators of dividend safety. FCFE coverage is simply more comprehensive measure and takes into account all cash distributed to shareholders.", "explhtml": "<p>Both dividend and FCFE coverage ratios are indicators of dividend safety. FCFE coverage is simply more comprehensive measure and takes into account all cash distributed to shareholders.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.m<\/div><div class=\"qtext\"><p>Dividend safety is most likely evidenced by:<\/p><\/div>", "subj": "corporate"}, {"n": 40, "q": "Which of the following would be least likely to prompt a decline in a company's overall payout ratio?", "opts": ["A permanent decrease in company profitability.", "A decrease in the capital gains tax rate.", "An increase in interest rates."], "ans": "A", "expl": "A permanent decrease in profits is expected to result in a decrease in the dividend payment level; however this would probably not lead to a decrease in the payout ratio. If interest rates were to increase, it would make retained earnings a more attractive way of financing new investment; as a result, the payout ratio would be more likely to decline. A decrease in the capital gains tax rate would (for investors that pay tax) make capital gains more appealing; accordingly, aggregate payout ratios would be expected to decline.", "explhtml": "<p>A permanent decrease in profits is expected to result in a decrease in the dividend payment level; however this would probably not lead to a decrease in the payout ratio. If interest rates were to increase, it would make retained earnings a more attractive way of financing new investment; as a result, the payout ratio would be more likely to decline. A decrease in the capital gains tax rate would (for investors that pay tax) make capital gains more appealing; accordingly, aggregate payout ratios would be expected to decline.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.e<\/div><div class=\"qtext\"><p>Which of the following would be least likely to prompt a decline in a company&#x27;s overall payout ratio?<\/p><\/div>", "subj": "corporate"}, {"n": 41, "q": "In a world with taxes and brokerage costs:", "opts": ["Modigliani and Miller say that dividend policy is relevant.", "dividend policy may be relevant.", "Modigliani and Miller say that dividend policy is irrelevant."], "ans": "B", "expl": "Modigliani and Miller assume a world without taxes and transaction costs. They (correctly) claim that the validity of their theory should be judged on empirical tests, not the realism of their assumptions. Myron Gordon and John Lintner have championed the \"bird-in-the-hand\" theory, which gives greater value to firms with high dividend yields because investors perceive dividends to be less risky than capital gains.", "explhtml": "<p>Modigliani and Miller assume a world without taxes and transaction costs. They (correctly) claim that the validity of their theory should be judged on empirical tests, not the realism of their assumptions. Myron Gordon and John Lintner have championed the &quot;bird-in-the-hand&quot; theory, which gives greater value to firms with high dividend yields because investors perceive dividends to be less risky than capital gains.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.b<\/div><div class=\"qtext\"><p>In a world with taxes and brokerage costs:<\/p><\/div>", "subj": "corporate"}, {"n": 42, "q": "Which of the following statements about dividend policy is most accurate?", "opts": ["A person who believes in the agency cost effect and a proponent of the \"bird-inhand\" theory would have opposite views on dividend payout policy.", "A person who believes in bird-in-hand theory would have the same view as one that subscribes to the clientele theory.", "Investors view a stock repurchase as a positive signal and a stock issue as a negative signal."], "ans": "C", "expl": "Investors view a stock repurchase as a positive signal and a stock issue as a negative signal. A repurchase may mean that management believes the stock is undervalued. The other statements are false. A person who believes in the clientele effect and a proponent of the \"bird-in-hand\" theory would not have similar views on dividend policy. Clientele theory argues that different customers have different tax and other concerns and therefore will gravitate toward companies with payout policies that address those concerns. Under the agency cost theory, dividends reduce free cash flow that managers can use for empire building and hence, a high payout is preferred. According to the \"bird-in-hand\" theory, investors prefer dividends to capital appreciation because they view the former (D₁ / P₀) as less risky than the latter (g, or growth rate). Both approaches have similar (and not opposite) views on dividend policy.", "explhtml": "<p>Investors view a stock repurchase as a positive signal and a stock issue as a negative signal. A repurchase may mean that management believes the stock is undervalued.<\/p><p>The other statements are false. A person who believes in the clientele effect and a proponent of the &quot;bird-in-hand&quot; theory would not have similar views on dividend policy. Clientele theory argues that different customers have different tax and other concerns and therefore will gravitate toward companies with payout policies that address those concerns. Under the agency cost theory, dividends reduce free cash flow that managers can use for empire building and hence, a high payout is preferred. According to the &quot;bird-in-hand&quot; theory, investors prefer dividends to capital appreciation because they view the former (D<sub>1<\/sub> / P<sub>0<\/sub>) as less risky than the latter (g, or growth rate). Both approaches have similar (and not opposite) views on dividend policy.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.d<\/div><div class=\"qtext\"><p>Which of the following statements about dividend policy is most accurate?<\/p><\/div>", "subj": "corporate"}, {"n": 43, "q": "What is the impact on shareholder wealth of a share repurchase versus cash dividend of equal amount when the tax treatment of the two alternatives is the same?", "opts": ["A share repurchase will always lead to higher total shareholder wealth than a cash dividend of an equal amount.", "A share repurchase will sometimes lead to higher total shareholder wealth than a cash dividend of an equal amount.", "A share repurchase is equivalent to a cash dividend of an equal amount, so total shareholder wealth will be the same."], "ans": "C", "expl": "Assuming that the tax treatment of a share repurchase and a cash dividend of equal amount is the same, a share repurchase is equivalent to a cash dividend payment, and shareholder wealth will be the same.", "explhtml": "<p>Assuming that the tax treatment of a share repurchase and a cash dividend of equal amount is the same, a share repurchase is equivalent to a cash dividend payment, and shareholder wealth will be the same.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.l<\/div><div class=\"qtext\"><p>What is the impact on shareholder wealth of a share repurchase versus cash dividend of equal amount when the tax treatment of the two alternatives is the same?<\/p><\/div>", "subj": "corporate"}, {"n": 44, "q": "Last year, Calfee Multimedia had earnings of $4.00 per share and paid a dividend of $0.30. In the current year, the company expects to earn $5.20 per share. Calfee has a 30% target payout ratio. If the expected dividend for this year is $0.51, what time period is Calfee most likely using in order to bring its dividend up to the target payout?", "opts": ["5 years.", "6 years.", "4 years."], "ans": "B", "expl": "The formula to determine the expected dividend increase in a target payout approach is: Expected increase in dividends = [(expected earnings × target payout ratio) - previous dividend] × adjustment factor where the adjustment factor is 1 / number of years over which the adjustment will take place. Using the numbers given: $0.51 − $0.30 = [($5.20 × 0.30) − $0.30] × (1 / n) $0.21 = [$1.26] × (1 / n) $0.21 / $1.26 = 1 / n n = $1.26 / $0.21 n = 6", "explhtml": "<p>The formula to determine the expected dividend increase in a target payout approach is:<\/p><p>Expected increase in dividends = [(expected earnings × target payout ratio) - previous dividend] × adjustment factor<\/p><p>where the adjustment factor is 1 / number of years over which the adjustment will take place.<\/p><p>Using the numbers given:<\/p><p>$0.51 − $0.30 = [($5.20 × 0.30) − $0.30] × (1 / n)<\/p><p>$0.21 = [$1.26] × (1 / n)<\/p><p>$0.21 / $1.26 = 1 / n<\/p><p>n = $1.26 / $0.21<\/p><p>n = 6<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.g<\/div><div class=\"qtext\"><p>Last year, Calfee Multimedia had earnings of $4.00 per share and paid a dividend of $0.30. In the current year, the company expects to earn $5.20 per share. Calfee has a 30% target payout ratio. If the expected dividend for this year is $0.51, what time period is Calfee most likely using in order to bring its dividend up to the target payout?<\/p><\/div>", "subj": "corporate"}, {"n": 45, "q": "Which of the following statements about differences observed in payout trends in US and Europe is most accurate?", "opts": ["The percentage of companies making stock repurchases has been trending downwards both in the US and Europe.", "A higher proportion of US companies pay dividends as compared to their European counterparts.", "A lower proportion of US companies pay dividends as compared to their European counterparts."], "ans": "C", "expl": "A lower proportion of US companies pay dividends as compared to their European counterparts. The percentage of companies making stock repurchases has been trending upwards in the US (since 1980s), the UK and continental Europe (since 1990s).", "explhtml": "<p>A lower proportion of US companies pay dividends as compared to their European counterparts. The percentage of companies making stock repurchases has been trending upwards in the US (since 1980s), the UK and continental Europe (since 1990s).<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.h<\/div><div class=\"qtext\"><p>Which of the following statements about differences observed in payout trends in US and Europe is most accurate?<\/p><\/div>", "subj": "corporate"}, {"n": 46, "q": "The current stock price of Westkirk is $50.00 per share. Book value of equity is $200 million and 10 million shares are outstanding. If Westkirk repurchases $25 million of their stock, the change in book value per share after the repurchase is closest to a(n):", "opts": ["decrease of $1.60.", "increase of $1.10.", "decrease of $2.50."], "ans": "A", "expl": "Book value per share before the repurchase = $200 million / 10 million shares = $20.00 per share. Shares repurchased = $25 million / $50.00 = 500,000 shares. Remaining shares = 10 million – 500,000 = 9.5 million shares. After the repurchase, book value = $200 million – $25 million = $175 million. Book value per share after the repurchase = $175 million / 9.5 million shares = $18.42. Difference = $18.42 – $20.00 = –$1.58 per share.", "explhtml": "<p>Book value per share before the repurchase = $200 million / 10 million shares = $20.00 per share.<\/p><p>Shares repurchased = $25 million / $50.00 = 500,000 shares.<\/p><p>Remaining shares = 10 million – 500,000 = 9.5 million shares.<\/p><p>After the repurchase, book value = $200 million – $25 million = $175 million.<\/p><p>Book value per share after the repurchase = $175 million / 9.5 million shares = $18.42.<\/p><p>Difference = $18.42 – $20.00 = –$1.58 per share.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.k<\/div><div class=\"qtext\"><p>The current stock price of Westkirk is $50.00 per share. Book value of equity is $200 million and 10 million shares are outstanding. If Westkirk repurchases $25 million of their stock, the change in book value per share after the repurchase is closest to a(n):<\/p><\/div>", "subj": "corporate"}, {"n": 47, "q": "The following information is from the 10-k of Laura's Chocolates, Inc.(LC), a maker of nut-based toffees. Cash 25,000,000 Share price 40.00 Shares outstanding (prior to transaction) 20,000,000 LC decides to spend $20 million repurchasing common stock. What is the value of a share of stock after the share repurchase?", "opts": ["35.00.", "45.00.", "40.00."], "ans": "C", "expl": "20,000,000 × 40 −20,000,000  780,000,000 | =  = 40.00 | 20,000,000 −500,000  19,500,000", "explhtml": "<div class=\"tbl\"><table><tr><td>20,000,000 × 40 −20,000,000<\/td><td>780,000,000<\/td><\/tr><tr><td>=<\/td><td>= 40.00<\/td><\/tr><tr><td>20,000,000 −500,000<\/td><td>19,500,000<\/td><\/tr><\/table><\/div>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.l<\/div><div class=\"qtext\"><p>The following information is from the 10-k of Laura&#x27;s Chocolates, Inc.(LC), a maker of nut-based toffees.<\/p><div class=\"tbl\"><table><tr><td>Cash<\/td><td>25,000,000<\/td><\/tr><tr><td>Share price<\/td><td>40.00<\/td><\/tr><tr><td>Shares outstanding (prior to transaction)<\/td><td>20,000,000<\/td><\/tr><\/table><\/div><p>LC decides to spend $20 million repurchasing common stock. What is the value of a share of stock after the share repurchase?<\/p><\/div>", "subj": "corporate"}, {"n": 48, "q": "A company is most likely to use a Dutch auction when repurchasing shares:", "opts": ["in the open market.", "with a tender offer.", "by direct negotiation."], "ans": "B", "expl": "In a tender offer, the company may either select a price or use a Dutch auction to determine the lowest price at which it can repurchase the number of shares desired.", "explhtml": "<p>In a tender offer, the company may either select a price or use a Dutch auction to determine the lowest price at which it can repurchase the number of shares desired.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.i<\/div><div class=\"qtext\"><p>A company is most likely to use a Dutch auction when repurchasing shares:<\/p><\/div>", "subj": "corporate"}, {"n": 49, "q": "Which of the following is most likely to prompt a company to increase dividend payments? A company's management foresees:", "opts": ["reduced availability of credit in the market.", "an immediate lack of profitable investment opportunities.", "continued volatility of the company's earnings."], "ans": "B", "expl": "When earnings are volatile, companies are more hesitant to increase dividends, as there are greater chances that a higher dividend may not be covered by future earnings. When there is reduced availability of credit in the market, a strong cash position—such as might be gained from cutting dividends—is a benefit. A company that foresees few profitable investment opportunities tends to pay out more in dividends, since these opportunities would otherwise be funded with cash flows from earnings.", "explhtml": "<p>When earnings are volatile, companies are more hesitant to increase dividends, as there are greater chances that a higher dividend may not be covered by future earnings. When there is reduced availability of credit in the market, a strong cash position—such as might be gained from cutting dividends—is a benefit. A company that foresees few profitable investment opportunities tends to pay out more in dividends, since these opportunities would otherwise be funded with cash flows from earnings.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.e<\/div><div class=\"qtext\"><p>Which of the following is most likely to prompt a company to increase dividend payments? A company&#x27;s management foresees:<\/p><\/div>", "subj": "corporate"}, {"n": 50, "q": "International Pulp, a Swiss-based paper company, has annual pretax earnings (in Swiss francs) of SF 600. The corporate tax rate on retained earnings is 55%, and the corporate tax rate that applies to earnings paid out as dividends is 30%. Furthermore, International Pulp pays out 30% of its earnings as dividends, and the individual tax rate that applies to dividends is 40%. What is the effective tax rate on corporate earnings paid out as dividends?", "opts": ["70%.", "58%.", "48%."], "ans": "B", "expl": "This is an example of a split-rate corporate tax system. The calculation of the effective tax rate on a Swiss franc of corporate income distributed as dividends is based on the corporate tax rate for distributed income. The effective tax rate on income distributed as dividends = 30% + [(1 − 30%) × 40%] = 58%.", "explhtml": "<p>This is an example of a split-rate corporate tax system. The calculation of the effective tax rate on a Swiss franc of corporate income distributed as dividends is based on the corporate tax rate for distributed income.<\/p><p>The effective tax rate on income distributed as dividends = 30% + [(1 − 30%) × 40%] = 58%.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.1, LOS 13.f<\/div><div class=\"qtext\"><p>International Pulp, a Swiss-based paper company, has annual pretax earnings (in Swiss francs) of SF 600. The corporate tax rate on retained earnings is 55%, and the corporate tax rate that applies to earnings paid out as dividends is 30%. Furthermore, International Pulp pays out 30% of its earnings as dividends, and the individual tax rate that applies to dividends is 40%.<\/p><p>What is the effective tax rate on corporate earnings paid out as dividends?<\/p><\/div>", "subj": "corporate"}, {"n": 51, "q": "Which justification for repurchasing stock is the least valid?", "opts": ["Repurchases offer shareholders more choices than cash dividends.", "Shareholders prefer capital gains to cash dividends.", "A cash dividend increase, in response to short-term excess cash flows, may confuse investors."], "ans": "B", "expl": "Some shareholders prefer capital gains, while others prefer dividends. Repurchases offer shareholders the choice of tendering or not tendering their stock, while cash dividends represent a payment they cannot refuse. Raising dividends is often seen as a positive signal, but an increase funded by short-term cash flows may not be sustainable, forcing the company to reduce the dividend later.", "explhtml": "<p>Some shareholders prefer capital gains, while others prefer dividends. Repurchases offer shareholders the choice of tendering or not tendering their stock, while cash dividends represent a payment they cannot refuse. Raising dividends is often seen as a positive signal, but an increase funded by short-term cash flows may not be sustainable, forcing the company to reduce the dividend later.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 13.2, LOS 13.l<\/div><div class=\"qtext\"><p>Which justification for repurchasing stock is the least valid?<\/p><\/div>", "subj": "corporate"}];
+const CFG = {"title": "Reading 13 — Analysis of Dividends and Share Repurchases", "subtitle": "CFA Level II · 51 câu · Kaplan Schweser QBank 2025 (47 câu đơn · 4 câu item set)", "minutes": 0, "passMark": 65, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    let prev = {}; try{ prev = JSON.parse(localStorage.getItem(PROG_KEY)||"null")||{}; }catch(e){}
+    const slug = PROG_KEY.replace(/^cfa:prog:/,"");
+    const _d=new Date(); const day=_d.getFullYear()+"-"+String(_d.getMonth()+1).padStart(2,"0")+"-"+String(_d.getDate()).padStart(2,"0");
+    let tbase = prev.tbase;
+    if(!tbase || tbase.d !== day) tbase = {d:day, base:(prev.done||0)};
+    const answeredToday = Math.max(0, done - tbase.base);
+    try{
+      const daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}");
+      (daily[day] = daily[day]||{})[slug] = {answered:answeredToday, done, total, graded, correct, pct, title:(CFG.title||slug), ts:Date.now()};
+      localStorage.setItem("cfa:daily", JSON.stringify(daily));
+    }catch(e){}
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, tbase, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); var __slug = PROG_KEY.replace(/^cfa:prog:/,""); var __daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}"), __ch=false; for(var __d in __daily){ if(__daily[__d] && __daily[__d][__slug]){ delete __daily[__d][__slug]; __ch=true; } if(__daily[__d] && Object.keys(__daily[__d]).length===0) delete __daily[__d]; } if(__ch) localStorage.setItem("cfa:daily", JSON.stringify(__daily)); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      e.appendChild(q.explhtml?buildExplHtml(q):buildExplanation(q.expl,q.ans,q.opts));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+
+// ---- readable explanations ---------------------------------------------- //
+function explanationData(raw){
+  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|thảo luận|lọc|giải pháp|bạn muốn thảo luận.*|lý do cho đáp án đúng|câu hỏi\s+\d+\s+trên\s+\d+|\(?required\)?|\(?bắt buộc\)?|[?①θi1])$/i;
+  let lines=String(raw||"").replace(/\r/g,"").split("\n")
+    .map(line=>line.replace(/\s+/g," ").trim())
+    .filter(line=>line&&!noise.test(line));
+  let reading="",los="",losIndex=-1;
+  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss|tính|mô tả|giải thích|so sánh|phân tích|đánh giá|diễn giải|nhận diện|xác định|định nghĩa|thảo luận)\b/i;
+  for(let i=Math.max(1,lines.length-10);i<lines.length;i++){
+    const candidate=lines[i].replace(/^[·•?]\s*/,"").replace(/^i(?=(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss))/i,"").trim();
+    const previous=lines[i-1]||"";
+    if(action.test(candidate)&&previous.length<120&&!/[.!?]$/.test(previous)&&!/^[A-J][.)]\s/i.test(previous)){
+      reading=previous; los=lines.slice(i).join(" "); lines=lines.slice(0,i-1); losIndex=i; break;
+    }
+  }
+  return {text:lines.join(" ").replace(/\s+/g," ").trim(),reading,los};
+}
+function explanationSections(text,correctLetter){
+  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\b)/gi,"\n$1. ");
+  const chunks=broken.split(/\n(?=[A-J]\.\s+)/).map(s=>s.trim()).filter(Boolean);
+  const sections=chunks.map(chunk=>{
+    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\.?\s*)?(?:because\s+)?/i);
+    if(!match) return {letter:"",text:chunk};
+    return {letter:match[1].toUpperCase(),text:chunk.slice(match[0].length).trim()};
+  });
+  const hasCorrect=sections.some(section=>section.letter===correctLetter);
+  if(!hasCorrect&&sections.length>1&&!sections[0].letter) sections[0].letter=correctLetter;
+  const unique=[];
+  sections.forEach(section=>{
+    if(!section.letter){
+      if(section.text&&!unique.some(item=>!item.letter)) unique.push(section);
+      return;
+    }
+    const duplicateIndex=unique.findIndex(item=>item.letter===section.letter);
+    if(duplicateIndex<0) unique.push(section);
+    else if((section.text||"").length>(unique[duplicateIndex].text||"").length) unique[duplicateIndex]=section;
+  });
+  return unique;
+}
+function buildExplanation(raw,correctLetter,options){
+  const data=explanationData(raw);
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+correctLetter;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content";
+  explanationSections(data.text,correctLetter).forEach(section=>{
+    if(section.letter){
+      const choice=document.createElement("article");
+      const isCorrect=section.letter===correctLetter;
+      choice.className="expl-choice "+(isCorrect?"is-correct":"is-other");
+      const top=document.createElement("div"); top.className="expl-choice-top";
+      const letter=document.createElement("span"); letter.className="expl-letter"; letter.textContent=section.letter;
+      const state=document.createElement("span"); state.className="expl-state"; state.textContent=isCorrect?"Đáp án đúng":"Không đúng";
+      top.appendChild(letter); top.appendChild(state); choice.appendChild(top);
+      const optionIndex=LETTERS.indexOf(section.letter);
+      if(options&&optionIndex>=0&&options[optionIndex]){
+        const option=document.createElement("p"); option.className="expl-option-copy"; option.textContent=options[optionIndex]; choice.appendChild(option);
+      }
+      if(section.text){ const reason=document.createElement("p"); reason.className="expl-reason"; reason.textContent=section.text; choice.appendChild(reason); }
+      content.appendChild(choice);
+    }else if(section.text){
+      const note=document.createElement("div"); note.className="expl-note";
+      const paragraph=document.createElement("p"); paragraph.textContent=section.text; note.appendChild(paragraph); content.appendChild(note);
+    }
+  });
+  if(data.reading||data.los){
+    const meta=document.createElement("div"); meta.className="expl-meta";
+    if(data.reading){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="Reading:"; const value=document.createElement("span"); value.textContent=data.reading; row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    if(data.los){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="LOS:"; const value=document.createElement("span"); value.textContent=data.los.replace(/^[·•?]\s*/,""); row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    content.appendChild(meta);
+  }
+  shell.appendChild(content); return shell;
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function setSubmitButtonMode(showResults){
+  const btn=$("submitBtn"); if(!btn) return;
+  const label=showResults?"Xem kết quả":"Nộp bài";
+  const textNode=Array.from(btn.childNodes).find(n=>n.nodeType===3);
+  if(textNode) textNode.nodeValue=label;
+  btn.title=showResults?"Xem lại điểm tổng và điểm theo môn":"";
+}
+function requestSubmit(){
+  if(graded){
+    if(typeof window.showGradedResult==="function") window.showGradedResult();
+    else $("resultOverlay").classList.add("show");
+    return;
+  }
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    showQuestionSubject(card,q);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+  renderSubjectBreakdown();
+  setSubmitButtonMode(true);
+}
+
+
+// ---- CFA subject score breakdown ---------------------------------------- //
+const CFA_SUBJECTS = [["ethics", "Ethical & Professional Standards"], ["quant", "Quantitative Methods"], ["economics", "Economics"], ["fsa", "Financial Statement Analysis"], ["corporate", "Corporate Issuers"], ["equity", "Equity Valuation"], ["fixed", "Fixed Income"], ["derivatives", "Derivatives"], ["alternatives", "Alternative Investments"], ["portfolio", "Portfolio Management"]];
+function getCfaSubjectRaw(question){
+  const text=((question.q||"")+"\n"+(question.expl||""))
+    .toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const prompt=(question.q||"").toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  if(session===1 && Number(question.n)<=27) return "ethics";
+  if(session===1 && /f-statistic|test statistic|hypothesis|regression|semideviation|probability|box and whisker|interquartile|quintile|percentile/.test(prompt)) return "quant";
+  if(session===1 && /structural deficit|budget deficit|exchange rate|forward points|currency|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity/.test(prompt)) return "economics";
+  if(session===1 && /cost of debt|cost of capital|capital structure|capital budgeting|\bnpv\b|internal rate of return|\birr\b|board of directors|proxy voting|stakeholders?/.test(prompt)) return "corporate";
+  if(session===1 && /code of ethics|professional conduct|professional integrity|guidance\s*for\s*standards|standards?\s+[ivxl]+\b|gips|global investment performance|ethics application|ethical decision|ethics and trust|explain ethics|level i candidate|exam content|market manipulation|situational influence|fair dealing/.test(text)) return "ethics";
+  if(session===2 && /derivative|forward commitment|forward contract|forward price|futures? contract|swap\b|option\b|put-call|put call|binomial model|contingent claim|arbitrage, replication|delta hedg|option replication|moneyness/.test(text)) return "derivatives";
+  if(session===2 && /alternative investment|private capital|private equity|private debt|hedge fund|real estate|infrastructure investment|natural resources|commodit(?:y|ies)|digital assets?|collectibles|venture capital|buyout|mezzanine financing|co-investing/.test(text)) return "alternatives";
+  if(session===2 && /fixed-income|fixed income|bond\b|bonds\b|yield curve|yield spread|yield-to-maturity|yield to maturity|duration|convexity|mortgage-backed|asset-backed|securiti[sz]ed debt|credit analysis|credit risk|term structure of interest rates|money market instrument|repo market/.test(text)) return "fixed";
+  if(session===1 && /financial statement|financial reporting|income statement|incomestatements|balance sheet|cash flow|inventor(?:y|ies)|long-term assets|long-termassets|long lived assets|income tax|deferred tax|revenue recognition|performance obligations|reporting quality|financial analysis techniques|financial analysistechniques|financial statement modeling|long-term liabilities and equity|long term liabilities and equity|common-size|common size|profitability ratios|liquidity ratios|solvency ratios|activity ratios|dupont|ebitda|diluted eps|gaap|ifrs/.test(text)) return "fsa";
+  if(session===2 && /portfolio management|portfolio risk and return|portfolio planning|portfolio construction|asset allocation|investment policy statement|\bips\b|behavioral bias|behavioral explanation|risk management|capital asset pricing model|\bcapm\b|security market line|capital market line|capital allocation line|efficient frontier|systematic risk|unsystematic risk|sharpe ratio|treynor ratio|information ratio|types of investors|mutual fund|correlation between the assets|correlation pattern|correlation coefficient between two assets|portfolio standard deviation|portfolio risk falls|diversification benefit/.test(text)) return "portfolio";
+  if(session===2 && /equity securit|equity valuation|equityvaluation|market organization and structure|security market index|securitymarket index|market efficiency|industry and competitive analysis|industry andcompetitiveanalysis|company analysis|companyanalysis|porter's five forces|dividend discount|gordon growth|sustainable growth rate|free cash flow to equity|price multiple|preferred stock|preference share|equity market|equity index|stock market|share valuation|enterprise value multiple|statutory voting|size effect anomaly|intrinsic value/.test(text)) return "equity";
+  if(session===1 && /economics|business cycle|monetary policy|fiscal policy|geopolitic|international trade|internationaltrade|exchange rate|currency exchange|capital flows and the fx market|aggregate output|aggregate demand|aggregate supply|inflation|unemployment|firm and market structures|market structure within which a firm|perfect competition|monopolistic competition|oligopoly|central bank|gross domestic product|\bgdp\b|herfindahl-hirschman|concentration ratio/.test(text)) return "economics";
+  if(session===1 && /corporate issuer|corporate governance|capital structure|capital allocation|capital budgeting|combination of projects|cost of capital|working capital|business model|organizational forms|investors and other stakeholders|weighted-average cost of capital|weighted average cost of capital|\bwacc\b|modigliani-miller|dividend policy|share repurchase|stakeholder groups|principal-agent/.test(text)) return "corporate";
+  if(session===1 && /quantitative methods|rates? and returns?|ratesand ?return|statistical measure|probability|random variable|sampling|estimation|hypothesis test|parametric|non-parametric|nonparametric|linear regression|correlation|covariance|time value of money|discounted cash flow|big data|machine learning|data science|central tendency|dispersion|skewness|kurtosis|confidence interval|standard deviation|coefficient of variation|major return measures|continuously compounded|monthly compounding|present value/.test(text)) return "quant";
+  if(session===1){
+    if(/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|cash paid|revenue|expense recognition|inventor(?:y|ies)|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|auditor|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible asset|long-lived asset|long lived asset|asset revaluation|revaluation surplus|impairment|amortization|depreciation|pension plan|financial ratio|liquidity ratio|solvency ratio|receivables turnover|payables turnover|cash conversion cycle|fixed charge coverage|creditworthiness|normalized earnings|management['’]?s commentary/.test(prompt)) return "fsa";
+    if(/business cycle|credit cycle|fiscal policy|monetary policy|structural deficit|budget deficit|central bank|lender of last resort|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic competition|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|usd\/?[a-z]{3}|eur\/?[a-z]{3}|appreciation of the|capital restriction|world bank|international monetary fund/.test(prompt)) return "economics";
+    if(/corporate|company lifecycle|company['’]?s lifecycle|start-up|startup|early-stage|business model|franchise model|board of directors|proxy voting|stakeholders?|shareholders?|creditors?|corporate governance|capital budgeting|capital investment|going concern project|real option|combination of projects|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|target weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|source of liquidity|pull on liquidity|drag on.*liquidity|compensation packages|competitive strategy|porter['’]?s five forces|economies of scale|information asymmetry|agency relationship/.test(prompt)) return "corporate";
+    return "quant";
+  }
+  if(/derivative|forward commitment|forward contract|forward rate agreement|futures? contract|swap\b|option\b|call buyer|call seller|put buyer|put seller|strike price|option premium|put-call|put call|binomial model|contingent claim|moneyness|value at expiration|profit.*expiration|arbitrage|replication/.test(prompt)) return "derivatives";
+  if(/alternative investment|private capital|private equity|private debt|hedge fund|real estate|\breit\b|\breits\b|infrastructure|natural resources|commodit(?:y|ies)|digital assets?|cryptocurrenc|bitcoin|collectibles|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption regime|pooled investment product|timberland|farmland/.test(prompt)) return "alternatives";
+  if(/fixed-income|fixed income|bond\b|bonds\b|debt rating|corporate debt|credit rating|credit spread|creditworthiness|yield curve|yield spread|spot rate|forward rate|yield-to-maturity|yield to maturity|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|\bcds\b|repo market|central bank funds|covenant|accrued interest|priority of claims|default risk|extension risk/.test(prompt)) return "fixed";
+  if(/portfolio|asset allocation|investment policy statement|\bips\b|behavioral finance|behavioral bias|cognitive error|risk aversion|utility function|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation between|covariance between|portfolio standard deviation|sharpe ratio|treynor ratio|jensen['’]?s alpha|information ratio|two-fund separation|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral investor/.test(prompt)) return "portfolio";
+  return "equity";
+}
+
+const CFA_SESSION_SUBJECT_RANGES = {
+  1:{ethics:[27,27],quant:[11,17],economics:[11,17],fsa:[20,25],corporate:[10,16]},
+  2:{equity:[20,25],fixed:[20,25],derivatives:[9,14],alternatives:[11,16],portfolio:[14,22]}
+};
+const CFA_SUBJECT_HINTS = {
+  quant:/probabilit|return measure|holding period|money-weighted|time-weighted|mean|median|mode|quintile|percentile|variance|standard deviation|semideviation|skew|kurtosis|hypothesis|test statistic|confidence interval|regression|correlation|covariance|sampling|estimation|bayes|box and whisker|interquartile|coefficient of variation|compound|present value|future value|interest rate|data science|machine learning|fintech/g,
+  economics:/business cycle|credit cycle|fiscal|monetary|central bank|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|capital restriction|world bank|international monetary fund/g,
+  fsa:/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|revenue|expense|inventory|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible|long-lived|revaluation|impairment|amortization|depreciation|pension|financial ratio|receivables turnover|payables turnover|cash conversion|fixed charge coverage|normalized earnings|management['’]?s commentary/g,
+  corporate:/corporate|company lifecycle|start-up|startup|early-stage|business model|franchise|board of directors|proxy voting|stakeholder|shareholder|creditor|governance|capital budgeting|capital investment|project|real option|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|liquidity|compensation|competitive strategy|porter|economies of scale|information asymmetry|agency relationship/g,
+  equity:/equity|common share|preferred share|stock|market index|index weighting|market efficiency|efficient market|security market|buy order|sell order|limit order|dealer|margin requirement|leverage ratio|industry classification|company analysis|enterprise value|price-to|free cash flow to equity|\bfcfe\b|dividend discount|earnings multiplier|book value per share|intrinsic value|voting|ex-dividend/g,
+  fixed:/fixed-income|fixed income|bond|debt|credit rating|credit spread|yield|spot rate|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|repo|covenant|accrued interest|priority of claims|default|extension risk|interest coverage/g,
+  derivatives:/derivative|forward|future|swap|option|call buyer|call seller|put buyer|put seller|strike price|premium|put-call|binomial|contingent claim|moneyness|expiration|arbitrage|replication/g,
+  alternatives:/alternative|private capital|private equity|private debt|hedge fund|real estate|\breit|infrastructure|natural resource|commodit|digital asset|cryptocurrenc|bitcoin|collectible|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption|timberland|farmland/g,
+  portfolio:/portfolio|asset allocation|investment policy|\bips\b|behavioral|cognitive error|risk aversion|utility|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation|covariance|sharpe|treynor|jensen|information ratio|two-fund|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral/g
+};
+let CFA_SUBJECT_ASSIGNMENTS=null;
+function getCfaSubjectHintScore(question,subject){
+  const prompt=((question.q||"")+" "+(question.opts||[]).join(" ")).toLowerCase().replace(/[‐‑–—]/g,"-");
+  const matches=prompt.match(CFA_SUBJECT_HINTS[subject]);
+  return matches?matches.length:0;
+}
+function buildCfaSubjectAssignments(){
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const ranges=CFA_SESSION_SUBJECT_RANGES[session];
+  const subjects=Object.keys(ranges);
+  const raw=DATA.map(getCfaSubjectRaw);
+  const assigned=raw.slice();
+  const counts={}; subjects.forEach(subject=>counts[subject]=0);
+  if(session===1){
+    DATA.forEach((question,index)=>{
+      if(Number(question.n)<=ranges.ethics[1]) assigned[index]="ethics";
+      else if(assigned[index]==="ethics") assigned[index]=null;
+    });
+  }
+  DATA.forEach((question,index)=>{
+    if(assigned[index]) return;
+    const eligible=subjects.filter(subject=>subject!=="ethics");
+    assigned[index]=eligible.sort((a,b)=>getCfaSubjectHintScore(question,b)-getCfaSubjectHintScore(question,a))[0];
+  });
+  assigned.forEach(subject=>counts[subject]++);
+  subjects.forEach(source=>{
+    const maximum=ranges[source][1];
+    if(counts[source]<=maximum) return;
+    const candidates=DATA.map((question,index)=>({index,score:getCfaSubjectHintScore(question,source)}))
+      .filter(item=>assigned[item.index]===source && !(session===1 && source==="ethics" && Number(DATA[item.index].n)<=27))
+      .sort((a,b)=>a.score-b.score||b.index-a.index);
+    for(const candidate of candidates){
+      if(counts[source]<=maximum) break;
+      const belowMinimum=subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][0]);
+      const destinations=(belowMinimum.length?belowMinimum:subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][1]))
+        .sort((a,b)=>getCfaSubjectHintScore(DATA[candidate.index],b)-getCfaSubjectHintScore(DATA[candidate.index],a)
+          ||(ranges[b][1]-counts[b])-(ranges[a][1]-counts[a]));
+      const destination=destinations[0]; if(!destination) break;
+      assigned[candidate.index]=destination; counts[source]--; counts[destination]++;
+    }
+  });
+  return assigned;
+}
+function getCfaSubject(question){
+  if(question&&question.subj) return question.subj;
+  if(!CFA_SUBJECT_ASSIGNMENTS) CFA_SUBJECT_ASSIGNMENTS=buildCfaSubjectAssignments();
+  const index=DATA.indexOf(question);
+  return index>=0?CFA_SUBJECT_ASSIGNMENTS[index]:getCfaSubjectRaw(question);
+}
+
+function showQuestionSubject(card, question){
+  const head=card.querySelector(".card-head"); if(!head) return;
+  let label=head.querySelector(".question-subject");
+  if(!label){
+    label=document.createElement("span"); label.className="question-subject";
+    const pin=head.querySelector(".pin"); head.insertBefore(label,pin||null);
+  }
+  const key=getCfaSubject(question);
+  const subject=CFA_SUBJECTS.find(item=>item[0]===key);
+  label.dataset.subject=key;
+  label.textContent=subject?subject[1]:"Chưa phân loại";
+  label.title="Môn CFA: "+label.textContent;
+}
+
+function renderSubjectBreakdown(){
+  const panel=$("subjectBreakdown"); if(!panel) return;
+  const scores={}; CFA_SUBJECTS.forEach(s=>scores[s[0]]={correct:0,total:0});
+  DATA.forEach((q,i)=>{
+    const key=getCfaSubject(q); if(!scores[key]) return;
+    scores[key].total++; if(answers[i]===q.ans) scores[key].correct++;
+  });
+  panel.innerHTML="";
+  const heading=document.createElement("h4"); heading.textContent="Điểm theo môn CFA · Tổng "+DATA.length+" câu"; panel.appendChild(heading);
+  const grid=document.createElement("div"); grid.className="subject-grid";
+  CFA_SUBJECTS.forEach(subject=>{
+    const score=scores[subject[0]]; if(!score.total) return;
+    const pct=Math.round(score.correct/score.total*100);
+    const row=document.createElement("div"); row.className="subject-row";
+    const top=document.createElement("div"); top.className="subject-top";
+    const name=document.createElement("span"); name.className="subject-name"; name.textContent=subject[1];
+    const value=document.createElement("span"); value.className="subject-score"; value.textContent=score.correct+"/"+score.total+" ("+pct+"%)";
+    const bar=document.createElement("div"); bar.className="subject-bar"; bar.setAttribute("role","progressbar"); bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax","100"); bar.setAttribute("aria-valuenow",String(pct));
+    const fill=document.createElement("div"); fill.className="subject-fill"; fill.style.width=pct+"%";
+    top.appendChild(name); top.appendChild(value); bar.appendChild(fill); row.appendChild(top); row.appendChild(bar); grid.appendChild(row);
+  });
+  panel.appendChild(grid);
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  setSubmitButtonMode(false);
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+<script>
+/* ===== Feedback sinh động: chạy sau khi chấm bài ===== */
+(function(){
+  if(typeof grade!=='function') return;
+  var _grade=grade;
+  grade=function(a){ _grade(a); try{ afterGrade(false); }catch(e){} };
+  window.showGradedResult=function(){ try{ afterGrade(true); }catch(e){} };
+
+  function afterGrade(restored){
+    if(!CFG.hasAnswers) return;
+    var pass=document.getElementById('badge').classList.contains('pass');
+    showResult(pass, document.getElementById('badge').textContent, !restored);
+  }
+  function addMark(el,sym){
+    if(el.querySelector('.fx-mark')) return;
+    var s=document.createElement('span'); s.className='fx-mark'; s.textContent=sym;
+    el.appendChild(s);
+  }
+  function showResult(pass, badgeText, celebrate){
+    var ov=document.getElementById('resultOverlay');
+    var icon=document.getElementById('rIcon');
+    var title=document.getElementById('rTitle');
+    var emoji=document.getElementById('rEmoji');
+    var score=document.getElementById('rScore');
+    var m=badgeText.split('·'); score.textContent=m.length>1?m[1].trim():'';
+    if(pass){
+      title.textContent='Chúc mừng! Bạn đã ĐẠT'; title.className='pass';
+      icon.setAttribute('src','https://cdn.lordicon.com/lupuorrc.json');
+      emoji.textContent='🎉';
+      if(celebrate){ fetchEmoji('face-positive', emoji); confetti(); }
+    }else{
+      title.textContent='Chưa đạt — cố lên nhé!'; title.className='fail';
+      icon.setAttribute('src','https://cdn.lordicon.com/jdgfsfzr.json');
+      emoji.textContent='💪';
+    }
+    ov.classList.add('show');
+  }
+  function fetchEmoji(group, el){
+    var ctrl=('AbortController'in window)?new AbortController():null;
+    if(ctrl) setTimeout(function(){try{ctrl.abort();}catch(e){}},3500);
+    fetch('https://emojihub.yurace.pro/api/random/group/'+group, ctrl?{signal:ctrl.signal}:{})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.htmlCode&&d.htmlCode.length){
+        el.innerHTML=d.htmlCode.join('');
+        el.style.animation='none'; void el.offsetWidth; el.style.animation='';
+      }})
+      .catch(function(){});
+  }
+  if(graded) window.showGradedResult();
+
+  function confetti(){
+    var cols=['#538297','#86a7b5','#22c55e','#f59e0b','#f43f5e','#38bdf8'];
+    for(var i=0;i<70;i++){(function(){
+      var d=document.createElement('i'); d.className='fx-confetti';
+      d.style.left=Math.random()*100+'vw';
+      d.style.background=cols[i%cols.length];
+      d.style.animationDuration=(2.2+Math.random()*1.6)+'s';
+      d.style.animationDelay=(Math.random()*0.5)+'s';
+      d.style.transform='rotate('+(Math.random()*360)+'deg)';
+      document.body.appendChild(d);
+      setTimeout(function(){d.remove();},4500);
+    })();}
+  }
+})();
+</script>
+<!--qnote-feature-start-->
+<style id="qnote-css">
+  main#quiz{max-width:1180px}
+  .qrow{display:flex;gap:16px;align-items:flex-start;margin:0 0 16px}
+  .qrow > .card{flex:1 1 auto;min-width:0;margin:0}
+  .qnote{flex:0 0 300px;align-self:stretch;display:flex;flex-direction:column;
+    border-radius:12px;border:1px solid var(--line);
+    background:color-mix(in srgb, var(--pin) 9%, var(--panel2));padding:10px}
+  .qnote-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;
+    font-size:12.5px;font-weight:600;color:var(--muted)}
+  .qnote-head .dot{color:var(--pin)}
+  .qnote-saved{margin-left:auto;font-size:11.5px;color:var(--ok);opacity:0;
+    transition:opacity .25s}
+  .qnote-saved.show{opacity:1}
+  .qnote textarea{flex:1 1 auto;width:100%;resize:vertical;min-height:96px;display:block;
+    font:inherit;font-size:14px;line-height:1.5;color:var(--txt);
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;outline:none}
+  .qnote textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 1.5px var(--accent) inset}
+  .qnote textarea::placeholder{color:var(--muted);opacity:.7}
+  @media (max-width:860px){
+    .qrow{flex-direction:column;gap:10px}
+    .qnote{flex-basis:auto;width:100%;align-self:auto}
+    .qnote textarea{min-height:52px}
+  }
+</style>
+<script>
+/* ===== Ghi chú cá nhân bên phải mỗi câu (lưu trong máy - localStorage) ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function load(){ try{ return JSON.parse(localStorage.getItem(NKEY)||"{}")||{}; }catch(e){ return {}; } }
+  function save(map){ try{ localStorage.setItem(NKEY, JSON.stringify(map)); }catch(e){} }
+  function keyFor(card){ var id=card.id||""; var m=id.match(/^q-(\d+)$/); return m?m[1]:null; }
+  function attach(){
+    var notes = load();
+    var cards = document.querySelectorAll("#quiz .card");
+    for(var c=0;c<cards.length;c++){
+      var card = cards[c];
+      var parent = card.parentNode;
+      if(parent && parent.classList && parent.classList.contains("qrow")) continue; // already wrapped
+      var k = keyFor(card);
+      if(k===null || !parent) continue;
+      var wrap = document.createElement("div");
+      wrap.className = "qnote";
+      var head = document.createElement("div");
+      head.className = "qnote-head";
+      head.innerHTML = '<span class="dot">📝</span><span>Ghi chú</span><span class="qnote-saved">Đã lưu ✓</span>';
+      var ta = document.createElement("textarea");
+      ta.setAttribute("placeholder","Ghi chú cho câu này…");
+      ta.value = notes[k] || "";
+      (function(ta,k,savedEl){
+        var t=null;
+        ta.addEventListener("input", function(){
+          var m=load();
+          if(ta.value && ta.value.trim()) m[k]=ta.value; else delete m[k];
+          save(m);
+          savedEl.classList.add("show");
+          clearTimeout(t); t=setTimeout(function(){ savedEl.classList.remove("show"); }, 1200);
+        });
+      })(ta, k, head.querySelector(".qnote-saved"));
+      wrap.appendChild(head); wrap.appendChild(ta);
+      var row = document.createElement("div");
+      row.className = "qrow";
+      parent.insertBefore(row, card);   // put row where the card was
+      row.appendChild(card);            // move question card into the row (left)
+      row.appendChild(wrap);            // note beside it (right)
+    }
+  }
+  function boot(){
+    attach();
+    var quiz = document.getElementById("quiz");
+    if(quiz && "MutationObserver" in window){
+      var pend=false;
+      new MutationObserver(function(){
+        if(pend) return; pend=true;
+        setTimeout(function(){ pend=false; attach(); }, 30);
+      }).observe(quiz,{childList:true});
+    }
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnote-feature-end-->
+<!--qnav-note-start-->
+<style id="qnav-note-css">
+  #navGrid .cell.noted::before{content:"\1F4DD";position:absolute;top:-4px;left:-3px;font-size:10px;line-height:1}
+</style>
+<script>
+/* ===== Đánh dấu câu có Ghi chú trong "Danh sách câu" + bộ lọc "Ghi chú" ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function noteSet(){
+    var s={};
+    try{ var m=JSON.parse(localStorage.getItem(NKEY)||"{}")||{};
+      for(var k in m){ if(m.hasOwnProperty(k) && m[k] && (""+m[k]).trim()) s[k]=1; } }catch(e){}
+    return s;
+  }
+  function addChip(){
+    var chips=document.getElementById("chips");
+    if(!chips || chips.querySelector('[data-f="note"]')) return;
+    var b=document.createElement("button");
+    b.className="chip"; b.setAttribute("data-f","note");
+    b.innerHTML='Ghi chú <span></span>';
+    b.onclick=function(){ if(typeof setFilter==="function") setFilter("note", b); };
+    chips.appendChild(b);
+  }
+  var wrapped=false;
+  function wrapRefresh(){
+    if(wrapped || typeof window.refreshNav!=="function") return;
+    wrapped=true;
+    var orig=window.refreshNav;
+    window.refreshNav=function(){
+      orig.apply(this, arguments);
+      var ns=noteSet(), cnt=0;
+      var active=document.querySelector('#chips .chip.active');
+      var f=active?active.getAttribute("data-f"):"all";
+      var cells=document.querySelectorAll("#navGrid .cell");
+      for(var j=0;j<cells.length;j++){
+        var c=cells[j], m=(c.id||"").match(/^cell-(\d+)$/); if(!m) continue;
+        var has=!!ns[m[1]];
+        c.classList.toggle("noted", has);
+        if(has) cnt++;
+        if(f==="note") c.classList.toggle("hide", !has);
+      }
+      var sp=document.querySelector('#chips [data-f="note"] span');
+      if(sp) sp.textContent="("+cnt+")";
+    };
+  }
+  function wrapToggle(){
+    if(typeof window.toggleNav!=="function" || window.toggleNav.__qnav) return;
+    var orig=window.toggleNav;
+    window.toggleNav=function(){
+      var r=orig.apply(this, arguments);
+      var p=document.getElementById("navPanel");
+      if(p && p.classList.contains("open") && typeof window.refreshNav==="function") window.refreshNav();
+      return r;
+    };
+    window.toggleNav.__qnav=true;
+  }
+  function boot(){
+    addChip(); wrapRefresh(); wrapToggle();
+    if(typeof window.refreshNav==="function") window.refreshNav();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnav-note-end-->
+
+<!--qnotes-panel-start-->
+<style id="qnotes-panel-css">
+  #qnotesFab{position:fixed;right:18px;bottom:18px;z-index:35;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #qnotesFab:hover{filter:brightness(1.06)}
+  #qnotesFab svg{width:17px;height:17px;flex:none}
+  #qnotesPanel{position:fixed;top:8vh;left:16px;width:min(470px,94vw);height:min(80vh,680px);z-index:70;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #qnotesPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #qnotesPanel .qnp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #qnotesPanel .qnp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #qnotesPanel .qnp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #qnotesPanel .qnp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #qnotesPanel .qnp-open:hover{text-decoration:underline}
+  #qnotesPanel .qnp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #qnotesPanel .qnp-x:hover{color:var(--txt)}
+  #qnotesPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #qnotesPanel.dragging #qnotesFrame{pointer-events:none}
+  #qnotesFrame{flex:1;width:100%;border:0;background:var(--bg)}
+  #qnotesOverlay{position:fixed;inset:0;background:transparent;z-index:65;display:none;pointer-events:none}
+  #qnotesOverlay.show{display:block}
+  @media(max-width:600px){#qnotesFab span{display:none}#qnotesFab{padding:12px}}
+</style>
+<button id="qnotesFab" type="button" onclick="qnotesOpen()" title="Ghi chú của tôi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 10h6M8 14h8M8 18h5"/></svg><span>Ghi chú</span></button>
+<div id="qnotesOverlay" onclick="qnotesClose()"></div>
+<div id="qnotesPanel" aria-hidden="true">
+  <div class="qnp-head" id="qnotesHead"><span class="qnp-grip" aria-hidden="true">⠿</span><b>Ghi chú của tôi</b><a class="qnp-open" href="index.html?view=notes" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="qnp-x" onclick="qnotesClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="qnotesFrame" title="Ghi chú của tôi" loading="lazy"></iframe>
+</div>
+<script id="qnotes-panel-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("qnotesPanel");}
+  window.qnotesOpen=function(){
+    var fr=document.getElementById("qnotesFrame");
+    if(!loaded){ fr.src="index.html?embed=1&view=notes"; loaded=true; }
+    P().classList.add("open"); document.getElementById("qnotesOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.qnotesClose=function(){
+    P().classList.remove("open"); document.getElementById("qnotesOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.qnotesClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("qnotesHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".qnp-x")||e.target.closest(".qnp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--qnotes-panel-end-->
+<!--baii-calc-start-->
+<style id="baii-calc-css">
+  #baiiFab{position:fixed;right:18px;bottom:70px;z-index:36;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent2,#0ea5e9);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #baiiFab:hover{filter:brightness(1.06)}
+  #baiiFab svg{width:17px;height:17px;flex:none}
+  #baiiPanel{position:fixed;top:8vh;right:16px;width:min(410px,94vw);height:min(80vh,680px);z-index:72;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #baiiPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #baiiPanel .bp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #baiiPanel .bp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #baiiPanel .bp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #baiiPanel .bp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #baiiPanel .bp-open:hover{text-decoration:underline}
+  #baiiPanel .bp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #baiiPanel .bp-x:hover{color:var(--txt)}
+  #baiiPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #baiiPanel.dragging #baiiFrame{pointer-events:none}
+  #baiiFrame{flex:1;width:100%;border:0;background:#0f1a1d}
+  #baiiOverlay{position:fixed;inset:0;background:transparent;z-index:67;display:none;pointer-events:none}
+  #baiiOverlay.show{display:block}
+  @media(max-width:600px){#baiiFab span{display:none}#baiiFab{padding:12px;bottom:74px}}
+</style>
+<button id="baiiFab" type="button" onclick="baiiOpen()" title="Máy tính BA II Plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="19"/><line x1="8" y1="19" x2="12" y2="19"/></svg><span>Máy tính</span></button>
+<div id="baiiOverlay" onclick="baiiClose()"></div>
+<div id="baiiPanel" aria-hidden="true">
+  <div class="bp-head" id="baiiHead"><span class="bp-grip" aria-hidden="true">⠿</span><b>Máy tính BA II Plus</b><a class="bp-open" href="baii-plus.html" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="bp-x" onclick="baiiClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="baiiFrame" title="BA II Plus" loading="lazy"></iframe>
+</div>
+<script id="baii-calc-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("baiiPanel");}
+  window.baiiOpen=function(){
+    var fr=document.getElementById("baiiFrame");
+    if(!loaded){ fr.src="baii-plus.html"; loaded=true; }
+    P().classList.add("open"); document.getElementById("baiiOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.baiiClose=function(){
+    P().classList.remove("open"); document.getElementById("baiiOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.baiiClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("baiiHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".bp-x")||e.target.closest(".bp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--baii-calc-end-->
+
+<!--restart-confirm-start-->
+<div id="restartOverlay" class="overlay">
+  <div class="modal">
+    <h3>Làm lại từ đầu?</h3>
+    <p>Toàn bộ đáp án đã chọn và tiến độ của đề này sẽ bị xoá và không thể khôi phục. Bạn chắc chắn muốn làm lại?</p>
+    <div class="modal-actions">
+      <button type="button" onclick="rcCancel()">Huỷ</button>
+      <button type="button" class="btn-primary" onclick="rcConfirm()">Làm lại</button>
+    </div>
+  </div>
+</div>
+<script id="restart-confirm-js">
+(function(){
+  if(typeof restart!=="function") return;
+  var _restart=restart;
+  function ov(){ return document.getElementById("restartOverlay"); }
+  function hasWork(){
+    try{
+      if(typeof graded!=="undefined" && graded) return true;
+      if(typeof answers==="object" && answers && Object.keys(answers).length>0) return true;
+      if(typeof pinned==="object" && pinned && Object.keys(pinned).length>0) return true;
+    }catch(e){}
+    return false;
+  }
+  window.rcCancel=function(){ var o=ov(); if(o) o.classList.remove("show"); };
+  window.rcConfirm=function(){ window.rcCancel(); _restart(); };
+  window.restart=function(){
+    var o=ov();
+    if(o && hasWork()){ o.classList.add("show"); return; }
+    _restart();
+  };
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){ var o=ov(); if(o && o.classList.contains("show")) window.rcCancel(); }
+  });
+  var o=ov(); if(o) o.addEventListener("click",function(e){ if(e.target===o) window.rcCancel(); });
+})();
+</script>
+<!--restart-confirm-end-->
+</body>
+</html>

@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading 41.5 — Guidance for Standards III(B) and III(C) · Kaplan QBank</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(83,130,151,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(134,167,181,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(83,130,151,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(83,130,151,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+<!-- ===== Lordicon + feedback sinh động ===== -->
+<script src="https://cdn.lordicon.com/lordicon.js" defer></script>
+<style id="fx-css">
+  .btn-primary lord-icon{width:20px;height:20px;vertical-align:-4px;margin-right:6px}
+  .opt .fx-mark{display:inline-block;margin-left:8px;font-size:16px;
+    transform:scale(0);animation:fxPop .42s cubic-bezier(.18,1.5,.5,1) forwards}
+  @keyframes fxPop{0%{transform:scale(0) rotate(-25deg)}
+    70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  #resultOverlay .modal{max-width:380px;text-align:center}
+  #resultOverlay lord-icon{width:120px;height:120px;margin:0 auto 6px}
+  #resultOverlay .r-emoji{font-size:46px;line-height:1;margin-bottom:4px;
+    display:block;animation:fxPop .5s cubic-bezier(.18,1.5,.5,1) both}
+  #resultOverlay h3{font-size:22px;margin:4px 0 6px}
+  #resultOverlay .r-score{font-size:15px;color:var(--muted);margin:0}
+  #resultOverlay h3.pass{color:var(--ok)}
+  #resultOverlay h3.fail{color:var(--bad)}
+  .fx-confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:60;
+    pointer-events:none;border-radius:2px;animation:fxFall linear forwards}
+  @keyframes fxFall{to{transform:translateY(105vh) rotate(640deg);opacity:.9}}
+</style>
+<style id="lord2-css">
+  header button lord-icon.hi{width:18px;height:18px;vertical-align:-4px;margin-right:5px}
+  .pause-box .big lord-icon{width:56px;height:56px}
+</style>
+
+<!--subject-breakdown-start-->
+<style id="subject-breakdown-css">
+  #resultOverlay .modal{max-width:720px;max-height:90vh;overflow-y:auto;text-align:center}
+  .subject-breakdown{margin-top:18px;text-align:left}
+  .subject-breakdown h4{margin:0 0 10px;font-size:15px;text-align:center}
+  .subject-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .subject-row{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+  .subject-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:12px}
+  .subject-name{font-weight:650;min-width:0}
+  .subject-score{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+  .subject-bar{height:6px;margin-top:7px;border-radius:999px;overflow:hidden;background:var(--line)}
+  .subject-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  @media(max-width:600px){.subject-grid{grid-template-columns:1fr}}
+
+  /* Subject label shown on each question after grading */
+  .question-subject{max-width:min(58vw,360px);overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;
+    letter-spacing:.01em;color:var(--accent2);background:color-mix(in srgb,var(--accent) 18%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent2) 42%,var(--line))}
+  @media(max-width:520px){.question-subject{max-width:52vw;font-size:10px;padding:3px 7px}}
+</style>
+<!--subject-breakdown-end-->
+
+<!--explanation-redesign-start-->
+<style id="explanation-redesign-css">
+  .expl{padding:0!important;white-space:normal!important;overflow:hidden;
+    background:color-mix(in srgb,var(--panel2) 82%,var(--panel))!important;
+    border:1px solid var(--line)!important;border-radius:14px!important}
+  .expl-shell{display:flex;flex-direction:column}
+  .expl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--panel));
+    border-bottom:1px solid var(--line)}
+  .expl-title{font-size:13px;font-weight:800;color:var(--txt)}
+  .expl-answer{flex:0 0 auto;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;
+    color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent);
+    border:1px solid color-mix(in srgb,var(--ok) 42%,var(--line))}
+  .expl-content{display:grid;gap:10px;padding:12px}
+  .expl-choice{padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
+  .expl-choice.is-correct{border-color:color-mix(in srgb,var(--ok) 56%,var(--line));
+    background:color-mix(in srgb,var(--okbg) 58%,var(--panel))}
+  .expl-choice-top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .expl-letter{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:7px;font-size:12px;font-weight:900;color:var(--muted);background:var(--panel2)}
+  .expl-choice.is-correct .expl-letter{color:#fff;background:var(--ok)}
+  .expl-state{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.045em;color:var(--muted)}
+  .expl-choice.is-correct .expl-state{color:var(--ok)}
+  .expl-option-copy{margin:0 0 8px;font-size:13px;font-weight:650;line-height:1.5;color:var(--txt)}
+  .expl-reason{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-note{padding:11px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+  .expl-note p{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-meta{display:grid;gap:5px;padding:10px 12px;border-radius:10px;
+    border:1px dashed color-mix(in srgb,var(--accent2) 50%,var(--line));
+    background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+  .expl-meta-row{display:flex;gap:7px;align-items:flex-start;font-size:12px;line-height:1.5;color:var(--muted)}
+  .expl-meta-row b{flex:0 0 auto;color:var(--accent2)}
+  @media(max-width:520px){
+    .expl-head{align-items:flex-start;padding:10px 11px}.expl-content{padding:9px;gap:8px}
+    .expl-choice{padding:10px}.expl-option-copy,.expl-reason,.expl-note p{font-size:12.5px}
+  }
+</style>
+<!--explanation-redesign-end-->
+<!--l2-vignette-start-->
+<style id="l2-css">
+  .stem .vig,.stem .qtext{white-space:normal}
+  .vig{border:1px solid var(--line);border-radius:12px;background:var(--panel2);margin:0 0 14px;overflow:hidden}
+  .vig>summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:13px;color:var(--muted);
+    list-style:none;display:flex;gap:8px;align-items:center;user-select:none}
+  .vig>summary::-webkit-details-marker{display:none}
+  .vig>summary::before{content:"▸";font-size:12px;transition:transform .15s}
+  .vig[open]>summary::before{transform:rotate(90deg)}
+  .vig>summary .vig-tag{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);
+    padding:2px 8px;border-radius:999px;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+  .vig>summary .vig-hint{margin-left:auto;font-weight:500;font-size:12px}
+  .vig[open]>summary .vig-hint{display:none}
+  .vig[open]>summary{border-bottom:1px solid var(--line)}
+  .vig-body{padding:12px 16px;max-height:62vh;overflow:auto;font-size:15px;line-height:1.65}
+  .vig-body p,.qtext p,.expl-html p{margin:0 0 10px}
+  .qtext{font-size:16px;line-height:1.65}
+  .tbl{overflow-x:auto;margin:6px 0 12px}
+  .tbl table{border-collapse:collapse;font-size:14px;line-height:1.45}
+  .tbl td,.tbl th{border:1px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top}
+  .tbl tr:first-child td,.tbl th{font-weight:600;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+  .pimg{display:block;margin:8px 0 12px;border-radius:8px;background:#fff;height:auto}
+  .expl-html{padding:14px 16px;line-height:1.65;font-size:14.5px}
+  .pp-topic{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.03em;color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 12%,transparent);padding:3px 10px;border-radius:999px;margin:0 0 10px}
+  .eimg{display:block;width:100%;max-width:900px;height:auto;border-radius:8px;background:#fff;margin:4px 0}
+  .qorig{margin:10px 0 0;font-size:12.5px;color:var(--muted)} .qorig summary{cursor:pointer}
+  .qorig img{display:block;max-width:100%;height:auto;margin-top:8px;border-radius:8px;background:#fff}
+  .kq-note{font-size:12.5px;line-height:1.5;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin:0 0 12px;background:var(--panel2)}
+  .pp-topic.set{color:#a855f7;background:color-mix(in srgb,#a855f7 12%,transparent)}
+</style>
+<script id="l2-js">
+function buildExplHtml(q){
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+q.ans;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content expl-html"; content.innerHTML=q.explhtml;
+  shell.appendChild(content); return shell;
+}
+</script>
+<!--l2-vignette-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='index.html#resume'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Làm lại</button>
+  <button id="submitBtn" class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big"><lord-icon src="https://cdn.lordicon.com/kbtmbyzy.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon></div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<div id="resultOverlay" class="overlay">
+  <div class="modal">
+    <span id="rEmoji" class="r-emoji">🎉</span>
+    <lord-icon id="rIcon" src="https://cdn.lordicon.com/lupuorrc.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon>
+    <h3 id="rTitle"></h3>
+    <p id="rScore" class="r-score"></p>
+
+    <!--subject-breakdown-panel-start-->
+    <div id="subjectBreakdown" class="subject-breakdown" aria-live="polite"></div>
+    <!--subject-breakdown-panel-end-->
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="document.getElementById('resultOverlay').classList.remove('show')">Xem lại bài</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Do QED's policies comply with CFA Institute Standards of Professional Conduct with respect to the information contained within the client IPS' and the frequency with which the information is updated? Information  Frequecy", "opts": ["No Yes", "No No", "Yes No"], "ans": "C", "expl": "According to Standard III(C)—Suitability, members and candidates must consider investment experience, objectives (risk and return), and constraints before investing funds on the client's behalf or recommending investments to the client. The firm has complied with the information content. The investment policy statement must be updated at least annually, or after significant changes in client circumstances, however, according to the guidance statement accompanying Standard III(C). Thus, the firm has not complied with Standard III(C) in this regard.", "explhtml": "<p>According to Standard III(C)—Suitability, members and candidates must consider investment experience, objectives (risk and return), and constraints before investing funds on the client&#x27;s behalf or recommending investments to the client. The firm has complied with the information content. The investment policy statement must be updated at least annually, or after significant changes in client circumstances, however, according to the guidance statement accompanying Standard III(C). Thus, the firm has not complied with Standard III(C) in this regard.<\/p>", "qhtml": "<details class=\"vig\" open><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–6<\/summary><div class=\"vig-body\"><p>Chandra Patel, CFA, manages private client portfolios for QED Investment Advisers. Part of QED's firm-wide policy is to adhere to CFA Institute Standards of Professional Conduct in the management of all client portfolios, and to this end, the firm requires that client objectives, investment experience, and financial limitations be clearly established at the outset of the relationship. This information is updated at regular intervals not to exceed eighteen months. The information is maintained in a written investment policy statement (IPS) for each client.<\/p><p>Anarudh Singh has been one of Patel's clients ever since she began managing money ten years ago. Shortly after his regular situational update, Singh calls to inform Patel that his uncle is ill, and it is not known how long he will survive. Singh expects to inherit \"a sizeable sum of money.\" mainly in the form of municipal bonds. His existing portfolio allocation guidelines are for 75% to be invested in bonds. Singh believes that the expected inheritance will allow him to assume a more aggressive investment profile and asks Patel to begin moving toward a 75% allocation to equities. He is specifically interested in opening sizable positions in several technology firms, some of which have only recently become publicly traded companies. Patel agrees to begin making the changes to the portfolio and the next day begins selling bonds from the portfolio and purchasing stocks in the technology sector as well as in other sectors. After placing the trade orders, Patel sends Singh an email to request that he come to her office sometime during the next week to update his IPS. Singh replies to Patel, saying that he can meet with her next Friday.<\/p><p>A few days before the meeting, however, Singh's uncle dies and the portfolio of municipal bonds is transferred to Singh's account with QED. Patel sees this as an opportunity to purchase more technology stocks for the portfolio and suggests taking such action during her meeting with Singh, who agrees. Patel reviews her files on technology companies and locates a report on NetWin. The analyst's recommendation is that this stock is a \"core holding\" in the technology sector. Patel decides to purchase the stock for Singh's account in addition to several other wealthy client accounts with high risk tolerance levels, but due to time constraints she does not review the holdings in each account. Patel does examine the aggregate holdings of the accounts to determine the approximate weight that NetWin should represent in each portfolio.<\/p><p>Since Patel has very recently passed the Level III examination, QED sends a promotional email to all of the firm's clients. The email states that \"QED is proud to announce that Chandra Patel is now a CFA (Chartered Financial Analyst). This distinction, which is the culmination of many years of work and study, is further evidence of the superior performance you've come to expect at QED.\" Patel also places phone calls to several brokers that she uses to place trades for her accounts, stating that she \"passed all three CFA examinations on the first attempt.\" One of the people Patel contacts is Max Spellman, a long-time friend and broker with TradeRight Brokers Inc. Patel uses the opportunity to discuss her exclusive trading agreement with TradeRight for Singh's account.<\/p><p>When ordering trades for Singh's account, Patel's agreement with TradeRight for brokerage services requires her to first offer the trade to TradeRight, and then to another broker if TradeRight declines to take the trade. TradeRight never refuses the trades from any manager's clients. Patel established the relationship with TradeRight because Singh, knowing the firm's fee schedule relative to other brokers, asked her to do so. However, because TradeRight is very expensive and offers only moderate quality of execution, Patel is considering directing trades on Singh's account to BullBroker, which charges lower commissions and generally completes trades sooner than TradeRight.<\/p><\/div><\/details><div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>Do QED&#x27;s policies comply with CFA Institute Standards of Professional Conduct with respect to the information contained within the client IPS&#x27; and the frequency with which the information is updated? Information &nbsp; Frequecy<\/p><\/div>", "subj": "ethics"}, {"n": 2, "q": "In light of Singh's comments during his telephone call to Patel prior to his uncle's death, which of the following actions that Patel can take comply with CFA Institute Standards of Professional Conduct?", "opts": ["Patel must adhere to the existing portfolio strategy until she meets with Singh to develop a new portfolio strategy based upon updated financial information, but may place trades which are consistent with the existing strategy.", "Patel may change the current portfolio strategy and begin trading based upon Singh’s expectations because he advised her to do so.", "Patel must not place any trades in the account until she meets with Singh to develop a new portfolio strategy based on the updated information."], "ans": "A", "expl": "According to Standard III(C)—Suitability, Patel must observe the written investment objectives now in effect as determined in cooperation with the client and may trade only on that basis. Because the anticipated change in Singh's financial condition was subject to an event of indeterminable timing, she should continue to honor the existing written investment objectives until a change is warranted by an actual increase in the client's total financial assets and has been agreed upon with her client.", "explhtml": "<p>According to Standard III(C)—Suitability, Patel must observe the written investment objectives now in effect as determined in cooperation with the client and may trade only on that basis. Because the anticipated change in Singh&#x27;s financial condition was subject to an event of indeterminable timing, she should continue to honor the existing written investment objectives until a change is warranted by an actual increase in the client&#x27;s total financial assets and has been agreed upon with her client.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–6<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Chandra Patel, CFA, manages private client portfolios for QED Investment Advisers. Part of QED's firm-wide policy is to adhere to CFA Institute Standards of Professional Conduct in the management of all client portfolios, and to this end, the firm requires that client objectives, investment experience, and financial limitations be clearly established at the outset of the relationship. This information is updated at regular intervals not to exceed eighteen months. The information is maintained in a written investment policy statement (IPS) for each client.<\/p><p>Anarudh Singh has been one of Patel's clients ever since she began managing money ten years ago. Shortly after his regular situational update, Singh calls to inform Patel that his uncle is ill, and it is not known how long he will survive. Singh expects to inherit \"a sizeable sum of money.\" mainly in the form of municipal bonds. His existing portfolio allocation guidelines are for 75% to be invested in bonds. Singh believes that the expected inheritance will allow him to assume a more aggressive investment profile and asks Patel to begin moving toward a 75% allocation to equities. He is specifically interested in opening sizable positions in several technology firms, some of which have only recently become publicly traded companies. Patel agrees to begin making the changes to the portfolio and the next day begins selling bonds from the portfolio and purchasing stocks in the technology sector as well as in other sectors. After placing the trade orders, Patel sends Singh an email to request that he come to her office sometime during the next week to update his IPS. Singh replies to Patel, saying that he can meet with her next Friday.<\/p><p>A few days before the meeting, however, Singh's uncle dies and the portfolio of municipal bonds is transferred to Singh's account with QED. Patel sees this as an opportunity to purchase more technology stocks for the portfolio and suggests taking such action during her meeting with Singh, who agrees. Patel reviews her files on technology companies and locates a report on NetWin. The analyst's recommendation is that this stock is a \"core holding\" in the technology sector. Patel decides to purchase the stock for Singh's account in addition to several other wealthy client accounts with high risk tolerance levels, but due to time constraints she does not review the holdings in each account. Patel does examine the aggregate holdings of the accounts to determine the approximate weight that NetWin should represent in each portfolio.<\/p><p>Since Patel has very recently passed the Level III examination, QED sends a promotional email to all of the firm's clients. The email states that \"QED is proud to announce that Chandra Patel is now a CFA (Chartered Financial Analyst). This distinction, which is the culmination of many years of work and study, is further evidence of the superior performance you've come to expect at QED.\" Patel also places phone calls to several brokers that she uses to place trades for her accounts, stating that she \"passed all three CFA examinations on the first attempt.\" One of the people Patel contacts is Max Spellman, a long-time friend and broker with TradeRight Brokers Inc. Patel uses the opportunity to discuss her exclusive trading agreement with TradeRight for Singh's account.<\/p><p>When ordering trades for Singh's account, Patel's agreement with TradeRight for brokerage services requires her to first offer the trade to TradeRight, and then to another broker if TradeRight declines to take the trade. TradeRight never refuses the trades from any manager's clients. Patel established the relationship with TradeRight because Singh, knowing the firm's fee schedule relative to other brokers, asked her to do so. However, because TradeRight is very expensive and offers only moderate quality of execution, Patel is considering directing trades on Singh's account to BullBroker, which charges lower commissions and generally completes trades sooner than TradeRight.<\/p><\/div><\/details><div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>In light of Singh&#x27;s comments during his telephone call to Patel prior to his uncle&#x27;s death, which of the following actions that Patel can take comply with CFA Institute Standards of Professional Conduct?<\/p><\/div>", "subj": "ethics"}, {"n": 3, "q": "According to CFA Institute Standards of Professional Conduct, may Patel reallocate Singh's portfolio toward technology stocks after his Uncle dies, but before the meeting with Singh?", "opts": ["Yes—the total value of the municipal bonds received into the account will be too large relative to the other assets in the portfolio.", "No—Patel and Singh must meet and revise the IPS and portfolio strategy before reallocating.", "No—Patel must wait until the next annual meeting to reallocate."], "ans": "B", "expl": "According to Standard III(C)—Suitability, investment recommendations and actions must be consistent with a client's written objectives and constraints (typically in the form of an IPS). Because Singh's written IPS would not allow the large allocation to technology stocks prior to receiving the inheritance, the IPS must be updated by Singh and Patel prior to taking any actions that deviate from the original IPS. Patel will violate Standard III(C) by reallocating the portfolio before meeting with Singh.", "explhtml": "<p>According to Standard III(C)—Suitability, investment recommendations and actions must be consistent with a client&#x27;s written objectives and constraints (typically in the form of an IPS). Because Singh&#x27;s written IPS would not allow the large allocation to technology stocks prior to receiving the inheritance, the IPS must be updated by Singh and Patel prior to taking any actions that deviate from the original IPS. Patel will violate Standard III(C) by reallocating the portfolio before meeting with Singh.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–6<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Chandra Patel, CFA, manages private client portfolios for QED Investment Advisers. Part of QED's firm-wide policy is to adhere to CFA Institute Standards of Professional Conduct in the management of all client portfolios, and to this end, the firm requires that client objectives, investment experience, and financial limitations be clearly established at the outset of the relationship. This information is updated at regular intervals not to exceed eighteen months. The information is maintained in a written investment policy statement (IPS) for each client.<\/p><p>Anarudh Singh has been one of Patel's clients ever since she began managing money ten years ago. Shortly after his regular situational update, Singh calls to inform Patel that his uncle is ill, and it is not known how long he will survive. Singh expects to inherit \"a sizeable sum of money.\" mainly in the form of municipal bonds. His existing portfolio allocation guidelines are for 75% to be invested in bonds. Singh believes that the expected inheritance will allow him to assume a more aggressive investment profile and asks Patel to begin moving toward a 75% allocation to equities. He is specifically interested in opening sizable positions in several technology firms, some of which have only recently become publicly traded companies. Patel agrees to begin making the changes to the portfolio and the next day begins selling bonds from the portfolio and purchasing stocks in the technology sector as well as in other sectors. After placing the trade orders, Patel sends Singh an email to request that he come to her office sometime during the next week to update his IPS. Singh replies to Patel, saying that he can meet with her next Friday.<\/p><p>A few days before the meeting, however, Singh's uncle dies and the portfolio of municipal bonds is transferred to Singh's account with QED. Patel sees this as an opportunity to purchase more technology stocks for the portfolio and suggests taking such action during her meeting with Singh, who agrees. Patel reviews her files on technology companies and locates a report on NetWin. The analyst's recommendation is that this stock is a \"core holding\" in the technology sector. Patel decides to purchase the stock for Singh's account in addition to several other wealthy client accounts with high risk tolerance levels, but due to time constraints she does not review the holdings in each account. Patel does examine the aggregate holdings of the accounts to determine the approximate weight that NetWin should represent in each portfolio.<\/p><p>Since Patel has very recently passed the Level III examination, QED sends a promotional email to all of the firm's clients. The email states that \"QED is proud to announce that Chandra Patel is now a CFA (Chartered Financial Analyst). This distinction, which is the culmination of many years of work and study, is further evidence of the superior performance you've come to expect at QED.\" Patel also places phone calls to several brokers that she uses to place trades for her accounts, stating that she \"passed all three CFA examinations on the first attempt.\" One of the people Patel contacts is Max Spellman, a long-time friend and broker with TradeRight Brokers Inc. Patel uses the opportunity to discuss her exclusive trading agreement with TradeRight for Singh's account.<\/p><p>When ordering trades for Singh's account, Patel's agreement with TradeRight for brokerage services requires her to first offer the trade to TradeRight, and then to another broker if TradeRight declines to take the trade. TradeRight never refuses the trades from any manager's clients. Patel established the relationship with TradeRight because Singh, knowing the firm's fee schedule relative to other brokers, asked her to do so. However, because TradeRight is very expensive and offers only moderate quality of execution, Patel is considering directing trades on Singh's account to BullBroker, which charges lower commissions and generally completes trades sooner than TradeRight.<\/p><\/div><\/details><div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>According to CFA Institute Standards of Professional Conduct, may Patel reallocate Singh&#x27;s portfolio toward technology stocks after his Uncle dies, but before the meeting with Singh?<\/p><\/div>", "subj": "ethics"}, {"n": 4, "q": "Did Patel violate any CFA Institute Standards of Professional Conduct when she purchased the NetWin stock for Singh's portfolio or for the other clients' portfolios? Singh's Other portfolios portfolio", "opts": ["No Yes", "No No", "Yes Yes"], "ans": "C", "expl": "According to Standard III(C)—Suitability, Patel must analyze the appropriateness and suitability of NetWin.com stock on a case-by-case basis before buying it. This will necessarily consider the basic characteristics of the security and how these will affect overall portfolio characteristics relative to the existing investment strategy for each portfolio. Patel has not analyzed the effect that the stock will have on any of the individual portfolios in question and has thus violated the Standard. Patel cannot look at aggregate measures to determine the appropriate weight that the security should represent in the individual portfolios because the portfolios are being managed individually, not in aggregate.", "explhtml": "<p>According to Standard III(C)—Suitability, Patel must analyze the appropriateness and suitability of NetWin.com stock on a case-by-case basis before buying it. This will necessarily consider the basic characteristics of the security and how these will affect overall portfolio characteristics relative to the existing investment strategy for each portfolio. Patel has not analyzed the effect that the stock will have on any of the individual portfolios in question and has thus violated the Standard. Patel cannot look at aggregate measures to determine the appropriate weight that the security should represent in the individual portfolios because the portfolios are being managed individually, not in aggregate.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–6<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Chandra Patel, CFA, manages private client portfolios for QED Investment Advisers. Part of QED's firm-wide policy is to adhere to CFA Institute Standards of Professional Conduct in the management of all client portfolios, and to this end, the firm requires that client objectives, investment experience, and financial limitations be clearly established at the outset of the relationship. This information is updated at regular intervals not to exceed eighteen months. The information is maintained in a written investment policy statement (IPS) for each client.<\/p><p>Anarudh Singh has been one of Patel's clients ever since she began managing money ten years ago. Shortly after his regular situational update, Singh calls to inform Patel that his uncle is ill, and it is not known how long he will survive. Singh expects to inherit \"a sizeable sum of money.\" mainly in the form of municipal bonds. His existing portfolio allocation guidelines are for 75% to be invested in bonds. Singh believes that the expected inheritance will allow him to assume a more aggressive investment profile and asks Patel to begin moving toward a 75% allocation to equities. He is specifically interested in opening sizable positions in several technology firms, some of which have only recently become publicly traded companies. Patel agrees to begin making the changes to the portfolio and the next day begins selling bonds from the portfolio and purchasing stocks in the technology sector as well as in other sectors. After placing the trade orders, Patel sends Singh an email to request that he come to her office sometime during the next week to update his IPS. Singh replies to Patel, saying that he can meet with her next Friday.<\/p><p>A few days before the meeting, however, Singh's uncle dies and the portfolio of municipal bonds is transferred to Singh's account with QED. Patel sees this as an opportunity to purchase more technology stocks for the portfolio and suggests taking such action during her meeting with Singh, who agrees. Patel reviews her files on technology companies and locates a report on NetWin. The analyst's recommendation is that this stock is a \"core holding\" in the technology sector. Patel decides to purchase the stock for Singh's account in addition to several other wealthy client accounts with high risk tolerance levels, but due to time constraints she does not review the holdings in each account. Patel does examine the aggregate holdings of the accounts to determine the approximate weight that NetWin should represent in each portfolio.<\/p><p>Since Patel has very recently passed the Level III examination, QED sends a promotional email to all of the firm's clients. The email states that \"QED is proud to announce that Chandra Patel is now a CFA (Chartered Financial Analyst). This distinction, which is the culmination of many years of work and study, is further evidence of the superior performance you've come to expect at QED.\" Patel also places phone calls to several brokers that she uses to place trades for her accounts, stating that she \"passed all three CFA examinations on the first attempt.\" One of the people Patel contacts is Max Spellman, a long-time friend and broker with TradeRight Brokers Inc. Patel uses the opportunity to discuss her exclusive trading agreement with TradeRight for Singh's account.<\/p><p>When ordering trades for Singh's account, Patel's agreement with TradeRight for brokerage services requires her to first offer the trade to TradeRight, and then to another broker if TradeRight declines to take the trade. TradeRight never refuses the trades from any manager's clients. Patel established the relationship with TradeRight because Singh, knowing the firm's fee schedule relative to other brokers, asked her to do so. However, because TradeRight is very expensive and offers only moderate quality of execution, Patel is considering directing trades on Singh's account to BullBroker, which charges lower commissions and generally completes trades sooner than TradeRight.<\/p><\/div><\/details><div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>Did Patel violate any CFA Institute Standards of Professional Conduct when she purchased the NetWin stock for Singh&#x27;s portfolio or for the other clients&#x27; portfolios?<\/p><p>Singh&#x27;s<\/p><p>Other portfolios<\/p><p>portfolio<\/p><\/div>", "subj": "ethics"}, {"n": 5, "q": "Which of the following is least accurate regarding the promotional announcement of Patel passing the Level III exam?", "opts": ["The promotional announcement assumes that passing of the Level III examination of the CFA program allows one to use the CFA designation.", "The promotional announcement violates the restrictions on misrepresenting the meaning of the CFA designation.", "The announcement violates the Code of Ethics because it implies that obtaining a CFA charter leads to superior performance."], "ans": "B", "expl": "An announcement that a member of a firm has received the right to use the CFA® designation is not a violation of the Code or Standards. However, Standard VII(B) requires that any reference to the charter must not misrepresent or exaggerate the meaning or implications of the CFA designation. A charterholder cannot claim that holding a charter leads to superior performance results. The letters \"CFA\" can only be used as an adjective (never a noun, as in \"he is a CFA\"). Finally, passing all three exams does not give one the right to use the designation. All criteria must be met (e.g., experience requirements) before Patel can use the designation.", "explhtml": "<p>An announcement that a member of a firm has received the right to use the CFA<sup>®<\/sup> designation is not a violation of the Code or Standards. However, Standard VII(B) requires that any reference to the charter must not misrepresent or exaggerate the meaning or implications of the CFA designation. A charterholder cannot claim that holding a charter leads to superior performance results. The letters &quot;CFA&quot; can only be used as an adjective (never a noun, as in &quot;he is a CFA&quot;). Finally, passing all three exams does not give one the right to use the designation. All criteria must be met (e.g., experience requirements) before Patel can use the designation.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–6<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Chandra Patel, CFA, manages private client portfolios for QED Investment Advisers. Part of QED's firm-wide policy is to adhere to CFA Institute Standards of Professional Conduct in the management of all client portfolios, and to this end, the firm requires that client objectives, investment experience, and financial limitations be clearly established at the outset of the relationship. This information is updated at regular intervals not to exceed eighteen months. The information is maintained in a written investment policy statement (IPS) for each client.<\/p><p>Anarudh Singh has been one of Patel's clients ever since she began managing money ten years ago. Shortly after his regular situational update, Singh calls to inform Patel that his uncle is ill, and it is not known how long he will survive. Singh expects to inherit \"a sizeable sum of money.\" mainly in the form of municipal bonds. His existing portfolio allocation guidelines are for 75% to be invested in bonds. Singh believes that the expected inheritance will allow him to assume a more aggressive investment profile and asks Patel to begin moving toward a 75% allocation to equities. He is specifically interested in opening sizable positions in several technology firms, some of which have only recently become publicly traded companies. Patel agrees to begin making the changes to the portfolio and the next day begins selling bonds from the portfolio and purchasing stocks in the technology sector as well as in other sectors. After placing the trade orders, Patel sends Singh an email to request that he come to her office sometime during the next week to update his IPS. Singh replies to Patel, saying that he can meet with her next Friday.<\/p><p>A few days before the meeting, however, Singh's uncle dies and the portfolio of municipal bonds is transferred to Singh's account with QED. Patel sees this as an opportunity to purchase more technology stocks for the portfolio and suggests taking such action during her meeting with Singh, who agrees. Patel reviews her files on technology companies and locates a report on NetWin. The analyst's recommendation is that this stock is a \"core holding\" in the technology sector. Patel decides to purchase the stock for Singh's account in addition to several other wealthy client accounts with high risk tolerance levels, but due to time constraints she does not review the holdings in each account. Patel does examine the aggregate holdings of the accounts to determine the approximate weight that NetWin should represent in each portfolio.<\/p><p>Since Patel has very recently passed the Level III examination, QED sends a promotional email to all of the firm's clients. The email states that \"QED is proud to announce that Chandra Patel is now a CFA (Chartered Financial Analyst). This distinction, which is the culmination of many years of work and study, is further evidence of the superior performance you've come to expect at QED.\" Patel also places phone calls to several brokers that she uses to place trades for her accounts, stating that she \"passed all three CFA examinations on the first attempt.\" One of the people Patel contacts is Max Spellman, a long-time friend and broker with TradeRight Brokers Inc. Patel uses the opportunity to discuss her exclusive trading agreement with TradeRight for Singh's account.<\/p><p>When ordering trades for Singh's account, Patel's agreement with TradeRight for brokerage services requires her to first offer the trade to TradeRight, and then to another broker if TradeRight declines to take the trade. TradeRight never refuses the trades from any manager's clients. Patel established the relationship with TradeRight because Singh, knowing the firm's fee schedule relative to other brokers, asked her to do so. However, because TradeRight is very expensive and offers only moderate quality of execution, Patel is considering directing trades on Singh's account to BullBroker, which charges lower commissions and generally completes trades sooner than TradeRight.<\/p><\/div><\/details><div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>Which of the following is least accurate regarding the promotional announcement of Patel passing the Level III exam?<\/p><\/div>", "subj": "ethics"}, {"n": 6, "q": "With respect to the choice of broker, did Patel violate any CFA Institute Standards of Professional Conduct?", "opts": ["Yes, since Patel is obligated to seek the best possible price and execution for all clients.", "No.", "Yes, since Patel failed to properly notify Singh that using TradeRight would lead to higher commissions and opportunity costs."], "ans": "B", "expl": "Since Singh directed Patel to use TradeRight, this should be considered client-directed brokerage. While Patel should inform Singh of the implications of that choice, Patel has no option but to follow the client's direction according to Standard III(A)—Loyalty, Prudence, and Care. Singh was fully aware of the fees charged by TradeRight relative to other brokerage firms, but elected to use them anyway. Investment managers are obligated to seek the best price and execution in the absence of client direction.", "explhtml": "<p>Since Singh directed Patel to use TradeRight, this should be considered client-directed brokerage. While Patel should inform Singh of the implications of that choice, Patel has no option but to follow the client&#x27;s direction according to Standard III(A)—Loyalty, Prudence, and Care. Singh was fully aware of the fees charged by TradeRight relative to other brokerage firms, but elected to use them anyway. Investment managers are obligated to seek the best price and execution in the absence of client direction.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 1–6<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>Chandra Patel, CFA, manages private client portfolios for QED Investment Advisers. Part of QED's firm-wide policy is to adhere to CFA Institute Standards of Professional Conduct in the management of all client portfolios, and to this end, the firm requires that client objectives, investment experience, and financial limitations be clearly established at the outset of the relationship. This information is updated at regular intervals not to exceed eighteen months. The information is maintained in a written investment policy statement (IPS) for each client.<\/p><p>Anarudh Singh has been one of Patel's clients ever since she began managing money ten years ago. Shortly after his regular situational update, Singh calls to inform Patel that his uncle is ill, and it is not known how long he will survive. Singh expects to inherit \"a sizeable sum of money.\" mainly in the form of municipal bonds. His existing portfolio allocation guidelines are for 75% to be invested in bonds. Singh believes that the expected inheritance will allow him to assume a more aggressive investment profile and asks Patel to begin moving toward a 75% allocation to equities. He is specifically interested in opening sizable positions in several technology firms, some of which have only recently become publicly traded companies. Patel agrees to begin making the changes to the portfolio and the next day begins selling bonds from the portfolio and purchasing stocks in the technology sector as well as in other sectors. After placing the trade orders, Patel sends Singh an email to request that he come to her office sometime during the next week to update his IPS. Singh replies to Patel, saying that he can meet with her next Friday.<\/p><p>A few days before the meeting, however, Singh's uncle dies and the portfolio of municipal bonds is transferred to Singh's account with QED. Patel sees this as an opportunity to purchase more technology stocks for the portfolio and suggests taking such action during her meeting with Singh, who agrees. Patel reviews her files on technology companies and locates a report on NetWin. The analyst's recommendation is that this stock is a \"core holding\" in the technology sector. Patel decides to purchase the stock for Singh's account in addition to several other wealthy client accounts with high risk tolerance levels, but due to time constraints she does not review the holdings in each account. Patel does examine the aggregate holdings of the accounts to determine the approximate weight that NetWin should represent in each portfolio.<\/p><p>Since Patel has very recently passed the Level III examination, QED sends a promotional email to all of the firm's clients. The email states that \"QED is proud to announce that Chandra Patel is now a CFA (Chartered Financial Analyst). This distinction, which is the culmination of many years of work and study, is further evidence of the superior performance you've come to expect at QED.\" Patel also places phone calls to several brokers that she uses to place trades for her accounts, stating that she \"passed all three CFA examinations on the first attempt.\" One of the people Patel contacts is Max Spellman, a long-time friend and broker with TradeRight Brokers Inc. Patel uses the opportunity to discuss her exclusive trading agreement with TradeRight for Singh's account.<\/p><p>When ordering trades for Singh's account, Patel's agreement with TradeRight for brokerage services requires her to first offer the trade to TradeRight, and then to another broker if TradeRight declines to take the trade. TradeRight never refuses the trades from any manager's clients. Patel established the relationship with TradeRight because Singh, knowing the firm's fee schedule relative to other brokers, asked her to do so. However, because TradeRight is very expensive and offers only moderate quality of execution, Patel is considering directing trades on Singh's account to BullBroker, which charges lower commissions and generally completes trades sooner than TradeRight.<\/p><\/div><\/details><div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>With respect to the choice of broker, did Patel violate any CFA Institute Standards of Professional Conduct?<\/p><\/div>", "subj": "ethics"}, {"n": 7, "q": "Bob Hatfield, CFA, has his own money management firm with two clients. The accounts of the two clients are equal in value. One of the clients gets married and the assets of the new spouse and the client are combined. With the larger portfolio of the now married client, Hatfield determines that they can assume a higher level of risk and begins a change in the policy concerning that portfolio. Which of the following would violate Standard III(C), Suitability?", "opts": ["Implement a similar policy for the other client who did not just get married.", "Assess the time horizon of the newly married client and his spouse.", "Assess the return objectives of the newly married client and his spouse."], "ans": "A", "expl": "According to Standard III(C), Suitability, the analyst must assess the time horizon, return objectives, tax considerations, and liquidity needs of a client before changing an investment policy. The analyst must notify the client of the new policy. Implementing the policy for the other client may be a violation of the Standard unless that client's needs are totally reassessed and determined to be identical to the needs of the newly married client.", "explhtml": "<p>According to Standard III(C), Suitability, the analyst must assess the time horizon, return objectives, tax considerations, and liquidity needs of a client before changing an investment policy. The analyst must notify the client of the new policy. Implementing the policy for the other client may be a violation of the Standard unless that client&#x27;s needs are totally reassessed and determined to be identical to the needs of the newly married client.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>Bob Hatfield, CFA, has his own money management firm with two clients. The accounts of the two clients are equal in value. One of the clients gets married and the assets of the new spouse and the client are combined. With the larger portfolio of the now married client, Hatfield determines that they can assume a higher level of risk and begins a change in the policy concerning that portfolio. Which of the following would violate Standard III(C), Suitability?<\/p><\/div>", "subj": "ethics"}, {"n": 8, "q": "Wanda Brunner, CFA, is reviewing a draft fund prospectus for her new \"Leveraged Long Coffee\" (LLC), a closed-end fund. LLC uses a of combination fundamental and technical trading models to evaluate individual securities. She notes the LLC prospectus has several disclosures which cause her to worry that prospective clients will avoid her fund. Disclosure 1: \"LLC charges a flat 3.00% of assets under management.\" Disclosure 2: \"LLC may invest up to 40% of the fund's assets in securities which are not related to coffee or other consumer products.\" Disclosure 3: \"LLC relies only on fundamental valuation of individual securities.\" Which of the following standards will most likely be violated by distribution of the prospectus?", "opts": ["Standard III(C) Duties to Clients: Suitability because the fund can hold an excessive portion of the portfolio in non-core assets.", "Standard III(C) Duties to Clients: Suitability because the fees are exorbitant.", "Standard III(C) Duties to Clients: Suitability because it misleads the reader as to the process by which securities are selected."], "ans": "C", "expl": "LLC must adequately disclose the basic security selection and portfolio construction process, and the portfolio manager recommendations and investment actions must be consistent with the stated objectives and constraints of the fund. By failing to acknowledge the fund's dependence on technical trading, the fund fails to meet this standard.", "explhtml": "<p>LLC must adequately disclose the basic security selection and portfolio construction process, and the portfolio manager recommendations and investment actions must be consistent with the stated objectives and constraints of the fund. By failing to acknowledge the fund&#x27;s dependence on technical trading, the fund fails to meet this standard.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>Wanda Brunner, CFA, is reviewing a draft fund prospectus for her new &quot;Leveraged Long Coffee&quot; (LLC), a closed-end fund. LLC uses a of combination fundamental and technical trading models to evaluate individual securities. She notes the LLC prospectus has several disclosures which cause her to worry that prospective clients will avoid her fund.<\/p><p>Disclosure 1: &quot;LLC charges a flat 3.00% of assets under management.&quot; Disclosure 2: &quot;LLC may invest up to 40% of the fund&#x27;s assets in securities which are not related to coffee or other consumer products.&quot; Disclosure 3: &quot;LLC relies only on fundamental valuation of individual securities.&quot;<\/p><p>Which of the following standards will most likely be violated by distribution of the prospectus?<\/p><\/div>", "subj": "ethics"}, {"n": 9, "q": "The following information pertains to the Galaxy Trust, a trust established by Stephen P. House and managed by Gamma Investment LLC: At the time the trust was established House provided $5 million in cash to fund the trust, but Gamma was aware that 93% of his personal assets were in the form of Oracle stock. Gamma has been asked to view his funds and the trust as a single entity for planning purposes, since House's will stipulates that all of his estate will pass to the trust upon his death. The investment policy statement, developed in September 1996, stipulates that the trust should maintain a short position in Oracle stock and use the proceeds to diversify the trust more adequately. House was able to sell all of his Oracle shares back to the corporation in January 1999 for cash. The policy statement redrawn in September 1999 continues to stipulate that the trust hold a short position in Oracle stock. House has given the portfolio manager in charge of the trust an all-expenses paid vacation package anywhere in the world each year at Christmas. The portfolio manager has reported this fact in writing to his immediate supervisor at Gamma.  Which of the following is most correct? The investment manager is:", "opts": ["in violation of the Code and Standards by not properly updating the investment policy statement in light of the change in the circumstances and is in violation with regard to the acceptance of the gift from House.", "in violation of the Code and Standards by not properly updating the investment policy statement in light of the change in the circumstances but is not in violation with regard to the acceptance of the gift from House.", "not in violation of the Code and Standards for not properly updating the investment policy statement in light of the change in the circumstances and is not in violation with regard to the acceptance of the gift from House."], "ans": "B", "expl": "The investment manager is in violation of the Standard requiring him to make a reasonable inquiry into the client's financial situation and update the investment policy statement since such a dramatic change in the client's circumstances would undoubtedly alter the investment policy statement and would probably eliminate the need to hold a short position in Oracle. The investment manager is not in violation of the Standard concerning additional compensation, since the gift has been reported to his supervisor and has come from a client. If there was a failure to report such a gift, if the firm had a rule in place against the acceptance of gifts from clients, or if the gift had come from a non-client, there would be a violation of the standard. ", "explhtml": "<p>The investment manager is in violation of the Standard requiring him to make a reasonable inquiry into the client&#x27;s financial situation and update the investment policy statement since such a dramatic change in the client&#x27;s circumstances would undoubtedly alter the investment policy statement and would probably eliminate the need to hold a short position in Oracle. The investment manager is not in violation of the Standard concerning additional compensation, since the gift has been reported to his supervisor and has come from a client. If there was a failure to report such a gift, if the firm had a rule in place against the acceptance of gifts from clients, or if the gift had come from a non-client, there would be a violation of the standard. <\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41.b<\/div><div class=\"qtext\"><p>The following information pertains to the Galaxy Trust, a trust established by Stephen P. House and managed by Gamma Investment LLC:<\/p><p>At the time the trust was established House provided $5 million in cash to fund the trust, but Gamma was aware that 93% of his personal assets were in the form of Oracle stock. Gamma has been asked to view his funds and the trust as a single entity for planning purposes, since House&#x27;s will stipulates that all of his estate will pass to the trust upon his death. The investment policy statement, developed in September 1996, stipulates that the trust should maintain a short position in Oracle stock and use the proceeds to diversify the trust more adequately. House was able to sell all of his Oracle shares back to the corporation in January 1999 for cash. The policy statement redrawn in September 1999 continues to stipulate that the trust hold a short position in Oracle stock. House has given the portfolio manager in charge of the trust an all-expenses paid vacation package anywhere in the world each year at Christmas. The portfolio manager has reported this fact in writing to his immediate supervisor at Gamma. <\/p><p>Which of the following is most correct? The investment manager is:<\/p><\/div>", "subj": "ethics"}, {"n": 10, "q": "Rey Sanchez, CFA, covers the specialty chemical industry for Rock Advisory Associates. Until today he has had a buy recommendation on ChemStar, and many of the firm's customers have purchased shares based upon his recommendation. The firm's client accounts are divided into two fundamental categories: trading and buy-and-hold accounts. The firm holds discretionary trading authority over the trading accounts, but not the buy-and-hold accounts. Sanchez has recently come to believe that the fundamentals are changing for the worse at ChemStar, and is preparing a sell recommendation. He calls a meeting of the firm's portfolio managers with accounts holding ChemStar and tells them of the pending release of the sell recommendation. On this basis, the portfolio managers sell all positions in the discretionary accounts but not in the buy-and-hold accounts. Sanchez completes and mails the report to all clients two days later, and, shortly thereafter, many of the buy-and-hold accounts sell their ChemStar positions. With regard to these actions, Sanchez is:", "opts": ["in violation of the Standard on Fair Dealing; the portfolio managers are in violation of the Standard on Fair Dealing.", "not in violation of the Standard on Fair Dealing; the portfolio managers are in violation of the Standard on Fair Dealing.", "in violation of the Standard on Fair Dealing; the portfolio managers are not in violation of the Standard on Fair Dealing."], "ans": "A", "expl": "Sanchez is in violation of the Standard III(B), Fair Dealing, since he has disseminated his recommendation preferentially to the portfolio managers in advance of making the report available to all clients who hold shares of ChemStar. The portfolio managers are in violation of the Standard since they are effectively giving preferential treatment to the trading accounts over the buy-and-hold accounts in the placement of orders based upon the change in recommendation.", "explhtml": "<p>Sanchez is in violation of the Standard III(B), Fair Dealing, since he has disseminated his recommendation preferentially to the portfolio managers in advance of making the report available to all clients who hold shares of ChemStar. The portfolio managers are in violation of the Standard since they are effectively giving preferential treatment to the trading accounts over the buy-and-hold accounts in the placement of orders based upon the change in recommendation.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Rey Sanchez, CFA, covers the specialty chemical industry for Rock Advisory Associates. Until today he has had a buy recommendation on ChemStar, and many of the firm&#x27;s customers have purchased shares based upon his recommendation. The firm&#x27;s client accounts are divided into two fundamental categories: trading and buy-and-hold accounts. The firm holds discretionary trading authority over the trading accounts, but not the buy-and-hold accounts. Sanchez has recently come to believe that the fundamentals are changing for the worse at ChemStar, and is preparing a sell recommendation. He calls a meeting of the firm&#x27;s portfolio managers with accounts holding ChemStar and tells them of the pending release of the sell recommendation. On this basis, the portfolio managers sell all positions in the discretionary accounts but not in the buy-and-hold accounts. Sanchez completes and mails the report to all clients two days later, and, shortly thereafter, many of the buy-and-hold accounts sell their ChemStar positions. With regard to these actions, Sanchez is:<\/p><\/div>", "subj": "ethics"}, {"n": 11, "q": "With regard to disseminating investment recommendations, the recommended procedures for compliance with the Standard concerning fair dealing least likely state that members and candidates should:", "opts": ["maximize the number of people who know an investment recommendation is going to be disseminated.", "maintain a list of clients and their holdings, to facilitate notifying them of changes in investment recommendations.", "shorten the time frame between the decision to make an investment recommendation and its dissemination."], "ans": "A", "expl": "Recommended procedures for compliance with Standard III(B) Fair Dealing include limiting the number of people who know an investment recommendation is going to be disseminated", "explhtml": "<p>Recommended procedures for compliance with Standard III(B) Fair Dealing include limiting the number of people who know an investment recommendation is going to be disseminated<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>With regard to disseminating investment recommendations, the recommended procedures for compliance with the Standard concerning fair dealing least likely state that members and candidates should:<\/p><\/div>", "subj": "ethics"}, {"n": 12, "q": "In selling his clients' holdings in Aggregate, Watkins:", "opts": ["did not violate Standard II(A): Material Nonpublic Information because the information did not involve a tender offer.", "violated Standard II(A): Material Nonpublic Information by taking investment action.", "did not violate Standard II(A): Material Nonpublic Information because there was no breach of duty."], "ans": "B", "expl": "Watkins violated the CFA Institute Standards because the information was both material and nonpublic. It does not matter if the information was not misappropriated, not received in a breach of duty or not related to a tender offer. Watkins still cannot trade or cause others to trade. CFA candidates are indeed subject to the CFA Institute Standards. While the misappropriated information did not involve a tender offer, Watkins' use of it still violated the Standards simply because it was material nonpublic information.", "explhtml": "<p>Watkins violated the CFA Institute Standards because the information was both material and nonpublic. It does not matter if the information was not misappropriated, not received in a breach of duty or not related to a tender offer. Watkins still cannot trade or cause others to trade. CFA candidates are indeed subject to the CFA Institute Standards. While the misappropriated information did not involve a tender offer, Watkins&#x27; use of it still violated the Standards simply because it was material nonpublic information.<\/p>", "qhtml": "<details class=\"vig\" open><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 12–15<\/summary><div class=\"vig-body\"><p>In August 2005, the following events occurred related to Aggregate Opportunities, Inc.:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v001.webp\" style=\"max-width:min(100%,638px)\" alt=\"• Aug. 8: The Wall Street Journal reported that Aggregate Opportunities had inflated its 2004 earnings due to questionable accounting practices. The story was based on interviews with unnamed sources within Aggregate and its auditor, Millennium Partners. On that day the stock fell 42 percent to $12.50 from $21.55. • Aug. 10: At 9 a.m., Aggregate revealed in a conference call to analysts a restatement of earnings for the previous three fiscal years that almost completely erased the reported net income for fiscal years 2002, 2003, and 2004. Aggregate&#x27;s chief financial officer personally sel\"><p>During July and August of 2005, the following actions were taken:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v002.webp\" style=\"max-width:min(100%,639px)\" alt=\"• July 20: Michael Cho, CFA, a highly respected analyst with 25 years of experience covering Aggregate&#x27;s industry, had spent several days reading Aggregate&#x27;s 10-K and 10-Q documents and other analysis published by some of his competitors at major brokerage houses. Based on his reading and conversations with Aggregate management concerning nonmaterial, nonpublic information, Cho concluded that Aggregate had inflated its earnings. On July 20, Cho issued a detailed research report to his clients and concluded that Aggregate should be sold. He subsequently participated in the Aug. 10 con\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v003.webp\" style=\"max-width:min(100%,629px)\" alt=\"Cho&#x27;s research, then read Cho&#x27;s report on Aggregate, Immediately after finishing Cho&#x27;s report, Martinez sold the fund&#x27;s entire stake in Aggregate. Watkins and Martinez were not participants in the Aug. 10 conference call. • Aug. 8: Barb Henderson, a CFA charterholder, read the Wall Street Journal article in the morning and after going over her research papers, issued a sell recommendation for Aggregate. On Aug. 10, she participated in the conference call and heard the details of the earnings restatement. • Aug. 10: Lisa Sanders, CFA, participated in the Aggregate conference\"><\/div><\/details><div class=\"pp-topic\">Module 41.3, LOS 41.a<\/div><div class=\"qtext\"><p>In selling his clients&#x27; holdings in Aggregate, Watkins:<\/p><\/div>", "subj": "ethics"}, {"n": 13, "q": "After changing her recommendation on Aggregate, Sanders:", "opts": ["violated Standard VI(B): Priority of Transactions by trading Aggregate from her own account.", "violated Standard II(A): Material Nonpublic Information by taking investment action based on information not accessible to the public.", "did not violate Standard II(A): Material Nonpublic Information because the information was disclosed to a select group of analysts."], "ans": "B", "expl": "The way in which Aggregate handled the conference call was an instance of selective dissemination, Members and Candidates must be aware that disclosure to selected analysts is not necessarily public disclosure. Thus, until the material information is made public, Sanders cannot trade or cause others to trade. Once the information is made public, Sanders must disseminate the information to her clients first, and give them adequate time to act on the recommendation before trading for her own account. In the absence of knowledge of any company policy with stricter requirements, 3 hours is probably sufficient, and we cannot assume she violated Standard VI(B). Standard III(B) does not require equal dissemination of information but rather fair dissemination. Nothing in the question indicated that Sanders disseminated the information unfairly.", "explhtml": "<p>The way in which Aggregate handled the conference call was an instance of selective dissemination, Members and Candidates must be aware that disclosure to selected analysts is not necessarily public disclosure. Thus, until the material information is made public, Sanders cannot trade or cause others to trade. Once the information is made public, Sanders must disseminate the information to her clients first, and give them adequate time to act on the recommendation before trading for her own account. In the absence of knowledge of any company policy with stricter requirements, 3 hours is probably sufficient, and we cannot assume she violated Standard VI(B). Standard III(B) does not require equal dissemination of information but rather fair dissemination. Nothing in the question indicated that Sanders disseminated the information unfairly.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 12–15<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>In August 2005, the following events occurred related to Aggregate Opportunities, Inc.:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v001.webp\" style=\"max-width:min(100%,638px)\" alt=\"• Aug. 8: The Wall Street Journal reported that Aggregate Opportunities had inflated its 2004 earnings due to questionable accounting practices. The story was based on interviews with unnamed sources within Aggregate and its auditor, Millennium Partners. On that day the stock fell 42 percent to $12.50 from $21.55. • Aug. 10: At 9 a.m., Aggregate revealed in a conference call to analysts a restatement of earnings for the previous three fiscal years that almost completely erased the reported net income for fiscal years 2002, 2003, and 2004. Aggregate&#x27;s chief financial officer personally sel\"><p>During July and August of 2005, the following actions were taken:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v002.webp\" style=\"max-width:min(100%,639px)\" alt=\"• July 20: Michael Cho, CFA, a highly respected analyst with 25 years of experience covering Aggregate&#x27;s industry, had spent several days reading Aggregate&#x27;s 10-K and 10-Q documents and other analysis published by some of his competitors at major brokerage houses. Based on his reading and conversations with Aggregate management concerning nonmaterial, nonpublic information, Cho concluded that Aggregate had inflated its earnings. On July 20, Cho issued a detailed research report to his clients and concluded that Aggregate should be sold. He subsequently participated in the Aug. 10 con\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v003.webp\" style=\"max-width:min(100%,629px)\" alt=\"Cho&#x27;s research, then read Cho&#x27;s report on Aggregate, Immediately after finishing Cho&#x27;s report, Martinez sold the fund&#x27;s entire stake in Aggregate. Watkins and Martinez were not participants in the Aug. 10 conference call. • Aug. 8: Barb Henderson, a CFA charterholder, read the Wall Street Journal article in the morning and after going over her research papers, issued a sell recommendation for Aggregate. On Aug. 10, she participated in the conference call and heard the details of the earnings restatement. • Aug. 10: Lisa Sanders, CFA, participated in the Aggregate conference\"><\/div><\/details><div class=\"pp-topic\">Module 41.3, LOS 41.a<\/div><div class=\"qtext\"><p>After changing her recommendation on Aggregate, Sanders:<\/p><\/div>", "subj": "ethics"}, {"n": 14, "q": "In selling his fund's stake in Aggregate, Martinez:", "opts": ["violated Standard III(A): Loyalty, Prudence, and Care by using information obtained from Watkins.", "violated no standards.", "violated Standard II(A): Material Nonpublic Information by using information obtained from Watkins."], "ans": "C", "expl": "Martinez was aware of how Watkins obtained the information; therefore, Martinez violated II(A) by trading on material nonpublic information. Martinez has no fiduciary duty to Watkins, and as such did not violate Standard III(A). It would be difficult to argue that Cho's thorough research is not sufficient reason to trade Aggregate stock, so Martinez did not violate Standard V(A).", "explhtml": "<p>Martinez was aware of how Watkins obtained the information; therefore, Martinez violated II(A) by trading on material nonpublic information. Martinez has no fiduciary duty to Watkins, and as such did not violate Standard III(A). It would be difficult to argue that Cho&#x27;s thorough research is not sufficient reason to trade Aggregate stock, so Martinez did not violate Standard V(A).<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 12–15<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>In August 2005, the following events occurred related to Aggregate Opportunities, Inc.:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v001.webp\" style=\"max-width:min(100%,638px)\" alt=\"• Aug. 8: The Wall Street Journal reported that Aggregate Opportunities had inflated its 2004 earnings due to questionable accounting practices. The story was based on interviews with unnamed sources within Aggregate and its auditor, Millennium Partners. On that day the stock fell 42 percent to $12.50 from $21.55. • Aug. 10: At 9 a.m., Aggregate revealed in a conference call to analysts a restatement of earnings for the previous three fiscal years that almost completely erased the reported net income for fiscal years 2002, 2003, and 2004. Aggregate&#x27;s chief financial officer personally sel\"><p>During July and August of 2005, the following actions were taken:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v002.webp\" style=\"max-width:min(100%,639px)\" alt=\"• July 20: Michael Cho, CFA, a highly respected analyst with 25 years of experience covering Aggregate&#x27;s industry, had spent several days reading Aggregate&#x27;s 10-K and 10-Q documents and other analysis published by some of his competitors at major brokerage houses. Based on his reading and conversations with Aggregate management concerning nonmaterial, nonpublic information, Cho concluded that Aggregate had inflated its earnings. On July 20, Cho issued a detailed research report to his clients and concluded that Aggregate should be sold. He subsequently participated in the Aug. 10 con\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v003.webp\" style=\"max-width:min(100%,629px)\" alt=\"Cho&#x27;s research, then read Cho&#x27;s report on Aggregate, Immediately after finishing Cho&#x27;s report, Martinez sold the fund&#x27;s entire stake in Aggregate. Watkins and Martinez were not participants in the Aug. 10 conference call. • Aug. 8: Barb Henderson, a CFA charterholder, read the Wall Street Journal article in the morning and after going over her research papers, issued a sell recommendation for Aggregate. On Aug. 10, she participated in the conference call and heard the details of the earnings restatement. • Aug. 10: Lisa Sanders, CFA, participated in the Aggregate conference\"><\/div><\/details><div class=\"pp-topic\">Module 41.3, LOS 41.a<\/div><div class=\"qtext\"><p>In selling his fund&#x27;s stake in Aggregate, Martinez:<\/p><\/div>", "subj": "ethics"}, {"n": 15, "q": "Which statement about violations of the Code and Standards is CORRECT?", "opts": ["Henderson violated the reasonable-basis standard, but Sanders did not violate the Standard regarding use of material nonpublic information.", "Aggregate’s CFO violated the market manipulation Standard, but Black did not violate the fiduciary-duties Standard.", "Martinez did not violate the Standard regarding use of material nonpublic information and did not violate the fiduciary-duties standard."], "ans": "B", "expl": "By participating in Aggregate's inflation of earnings and then selective disclosure, the CFO did violate the market manipulation Standard. While Black violated a number of Standards, his brother's fiduciary duty cannot be imposed on him. Black did not violate the fiduciary-duties Standard. While Cho did not violate the insider-trading standard because he came to his conclusions through the mosaic method, Watkins certainly did because he misappropriated the information. Martinez violated the Standard on material nonpublic information. Henderson did not violate the reasonable-basis Standard. Sanders did violate the insider-trading Standard.", "explhtml": "<p>By participating in Aggregate&#x27;s inflation of earnings and then selective disclosure, the CFO did violate the market manipulation Standard. While Black violated a number of Standards, his brother&#x27;s fiduciary duty cannot be imposed on him. Black did not violate the fiduciary-duties Standard. While Cho did not violate the insider-trading standard because he came to his conclusions through the mosaic method, Watkins certainly did because he misappropriated the information. Martinez violated the Standard on material nonpublic information. Henderson did not violate the reasonable-basis Standard. Sanders did violate the insider-trading Standard.<\/p>", "qhtml": "<details class=\"vig\"><summary><span class=\"vig-tag\">Vignette<\/span>Item set · Câu 12–15<span class=\"vig-hint\">bấm để xem case<\/span><\/summary><div class=\"vig-body\"><p>In August 2005, the following events occurred related to Aggregate Opportunities, Inc.:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v001.webp\" style=\"max-width:min(100%,638px)\" alt=\"• Aug. 8: The Wall Street Journal reported that Aggregate Opportunities had inflated its 2004 earnings due to questionable accounting practices. The story was based on interviews with unnamed sources within Aggregate and its auditor, Millennium Partners. On that day the stock fell 42 percent to $12.50 from $21.55. • Aug. 10: At 9 a.m., Aggregate revealed in a conference call to analysts a restatement of earnings for the previous three fiscal years that almost completely erased the reported net income for fiscal years 2002, 2003, and 2004. Aggregate&#x27;s chief financial officer personally sel\"><p>During July and August of 2005, the following actions were taken:<\/p><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v002.webp\" style=\"max-width:min(100%,639px)\" alt=\"• July 20: Michael Cho, CFA, a highly respected analyst with 25 years of experience covering Aggregate&#x27;s industry, had spent several days reading Aggregate&#x27;s 10-K and 10-Q documents and other analysis published by some of his competitors at major brokerage houses. Based on his reading and conversations with Aggregate management concerning nonmaterial, nonpublic information, Cho concluded that Aggregate had inflated its earnings. On July 20, Cho issued a detailed research report to his clients and concluded that Aggregate should be sold. He subsequently participated in the Aug. 10 con\"><img class=\"pimg\" loading=\"lazy\" src=\"l2img/kq/r41-5/v003.webp\" style=\"max-width:min(100%,629px)\" alt=\"Cho&#x27;s research, then read Cho&#x27;s report on Aggregate, Immediately after finishing Cho&#x27;s report, Martinez sold the fund&#x27;s entire stake in Aggregate. Watkins and Martinez were not participants in the Aug. 10 conference call. • Aug. 8: Barb Henderson, a CFA charterholder, read the Wall Street Journal article in the morning and after going over her research papers, issued a sell recommendation for Aggregate. On Aug. 10, she participated in the conference call and heard the details of the earnings restatement. • Aug. 10: Lisa Sanders, CFA, participated in the Aggregate conference\"><\/div><\/details><div class=\"pp-topic\">Module 41.5, LOS 41.a<\/div><div class=\"qtext\"><p>Which statement about violations of the Code and Standards is CORRECT?<\/p><\/div>", "subj": "ethics"}, {"n": 16, "q": "Concerning Standard III(B), Fair Dealing, which of the following actions is NOT a valid procedure for compliance with the Standard?", "opts": ["Communicate investment recommendations to all customers including those accounts for which the securities are not eligible for purchase.", "Communicate investment recommendations simultaneously within the firm and to customers, where possible.", "Limit the number of people that are involved and are privy to the fact that an investment recommendation is going to be disseminated."], "ans": "A", "expl": "To ensure compliance with the Standard, members should seek to communicate investment recommendations to all clients who have indicated an interest and also those for whom the securities are suitable. There is no need to communicate recommendations to clients for whom the securities are deemed unsuitable.", "explhtml": "<p>To ensure compliance with the Standard, members should seek to communicate investment recommendations to all clients who have indicated an interest and also those for whom the securities are suitable. There is no need to communicate recommendations to clients for whom the securities are deemed unsuitable.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Concerning Standard III(B), Fair Dealing, which of the following actions is NOT a valid procedure for compliance with the Standard?<\/p><\/div>", "subj": "ethics"}, {"n": 17, "q": "Which of the following statements regarding allocating trades is CORRECT? It is permissible under the Standards to allocate trades:", "opts": ["based upon any method the firm deems suitable so long as the allocation procedure has been disclosed to all clients.", "based upon compensation arrangements.", "on a pro-rata basis over all suitable accounts."], "ans": "C", "expl": "It is permissible to allocate trades on a pro-rata basis over all suitable accounts. It is not permissible to base allocations upon compensation arrangements. Any method is not necessarily suitable, and disclosure does not absolve the member from ensuring that the allocation is necessarily fair.", "explhtml": "<p>It is permissible to allocate trades on a pro-rata basis over all suitable accounts. It is not permissible to base allocations upon compensation arrangements. Any method is not necessarily suitable, and disclosure does not absolve the member from ensuring that the allocation is necessarily fair.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Which of the following statements regarding allocating trades is CORRECT? It is permissible under the Standards to allocate trades:<\/p><\/div>", "subj": "ethics"}, {"n": 18, "q": "A money management firm has the following policy concerning new recommendations: When a new recommendation is made, each portfolio manager estimates the likely transaction size for each of their clients. Clients are notified of the new recommendation in the order of their estimated transaction size—largest first. All clients have signed a form where they acknowledge and consent to this allocation procedure. With respect to Standard III(B), Fair Dealing, this is:", "opts": ["not a violation because the clients have signed the consent form.", "not a violation because the clients are aware of the policy.", "a violation of the standard."], "ans": "C", "expl": "Such a policy is a violation of the Standard and client acknowledgement and/or consent does not change that fact.", "explhtml": "<p>Such a policy is a violation of the Standard and client acknowledgement and/or consent does not change that fact.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>A money management firm has the following policy concerning new recommendations: When a new recommendation is made, each portfolio manager estimates the likely transaction size for each of their clients. Clients are notified of the new recommendation in the order of their estimated transaction size—largest first. All clients have signed a form where they acknowledge and consent to this allocation procedure. With respect to Standard III(B), Fair Dealing, this is:<\/p><\/div>", "subj": "ethics"}, {"n": 19, "q": "Scott Andrews, CFA, is a stockbroker selling an oversubscribed stock issue. Which of the following best describes Andrews' actions regarding this sale? Andrews:", "opts": ["cannot offer an oversubscribed issue of stock to any clients.", "can offer this security on a prorated basis to all clients for which the security is appropriate.", "can only offer this security to clients for which it is appropriate on a first come first serve basis."], "ans": "B", "expl": "Standard III(B), Fair Dealing, applies. When new issues or secondary offerings are available or are being offered by the firm or if the firm is part of a selling syndicate, all clients for whom the security is appropriate are to be offered a chance to take part in the issue. If the issue is oversubscribed, then the issue is to be prorated to all subscribers.", "explhtml": "<p>Standard III(B), Fair Dealing, applies. When new issues or secondary offerings are available or are being offered by the firm or if the firm is part of a selling syndicate, all clients for whom the security is appropriate are to be offered a chance to take part in the issue. If the issue is oversubscribed, then the issue is to be prorated to all subscribers.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41.b<\/div><div class=\"qtext\"><p>Scott Andrews, CFA, is a stockbroker selling an oversubscribed stock issue. Which of the following best describes Andrews&#x27; actions regarding this sale? Andrews:<\/p><\/div>", "subj": "ethics"}, {"n": 20, "q": "Lance Tuipulotu, CFA, manages investments for 400 individuals and families and often finds his resources stretched. When his largest investors petition him to include a 5% to 7% allocation of non-investment-grade bonds in their portfolios, he decides he needs additional help to meet the request. He considers various subadvisers who specialize in that asset class. To have a reasonable basis for selecting a subadviser, criteria that Tuipulotu should use should least likely include:", "opts": ["their internal controls.", "adherence to their stated strategies.", "consistently high historical returns."], "ans": "C", "expl": "Guidance for Standard V(A) Diligence and Reasonable Basis states that when reviewing external advisers, members and candidates should (at a minimum) evaluate the adviser's code of ethics, its compliance procedures and internal controls, its investment processes and adherence to its stated strategies, and the quality of its published information on returns.", "explhtml": "<p>Guidance for Standard V(A) Diligence and Reasonable Basis states that when reviewing external advisers, members and candidates should (at a minimum) evaluate the adviser&#x27;s code of ethics, its compliance procedures and internal controls, its investment processes and adherence to its stated strategies, and the quality of its published information on returns.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>Lance Tuipulotu, CFA, manages investments for 400 individuals and families and often finds his resources stretched. When his largest investors petition him to include a 5% to 7% allocation of non-investment-grade bonds in their portfolios, he decides he needs additional help to meet the request. He considers various subadvisers who specialize in that asset class. To have a reasonable basis for selecting a subadviser, criteria that Tuipulotu should use should least likely include:<\/p><\/div>", "subj": "ethics"}, {"n": 21, "q": "Janet Reilly has just approached Betty Miller, CFA, about purchasing 10,000 shares of Brookshire Co., a newly incorporated real estate development firm. Reilly is a retired schoolteacher living off the income from her late husband's life insurance policy. This investment will represent a significant shift in her investment portfolio. Miller believes this trade is unsuitable with respect to Reilly's investment policy statement. Consistent with the Standards, Miller should most appropriately:", "opts": ["discuss with Reilly whether she wishes to update her investment policy statement.", "follow her firm’s procedures for obtaining Reilly’s approval to carry out the unsolicited trade request.", "not accept the order, because it is not a suitable investment for Reilly."], "ans": "A", "expl": "According to the guidance for Standard III(C) Suitability, a member who receives an unsolicited trade request that is not suitable for the client should discuss the trade with the client before carrying it out. The nature of this discussion depends on whether the trade has a material effect on the client's portfolio. Because this trade will have a material effect, Miller's most appropriate action is to discuss with the client whether this trade request reflects a change in her investment objectives and risk tolerance and thus whether she wishes to update her IPS.", "explhtml": "<p>According to the guidance for Standard III(C) Suitability, a member who receives an unsolicited trade request that is not suitable for the client should discuss the trade with the client before carrying it out. The nature of this discussion depends on whether the trade has a material effect on the client&#x27;s portfolio. Because this trade will have a material effect, Miller&#x27;s most appropriate action is to discuss with the client whether this trade request reflects a change in her investment objectives and risk tolerance and thus whether she wishes to update her IPS.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>Janet Reilly has just approached Betty Miller, CFA, about purchasing 10,000 shares of Brookshire Co., a newly incorporated real estate development firm. Reilly is a retired schoolteacher living off the income from her late husband&#x27;s life insurance policy. This investment will represent a significant shift in her investment portfolio. Miller believes this trade is unsuitable with respect to Reilly&#x27;s investment policy statement. Consistent with the Standards, Miller should most appropriately:<\/p><\/div>", "subj": "ethics"}, {"n": 22, "q": "Rickard Advisors recently had a trading error in a customer account that was subsequently discovered by Rickard. The firm felt embarrassed by the disclosure of this error, and, in order to induce the client to continue its relationship, Rickard offers the client preferential access to a new issue that is expected to be \"hot.\" Which Standard is violated, if any?", "opts": ["The Standard concerning Fiduciary Duty.", "The Standard concerning Independence and Objectivity.", "The Standard concerning Fair Dealing."], "ans": "C", "expl": "Rickard is in violation of the Standard concerning Fair Dealing by offering the client preferential access to a \"hot\" new issue. There is no obvious violation of Fiduciary Duty, since there is no evidence that Rickard is placing its own financial interest ahead of the client.", "explhtml": "<p>Rickard is in violation of the Standard concerning Fair Dealing by offering the client preferential access to a &quot;hot&quot; new issue. There is no obvious violation of Fiduciary Duty, since there is no evidence that Rickard is placing its own financial interest ahead of the client.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Rickard Advisors recently had a trading error in a customer account that was subsequently discovered by Rickard. The firm felt embarrassed by the disclosure of this error, and, in order to induce the client to continue its relationship, Rickard offers the client preferential access to a new issue that is expected to be &quot;hot.&quot; Which Standard is violated, if any?<\/p><\/div>", "subj": "ethics"}, {"n": 23, "q": "Caroline Turner, an analyst for Lansing Asset Management, just completed an investment report in which she recommends changing a \"buy\" to a \"sell\" for Gallup Company. Her supervisor at Lansing approves of the change in recommendation. Turner wonders about whether she needs to disseminate this investment recommendation to Lansing's clients and if so, how to distribute this information. According to CFA Institute Standards of Professional Conduct, Turner is:", "opts": ["required to disseminate the change in a prior investment recommendation to all clients and customers on a uniform basis.", "required to design an equitable system to disseminate the change in a prior investment recommendation.", "not required to disseminate the change of recommendation from a buy to a sell because the change is not material."], "ans": "B", "expl": "Standard III(B) – Fair Dealing requires dealing fairly and objectively with all clients and prospects when disseminating material changes in prior investment recommendations. Note that the standard requires the dissemination be fair, but not necessarily equal due to the impossibility of contacting all clients simultaneously. A change of recommendation from \"buy\" to \"sell\" is generally material. ", "explhtml": "<p>Standard III(B) – Fair Dealing requires dealing fairly and objectively with all clients and prospects when disseminating material changes in prior investment recommendations. Note that the standard requires the dissemination be fair, but not necessarily equal due to the impossibility of contacting all clients simultaneously. A change of recommendation from &quot;buy&quot; to &quot;sell&quot; is generally material. <\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Caroline Turner, an analyst for Lansing Asset Management, just completed an investment report in which she recommends changing a &quot;buy&quot; to a &quot;sell&quot; for Gallup Company. Her supervisor at Lansing approves of the change in recommendation. Turner wonders about whether she needs to disseminate this investment recommendation to Lansing&#x27;s clients and if so, how to distribute this information. According to CFA Institute Standards of Professional Conduct, Turner is:<\/p><\/div>", "subj": "ethics"}, {"n": 24, "q": "Pro rata allocation on the basis of an advance indication of interest means each account for which the shares are suitable:", "opts": ["shall receive m/n shares, where there are m shares available and n such accounts.", "and which has expressed an advance indication of interest, shall receive m/n fraction of their indication, where there are m shares available and indications of interest for n shares.", "and which has expressed an advance indication of interest, shall receive w*m shares, where w is the account's proportional value of all such accounts and there are m shares available."], "ans": "B", "expl": "Pro rata allocation on the basis of an advance indication of interest means that all accounts that have expressed an interest in the issue shall receive m/n fraction of their indication of interest, where there are m shares available and indications of interest for n shares.", "explhtml": "<p>Pro rata allocation on the basis of an advance indication of interest means that all accounts that have expressed an interest in the issue shall receive m/n fraction of their indication of interest, where there are m shares available and indications of interest for n shares.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Pro rata allocation on the basis of an advance indication of interest means each account for which the shares are suitable:<\/p><\/div>", "subj": "ethics"}, {"n": 25, "q": "Steven Wade, CFA, writes an investment newsletter focusing on high-tech companies, which he distributes by e-mail to paid subscribers. Wade does not gather any information about his clients' needs and circumstances. Wade has developed several complex valuation models that serve as the basis for his recommendations. Each month, his newsletter contains a list of \"buy\" and \"sell\" recommendations. He states that his recommendations are suitable for all types of portfolios and clients. Because of their proprietary nature, Wade does not disclose, except in general terms, the nature of his valuation models. He conducted numerous statistical tests of these models and they appear to have worked well in the past. In his newsletter, Wade claims that subscribers who follow his recommendations can expect to earn superior returns because of the past success of his models. Wade violated all of the following CFA Institute Standards of Professional Conduct EXCEPT:", "opts": ["Standard III(B), Fair Dealing.", "Standard I(C), Misrepresentation.", "Standard V(B), Communication with Clients and Prospective Clients."], "ans": "A", "expl": "Wade did not violate Standard III(B), Fair Dealing, because this situation does not indicate that he failed to deal fairly and objectively with all clients when disseminating his newsletter containing investment recommendations. Wade violated Standard V(B), Communication with Clients and Prospective Clients, because he failed to include all relevant factors behind his recommendations. Without providing the basis for his recommendations, clients cannot evaluate the limitations or the risks inherent in his recommendations. Wade violated Standard I(C), Misrepresentation, because his claims about gaining superior expected returns are misleading to potential investors. ", "explhtml": "<p>Wade did not violate Standard III(B), Fair Dealing, because this situation does not indicate that he failed to deal fairly and objectively with all clients when disseminating his newsletter containing investment recommendations.<\/p><p>Wade violated Standard V(B), Communication with Clients and Prospective Clients, because he failed to include all relevant factors behind his recommendations. Without providing the basis for his recommendations, clients cannot evaluate the limitations or the risks inherent in his recommendations.<\/p><p>Wade violated Standard I(C), Misrepresentation, because his claims about gaining superior expected returns are misleading to potential investors. <\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41.b<\/div><div class=\"qtext\"><p>Steven Wade, CFA, writes an investment newsletter focusing on high-tech companies, which he distributes by e-mail to paid subscribers. Wade does not gather any information about his clients&#x27; needs and circumstances. Wade has developed several complex valuation models that serve as the basis for his recommendations. Each month, his newsletter contains a list of &quot;buy&quot; and &quot;sell&quot; recommendations. He states that his recommendations are suitable for all types of portfolios and clients. Because of their proprietary nature, Wade does not disclose, except in general terms, the nature of his valuation models. He conducted numerous statistical tests of these models and they appear to have worked well in the past. In his newsletter, Wade claims that subscribers who follow his recommendations can expect to earn superior returns because of the past success of his models.<\/p><p>Wade violated all of the following CFA Institute Standards of Professional Conduct EXCEPT:<\/p><\/div>", "subj": "ethics"}, {"n": 26, "q": "Concerning Standard III(B), Fair Dealing, which of the following statements is CORRECT? The Standard:", "opts": ["concerns the dissemination of investment recommendations but is not concerned with the taking of investment action.", "is not concerned with the dissemination of investment recommendations so long as the taking of investment action is inherently fair.", "concerns the dissemination of investment recommendations and the taking of investment action."], "ans": "C", "expl": "Standard III(B), Fair Dealing is concerned with both the dissemination of investment recommendations and with the taking of investment action. It follows that this concern is irrespective of whether or not there has been a prior recommendation on the securities in question.", "explhtml": "<p>Standard III(B), Fair Dealing is concerned with both the dissemination of investment recommendations and with the taking of investment action. It follows that this concern is irrespective of whether or not there has been a prior recommendation on the securities in question.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Concerning Standard III(B), Fair Dealing, which of the following statements is CORRECT? The Standard:<\/p><\/div>", "subj": "ethics"}, {"n": 27, "q": "An analyst thinks that a major change in the tax law will benefit holders of utility company stocks. She immediately begins calling all her clients and telling them of the upside potential of investing in such assets now. Based upon this information, this is most likely:", "opts": ["a violation of Standard III(C), Suitability.", "congruent with Standard V(A), Diligence and Reasonable Basis.", "a violation of Standard V(A), Diligence and Reasonable Basis."], "ans": "A", "expl": "According to Standard III(C), the analyst needs to determine the suitability of an investment for each client. It is doubtful that all her clients are identical in their needs. According to the information, the analyst mentions the upside potential but does not mention the downside risk. Although the information says that she thinks that the change in the tax law will benefit holders of utility company stocks and says nothing of how she arrived at this conclusion, we do not know if she has or has not made her decision on a reasonable basis.", "explhtml": "<p>According to Standard III(C), the analyst needs to determine the suitability of an investment for each client. It is doubtful that all her clients are identical in their needs. According to the information, the analyst mentions the upside potential but does not mention the downside risk. Although the information says that she thinks that the change in the tax law will benefit holders of utility company stocks and says nothing of how she arrived at this conclusion, we do not know if she has or has not made her decision on a reasonable basis.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(C)<\/div><div class=\"qtext\"><p>An analyst thinks that a major change in the tax law will benefit holders of utility company stocks. She immediately begins calling all her clients and telling them of the upside potential of investing in such assets now. Based upon this information, this is most likely:<\/p><\/div>", "subj": "ethics"}, {"n": 28, "q": "Which of the following statements is least accurate? It is permissible under the Standards to allocate trades:", "opts": ["on a pro rata basis over all suitable accounts based upon account value.", "on a pro rata basis over all accounts.", "on a pro rata basis over all suitable accounts on the basis of an advance indication of interest and indicated order size."], "ans": "B", "expl": "Allocating trades on a pro rata basis, pro rata based upon order size (when there are too few shares to fill all orders, e.g., filling 2/3 of all orders actually submitted), or pro rata based upon an advance indication of interest are all permissible. However, accounts must be checked for suitability.", "explhtml": "<p>Allocating trades on a pro rata basis, pro rata based upon order size (when there are too few shares to fill all orders, e.g., filling 2/3 of all orders actually submitted), or pro rata based upon an advance indication of interest are all permissible. However, accounts must be checked for suitability.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Which of the following statements is least accurate? It is permissible under the Standards to allocate trades:<\/p><\/div>", "subj": "ethics"}, {"n": 29, "q": "Which of the following trade allocation procedures is improper? Allocation:", "opts": ["on a strict pro rata basis over all suitable accounts.", "based upon a predetermined formula.", "based upon past participation in IPOs."], "ans": "C", "expl": "Participation in prior IPOs does not insure suitability for subsequent IPOs. Moreover, this method of allocation could result in a fairness problem, since larger accounts are more likely to have had a greater level of participation in past IPOs.", "explhtml": "<p>Participation in prior IPOs does not insure suitability for subsequent IPOs. Moreover, this method of allocation could result in a fairness problem, since larger accounts are more likely to have had a greater level of participation in past IPOs.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Which of the following trade allocation procedures is improper? Allocation:<\/p><\/div>", "subj": "ethics"}, {"n": 30, "q": "Which of the following statements regarding allocating trades is CORRECT? It is:", "opts": ["permissible under the standards to allocate trades on the basis of a predetermined formula that may deviate from a pro rata basis but is inherently fair.", "never permissible to deviate from a proportional account value weighting method of trade allocation, unless this is done on the basis of an advance indication of interest in the issue.", "never permissible to deviate from a pro rata basis, unless this is done on the basis of an advance indication of interest in the issue."], "ans": "A", "expl": "If the firm has developed an allocation procedure that is formula-based, inherently fair, and the details are disclosed to clients, it is possible to deviate from a pro rata allocation basis.", "explhtml": "<p>If the firm has developed an allocation procedure that is formula-based, inherently fair, and the details are disclosed to clients, it is possible to deviate from a pro rata allocation basis.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Which of the following statements regarding allocating trades is CORRECT? It is:<\/p><\/div>", "subj": "ethics"}, {"n": 31, "q": "In securing the shares for all accounts under her management, Linda Kammel of Northwest Futures purchased three blocks of shares at three different prices. She then allocated these shares by placing shares from the first block in accounts with surnames beginning with A-G. The second was allocated over accounts H-P, and the third over Q-Z. This action is:", "opts": ["not permissible under the Code and Standards.", "permissible only if the clients are informed of the allocation procedure.", "consistent with her responsibilities under the Code and Standards."], "ans": "A", "expl": "Standard III(B) requires a member to deal fairly with all clients when taking investment actions. Since she knew at the outset that she was going to place shares in all accounts, regardless of the first letter of the surname, all accounts must participate on a pro-rata basis in each block in order to conform to the Standard. Her actions constitute a violation of the Standard concerning fair dealing.", "explhtml": "<p>Standard III(B) requires a member to deal fairly with all clients when taking investment actions. Since she knew at the outset that she was going to place shares in all accounts, regardless of the first letter of the surname, all accounts must participate on a pro-rata basis in each block in order to conform to the Standard. Her actions constitute a violation of the Standard concerning fair dealing.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>In securing the shares for all accounts under her management, Linda Kammel of Northwest Futures purchased three blocks of shares at three different prices. She then allocated these shares by placing shares from the first block in accounts with surnames beginning with A-G. The second was allocated over accounts H-P, and the third over Q-Z. This action is:<\/p><\/div>", "subj": "ethics"}, {"n": 32, "q": "Alba Vasquez allocates trades of hot new IPOs as follows: m×p/(p+s) shares to performance-based fee accounts, m×s/(p+s) shares to standard fee accounts, where there are p suitable performance based fee accounts, s suitable standard fee accounts, and m shares available. This action is:", "opts": ["not permissible since it effectively favors the performance-based fee accounts.", "not permissible since it is based upon a formula that is not inherently fair.", "permissible since it effectively amounts to a strict pro rata basis of allocation."], "ans": "C", "expl": "The formula shown above is nothing more than a simple pro rata basis of allocation (assuming that the shares are then subsequently allocated in the same fashion over all of the sub accounts by category). Hence, this is permissible.", "explhtml": "<p>The formula shown above is nothing more than a simple pro rata basis of allocation (assuming that the shares are then subsequently allocated in the same fashion over all of the sub accounts by category). Hence, this is permissible.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>Alba Vasquez allocates trades of hot new IPOs as follows: m×p/(p+s) shares to performance-based fee accounts, m×s/(p+s) shares to standard fee accounts, where there are p suitable performance based fee accounts, s suitable standard fee accounts, and m shares available. This action is:<\/p><\/div>", "subj": "ethics"}, {"n": 33, "q": "An investment advisor goes straight from a research seminar to a meeting with a prospective new client with whom she has never been in contact. The advisor is very excited about the information she just received in the seminar and begins showing the prospect the new ideas her firm is coming up with. This is most likely a violation of:", "opts": ["both of these.", "Standard III(C), Suitability.", "Standard III(B), Fair Dealing."], "ans": "A", "expl": "It is a violation of Standard III(B) because the advisor should act first on behalf of existing clients whose needs and characteristics she already knows. It is a violation of Standard III(C) because she has never met the prospect and does not know if the new ideas are appropriate for the prospect. Thus, \"both of these\" is the best response.", "explhtml": "<p>It is a violation of Standard III(B) because the advisor should act first on behalf of existing clients whose needs and characteristics she already knows. It is a violation of Standard III(C) because she has never met the prospect and does not know if the new ideas are appropriate for the prospect. Thus, &quot;both of these&quot; is the best response.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.5, LOS 41: III(B)<\/div><div class=\"qtext\"><p>An investment advisor goes straight from a research seminar to a meeting with a prospective new client with whom she has never been in contact. The advisor is very excited about the information she just received in the seminar and begins showing the prospect the new ideas her firm is coming up with. This is most likely a violation of:<\/p><\/div>", "subj": "ethics"}];
+const CFG = {"title": "Reading 41.5 — Guidance for Standards III(B) and III(C)", "subtitle": "CFA Level II · 33 câu · Kaplan Schweser QBank 2025 (23 câu đơn · 10 câu item set)", "minutes": 0, "passMark": 65, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    let prev = {}; try{ prev = JSON.parse(localStorage.getItem(PROG_KEY)||"null")||{}; }catch(e){}
+    const slug = PROG_KEY.replace(/^cfa:prog:/,"");
+    const _d=new Date(); const day=_d.getFullYear()+"-"+String(_d.getMonth()+1).padStart(2,"0")+"-"+String(_d.getDate()).padStart(2,"0");
+    let tbase = prev.tbase;
+    if(!tbase || tbase.d !== day) tbase = {d:day, base:(prev.done||0)};
+    const answeredToday = Math.max(0, done - tbase.base);
+    try{
+      const daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}");
+      (daily[day] = daily[day]||{})[slug] = {answered:answeredToday, done, total, graded, correct, pct, title:(CFG.title||slug), ts:Date.now()};
+      localStorage.setItem("cfa:daily", JSON.stringify(daily));
+    }catch(e){}
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, tbase, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); var __slug = PROG_KEY.replace(/^cfa:prog:/,""); var __daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}"), __ch=false; for(var __d in __daily){ if(__daily[__d] && __daily[__d][__slug]){ delete __daily[__d][__slug]; __ch=true; } if(__daily[__d] && Object.keys(__daily[__d]).length===0) delete __daily[__d]; } if(__ch) localStorage.setItem("cfa:daily", JSON.stringify(__daily)); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      e.appendChild(q.explhtml?buildExplHtml(q):buildExplanation(q.expl,q.ans,q.opts));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+
+// ---- readable explanations ---------------------------------------------- //
+function explanationData(raw){
+  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|thảo luận|lọc|giải pháp|bạn muốn thảo luận.*|lý do cho đáp án đúng|câu hỏi\s+\d+\s+trên\s+\d+|\(?required\)?|\(?bắt buộc\)?|[?①θi1])$/i;
+  let lines=String(raw||"").replace(/\r/g,"").split("\n")
+    .map(line=>line.replace(/\s+/g," ").trim())
+    .filter(line=>line&&!noise.test(line));
+  let reading="",los="",losIndex=-1;
+  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss|tính|mô tả|giải thích|so sánh|phân tích|đánh giá|diễn giải|nhận diện|xác định|định nghĩa|thảo luận)\b/i;
+  for(let i=Math.max(1,lines.length-10);i<lines.length;i++){
+    const candidate=lines[i].replace(/^[·•?]\s*/,"").replace(/^i(?=(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss))/i,"").trim();
+    const previous=lines[i-1]||"";
+    if(action.test(candidate)&&previous.length<120&&!/[.!?]$/.test(previous)&&!/^[A-J][.)]\s/i.test(previous)){
+      reading=previous; los=lines.slice(i).join(" "); lines=lines.slice(0,i-1); losIndex=i; break;
+    }
+  }
+  return {text:lines.join(" ").replace(/\s+/g," ").trim(),reading,los};
+}
+function explanationSections(text,correctLetter){
+  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\b)/gi,"\n$1. ");
+  const chunks=broken.split(/\n(?=[A-J]\.\s+)/).map(s=>s.trim()).filter(Boolean);
+  const sections=chunks.map(chunk=>{
+    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\.?\s*)?(?:because\s+)?/i);
+    if(!match) return {letter:"",text:chunk};
+    return {letter:match[1].toUpperCase(),text:chunk.slice(match[0].length).trim()};
+  });
+  const hasCorrect=sections.some(section=>section.letter===correctLetter);
+  if(!hasCorrect&&sections.length>1&&!sections[0].letter) sections[0].letter=correctLetter;
+  const unique=[];
+  sections.forEach(section=>{
+    if(!section.letter){
+      if(section.text&&!unique.some(item=>!item.letter)) unique.push(section);
+      return;
+    }
+    const duplicateIndex=unique.findIndex(item=>item.letter===section.letter);
+    if(duplicateIndex<0) unique.push(section);
+    else if((section.text||"").length>(unique[duplicateIndex].text||"").length) unique[duplicateIndex]=section;
+  });
+  return unique;
+}
+function buildExplanation(raw,correctLetter,options){
+  const data=explanationData(raw);
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+correctLetter;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content";
+  explanationSections(data.text,correctLetter).forEach(section=>{
+    if(section.letter){
+      const choice=document.createElement("article");
+      const isCorrect=section.letter===correctLetter;
+      choice.className="expl-choice "+(isCorrect?"is-correct":"is-other");
+      const top=document.createElement("div"); top.className="expl-choice-top";
+      const letter=document.createElement("span"); letter.className="expl-letter"; letter.textContent=section.letter;
+      const state=document.createElement("span"); state.className="expl-state"; state.textContent=isCorrect?"Đáp án đúng":"Không đúng";
+      top.appendChild(letter); top.appendChild(state); choice.appendChild(top);
+      const optionIndex=LETTERS.indexOf(section.letter);
+      if(options&&optionIndex>=0&&options[optionIndex]){
+        const option=document.createElement("p"); option.className="expl-option-copy"; option.textContent=options[optionIndex]; choice.appendChild(option);
+      }
+      if(section.text){ const reason=document.createElement("p"); reason.className="expl-reason"; reason.textContent=section.text; choice.appendChild(reason); }
+      content.appendChild(choice);
+    }else if(section.text){
+      const note=document.createElement("div"); note.className="expl-note";
+      const paragraph=document.createElement("p"); paragraph.textContent=section.text; note.appendChild(paragraph); content.appendChild(note);
+    }
+  });
+  if(data.reading||data.los){
+    const meta=document.createElement("div"); meta.className="expl-meta";
+    if(data.reading){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="Reading:"; const value=document.createElement("span"); value.textContent=data.reading; row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    if(data.los){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="LOS:"; const value=document.createElement("span"); value.textContent=data.los.replace(/^[·•?]\s*/,""); row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    content.appendChild(meta);
+  }
+  shell.appendChild(content); return shell;
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function setSubmitButtonMode(showResults){
+  const btn=$("submitBtn"); if(!btn) return;
+  const label=showResults?"Xem kết quả":"Nộp bài";
+  const textNode=Array.from(btn.childNodes).find(n=>n.nodeType===3);
+  if(textNode) textNode.nodeValue=label;
+  btn.title=showResults?"Xem lại điểm tổng và điểm theo môn":"";
+}
+function requestSubmit(){
+  if(graded){
+    if(typeof window.showGradedResult==="function") window.showGradedResult();
+    else $("resultOverlay").classList.add("show");
+    return;
+  }
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    showQuestionSubject(card,q);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+  renderSubjectBreakdown();
+  setSubmitButtonMode(true);
+}
+
+
+// ---- CFA subject score breakdown ---------------------------------------- //
+const CFA_SUBJECTS = [["ethics", "Ethical & Professional Standards"], ["quant", "Quantitative Methods"], ["economics", "Economics"], ["fsa", "Financial Statement Analysis"], ["corporate", "Corporate Issuers"], ["equity", "Equity Valuation"], ["fixed", "Fixed Income"], ["derivatives", "Derivatives"], ["alternatives", "Alternative Investments"], ["portfolio", "Portfolio Management"]];
+function getCfaSubjectRaw(question){
+  const text=((question.q||"")+"\n"+(question.expl||""))
+    .toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const prompt=(question.q||"").toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  if(session===1 && Number(question.n)<=27) return "ethics";
+  if(session===1 && /f-statistic|test statistic|hypothesis|regression|semideviation|probability|box and whisker|interquartile|quintile|percentile/.test(prompt)) return "quant";
+  if(session===1 && /structural deficit|budget deficit|exchange rate|forward points|currency|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity/.test(prompt)) return "economics";
+  if(session===1 && /cost of debt|cost of capital|capital structure|capital budgeting|\bnpv\b|internal rate of return|\birr\b|board of directors|proxy voting|stakeholders?/.test(prompt)) return "corporate";
+  if(session===1 && /code of ethics|professional conduct|professional integrity|guidance\s*for\s*standards|standards?\s+[ivxl]+\b|gips|global investment performance|ethics application|ethical decision|ethics and trust|explain ethics|level i candidate|exam content|market manipulation|situational influence|fair dealing/.test(text)) return "ethics";
+  if(session===2 && /derivative|forward commitment|forward contract|forward price|futures? contract|swap\b|option\b|put-call|put call|binomial model|contingent claim|arbitrage, replication|delta hedg|option replication|moneyness/.test(text)) return "derivatives";
+  if(session===2 && /alternative investment|private capital|private equity|private debt|hedge fund|real estate|infrastructure investment|natural resources|commodit(?:y|ies)|digital assets?|collectibles|venture capital|buyout|mezzanine financing|co-investing/.test(text)) return "alternatives";
+  if(session===2 && /fixed-income|fixed income|bond\b|bonds\b|yield curve|yield spread|yield-to-maturity|yield to maturity|duration|convexity|mortgage-backed|asset-backed|securiti[sz]ed debt|credit analysis|credit risk|term structure of interest rates|money market instrument|repo market/.test(text)) return "fixed";
+  if(session===1 && /financial statement|financial reporting|income statement|incomestatements|balance sheet|cash flow|inventor(?:y|ies)|long-term assets|long-termassets|long lived assets|income tax|deferred tax|revenue recognition|performance obligations|reporting quality|financial analysis techniques|financial analysistechniques|financial statement modeling|long-term liabilities and equity|long term liabilities and equity|common-size|common size|profitability ratios|liquidity ratios|solvency ratios|activity ratios|dupont|ebitda|diluted eps|gaap|ifrs/.test(text)) return "fsa";
+  if(session===2 && /portfolio management|portfolio risk and return|portfolio planning|portfolio construction|asset allocation|investment policy statement|\bips\b|behavioral bias|behavioral explanation|risk management|capital asset pricing model|\bcapm\b|security market line|capital market line|capital allocation line|efficient frontier|systematic risk|unsystematic risk|sharpe ratio|treynor ratio|information ratio|types of investors|mutual fund|correlation between the assets|correlation pattern|correlation coefficient between two assets|portfolio standard deviation|portfolio risk falls|diversification benefit/.test(text)) return "portfolio";
+  if(session===2 && /equity securit|equity valuation|equityvaluation|market organization and structure|security market index|securitymarket index|market efficiency|industry and competitive analysis|industry andcompetitiveanalysis|company analysis|companyanalysis|porter's five forces|dividend discount|gordon growth|sustainable growth rate|free cash flow to equity|price multiple|preferred stock|preference share|equity market|equity index|stock market|share valuation|enterprise value multiple|statutory voting|size effect anomaly|intrinsic value/.test(text)) return "equity";
+  if(session===1 && /economics|business cycle|monetary policy|fiscal policy|geopolitic|international trade|internationaltrade|exchange rate|currency exchange|capital flows and the fx market|aggregate output|aggregate demand|aggregate supply|inflation|unemployment|firm and market structures|market structure within which a firm|perfect competition|monopolistic competition|oligopoly|central bank|gross domestic product|\bgdp\b|herfindahl-hirschman|concentration ratio/.test(text)) return "economics";
+  if(session===1 && /corporate issuer|corporate governance|capital structure|capital allocation|capital budgeting|combination of projects|cost of capital|working capital|business model|organizational forms|investors and other stakeholders|weighted-average cost of capital|weighted average cost of capital|\bwacc\b|modigliani-miller|dividend policy|share repurchase|stakeholder groups|principal-agent/.test(text)) return "corporate";
+  if(session===1 && /quantitative methods|rates? and returns?|ratesand ?return|statistical measure|probability|random variable|sampling|estimation|hypothesis test|parametric|non-parametric|nonparametric|linear regression|correlation|covariance|time value of money|discounted cash flow|big data|machine learning|data science|central tendency|dispersion|skewness|kurtosis|confidence interval|standard deviation|coefficient of variation|major return measures|continuously compounded|monthly compounding|present value/.test(text)) return "quant";
+  if(session===1){
+    if(/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|cash paid|revenue|expense recognition|inventor(?:y|ies)|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|auditor|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible asset|long-lived asset|long lived asset|asset revaluation|revaluation surplus|impairment|amortization|depreciation|pension plan|financial ratio|liquidity ratio|solvency ratio|receivables turnover|payables turnover|cash conversion cycle|fixed charge coverage|creditworthiness|normalized earnings|management['’]?s commentary/.test(prompt)) return "fsa";
+    if(/business cycle|credit cycle|fiscal policy|monetary policy|structural deficit|budget deficit|central bank|lender of last resort|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic competition|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|usd\/?[a-z]{3}|eur\/?[a-z]{3}|appreciation of the|capital restriction|world bank|international monetary fund/.test(prompt)) return "economics";
+    if(/corporate|company lifecycle|company['’]?s lifecycle|start-up|startup|early-stage|business model|franchise model|board of directors|proxy voting|stakeholders?|shareholders?|creditors?|corporate governance|capital budgeting|capital investment|going concern project|real option|combination of projects|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|target weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|source of liquidity|pull on liquidity|drag on.*liquidity|compensation packages|competitive strategy|porter['’]?s five forces|economies of scale|information asymmetry|agency relationship/.test(prompt)) return "corporate";
+    return "quant";
+  }
+  if(/derivative|forward commitment|forward contract|forward rate agreement|futures? contract|swap\b|option\b|call buyer|call seller|put buyer|put seller|strike price|option premium|put-call|put call|binomial model|contingent claim|moneyness|value at expiration|profit.*expiration|arbitrage|replication/.test(prompt)) return "derivatives";
+  if(/alternative investment|private capital|private equity|private debt|hedge fund|real estate|\breit\b|\breits\b|infrastructure|natural resources|commodit(?:y|ies)|digital assets?|cryptocurrenc|bitcoin|collectibles|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption regime|pooled investment product|timberland|farmland/.test(prompt)) return "alternatives";
+  if(/fixed-income|fixed income|bond\b|bonds\b|debt rating|corporate debt|credit rating|credit spread|creditworthiness|yield curve|yield spread|spot rate|forward rate|yield-to-maturity|yield to maturity|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|\bcds\b|repo market|central bank funds|covenant|accrued interest|priority of claims|default risk|extension risk/.test(prompt)) return "fixed";
+  if(/portfolio|asset allocation|investment policy statement|\bips\b|behavioral finance|behavioral bias|cognitive error|risk aversion|utility function|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation between|covariance between|portfolio standard deviation|sharpe ratio|treynor ratio|jensen['’]?s alpha|information ratio|two-fund separation|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral investor/.test(prompt)) return "portfolio";
+  return "equity";
+}
+
+const CFA_SESSION_SUBJECT_RANGES = {
+  1:{ethics:[27,27],quant:[11,17],economics:[11,17],fsa:[20,25],corporate:[10,16]},
+  2:{equity:[20,25],fixed:[20,25],derivatives:[9,14],alternatives:[11,16],portfolio:[14,22]}
+};
+const CFA_SUBJECT_HINTS = {
+  quant:/probabilit|return measure|holding period|money-weighted|time-weighted|mean|median|mode|quintile|percentile|variance|standard deviation|semideviation|skew|kurtosis|hypothesis|test statistic|confidence interval|regression|correlation|covariance|sampling|estimation|bayes|box and whisker|interquartile|coefficient of variation|compound|present value|future value|interest rate|data science|machine learning|fintech/g,
+  economics:/business cycle|credit cycle|fiscal|monetary|central bank|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|capital restriction|world bank|international monetary fund/g,
+  fsa:/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|revenue|expense|inventory|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible|long-lived|revaluation|impairment|amortization|depreciation|pension|financial ratio|receivables turnover|payables turnover|cash conversion|fixed charge coverage|normalized earnings|management['’]?s commentary/g,
+  corporate:/corporate|company lifecycle|start-up|startup|early-stage|business model|franchise|board of directors|proxy voting|stakeholder|shareholder|creditor|governance|capital budgeting|capital investment|project|real option|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|liquidity|compensation|competitive strategy|porter|economies of scale|information asymmetry|agency relationship/g,
+  equity:/equity|common share|preferred share|stock|market index|index weighting|market efficiency|efficient market|security market|buy order|sell order|limit order|dealer|margin requirement|leverage ratio|industry classification|company analysis|enterprise value|price-to|free cash flow to equity|\bfcfe\b|dividend discount|earnings multiplier|book value per share|intrinsic value|voting|ex-dividend/g,
+  fixed:/fixed-income|fixed income|bond|debt|credit rating|credit spread|yield|spot rate|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|repo|covenant|accrued interest|priority of claims|default|extension risk|interest coverage/g,
+  derivatives:/derivative|forward|future|swap|option|call buyer|call seller|put buyer|put seller|strike price|premium|put-call|binomial|contingent claim|moneyness|expiration|arbitrage|replication/g,
+  alternatives:/alternative|private capital|private equity|private debt|hedge fund|real estate|\breit|infrastructure|natural resource|commodit|digital asset|cryptocurrenc|bitcoin|collectible|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption|timberland|farmland/g,
+  portfolio:/portfolio|asset allocation|investment policy|\bips\b|behavioral|cognitive error|risk aversion|utility|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation|covariance|sharpe|treynor|jensen|information ratio|two-fund|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral/g
+};
+let CFA_SUBJECT_ASSIGNMENTS=null;
+function getCfaSubjectHintScore(question,subject){
+  const prompt=((question.q||"")+" "+(question.opts||[]).join(" ")).toLowerCase().replace(/[‐‑–—]/g,"-");
+  const matches=prompt.match(CFA_SUBJECT_HINTS[subject]);
+  return matches?matches.length:0;
+}
+function buildCfaSubjectAssignments(){
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const ranges=CFA_SESSION_SUBJECT_RANGES[session];
+  const subjects=Object.keys(ranges);
+  const raw=DATA.map(getCfaSubjectRaw);
+  const assigned=raw.slice();
+  const counts={}; subjects.forEach(subject=>counts[subject]=0);
+  if(session===1){
+    DATA.forEach((question,index)=>{
+      if(Number(question.n)<=ranges.ethics[1]) assigned[index]="ethics";
+      else if(assigned[index]==="ethics") assigned[index]=null;
+    });
+  }
+  DATA.forEach((question,index)=>{
+    if(assigned[index]) return;
+    const eligible=subjects.filter(subject=>subject!=="ethics");
+    assigned[index]=eligible.sort((a,b)=>getCfaSubjectHintScore(question,b)-getCfaSubjectHintScore(question,a))[0];
+  });
+  assigned.forEach(subject=>counts[subject]++);
+  subjects.forEach(source=>{
+    const maximum=ranges[source][1];
+    if(counts[source]<=maximum) return;
+    const candidates=DATA.map((question,index)=>({index,score:getCfaSubjectHintScore(question,source)}))
+      .filter(item=>assigned[item.index]===source && !(session===1 && source==="ethics" && Number(DATA[item.index].n)<=27))
+      .sort((a,b)=>a.score-b.score||b.index-a.index);
+    for(const candidate of candidates){
+      if(counts[source]<=maximum) break;
+      const belowMinimum=subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][0]);
+      const destinations=(belowMinimum.length?belowMinimum:subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][1]))
+        .sort((a,b)=>getCfaSubjectHintScore(DATA[candidate.index],b)-getCfaSubjectHintScore(DATA[candidate.index],a)
+          ||(ranges[b][1]-counts[b])-(ranges[a][1]-counts[a]));
+      const destination=destinations[0]; if(!destination) break;
+      assigned[candidate.index]=destination; counts[source]--; counts[destination]++;
+    }
+  });
+  return assigned;
+}
+function getCfaSubject(question){
+  if(question&&question.subj) return question.subj;
+  if(!CFA_SUBJECT_ASSIGNMENTS) CFA_SUBJECT_ASSIGNMENTS=buildCfaSubjectAssignments();
+  const index=DATA.indexOf(question);
+  return index>=0?CFA_SUBJECT_ASSIGNMENTS[index]:getCfaSubjectRaw(question);
+}
+
+function showQuestionSubject(card, question){
+  const head=card.querySelector(".card-head"); if(!head) return;
+  let label=head.querySelector(".question-subject");
+  if(!label){
+    label=document.createElement("span"); label.className="question-subject";
+    const pin=head.querySelector(".pin"); head.insertBefore(label,pin||null);
+  }
+  const key=getCfaSubject(question);
+  const subject=CFA_SUBJECTS.find(item=>item[0]===key);
+  label.dataset.subject=key;
+  label.textContent=subject?subject[1]:"Chưa phân loại";
+  label.title="Môn CFA: "+label.textContent;
+}
+
+function renderSubjectBreakdown(){
+  const panel=$("subjectBreakdown"); if(!panel) return;
+  const scores={}; CFA_SUBJECTS.forEach(s=>scores[s[0]]={correct:0,total:0});
+  DATA.forEach((q,i)=>{
+    const key=getCfaSubject(q); if(!scores[key]) return;
+    scores[key].total++; if(answers[i]===q.ans) scores[key].correct++;
+  });
+  panel.innerHTML="";
+  const heading=document.createElement("h4"); heading.textContent="Điểm theo môn CFA · Tổng "+DATA.length+" câu"; panel.appendChild(heading);
+  const grid=document.createElement("div"); grid.className="subject-grid";
+  CFA_SUBJECTS.forEach(subject=>{
+    const score=scores[subject[0]]; if(!score.total) return;
+    const pct=Math.round(score.correct/score.total*100);
+    const row=document.createElement("div"); row.className="subject-row";
+    const top=document.createElement("div"); top.className="subject-top";
+    const name=document.createElement("span"); name.className="subject-name"; name.textContent=subject[1];
+    const value=document.createElement("span"); value.className="subject-score"; value.textContent=score.correct+"/"+score.total+" ("+pct+"%)";
+    const bar=document.createElement("div"); bar.className="subject-bar"; bar.setAttribute("role","progressbar"); bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax","100"); bar.setAttribute("aria-valuenow",String(pct));
+    const fill=document.createElement("div"); fill.className="subject-fill"; fill.style.width=pct+"%";
+    top.appendChild(name); top.appendChild(value); bar.appendChild(fill); row.appendChild(top); row.appendChild(bar); grid.appendChild(row);
+  });
+  panel.appendChild(grid);
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  setSubmitButtonMode(false);
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+<script>
+/* ===== Feedback sinh động: chạy sau khi chấm bài ===== */
+(function(){
+  if(typeof grade!=='function') return;
+  var _grade=grade;
+  grade=function(a){ _grade(a); try{ afterGrade(false); }catch(e){} };
+  window.showGradedResult=function(){ try{ afterGrade(true); }catch(e){} };
+
+  function afterGrade(restored){
+    if(!CFG.hasAnswers) return;
+    var pass=document.getElementById('badge').classList.contains('pass');
+    showResult(pass, document.getElementById('badge').textContent, !restored);
+  }
+  function addMark(el,sym){
+    if(el.querySelector('.fx-mark')) return;
+    var s=document.createElement('span'); s.className='fx-mark'; s.textContent=sym;
+    el.appendChild(s);
+  }
+  function showResult(pass, badgeText, celebrate){
+    var ov=document.getElementById('resultOverlay');
+    var icon=document.getElementById('rIcon');
+    var title=document.getElementById('rTitle');
+    var emoji=document.getElementById('rEmoji');
+    var score=document.getElementById('rScore');
+    var m=badgeText.split('·'); score.textContent=m.length>1?m[1].trim():'';
+    if(pass){
+      title.textContent='Chúc mừng! Bạn đã ĐẠT'; title.className='pass';
+      icon.setAttribute('src','https://cdn.lordicon.com/lupuorrc.json');
+      emoji.textContent='🎉';
+      if(celebrate){ fetchEmoji('face-positive', emoji); confetti(); }
+    }else{
+      title.textContent='Chưa đạt — cố lên nhé!'; title.className='fail';
+      icon.setAttribute('src','https://cdn.lordicon.com/jdgfsfzr.json');
+      emoji.textContent='💪';
+    }
+    ov.classList.add('show');
+  }
+  function fetchEmoji(group, el){
+    var ctrl=('AbortController'in window)?new AbortController():null;
+    if(ctrl) setTimeout(function(){try{ctrl.abort();}catch(e){}},3500);
+    fetch('https://emojihub.yurace.pro/api/random/group/'+group, ctrl?{signal:ctrl.signal}:{})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.htmlCode&&d.htmlCode.length){
+        el.innerHTML=d.htmlCode.join('');
+        el.style.animation='none'; void el.offsetWidth; el.style.animation='';
+      }})
+      .catch(function(){});
+  }
+  if(graded) window.showGradedResult();
+
+  function confetti(){
+    var cols=['#538297','#86a7b5','#22c55e','#f59e0b','#f43f5e','#38bdf8'];
+    for(var i=0;i<70;i++){(function(){
+      var d=document.createElement('i'); d.className='fx-confetti';
+      d.style.left=Math.random()*100+'vw';
+      d.style.background=cols[i%cols.length];
+      d.style.animationDuration=(2.2+Math.random()*1.6)+'s';
+      d.style.animationDelay=(Math.random()*0.5)+'s';
+      d.style.transform='rotate('+(Math.random()*360)+'deg)';
+      document.body.appendChild(d);
+      setTimeout(function(){d.remove();},4500);
+    })();}
+  }
+})();
+</script>
+<!--qnote-feature-start-->
+<style id="qnote-css">
+  main#quiz{max-width:1180px}
+  .qrow{display:flex;gap:16px;align-items:flex-start;margin:0 0 16px}
+  .qrow > .card{flex:1 1 auto;min-width:0;margin:0}
+  .qnote{flex:0 0 300px;align-self:stretch;display:flex;flex-direction:column;
+    border-radius:12px;border:1px solid var(--line);
+    background:color-mix(in srgb, var(--pin) 9%, var(--panel2));padding:10px}
+  .qnote-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;
+    font-size:12.5px;font-weight:600;color:var(--muted)}
+  .qnote-head .dot{color:var(--pin)}
+  .qnote-saved{margin-left:auto;font-size:11.5px;color:var(--ok);opacity:0;
+    transition:opacity .25s}
+  .qnote-saved.show{opacity:1}
+  .qnote textarea{flex:1 1 auto;width:100%;resize:vertical;min-height:96px;display:block;
+    font:inherit;font-size:14px;line-height:1.5;color:var(--txt);
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;outline:none}
+  .qnote textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 1.5px var(--accent) inset}
+  .qnote textarea::placeholder{color:var(--muted);opacity:.7}
+  @media (max-width:860px){
+    .qrow{flex-direction:column;gap:10px}
+    .qnote{flex-basis:auto;width:100%;align-self:auto}
+    .qnote textarea{min-height:52px}
+  }
+</style>
+<script>
+/* ===== Ghi chú cá nhân bên phải mỗi câu (lưu trong máy - localStorage) ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function load(){ try{ return JSON.parse(localStorage.getItem(NKEY)||"{}")||{}; }catch(e){ return {}; } }
+  function save(map){ try{ localStorage.setItem(NKEY, JSON.stringify(map)); }catch(e){} }
+  function keyFor(card){ var id=card.id||""; var m=id.match(/^q-(\d+)$/); return m?m[1]:null; }
+  function attach(){
+    var notes = load();
+    var cards = document.querySelectorAll("#quiz .card");
+    for(var c=0;c<cards.length;c++){
+      var card = cards[c];
+      var parent = card.parentNode;
+      if(parent && parent.classList && parent.classList.contains("qrow")) continue; // already wrapped
+      var k = keyFor(card);
+      if(k===null || !parent) continue;
+      var wrap = document.createElement("div");
+      wrap.className = "qnote";
+      var head = document.createElement("div");
+      head.className = "qnote-head";
+      head.innerHTML = '<span class="dot">📝</span><span>Ghi chú</span><span class="qnote-saved">Đã lưu ✓</span>';
+      var ta = document.createElement("textarea");
+      ta.setAttribute("placeholder","Ghi chú cho câu này…");
+      ta.value = notes[k] || "";
+      (function(ta,k,savedEl){
+        var t=null;
+        ta.addEventListener("input", function(){
+          var m=load();
+          if(ta.value && ta.value.trim()) m[k]=ta.value; else delete m[k];
+          save(m);
+          savedEl.classList.add("show");
+          clearTimeout(t); t=setTimeout(function(){ savedEl.classList.remove("show"); }, 1200);
+        });
+      })(ta, k, head.querySelector(".qnote-saved"));
+      wrap.appendChild(head); wrap.appendChild(ta);
+      var row = document.createElement("div");
+      row.className = "qrow";
+      parent.insertBefore(row, card);   // put row where the card was
+      row.appendChild(card);            // move question card into the row (left)
+      row.appendChild(wrap);            // note beside it (right)
+    }
+  }
+  function boot(){
+    attach();
+    var quiz = document.getElementById("quiz");
+    if(quiz && "MutationObserver" in window){
+      var pend=false;
+      new MutationObserver(function(){
+        if(pend) return; pend=true;
+        setTimeout(function(){ pend=false; attach(); }, 30);
+      }).observe(quiz,{childList:true});
+    }
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnote-feature-end-->
+<!--qnav-note-start-->
+<style id="qnav-note-css">
+  #navGrid .cell.noted::before{content:"\1F4DD";position:absolute;top:-4px;left:-3px;font-size:10px;line-height:1}
+</style>
+<script>
+/* ===== Đánh dấu câu có Ghi chú trong "Danh sách câu" + bộ lọc "Ghi chú" ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function noteSet(){
+    var s={};
+    try{ var m=JSON.parse(localStorage.getItem(NKEY)||"{}")||{};
+      for(var k in m){ if(m.hasOwnProperty(k) && m[k] && (""+m[k]).trim()) s[k]=1; } }catch(e){}
+    return s;
+  }
+  function addChip(){
+    var chips=document.getElementById("chips");
+    if(!chips || chips.querySelector('[data-f="note"]')) return;
+    var b=document.createElement("button");
+    b.className="chip"; b.setAttribute("data-f","note");
+    b.innerHTML='Ghi chú <span></span>';
+    b.onclick=function(){ if(typeof setFilter==="function") setFilter("note", b); };
+    chips.appendChild(b);
+  }
+  var wrapped=false;
+  function wrapRefresh(){
+    if(wrapped || typeof window.refreshNav!=="function") return;
+    wrapped=true;
+    var orig=window.refreshNav;
+    window.refreshNav=function(){
+      orig.apply(this, arguments);
+      var ns=noteSet(), cnt=0;
+      var active=document.querySelector('#chips .chip.active');
+      var f=active?active.getAttribute("data-f"):"all";
+      var cells=document.querySelectorAll("#navGrid .cell");
+      for(var j=0;j<cells.length;j++){
+        var c=cells[j], m=(c.id||"").match(/^cell-(\d+)$/); if(!m) continue;
+        var has=!!ns[m[1]];
+        c.classList.toggle("noted", has);
+        if(has) cnt++;
+        if(f==="note") c.classList.toggle("hide", !has);
+      }
+      var sp=document.querySelector('#chips [data-f="note"] span');
+      if(sp) sp.textContent="("+cnt+")";
+    };
+  }
+  function wrapToggle(){
+    if(typeof window.toggleNav!=="function" || window.toggleNav.__qnav) return;
+    var orig=window.toggleNav;
+    window.toggleNav=function(){
+      var r=orig.apply(this, arguments);
+      var p=document.getElementById("navPanel");
+      if(p && p.classList.contains("open") && typeof window.refreshNav==="function") window.refreshNav();
+      return r;
+    };
+    window.toggleNav.__qnav=true;
+  }
+  function boot(){
+    addChip(); wrapRefresh(); wrapToggle();
+    if(typeof window.refreshNav==="function") window.refreshNav();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnav-note-end-->
+
+<!--qnotes-panel-start-->
+<style id="qnotes-panel-css">
+  #qnotesFab{position:fixed;right:18px;bottom:18px;z-index:35;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #qnotesFab:hover{filter:brightness(1.06)}
+  #qnotesFab svg{width:17px;height:17px;flex:none}
+  #qnotesPanel{position:fixed;top:8vh;left:16px;width:min(470px,94vw);height:min(80vh,680px);z-index:70;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #qnotesPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #qnotesPanel .qnp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #qnotesPanel .qnp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #qnotesPanel .qnp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #qnotesPanel .qnp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #qnotesPanel .qnp-open:hover{text-decoration:underline}
+  #qnotesPanel .qnp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #qnotesPanel .qnp-x:hover{color:var(--txt)}
+  #qnotesPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #qnotesPanel.dragging #qnotesFrame{pointer-events:none}
+  #qnotesFrame{flex:1;width:100%;border:0;background:var(--bg)}
+  #qnotesOverlay{position:fixed;inset:0;background:transparent;z-index:65;display:none;pointer-events:none}
+  #qnotesOverlay.show{display:block}
+  @media(max-width:600px){#qnotesFab span{display:none}#qnotesFab{padding:12px}}
+</style>
+<button id="qnotesFab" type="button" onclick="qnotesOpen()" title="Ghi chú của tôi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 10h6M8 14h8M8 18h5"/></svg><span>Ghi chú</span></button>
+<div id="qnotesOverlay" onclick="qnotesClose()"></div>
+<div id="qnotesPanel" aria-hidden="true">
+  <div class="qnp-head" id="qnotesHead"><span class="qnp-grip" aria-hidden="true">⠿</span><b>Ghi chú của tôi</b><a class="qnp-open" href="index.html?view=notes" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="qnp-x" onclick="qnotesClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="qnotesFrame" title="Ghi chú của tôi" loading="lazy"></iframe>
+</div>
+<script id="qnotes-panel-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("qnotesPanel");}
+  window.qnotesOpen=function(){
+    var fr=document.getElementById("qnotesFrame");
+    if(!loaded){ fr.src="index.html?embed=1&view=notes"; loaded=true; }
+    P().classList.add("open"); document.getElementById("qnotesOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.qnotesClose=function(){
+    P().classList.remove("open"); document.getElementById("qnotesOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.qnotesClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("qnotesHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".qnp-x")||e.target.closest(".qnp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--qnotes-panel-end-->
+<!--baii-calc-start-->
+<style id="baii-calc-css">
+  #baiiFab{position:fixed;right:18px;bottom:70px;z-index:36;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent2,#0ea5e9);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #baiiFab:hover{filter:brightness(1.06)}
+  #baiiFab svg{width:17px;height:17px;flex:none}
+  #baiiPanel{position:fixed;top:8vh;right:16px;width:min(410px,94vw);height:min(80vh,680px);z-index:72;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #baiiPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #baiiPanel .bp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #baiiPanel .bp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #baiiPanel .bp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #baiiPanel .bp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #baiiPanel .bp-open:hover{text-decoration:underline}
+  #baiiPanel .bp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #baiiPanel .bp-x:hover{color:var(--txt)}
+  #baiiPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #baiiPanel.dragging #baiiFrame{pointer-events:none}
+  #baiiFrame{flex:1;width:100%;border:0;background:#0f1a1d}
+  #baiiOverlay{position:fixed;inset:0;background:transparent;z-index:67;display:none;pointer-events:none}
+  #baiiOverlay.show{display:block}
+  @media(max-width:600px){#baiiFab span{display:none}#baiiFab{padding:12px;bottom:74px}}
+</style>
+<button id="baiiFab" type="button" onclick="baiiOpen()" title="Máy tính BA II Plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="19"/><line x1="8" y1="19" x2="12" y2="19"/></svg><span>Máy tính</span></button>
+<div id="baiiOverlay" onclick="baiiClose()"></div>
+<div id="baiiPanel" aria-hidden="true">
+  <div class="bp-head" id="baiiHead"><span class="bp-grip" aria-hidden="true">⠿</span><b>Máy tính BA II Plus</b><a class="bp-open" href="baii-plus.html" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="bp-x" onclick="baiiClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="baiiFrame" title="BA II Plus" loading="lazy"></iframe>
+</div>
+<script id="baii-calc-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("baiiPanel");}
+  window.baiiOpen=function(){
+    var fr=document.getElementById("baiiFrame");
+    if(!loaded){ fr.src="baii-plus.html"; loaded=true; }
+    P().classList.add("open"); document.getElementById("baiiOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.baiiClose=function(){
+    P().classList.remove("open"); document.getElementById("baiiOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.baiiClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("baiiHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".bp-x")||e.target.closest(".bp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--baii-calc-end-->
+
+<!--restart-confirm-start-->
+<div id="restartOverlay" class="overlay">
+  <div class="modal">
+    <h3>Làm lại từ đầu?</h3>
+    <p>Toàn bộ đáp án đã chọn và tiến độ của đề này sẽ bị xoá và không thể khôi phục. Bạn chắc chắn muốn làm lại?</p>
+    <div class="modal-actions">
+      <button type="button" onclick="rcCancel()">Huỷ</button>
+      <button type="button" class="btn-primary" onclick="rcConfirm()">Làm lại</button>
+    </div>
+  </div>
+</div>
+<script id="restart-confirm-js">
+(function(){
+  if(typeof restart!=="function") return;
+  var _restart=restart;
+  function ov(){ return document.getElementById("restartOverlay"); }
+  function hasWork(){
+    try{
+      if(typeof graded!=="undefined" && graded) return true;
+      if(typeof answers==="object" && answers && Object.keys(answers).length>0) return true;
+      if(typeof pinned==="object" && pinned && Object.keys(pinned).length>0) return true;
+    }catch(e){}
+    return false;
+  }
+  window.rcCancel=function(){ var o=ov(); if(o) o.classList.remove("show"); };
+  window.rcConfirm=function(){ window.rcCancel(); _restart(); };
+  window.restart=function(){
+    var o=ov();
+    if(o && hasWork()){ o.classList.add("show"); return; }
+    _restart();
+  };
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){ var o=ov(); if(o && o.classList.contains("show")) window.rcCancel(); }
+  });
+  var o=ov(); if(o) o.addEventListener("click",function(e){ if(e.target===o) window.rcCancel(); });
+})();
+</script>
+<!--restart-confirm-end-->
+</body>
+</html>
