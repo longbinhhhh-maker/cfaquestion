@@ -309,20 +309,44 @@
     main{ padding:16px 14px 60px; }
     .search{ min-width:130px; }
   }
+
+  /* ===== Level switch ===== */
+  .lvl-switch{display:flex;gap:4px;padding:4px;margin:0 4px 14px;border-radius:11px;background:var(--panel2);border:1px solid var(--line)}
+  .lvl-switch button{flex:1;font:inherit;font-size:12.5px;font-weight:700;padding:7px 6px;border:none;border-radius:8px;
+    background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
+  .lvl-switch button:hover{color:var(--txt)}
+  html[data-level="1"] .lvl-switch button[data-l="1"], html[data-level="2"] .lvl-switch button[data-l="2"]{
+    background:var(--panel);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  html[data-level="2"] #navFormula{display:none}
+  @media(max-width:820px){ .lvl-switch{margin:0 6px 0 0;flex:none} .lvl-switch button{padding:6px 9px} }
 </style>
 </head>
 <body>
+<script id="lvl-early">
+(function(){try{
+  if(location.hash==="#resume" && document.referrer){
+    var f=(document.referrer.split("/").pop()||"").split(/[?#]/)[0];
+    if(/\.html$/i.test(f) && !/^index\.html$/i.test(f)) localStorage.setItem("cfa:level", /^L2-/i.test(f)?"2":"1");
+  }
+  var q=new URLSearchParams(location.search).get("level"); if(q==="1"||q==="2") localStorage.setItem("cfa:level", q);
+}catch(e){}
+window.CFA_LEVEL=(function(){try{return localStorage.getItem("cfa:level")==="2"?2:1}catch(e){return 1}})();
+document.documentElement.setAttribute("data-level", String(window.CFA_LEVEL));
+})();
+function setLevel(l){ try{localStorage.setItem("cfa:level", String(l)); localStorage.removeItem("cfa-nav");}catch(e){} location.href=location.pathname; }
+</script>
 <div class="fx-app">
 <aside class="fx-side">
   <div class="fx-brand">
-    <div><div class="fx-name">CFA Study Hub</div><div class="fx-sub">Level I · Ôn thi</div></div>
+    <div><div class="fx-name">CFA Study Hub</div><div class="fx-sub" id="fxLevelSub">Level I · Ôn thi</div></div>
   </div>
+  <div class="lvl-switch" role="tablist" aria-label="Chọn Level"><button type="button" data-l="1" onclick="setLevel(1)">Level I</button><button type="button" data-l="2" onclick="setLevel(2)">Level II</button></div>
   <nav class="fx-nav">
     <a class="fx-nav-item active" onclick="showSources();fxActive(this)">Trang chủ</a>
     <a class="fx-nav-item" onclick="showProgress();fxActive(this)">Tiến độ</a>
-    <a class="fx-nav-item" onclick="showSource('schweser');fxActive(this)">Schweser Notes</a>
+    <a class="fx-nav-item" id="navSrc1" onclick="showSource('schweser');fxActive(this)">Schweser Notes</a>
     <a class="fx-nav-item" onclick="showSource('mock');fxActive(this)">Đề thi thử</a>
-    <a class="fx-nav-item" onclick="showFormula();fxActive(this)">Công thức</a>
+    <a class="fx-nav-item" id="navFormula" onclick="showFormula();fxActive(this)">Công thức</a>
     <a class="fx-nav-item" onclick="showNotes();fxActive(this)">Ghi chú</a>
   </nav>
   <div class="fx-navlabel">Tiện ích</div>
@@ -339,7 +363,7 @@
 <header>
   <span class="logo"></span>
   <div>
-    <h1>Ngân hàng câu hỏi CFA</h1>
+    <h1 id="hubTitle">Ngân hàng câu hỏi CFA</h1>
     <p>Chọn môn rồi chọn module để ôn tập</p>
   </div>
   <span class="spacer"></span>
@@ -916,6 +940,371 @@ const HUB = [
   },
 ];
 
+/* ===== CFA LEVEL II — dữ liệu riêng; nút Level I/II ở sidebar (localStorage "cfa:level") ===== */
+const HUB_L2 = [
+ {
+  "id": "quant",
+  "name": "Quantitative Methods",
+  "short": "Định lượng",
+  "ico": "QM",
+  "desc": "Hồi quy bội, chuỗi thời gian, machine learning, big data.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (17 case)",
+    "q": 96,
+    "status": "ready",
+    "file": "L2-UW-Quant.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 59,
+    "status": "ready",
+    "file": "L2-PP-Quant.html"
+   }
+  ]
+ },
+ {
+  "id": "econ",
+  "name": "Economics",
+  "short": "Kinh tế học",
+  "ico": "EC",
+  "desc": "Tỷ giá & điều kiện ngang giá quốc tế, tăng trưởng kinh tế, quy định.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (10 case)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-UW-Econ.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 59,
+    "status": "ready",
+    "file": "L2-PP-Econ.html"
+   }
+  ]
+ },
+ {
+  "id": "ci",
+  "name": "Corporate Issuers",
+  "short": "Tài chính DN",
+  "ico": "CI",
+  "desc": "Chính sách cổ tức & mua lại, ESG, chi phí vốn, tái cấu trúc doanh nghiệp.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (12 case)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-UW-CI.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 59,
+    "status": "ready",
+    "file": "L2-PP-CI.html"
+   }
+  ]
+ },
+ {
+  "id": "fsa",
+  "name": "Financial Statement Analysis",
+  "short": "FSA",
+  "ico": "FSA",
+  "desc": "Đầu tư liên công ty, lương hưu, đa quốc gia, ngân hàng & bảo hiểm, chất lượng báo cáo.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (28 case)",
+    "q": 158,
+    "status": "ready",
+    "file": "L2-UW-FSA.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 84,
+    "status": "ready",
+    "file": "L2-PP-FSA.html"
+   }
+  ]
+ },
+ {
+  "id": "equity",
+  "name": "Equity Valuation",
+  "short": "Định giá cổ phiếu",
+  "ico": "EQ",
+  "desc": "DDM, FCFF/FCFE, bội số, thu nhập thặng dư, định giá công ty tư nhân.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (31 case)",
+    "q": 168,
+    "status": "ready",
+    "file": "L2-UW-Equity.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 101,
+    "status": "ready",
+    "file": "L2-PP-Equity.html"
+   }
+  ]
+ },
+ {
+  "id": "fi",
+  "name": "Fixed Income",
+  "short": "Trái phiếu",
+  "ico": "FI",
+  "desc": "Cấu trúc kỳ hạn, cây nhị thức không arbitrage, trái phiếu có quyền chọn, tín dụng, CDS.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (28 case)",
+    "q": 154,
+    "status": "ready",
+    "file": "L2-UW-FI.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 99,
+    "status": "ready",
+    "file": "L2-PP-FI.html"
+   }
+  ]
+ },
+ {
+  "id": "deriv",
+  "name": "Derivatives",
+  "short": "Phái sinh",
+  "ico": "DE",
+  "desc": "Định giá forward/futures, swap, quyền chọn (nhị thức, BSM), chiến lược quyền chọn.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (14 case)",
+    "q": 70,
+    "status": "ready",
+    "file": "L2-UW-Deriv.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 63,
+    "status": "ready",
+    "file": "L2-PP-Deriv.html"
+   }
+  ]
+ },
+ {
+  "id": "alt",
+  "name": "Alternative Investments",
+  "short": "Đầu tư thay thế",
+  "ico": "AI",
+  "desc": "Bất động sản, REIT, private equity, hàng hóa & phái sinh hàng hóa.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (19 case)",
+    "q": 97,
+    "status": "ready",
+    "file": "L2-UW-Alt.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 69,
+    "status": "ready",
+    "file": "L2-PP-Alt.html"
+   }
+  ]
+ },
+ {
+  "id": "pm",
+  "name": "Portfolio Management",
+  "short": "Quản lý danh mục",
+  "ico": "PM",
+  "desc": "Mô hình đa nhân tố, VaR & rủi ro, kỳ vọng thị trường vốn, quản lý chủ động, ETF, backtesting.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (28 case)",
+    "q": 164,
+    "status": "ready",
+    "file": "L2-UW-PM.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 93,
+    "status": "ready",
+    "file": "L2-PP-PM.html"
+   }
+  ]
+ },
+ {
+  "id": "ethics",
+  "name": "Ethical & Professional Standards",
+  "short": "Đạo đức",
+  "ico": "ETH",
+  "desc": "Bộ Quy tắc & 7 Chuẩn mực áp dụng vào item set Level II.",
+  "modules": [
+   {
+    "n": "UW",
+    "title": "UWorld — Item sets (17 case)",
+    "q": 96,
+    "status": "ready",
+    "file": "L2-UW-Ethics.html"
+   },
+   {
+    "n": "PP",
+    "title": "Practice Pack — EdZeb (câu đơn có lời giải)",
+    "q": 63,
+    "status": "ready",
+    "file": "L2-PP-Ethics.html"
+   }
+  ]
+ },
+ {
+  "id": "mock",
+  "name": "Mock Exams",
+  "short": "Đề thi thử",
+  "ico": "MK",
+  "desc": "6 đề thi thử Schweser 2025 Level II. Mỗi đề 2 phiên, mỗi phiên 11 item set · 44 câu · 2 giờ 12 phút.",
+  "modules": [
+   {
+    "n": 1,
+    "title": "Schweser Mock 1 (2025) — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock1-SS1.html"
+   },
+   {
+    "n": 2,
+    "title": "Schweser Mock 1 (2025) — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock1-SS2.html"
+   },
+   {
+    "n": 3,
+    "title": "Schweser Mock 2 (2025) — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock2-SS1.html"
+   },
+   {
+    "n": 4,
+    "title": "Schweser Mock 2 (2025) — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock2-SS2.html"
+   },
+   {
+    "n": 5,
+    "title": "Schweser Mock 3 (2025) — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock3-SS1.html"
+   },
+   {
+    "n": 6,
+    "title": "Schweser Mock 3 (2025) — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock3-SS2.html"
+   },
+   {
+    "n": 7,
+    "title": "Schweser Mock 4 (2025) — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock4-SS1.html"
+   },
+   {
+    "n": 8,
+    "title": "Schweser Mock 4 (2025) — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock4-SS2.html"
+   },
+   {
+    "n": 9,
+    "title": "Schweser Mock 5 (2025) — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock5-SS1.html"
+   },
+   {
+    "n": 10,
+    "title": "Schweser Mock 5 (2025) — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock5-SS2.html"
+   },
+   {
+    "n": 11,
+    "title": "Schweser Mock 6 (2025) — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock6-SS1.html"
+   },
+   {
+    "n": 12,
+    "title": "Schweser Mock 6 (2025) — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Mock6-SS2.html"
+   }
+  ]
+ },
+ {
+  "id": "uword",
+  "name": "UWorld Mock Exams",
+  "short": "Đề UWorld",
+  "ico": "UW",
+  "desc": "2 đề thi thử UWorld Level II. Mỗi đề 2 phiên, mỗi phiên 11 item set · 44 câu · 2 giờ 12 phút.",
+  "modules": [
+   {
+    "n": 1,
+    "title": "UWorld Mock 1 — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-UWMock1-SS1.html"
+   },
+   {
+    "n": 2,
+    "title": "UWorld Mock 1 — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-UWMock1-SS2.html"
+   },
+   {
+    "n": 3,
+    "title": "UWorld Mock 2 — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-UWMock2-SS1.html"
+   },
+   {
+    "n": 4,
+    "title": "UWorld Mock 2 — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-UWMock2-SS2.html"
+   }
+  ]
+ }
+];
+if(window.CFA_LEVEL===2){ HUB.splice(0, HUB.length, ...HUB_L2); }
+
 const $ = id => document.getElementById(id);
 let query = "";
 
@@ -948,6 +1337,18 @@ const SOURCES = [
   {id:"schweser", name:"Schweser Notes", desc:"Câu hỏi theo môn — Schweser + Ngân hàng CFA chính thức", ico:"SN", color:"#6366f1"},
   {id:"mock",     name:"Đề thi thử (Mock)", desc:"Mock exams đầy đủ — Schweser & UWorld", ico:"MK", color:"#ef4444"},
 ];
+if(window.CFA_LEVEL===2){
+  Object.assign(SUBJ_INTRO, {"quant": "Hồi quy bội, chuỗi thời gian, machine learning, big data. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "econ": "Tỷ giá & điều kiện ngang giá quốc tế, tăng trưởng kinh tế, quy định. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "ci": "Chính sách cổ tức & mua lại, ESG, chi phí vốn, tái cấu trúc doanh nghiệp. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "fsa": "Đầu tư liên công ty, lương hưu, đa quốc gia, ngân hàng & bảo hiểm, chất lượng báo cáo. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "equity": "DDM, FCFF/FCFE, bội số, thu nhập thặng dư, định giá công ty tư nhân. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "fi": "Cấu trúc kỳ hạn, cây nhị thức không arbitrage, trái phiếu có quyền chọn, tín dụng, CDS. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "deriv": "Định giá forward/futures, swap, quyền chọn (nhị thức, BSM), chiến lược quyền chọn. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "alt": "Bất động sản, REIT, private equity, hàng hóa & phái sinh hàng hóa. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "pm": "Mô hình đa nhân tố, VaR & rủi ro, kỳ vọng thị trường vốn, quản lý chủ động, ETF, backtesting. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "ethics": "Bộ Quy tắc & 7 Chuẩn mực áp dụng vào item set Level II. Level II thi theo item set: mỗi case (vignette) đi kèm 4–6 câu hỏi.", "mock": "Đề thi thử full-length mô phỏng kỳ thi Level II: mỗi phiên 11 item set (44 câu) trong 2 giờ 12 phút. Đọc vignette rồi trả lời 4 câu đi kèm.", "uword": "Đề thi thử UWorld theo đúng định dạng Level II: mỗi phiên 11 case · 44 câu · 2 giờ 12 phút. Lời giải chi tiết dạng ảnh gốc."});
+  SOURCES[0].name = "Bài tập theo môn"; SOURCES[0].ico = "L2";
+  SOURCES[0].desc = "UWorld item sets (vignette) + EdZeb Practice Pack — 10 môn Level II";
+  SOURCES[1].desc = "Mock exams Level II — Schweser 2025 & UWorld";
+  (function(){
+    var t=document.getElementById("fxLevelSub"); if(t) t.textContent="Level II · Ôn thi";
+    var n=document.getElementById("navSrc1"); if(n) n.textContent="Bài tập theo môn";
+    var h=document.getElementById("hubTitle"); if(h) h.textContent="Ngân hàng câu hỏi CFA · Level II";
+    document.title="Ôn tập CFA Level II — Ngân hàng câu hỏi";
+  })();
+}
 let currentSource = null;
 function isMockSubj(s){ return s.id==="mock" || s.id==="uword"; }
 /* nguồn của một module: mock theo môn, wiley theo tên file -W#, còn lại = schweser */
@@ -1393,6 +1794,7 @@ window.addEventListener("pageshow", ()=>{
 <script id="progress-js">
 /* ===== Mục riêng "Tiến độ" — dashboard tính từ dữ liệu thật trong localStorage ===== */
 const SUBJ_WEIGHT = { ethics:17, quant:8, econ:8, fsa:13, ci:8, equity:13, fi:12, deriv:6, alt:8, pm:10 };
+if(window.CFA_LEVEL===2) Object.assign(SUBJ_WEIGHT, { ethics:12.5, quant:7.5, econ:7.5, fsa:12.5, ci:7.5, equity:12.5, fi:12.5, deriv:7.5, alt:7.5, pm:12.5 });
 
 function pgMetricCard(ic,label,val,sub){
   return '<div class="pg-metric"><div class="pg-ml">'+label+'</div>'+
@@ -1419,7 +1821,7 @@ function parseExamDate(v){
 }
 function examInfo(){
   try{
-    var raw = localStorage.getItem("cfa:examdate"); if(!raw) return null;
+    var raw = localStorage.getItem(window.CFA_LEVEL===2?"cfa:examdate:l2":"cfa:examdate"); if(!raw) return null;
     var norm = parseExamDate(raw); if(!norm) return null;
     var t = new Date(norm+"T00:00:00"); if(isNaN(+t)) return null;
     var days = Math.ceil((t - new Date())/86400000);
@@ -1428,15 +1830,15 @@ function examInfo(){
 }
 function setExamDate(){
   var cur = "";
-  try{ cur = localStorage.getItem("cfa:examdate")||""; }catch(e){}
+  try{ cur = localStorage.getItem(window.CFA_LEVEL===2?"cfa:examdate:l2":"cfa:examdate")||""; }catch(e){}
   var v = prompt("Nhập ngày thi CFA (vd 18/08/2026 hoặc 2026-08-18). Để trống để xoá:", cur||"18/08/2026");
   if(v==null) return;
   try{
-    if(v.trim()===""){ localStorage.removeItem("cfa:examdate"); }
+    if(v.trim()===""){ localStorage.removeItem(window.CFA_LEVEL===2?"cfa:examdate:l2":"cfa:examdate"); }
     else {
       var norm = parseExamDate(v);
       if(!norm){ alert("Ngày chưa hợp lệ. Hãy nhập theo ngày/tháng/năm, ví dụ 18/08/2026."); return; }
-      localStorage.setItem("cfa:examdate", norm);
+      localStorage.setItem(window.CFA_LEVEL===2?"cfa:examdate:l2":"cfa:examdate", norm);
     }
   }catch(e){}
   renderExam();
@@ -1447,7 +1849,7 @@ function renderExam(){
   if(!e){
     el.innerHTML = '<span class="pg-en"></span><span class="pg-et">Bấm để đặt <b>ngày thi</b><br>rồi xem đếm ngược</span>';
   } else if(e.days>=0){
-    el.innerHTML = '<span class="pg-en">'+e.days+'</span><span class="pg-et">ngày đến kỳ thi<br>Level I · '+e.date.toLocaleDateString("vi-VN")+'</span>';
+    el.innerHTML = '<span class="pg-en">'+e.days+'</span><span class="pg-et">ngày đến kỳ thi<br>'+(window.CFA_LEVEL===2?'Level II':'Level I')+' · '+e.date.toLocaleDateString("vi-VN")+'</span>';
   } else {
     el.innerHTML = '<span class="pg-en"></span><span class="pg-et">Kỳ thi đã diễn ra<br>'+e.date.toLocaleDateString("vi-VN")+'</span>';
   }
