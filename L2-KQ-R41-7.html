@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading 41.7 — Guidance for Standards IV(A), IV(B), and IV(C) · Kaplan QBank</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(83,130,151,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(134,167,181,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(83,130,151,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(83,130,151,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+<!-- ===== Lordicon + feedback sinh động ===== -->
+<script src="https://cdn.lordicon.com/lordicon.js" defer></script>
+<style id="fx-css">
+  .btn-primary lord-icon{width:20px;height:20px;vertical-align:-4px;margin-right:6px}
+  .opt .fx-mark{display:inline-block;margin-left:8px;font-size:16px;
+    transform:scale(0);animation:fxPop .42s cubic-bezier(.18,1.5,.5,1) forwards}
+  @keyframes fxPop{0%{transform:scale(0) rotate(-25deg)}
+    70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  #resultOverlay .modal{max-width:380px;text-align:center}
+  #resultOverlay lord-icon{width:120px;height:120px;margin:0 auto 6px}
+  #resultOverlay .r-emoji{font-size:46px;line-height:1;margin-bottom:4px;
+    display:block;animation:fxPop .5s cubic-bezier(.18,1.5,.5,1) both}
+  #resultOverlay h3{font-size:22px;margin:4px 0 6px}
+  #resultOverlay .r-score{font-size:15px;color:var(--muted);margin:0}
+  #resultOverlay h3.pass{color:var(--ok)}
+  #resultOverlay h3.fail{color:var(--bad)}
+  .fx-confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:60;
+    pointer-events:none;border-radius:2px;animation:fxFall linear forwards}
+  @keyframes fxFall{to{transform:translateY(105vh) rotate(640deg);opacity:.9}}
+</style>
+<style id="lord2-css">
+  header button lord-icon.hi{width:18px;height:18px;vertical-align:-4px;margin-right:5px}
+  .pause-box .big lord-icon{width:56px;height:56px}
+</style>
+
+<!--subject-breakdown-start-->
+<style id="subject-breakdown-css">
+  #resultOverlay .modal{max-width:720px;max-height:90vh;overflow-y:auto;text-align:center}
+  .subject-breakdown{margin-top:18px;text-align:left}
+  .subject-breakdown h4{margin:0 0 10px;font-size:15px;text-align:center}
+  .subject-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .subject-row{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+  .subject-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:12px}
+  .subject-name{font-weight:650;min-width:0}
+  .subject-score{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+  .subject-bar{height:6px;margin-top:7px;border-radius:999px;overflow:hidden;background:var(--line)}
+  .subject-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  @media(max-width:600px){.subject-grid{grid-template-columns:1fr}}
+
+  /* Subject label shown on each question after grading */
+  .question-subject{max-width:min(58vw,360px);overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;
+    letter-spacing:.01em;color:var(--accent2);background:color-mix(in srgb,var(--accent) 18%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent2) 42%,var(--line))}
+  @media(max-width:520px){.question-subject{max-width:52vw;font-size:10px;padding:3px 7px}}
+</style>
+<!--subject-breakdown-end-->
+
+<!--explanation-redesign-start-->
+<style id="explanation-redesign-css">
+  .expl{padding:0!important;white-space:normal!important;overflow:hidden;
+    background:color-mix(in srgb,var(--panel2) 82%,var(--panel))!important;
+    border:1px solid var(--line)!important;border-radius:14px!important}
+  .expl-shell{display:flex;flex-direction:column}
+  .expl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--panel));
+    border-bottom:1px solid var(--line)}
+  .expl-title{font-size:13px;font-weight:800;color:var(--txt)}
+  .expl-answer{flex:0 0 auto;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;
+    color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent);
+    border:1px solid color-mix(in srgb,var(--ok) 42%,var(--line))}
+  .expl-content{display:grid;gap:10px;padding:12px}
+  .expl-choice{padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
+  .expl-choice.is-correct{border-color:color-mix(in srgb,var(--ok) 56%,var(--line));
+    background:color-mix(in srgb,var(--okbg) 58%,var(--panel))}
+  .expl-choice-top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .expl-letter{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:7px;font-size:12px;font-weight:900;color:var(--muted);background:var(--panel2)}
+  .expl-choice.is-correct .expl-letter{color:#fff;background:var(--ok)}
+  .expl-state{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.045em;color:var(--muted)}
+  .expl-choice.is-correct .expl-state{color:var(--ok)}
+  .expl-option-copy{margin:0 0 8px;font-size:13px;font-weight:650;line-height:1.5;color:var(--txt)}
+  .expl-reason{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-note{padding:11px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+  .expl-note p{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-meta{display:grid;gap:5px;padding:10px 12px;border-radius:10px;
+    border:1px dashed color-mix(in srgb,var(--accent2) 50%,var(--line));
+    background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+  .expl-meta-row{display:flex;gap:7px;align-items:flex-start;font-size:12px;line-height:1.5;color:var(--muted)}
+  .expl-meta-row b{flex:0 0 auto;color:var(--accent2)}
+  @media(max-width:520px){
+    .expl-head{align-items:flex-start;padding:10px 11px}.expl-content{padding:9px;gap:8px}
+    .expl-choice{padding:10px}.expl-option-copy,.expl-reason,.expl-note p{font-size:12.5px}
+  }
+</style>
+<!--explanation-redesign-end-->
+<!--l2-vignette-start-->
+<style id="l2-css">
+  .stem .vig,.stem .qtext{white-space:normal}
+  .vig{border:1px solid var(--line);border-radius:12px;background:var(--panel2);margin:0 0 14px;overflow:hidden}
+  .vig>summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:13px;color:var(--muted);
+    list-style:none;display:flex;gap:8px;align-items:center;user-select:none}
+  .vig>summary::-webkit-details-marker{display:none}
+  .vig>summary::before{content:"▸";font-size:12px;transition:transform .15s}
+  .vig[open]>summary::before{transform:rotate(90deg)}
+  .vig>summary .vig-tag{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);
+    padding:2px 8px;border-radius:999px;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+  .vig>summary .vig-hint{margin-left:auto;font-weight:500;font-size:12px}
+  .vig[open]>summary .vig-hint{display:none}
+  .vig[open]>summary{border-bottom:1px solid var(--line)}
+  .vig-body{padding:12px 16px;max-height:62vh;overflow:auto;font-size:15px;line-height:1.65}
+  .vig-body p,.qtext p,.expl-html p{margin:0 0 10px}
+  .qtext{font-size:16px;line-height:1.65}
+  .tbl{overflow-x:auto;margin:6px 0 12px}
+  .tbl table{border-collapse:collapse;font-size:14px;line-height:1.45}
+  .tbl td,.tbl th{border:1px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top}
+  .tbl tr:first-child td,.tbl th{font-weight:600;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+  .pimg{display:block;margin:8px 0 12px;border-radius:8px;background:#fff;height:auto}
+  .expl-html{padding:14px 16px;line-height:1.65;font-size:14.5px}
+  .pp-topic{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.03em;color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 12%,transparent);padding:3px 10px;border-radius:999px;margin:0 0 10px}
+  .eimg{display:block;width:100%;max-width:900px;height:auto;border-radius:8px;background:#fff;margin:4px 0}
+  .qorig{margin:10px 0 0;font-size:12.5px;color:var(--muted)} .qorig summary{cursor:pointer}
+  .qorig img{display:block;max-width:100%;height:auto;margin-top:8px;border-radius:8px;background:#fff}
+  .kq-note{font-size:12.5px;line-height:1.5;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin:0 0 12px;background:var(--panel2)}
+  .pp-topic.set{color:#a855f7;background:color-mix(in srgb,#a855f7 12%,transparent)}
+</style>
+<script id="l2-js">
+function buildExplHtml(q){
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+q.ans;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content expl-html"; content.innerHTML=q.explhtml;
+  shell.appendChild(content); return shell;
+}
+</script>
+<!--l2-vignette-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='index.html#resume'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Làm lại</button>
+  <button id="submitBtn" class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big"><lord-icon src="https://cdn.lordicon.com/kbtmbyzy.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon></div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<div id="resultOverlay" class="overlay">
+  <div class="modal">
+    <span id="rEmoji" class="r-emoji">🎉</span>
+    <lord-icon id="rIcon" src="https://cdn.lordicon.com/lupuorrc.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon>
+    <h3 id="rTitle"></h3>
+    <p id="rScore" class="r-score"></p>
+
+    <!--subject-breakdown-panel-start-->
+    <div id="subjectBreakdown" class="subject-breakdown" aria-live="polite"></div>
+    <!--subject-breakdown-panel-end-->
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="document.getElementById('resultOverlay').classList.remove('show')">Xem lại bài</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Brendan Duval works as a research analyst for Toby Securities. Duval recommends changing a recommendation from \"sell\" to \"buy\" on Dalton Company. His firm, which manages several mutual funds, may be interested in buying Dalton's stock. He also manages the retirement account that his parents established with Toby. Duval wants to buy shares of Dalton's stock because it is an appropriate investment for his parent's retirement account and obtains approval from his employer to do so. Duval is also thinking about personally investing in Dalton stock. According to CFA Institute Standards of Professional Conduct, which of the following best describes the priority of transactions? Duval should give:", "opts": ["priority to Toby's clients and his employer concurrently, followed by his parent's retirement account, and finally his personal account.", "Toby's clients and his parent's account equal priority, followed by his employer, and then his personal account.", "priority of transactions to Toby's clients, followed by his employer, then his parent's retirement account, and finally his personal account."], "ans": "B", "expl": "According Standard VI(B) Priority of Transactions, Duval should give transactions for clients and employers priority over his personal transactions. Because his parent's retirement account represents a client account at Toby, Duval should treat this account just like any other firm account. His parent's retirement account should neither be given special treatment nor disadvantaged because of an existing family relationship with Duval. If Duval treats his parent's retirement account differently from other accounts at Toby, he would breach his fiduciary duty to his parents.", "explhtml": "<p>According Standard VI(B) Priority of Transactions, Duval should give transactions for clients and employers priority over his personal transactions. Because his parent&#x27;s retirement account represents a client account at Toby, Duval should treat this account just like any other firm account. His parent&#x27;s retirement account should neither be given special treatment nor disadvantaged because of an existing family relationship with Duval. If Duval treats his parent&#x27;s retirement account differently from other accounts at Toby, he would breach his fiduciary duty to his parents.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41.b<\/div><div class=\"qtext\"><p>Brendan Duval works as a research analyst for Toby Securities. Duval recommends changing a recommendation from &quot;sell&quot; to &quot;buy&quot; on Dalton Company. His firm, which manages several mutual funds, may be interested in buying Dalton&#x27;s stock. He also manages the retirement account that his parents established with Toby. Duval wants to buy shares of Dalton&#x27;s stock because it is an appropriate investment for his parent&#x27;s retirement account and obtains approval from his employer to do so. Duval is also thinking about personally investing in Dalton stock. According to CFA Institute Standards of Professional Conduct, which of the following best describes the priority of transactions? Duval should give:<\/p><\/div>", "subj": "ethics"}, {"n": 2, "q": "Chris Babcock, CFA, a portfolio manager for a large Texas investment firm, has been offered compensation in addition to what her firm pays her. The offer is from one of her clients and the additional compensation will be based on her yearly performance in excess of the market index. Babcock should:", "opts": ["make written disclosure to her other clients before she accepts this offer.", "make written disclosure to all parties involved before she accepts this offer.", "turn down the offer because it represents a clear conflict between this client and Babcock's other clients."], "ans": "B", "expl": "Standard IV(B), Additional Compensation Arrangements, applies in this situation. Standard IV(B) states, \"No gifts, benefits, compensation, or consideration are to be accepted with may create a conflict of interest with the employer's interest unless written consent is received from all parties.\" The key words here are \"written consent\" - members must obtain written consent because such arrangements may affect loyalties and objectivity and create potential conflicts of interest.", "explhtml": "<p>Standard IV(B), Additional Compensation Arrangements, applies in this situation. Standard IV(B) states, &quot;No gifts, benefits, compensation, or consideration are to be accepted with may create a conflict of interest with the employer&#x27;s interest unless written consent is received from all parties.&quot;<\/p><p>The key words here are &quot;written consent&quot; - members must obtain written consent because such arrangements may affect loyalties and objectivity and create potential conflicts of interest.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>Chris Babcock, CFA, a portfolio manager for a large Texas investment firm, has been offered compensation in addition to what her firm pays her. The offer is from one of her clients and the additional compensation will be based on her yearly performance in excess of the market index. Babcock should:<\/p><\/div>", "subj": "ethics"}, {"n": 3, "q": "Wanda Kirby, CFA, recently joined Allegheny Investments as a senior analyst. Because of her extensive experience in the investments business and knowledge of the Code and Standards, Allegheny's management asked her to assume supervisory responsibility. Kirby reviewed Allegheny's existing compliance system and determined that it was inadequate to allow her to clearly discharge her supervisory responsibility. According to CFA Institute Standards, Kirby should:", "opts": ["agree to accept supervisory responsibility provided that Allegheny adopts reasonable procedures to allow her to adequately exercise such responsibility.", "agree to accept supervisory responsibility and to develop reasonable procedures to allow her to adequately exercise such responsibility.", "decline in writing to accept supervisory responsibility until Allegheny adopts reasonable procedures to allow her to adequately exercise such responsibility."], "ans": "C", "expl": "If Kirby clearly cannot discharge supervisory responsibilities because of an inadequate compliance system, she should decline in writing to accept supervisory responsibility until Allegheny adopts reasonable procedures to allow her to adequately exercise such responsibility.", "explhtml": "<p>If Kirby clearly cannot discharge supervisory responsibilities because of an inadequate compliance system, she should decline in writing to accept supervisory responsibility until Allegheny adopts reasonable procedures to allow her to adequately exercise such responsibility.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(C)<\/div><div class=\"qtext\"><p>Wanda Kirby, CFA, recently joined Allegheny Investments as a senior analyst. Because of her extensive experience in the investments business and knowledge of the Code and Standards, Allegheny&#x27;s management asked her to assume supervisory responsibility. Kirby reviewed Allegheny&#x27;s existing compliance system and determined that it was inadequate to allow her to clearly discharge her supervisory responsibility. According to CFA Institute Standards, Kirby should:<\/p><\/div>", "subj": "ethics"}, {"n": 4, "q": "Which of the following statements regarding employee/employer relationships is NOT correct?", "opts": ["There must be monetary compensation for an employer/employee relationship to exist.", "A written contract may or may not exist between employer and employee.", "An employee is someone in the service of another."], "ans": "A", "expl": "Monetary compensation is not a requirement of the employee/employer relationship.", "explhtml": "<p>Monetary compensation is not a requirement of the employee/employer relationship.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Which of the following statements regarding employee/employer relationships is NOT correct?<\/p><\/div>", "subj": "ethics"}, {"n": 5, "q": "Martin Tripp, CFA, is vice-president of the equity department at Walker Financial, a large money management firm. Of the twenty analysts in his department for whom he has supervisory responsibility, eight are subject to CFA Institute Standards of Professional Conduct. Tripp believes that he cannot personally evaluate the conduct of the twenty analysts on a continuing basis. Therefore, he plans to delegate some of his supervisory duties to Sarah Green, who is subject to the Standards, and some to Bob Brown, who is not subject to the Standards. According to CFA Institute Standards of Professional Conduct, which of the following statements about Tripp's ability to delegate supervisory duties is most accurate?", "opts": ["Tripp may not delegate any of his supervisory duties to either Green or Brown.", "Tripp may delegate some or all of his supervisory duties only to Green because she is subject to the Standards.", "Tripp may delegate some or all of his supervisory duties to Brown, even though Brown is not subject to the Standards."], "ans": "C", "expl": "Standard IV(C) Responsibilities of Supervisors permits Tripp to delegate supervisory duties to Green, Brown, or both, but such delegation does not relieve Tripp of his supervisory responsibility.", "explhtml": "<p>Standard IV(C) Responsibilities of Supervisors permits Tripp to delegate supervisory duties to Green, Brown, or both, but such delegation does not relieve Tripp of his supervisory responsibility.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(C)<\/div><div class=\"qtext\"><p>Martin Tripp, CFA, is vice-president of the equity department at Walker Financial, a large money management firm. Of the twenty analysts in his department for whom he has supervisory responsibility, eight are subject to CFA Institute Standards of Professional Conduct. Tripp believes that he cannot personally evaluate the conduct of the twenty analysts on a continuing basis. Therefore, he plans to delegate some of his supervisory duties to Sarah Green, who is subject to the Standards, and some to Bob Brown, who is not subject to the Standards. According to CFA Institute Standards of Professional Conduct, which of the following statements about Tripp&#x27;s ability to delegate supervisory duties is most accurate?<\/p><\/div>", "subj": "ethics"}, {"n": 6, "q": "Which of the following statements is most correct concerning a member's obligation to his or her employer under the Code and Standards?", "opts": ["Members are prohibited from making arrangements or preparations to go into competitive business before terminating their relationship with their employer.", "Consent from the employer is necessary to permit independent practice that could result in compensation or other benefits in competition with the member's employer.", "Members are prohibited from undertaking independent practice in competition with their employer."], "ans": "B", "expl": "There is no blanket prohibition against independent practice in competition with a member's employer. The member must obtain permission from the employer. Members may make preparations to go into a competitive business, but may not solicit clients of the employer as long as members are still employed by the employer.", "explhtml": "<p>There is no blanket prohibition against independent practice in competition with a member&#x27;s employer. The member must obtain permission from the employer. Members may make preparations to go into a competitive business, but may not solicit clients of the employer as long as members are still employed by the employer.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Which of the following statements is most correct concerning a member&#x27;s obligation to his or her employer under the Code and Standards?<\/p><\/div>", "subj": "ethics"}, {"n": 7, "q": "An analyst belongs to a nationally recognized charitable organization, which requires dues for membership. The analyst has worked out a deal where he provides money management advice in lieu of paying dues. Which of the following must the analyst do?", "opts": ["Nothing since he is not an employee of the charitable organization.", "Must treat the charitable organization as his employer.", "Resign from the position because the relationship is a conflict with the Standards."], "ans": "B", "expl": "An employee/employer relationship does not necessarily mean monetary compensation for services. If the analyst is performing services for the organization, then the analyst must treat the position as if he were an employee.", "explhtml": "<p>An employee/employer relationship does not necessarily mean monetary compensation for services. If the analyst is performing services for the organization, then the analyst must treat the position as if he were an employee.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>An analyst belongs to a nationally recognized charitable organization, which requires dues for membership. The analyst has worked out a deal where he provides money management advice in lieu of paying dues. Which of the following must the analyst do?<\/p><\/div>", "subj": "ethics"}, {"n": 8, "q": "An analyst working at an investment firm has a client that rents limousines. The client tells the analyst that as long as he is the client's analyst, he can have free use of a limousine several times a year. The analyst needs to:", "opts": ["explicitly refuse such an offer.", "do nothing since the offer is not linked to the performance of the client's portfolio.", "inform his supervisor in writing of the offer if the analyst intends to accept the offer."], "ans": "C", "expl": "Standard IV(B) requires that members disclose to their employer in writing all benefits that they receive in addition to their regular compensation for services they perform on behalf of their employer. They also need to get consent from their employer in writing. The written report to the employer should include the details of any written or oral agreement for extra compensation. The analyst does not have to refuse the offer.", "explhtml": "<p>Standard IV(B) requires that members disclose to their employer in writing all benefits that they receive in addition to their regular compensation for services they perform on behalf of their employer. They also need to get consent from their employer in writing. The written report to the employer should include the details of any written or oral agreement for extra compensation. The analyst does not have to refuse the offer.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>An analyst working at an investment firm has a client that rents limousines. The client tells the analyst that as long as he is the client&#x27;s analyst, he can have free use of a limousine several times a year. The analyst needs to:<\/p><\/div>", "subj": "ethics"}, {"n": 9, "q": "Grant Starks, CFA, has been working for Advisors, Inc., for eight years. Starks is about to start his own money management business and has given his two-week notice of his resignation. A few days before his resignation takes effect, a current client of Advisors calls him at his office to inquire about some services for her account at Advisors. During the conversation, Starks tells the client that his new business will have lower commissions than Advisors. Starks has most likely violated the Standard concerning:", "opts": ["avoidance or disclosure of conflicts.", "communication with clients and prospective clients.", "loyalty."], "ans": "C", "expl": "Standard IV(A) Loyalty requires members and candidates who are leaving an employer to act in their employer's interest until their departure takes effect.", "explhtml": "<p>Standard IV(A) Loyalty requires members and candidates who are leaving an employer to act in their employer&#x27;s interest until their departure takes effect.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Grant Starks, CFA, has been working for Advisors, Inc., for eight years. Starks is about to start his own money management business and has given his two-week notice of his resignation. A few days before his resignation takes effect, a current client of Advisors calls him at his office to inquire about some services for her account at Advisors. During the conversation, Starks tells the client that his new business will have lower commissions than Advisors. Starks has most likely violated the Standard concerning:<\/p><\/div>", "subj": "ethics"}, {"n": 10, "q": "Janet Thompson, CFA, is employed as an analyst by Nationwide Securities. According to CFA Institute Standards of Professional Conduct, which of the following statements about Thompson's duty to Nationwide is NOT correct? Thompson must refrain from:", "opts": ["making arrangements to go into a competitive business before terminating her relationship with Nationwide.", "engaging in independent competitive activity that could conflict with the business of Nationwide unless she receives written consent.", "engaging in any conduct that would injure Nationwide."], "ans": "A", "expl": "Standard IV(A) permits Thompson to make preparations to go into a competitive business before terminating her relationship with Nationwide provided that such preparations do not breach her duty of loyalty.", "explhtml": "<p>Standard IV(A) permits Thompson to make preparations to go into a competitive business before terminating her relationship with Nationwide provided that such preparations do not breach her duty of loyalty.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Janet Thompson, CFA, is employed as an analyst by Nationwide Securities. According to CFA Institute Standards of Professional Conduct, which of the following statements about Thompson&#x27;s duty to Nationwide is NOT correct? Thompson must refrain from:<\/p><\/div>", "subj": "ethics"}, {"n": 11, "q": "Chuck Daniels has just been hired to manage a security analysis group for Aaron Asset Management. Daniels performed a similar function at another firm and finds the compliance system at Aaron inadequate. He develops a system that he feels is appropriate, but senior management tells him he will have to wait six months to implement the system. Daniels should:", "opts": ["decline in writing to accept supervisory responsibility until a satisfactory compliance system is put into place.", "protest in writing the delay, listing the potential dangers that can occur.", "resign his position immediately."], "ans": "A", "expl": "According to the Standard on supervisory responsibilities, Daniels should decline in writing to accept supervisory responsibility until a satisfactory compliance system is put into place. ", "explhtml": "<p>According to the Standard on supervisory responsibilities, Daniels should decline in writing to accept supervisory responsibility until a satisfactory compliance system is put into place. <\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41.b<\/div><div class=\"qtext\"><p>Chuck Daniels has just been hired to manage a security analysis group for Aaron Asset Management. Daniels performed a similar function at another firm and finds the compliance system at Aaron inadequate. He develops a system that he feels is appropriate, but senior management tells him he will have to wait six months to implement the system. Daniels should:<\/p><\/div>", "subj": "ethics"}, {"n": 12, "q": "Which of the following statements is most correct under the Code and Standards?", "opts": ["CFA Institute members are prohibited from undertaking independent practice in competition with their employer.", "Members are prohibited from making arrangements or preparations to go into competitive business before terminating their relationship with their employer.", "Consent from the employer is necessary to permit independent practice that could result in compensation or other benefits in competition with the member's employer."], "ans": "C", "expl": "Members are not prohibited from making arrangements or preparations to go into competitive business before terminating their relationship with their employer. CFA Institute members are not prohibited from undertaking independent practice in competition with their employer provided they have consent from their employer. Members must provide notification to their employer describing the types of services to be rendered, the expected duration, and compensation for the services.", "explhtml": "<p>Members are not prohibited from making arrangements or preparations to go into competitive business before terminating their relationship with their employer. CFA Institute members are not prohibited from undertaking independent practice in competition with their employer provided they have consent from their employer. Members must provide notification to their employer describing the types of services to be rendered, the expected duration, and compensation for the services.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Which of the following statements is most correct under the Code and Standards?<\/p><\/div>", "subj": "ethics"}, {"n": 13, "q": "Nancy Korthauer, CFA, has launched a new hedge fund called the Korthauer Tautology Fund but has had trouble hiring analysts who are CFA charterholders as well as with finding clients. She offers a $15,000 incentive bonus to any charterholder who joins the firm with over $1 million in committed client investments. Which of the following interpretations of the Code and Standards is most accurate?", "opts": ["A member or candidate may not solicit current clients away from their current employer.", "A member or candidate may arrange for current clients to switch to the Korthauer Tautology Fund provided clients are informed of the incentive bonus.", "A member or candidate may arrange for current clients to switch to the Korthauer Tautology Fund provided the member or candidate refuses to accept the incentive bonus."], "ans": "A", "expl": "A member or candidate may not solicit current clients away from their current employer under Standard IV(A) \"Loyalty.\"", "explhtml": "<p>A member or candidate may not solicit current clients away from their current employer under Standard IV(A) &quot;Loyalty.&quot;<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Nancy Korthauer, CFA, has launched a new hedge fund called the Korthauer Tautology Fund but has had trouble hiring analysts who are CFA charterholders as well as with finding clients. She offers a $15,000 incentive bonus to any charterholder who joins the firm with over $1 million in committed client investments. Which of the following interpretations of the Code and Standards is most accurate?<\/p><\/div>", "subj": "ethics"}, {"n": 14, "q": "David Saul, CFA, heads the trust department at Savage National Bank. Fairway Enterprises invites Saul to sit on its Board of Directors. In return for his services on the Board, Fairway offers to provide Saul and his family with access to the facilities at Wilmont Country Club at no cost. Saul will not receive any monetary compensation for his services on the Board. According to CFA Institute Standards of Professional Conduct, which of the following actions must Saul take?", "opts": ["Saul must obtain written consent from Savage Bank and Fairway Enterprises if he decides to accept the offer to serve on the Board of Directors.", "Saul must reject the offer to serve on the Board of Directors.", "Saul must disclose in writing to Savage Bank the terms of the offer whether or not he accepts the offer to serve on the Board of Directors."], "ans": "A", "expl": "Standard IV(B) requires that members obtain written consent from all parties involved before accepting monetary compensation or other benefits that they receive for their services that are in addition to compensation or benefits conferred by a member's employer. The phrase \"all parties\" is referring to Saul's employer and Fairway's Board of Directors.", "explhtml": "<p>Standard IV(B) requires that members obtain written consent from all parties involved before accepting monetary compensation or other benefits that they receive for their services that are in addition to compensation or benefits conferred by a member&#x27;s employer. The phrase &quot;all parties&quot; is referring to Saul&#x27;s employer and Fairway&#x27;s Board of Directors.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>David Saul, CFA, heads the trust department at Savage National Bank. Fairway Enterprises invites Saul to sit on its Board of Directors. In return for his services on the Board, Fairway offers to provide Saul and his family with access to the facilities at Wilmont Country Club at no cost. Saul will not receive any monetary compensation for his services on the Board. According to CFA Institute Standards of Professional Conduct, which of the following actions must Saul take?<\/p><\/div>", "subj": "ethics"}, {"n": 15, "q": "Michel Marchant, CFA, recently became an independent money manager. After six months, he has only ten clients. To supplement his income, Marchant accepted employment as an advisor at Middleton Financial Advisors. According to Standard IV(A) Loyalty, Marchant is required to:", "opts": ["attempt to bring his existing clients to Middleton.", "obtain permission from Middleton to continue his independent practice.", "inform his existing clients about his new employment at Middleton."], "ans": "B", "expl": "Because Marchant's independent practice may conflict with Middleton's interests, Standard IV(A) Loyalty requires that Marchant obtain permission from Middleton to continue it. Neither of the other choices describes a requirement of Standard IV(A).", "explhtml": "<p>Because Marchant&#x27;s independent practice may conflict with Middleton&#x27;s interests, Standard IV(A) Loyalty requires that Marchant obtain permission from Middleton to continue it. Neither of the other choices describes a requirement of Standard IV(A).<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Michel Marchant, CFA, recently became an independent money manager. After six months, he has only ten clients. To supplement his income, Marchant accepted employment as an advisor at Middleton Financial Advisors. According to Standard IV(A) Loyalty, Marchant is required to:<\/p><\/div>", "subj": "ethics"}, {"n": 16, "q": "Which of the following is a violation of the Code and Standards?", "opts": ["Taylor sends out a resume referring to himself as a Level II CFA candidate and indicating his intention to take the Level II test in June.", "Reynolds approves Montpier’s report on Circuit Secrets immediately, but tells his traders to wait a week before buying the stock themselves.", "James has dinner with Taylor and promises to provide Taylor with three weeks off in May to study for the CFA exam and offer some test-taking tips."], "ans": "B", "expl": "An immediate approval of Montpier's report implies that Reynolds did not check the facts or talk to Montpier about the recommendation, which was dependent on the use of insider information. Reynolds violated the Standard relating to supervisory responsibilities. Side work that is not in competition with the intern's firm is not a violation unless the side job interferes with her work for World Class. The statement on Taylor's resume is appropriate, and James' plans to help Taylor are well within the requirements of the Standards.", "explhtml": "<p>An immediate approval of Montpier&#x27;s report implies that Reynolds did not check the facts or talk to Montpier about the recommendation, which was dependent on the use of insider information. Reynolds violated the Standard relating to supervisory responsibilities. Side work that is not in competition with the intern&#x27;s firm is not a violation unless the side job interferes with her work for World Class. The statement on Taylor&#x27;s resume is appropriate, and James&#x27; plans to help Taylor are well within the requirements of the Standards.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 16–19<\/div> <div class=\"pp-topic\">Module 41.7, LOS 41.a<\/div><div class=\"kq-note\">Câu thuộc item set (câu 16–19). File đáp án Kaplan không kèm đoạn vignette/exhibit chung của case — một số số liệu chỉ xuất hiện trong phần giải thích.<\/div><div class=\"qtext\"><p>Which of the following is a violation of the Code and Standards?<\/p><\/div>", "subj": "ethics"}, {"n": 17, "q": "With regard to Standard VII(B)—Reference to CFA Institute, the CFA Designation, and the CFA Program:", "opts": ["neither Montpier nor Taylor is in compliance.", "both Montpier and Taylor are in compliance.", "only Taylor is in compliance."], "ans": "C", "expl": "Both Montpier, as a CFA charterholder, and Taylor, as a CFA candidate, are subject to the Standards. Montpier violated Standard VII(B) by exaggerating the implications of passing the exam in three years. Taylor's comments comply with the Standards.", "explhtml": "<p>Both Montpier, as a CFA charterholder, and Taylor, as a CFA candidate, are subject to the Standards. Montpier violated Standard VII(B) by exaggerating the implications of passing the exam in three years. Taylor&#x27;s comments comply with the Standards.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 16–19<\/div> <div class=\"pp-topic\">Module 41.1, LOS 41.a<\/div><div class=\"qtext\"><p>With regard to Standard VII(B)—Reference to CFA Institute, the CFA Designation, and the CFA Program:<\/p><\/div>", "subj": "ethics"}, {"n": 18, "q": "Which of the following statements regarding Standard IV(A)—Loyalty to Employer is CORRECT?", "opts": ["Neither Taylor nor Montpier is in violation of the Standard.", "By accepting compensation for his role in the medical study, Taylor is violating the Standard.", "Despite getting written permission from her client to consult, Montpier is not in compliance with the Standard."], "ans": "C", "expl": "Montpier needs to get permission from both the client and her employer before she can begin to consult; since she has not received permission from World Class, she is not in compliance. Neither Taylor's use of rivals' research nor his participation in a medical study violate the Standard. Standard IV(A) addresses outside income, not research methods. And while the medical-study payment is certainly income, it is not in competition with his firm, and as such does not violate the Standard.", "explhtml": "<p>Montpier needs to get permission from both the client and her employer before she can begin to consult; since she has not received permission from World Class, she is not in compliance. Neither Taylor&#x27;s use of rivals&#x27; research nor his participation in a medical study violate the Standard. Standard IV(A) addresses outside income, not research methods. And while the medical-study payment is certainly income, it is not in competition with his firm, and as such does not violate the Standard.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 16–19<\/div> <div class=\"pp-topic\">Module 41.7, LOS 41.a<\/div><div class=\"qtext\"><p>Which of the following statements regarding Standard IV(A)—Loyalty to Employer is CORRECT?<\/p><\/div>", "subj": "ethics"}, {"n": 19, "q": "Taylor's actions regarding Breakthrough Corp.:", "opts": ["violate Standard II(A)—Material Nonpublic Information because the information was not in the public domain.", "do not violate Standard II(A)—Material Nonpublic Information because he was only confirming what he already suspected.", "did not violate Standard I(D)—Misconduct because he did not misappropriate the information."], "ans": "A", "expl": "Taylor's use of the material nonpublic information provided to him in confidence by a researcher is a clear violation of Standard II(A). The professional-misconduct Standard prohibits actions that reflect negative on \"professional reputation, integrity, or competence.\" Since Taylor has signed a confidentiality agreement, his violation of the agreement definitely says something about his honesty. Thus, he is in violation of Standard I(D). Standard IV(A) only applies to work in competition with the employer.", "explhtml": "<p>Taylor&#x27;s use of the material nonpublic information provided to him in confidence by a researcher is a clear violation of Standard II(A). The professional-misconduct Standard prohibits actions that reflect negative on &quot;professional reputation, integrity, or competence.&quot; Since Taylor has signed a confidentiality agreement, his violation of the agreement definitely says something about his honesty. Thus, he is in violation of Standard I(D). Standard IV(A) only applies to work in competition with the employer.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 16–19<\/div> <div class=\"pp-topic\">Module 41.3, LOS 41.a<\/div><div class=\"qtext\"><p>Taylor&#x27;s actions regarding Breakthrough Corp.:<\/p><\/div>", "subj": "ethics"}, {"n": 20, "q": "Sue Parsons, CFA, works full-time as an investment advisor for the Malloy Group, an asset management firm. Parsons wants to engage in independent practice in which she would advise individual clients on their portfolios. She would conduct these investment activities only on weekends. She is currently only in the preparation stage and has not started independent practice yet. The Standard concerning loyalty:", "opts": ["requires Parsons to obtain consent from both Malloy and the persons from whom she will engage in independent practice.", "requires Parsons to notify Malloy that she is preparing to engage in independent practice.", "does not require Parsons to notify Malloy of preparing an independent practice."], "ans": "C", "expl": "Standard IV(A) Loyalty distinguishes between \"undertaking independent practice\" and preparing to begin doing so. The Standard requires that Parsons obtain consent from her employer before she engages in independent practice that could result in compensation or other benefit in competition with Malloy. It does not require Parsons to obtain consent when only preparing to go into independent practice.", "explhtml": "<p>Standard IV(A) Loyalty distinguishes between &quot;undertaking independent practice&quot; and preparing to begin doing so. The Standard requires that Parsons obtain consent from her employer before she engages in independent practice that could result in compensation or other benefit in competition with Malloy. It does not require Parsons to obtain consent when only preparing to go into independent practice.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Sue Parsons, CFA, works full-time as an investment advisor for the Malloy Group, an asset management firm. Parsons wants to engage in independent practice in which she would advise individual clients on their portfolios. She would conduct these investment activities only on weekends. She is currently only in the preparation stage and has not started independent practice yet. The Standard concerning loyalty:<\/p><\/div>", "subj": "ethics"}, {"n": 21, "q": "Bill Valley has been working for Advisors, Inc., for several years, and he just joined CFA Institute. Valley's sister just received a large bonus in the form of stock options in Zephyr, Inc. Valley's sister knows nothing about financial assets and offers Valley a week at her holiday home each year in exchange for Valley monitoring Zephyr and the value of her stock options. In order to comply with the Code and Standards, Valley needs to inform Advisors of:", "opts": ["both the use of the holiday home and his sister's options.", "nothing since no money is involved and it is a favor for a family member.", "the compensation in the form of the use of the holiday home only."], "ans": "A", "expl": "According to Standard IV(A), Loyalty to Employer, Valley must inform Advisors of his outside consultation even if it is not for monetary compensation. According to Standard VI(A), Avoid or Disclose Conflicts, Valley must also disclose possible conflicts of interest, and his sister's position qualifies.", "explhtml": "<p>According to Standard IV(A), Loyalty to Employer, Valley must inform Advisors of his outside consultation even if it is not for monetary compensation. According to Standard VI(A), Avoid or Disclose Conflicts, Valley must also disclose possible conflicts of interest, and his sister&#x27;s position qualifies.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Bill Valley has been working for Advisors, Inc., for several years, and he just joined CFA Institute. Valley&#x27;s sister just received a large bonus in the form of stock options in Zephyr, Inc. Valley&#x27;s sister knows nothing about financial assets and offers Valley a week at her holiday home each year in exchange for Valley monitoring Zephyr and the value of her stock options. In order to comply with the Code and Standards, Valley needs to inform Advisors of:<\/p><\/div>", "subj": "ethics"}, {"n": 22, "q": "Nick O'Donnell, CFA, unsuspectingly joins the research team at Wickett & Co., an investment banking firm controlled by organized crime. None of the managers at Wickett are CFA Institute members. Because of his tenuous situation at Wickett, O'Donnell begins making preparations for independent practice. He knows he will be terminated if he informs management at Wickett that he is preparing to leave. Consequently, he determines that \"if he can just hang on for one year, he will likely have a client base sufficient for him to strike out on his own.\" This action is:", "opts": ["not a violation of his duty to employer.", "a violation of his duty to disclose conflicts to his employer.", "a violation of his fiduciary duties."], "ans": "A", "expl": "O'Donnell is required to obtain consent from his employer if he is attempting to practice in competition with his employer. Merely undertaking preparations to leave, which do not violate a duty, is not a violation of the Code and Standards.", "explhtml": "<p>O&#x27;Donnell is required to obtain consent from his employer if he is attempting to practice in competition with his employer. Merely undertaking preparations to leave, which do not violate a duty, is not a violation of the Code and Standards.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Nick O&#x27;Donnell, CFA, unsuspectingly joins the research team at Wickett &amp; Co., an investment banking firm controlled by organized crime. None of the managers at Wickett are CFA Institute members. Because of his tenuous situation at Wickett, O&#x27;Donnell begins making preparations for independent practice. He knows he will be terminated if he informs management at Wickett that he is preparing to leave. Consequently, he determines that &quot;if he can just hang on for one year, he will likely have a client base sufficient for him to strike out on his own.&quot; This action is:<\/p><\/div>", "subj": "ethics"}, {"n": 23, "q": "An analyst belongs to a nationally recognized charitable organization, which requires dues for membership. The analyst has worked out a deal that he provides money management advice in lieu of paying dues. For this arrangement to comply with the standards, the analyst needs consent from:", "opts": ["both his supervisor in the organization and his regular place of work.", "his supervisor in his regular place of work only.", "his supervisor in the organization only."], "ans": "A", "expl": "An employee/employer relationship does not necessarily mean monetary compensation for services. If the analyst is performing services for the organization, then the analyst must treat the position as if he were an employee and obtain consent from both his supervisor in the organization and in his regular place of work.", "explhtml": "<p>An employee/employer relationship does not necessarily mean monetary compensation for services. If the analyst is performing services for the organization, then the analyst must treat the position as if he were an employee and obtain consent from both his supervisor in the organization and in his regular place of work.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>An analyst belongs to a nationally recognized charitable organization, which requires dues for membership. The analyst has worked out a deal that he provides money management advice in lieu of paying dues. For this arrangement to comply with the standards, the analyst needs consent from:<\/p><\/div>", "subj": "ethics"}, {"n": 24, "q": "Marc Feldman, a CFA Institute member, is treasurer of zippy.com, and is also Larry Goldman's boss. Feldman is informed of \"accounting irregularities of an unknown origin\" during an audit by zippy's external accounting firm. There are 3 individuals, including Goldman, handling the accounting function. According to the Code and Standards, Feldman should do all of the following EXCEPT:", "opts": ["leave the staff in their current jobs and increase supervision while the external auditors complete their work.", "conduct a thorough investigation of activities.", "terminate the accounting staff immediately and issue a press release describing the situation."], "ans": "C", "expl": "Standard IV(C) spells out responsibilities of supervisors in the Standards of Practice Handbook. Since the investigation is ongoing, it would clearly be inappropriate to terminate the entire accounting staff until their complicity in the wrongdoing is established.", "explhtml": "<p>Standard IV(C) spells out responsibilities of supervisors in the Standards of Practice Handbook. Since the investigation is ongoing, it would clearly be inappropriate to terminate the entire accounting staff until their complicity in the wrongdoing is established.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41.a<\/div><div class=\"qtext\"><p>Marc Feldman, a CFA Institute member, is treasurer of zippy.com, and is also Larry Goldman&#x27;s boss. Feldman is informed of &quot;accounting irregularities of an unknown origin&quot; during an audit by zippy&#x27;s external accounting firm. There are 3 individuals, including Goldman, handling the accounting function. According to the Code and Standards, Feldman should do all of the following EXCEPT:<\/p><\/div>", "subj": "ethics"}, {"n": 25, "q": "Karen Dalby, CFA, volunteers on her church's finance board but receives no cash compensation so she does not report the arrangement to her employer. Board compensation is limited to an annual retreat to Hawaii, but the accommodations are modest. Dalby does not enjoy the retreat and often considers skipping the event entirely. Dalby is most likely:", "opts": ["in violation of Standard IV(B) \"Additional Compensation Arrangements.\"", "in violation of Standard IV(A) \"Loyalty.\"", "not in violation of the Code and Standards."], "ans": "A", "expl": "Dalby is in violation of Standard IV(B) \"Additional Compensation Arrangements.\" Nonmonetary compensation may still create a conflict of interest.", "explhtml": "<p>Dalby is in violation of Standard IV(B) &quot;Additional Compensation Arrangements.&quot; Nonmonetary compensation may still create a conflict of interest.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>Karen Dalby, CFA, volunteers on her church&#x27;s finance board but receives no cash compensation so she does not report the arrangement to her employer. Board compensation is limited to an annual retreat to Hawaii, but the accommodations are modest. Dalby does not enjoy the retreat and often considers skipping the event entirely. Dalby is most likely:<\/p><\/div>", "subj": "ethics"}, {"n": 26, "q": "Jess Green, CFA, is the research director for Castle Investment, Inc., and has supervisory responsibility over eight analysts, including three CFA charterholders. Castle has a compliance program in place. According to CFA Institute Standards of Professional Conduct, which of the following is least likely an action that Green should take to adhere to the compliance procedures involving responsibilities of supervisors? Green should:", "opts": ["issue periodic reminders of the procedures to all analysts under his supervision.", "disseminate the contents of the compliance program to the eight analysts.", "incorporate a professional conduct evaluation as part of the performance review only for the three CFA charterholders."], "ans": "C", "expl": "Green should incorporate a professional conduct evaluation as part of his review of all eight analysts under his supervision, not just the three CFA charterholders.", "explhtml": "<p>Green should incorporate a professional conduct evaluation as part of his review of all eight analysts under his supervision, not just the three CFA charterholders.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(C)<\/div><div class=\"qtext\"><p>Jess Green, CFA, is the research director for Castle Investment, Inc., and has supervisory responsibility over eight analysts, including three CFA charterholders. Castle has a compliance program in place. According to CFA Institute Standards of Professional Conduct, which of the following is least likely an action that Green should take to adhere to the compliance procedures involving responsibilities of supervisors? Green should:<\/p><\/div>", "subj": "ethics"}, {"n": 27, "q": "Pamela Gee is a portfolio manager. She is planning to establish her own money management firm. She has already informed her employer, Branford, Inc., about her plans. In her remaining time at Branford, she may:", "opts": ["start the registration of her new company.", "solicit Branford colleagues but not Branford clients.", "inform her current clients about her resignation and let them know how to reach her."], "ans": "A", "expl": "—", "explhtml": "<p>(Không có giải thích trong file gốc.)<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Pamela Gee is a portfolio manager. She is planning to establish her own money management firm. She has already informed her employer, Branford, Inc., about her plans. In her remaining time at Branford, she may:<\/p><\/div>", "subj": "ethics"}, {"n": 28, "q": "A firm recently hired Hal Crane, CFA, to be a supervisor in the firm. Crane has reviewed the procedures for complying with the Code and Standards in the company. It is Crane's belief that the procedures need revision in order to be effective. Crane must:", "opts": ["make reasonable efforts to encourage the company to adopt an adequate compliance system.", "exercise his supervisory responsibilities with the greater level of diligence required by the Code and Standards.", "decline supervisory responsibilities in writing until the company adopts an adequate compliance system."], "ans": "C", "expl": "According to Standard IV(C) Responsibilities of Supervisors, if Crane believes the company's compliance procedures are not adequate, Crane should decline supervisory responsibilities in writing until an adequate system is adopted.", "explhtml": "<p>According to Standard IV(C) Responsibilities of Supervisors, if Crane believes the company&#x27;s compliance procedures are not adequate, Crane should decline supervisory responsibilities in writing until an adequate system is adopted.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(C)<\/div><div class=\"qtext\"><p>A firm recently hired Hal Crane, CFA, to be a supervisor in the firm. Crane has reviewed the procedures for complying with the Code and Standards in the company. It is Crane&#x27;s belief that the procedures need revision in order to be effective. Crane must:<\/p><\/div>", "subj": "ethics"}, {"n": 29, "q": "A CFA Institute member, undertaking independent practice that could result in compensation or other benefit:", "opts": ["must notify his employer and clients of the types of service to be rendered and the expected compensation.", "must notify the entities for whom he plans to undertake independent practice of the compensation he receives from his employer.", "must notify his employer of the types of service to be rendered, the expected duration, and the expected compensation."], "ans": "C", "expl": "According to Standard IV(A), Loyalty to Employer, a CFA Institute member, undertaking independent practice that could result in compensation or other benefit, must notify his employer of the types of service to be rendered, the expected duration, and the expected compensation.", "explhtml": "<p>According to Standard IV(A), Loyalty to Employer, a CFA Institute member, undertaking independent practice that could result in compensation or other benefit, must notify his employer of the types of service to be rendered, the expected duration, and the expected compensation.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>A CFA Institute member, undertaking independent practice that could result in compensation or other benefit:<\/p><\/div>", "subj": "ethics"}, {"n": 30, "q": "John Hill, CFA, has been working for Advisors, Inc., for eight years. Hill is about to start his own money management business and has given his two weeks' notice of his resignation from Advisors. A few days before his resignation takes effect, Rod Bright, a former client of Advisors, calls Hill at his home about his new firm. Bright says that he is very happy that Hill is leaving Advisors because now he and Hill can resume a professional relationship. Bright says that he would never become a client of Advisors again. Hill promises to call Bright back after he has left Advisors but takes no further action. Hill does not tell Advisors about the call. Hill has most likely:", "opts": ["not violated the Standards.", "violated the Standard concerning avoidance or disclosure of conflicts.", "violated the Standard concerning loyalty to employer."], "ans": "A", "expl": "Based on the information here, Hill has not violated the Standards. The phone call was not with a current client of Advisors, and the individual made it clear that he would not become a client of Advisors. Therefore, there was no breach of loyalty to Advisors by Hill for not acting in his employer's interests, nor is there a conflict of interest.", "explhtml": "<p>Based on the information here, Hill has not violated the Standards. The phone call was not with a current client of Advisors, and the individual made it clear that he would not become a client of Advisors. Therefore, there was no breach of loyalty to Advisors by Hill for not acting in his employer&#x27;s interests, nor is there a conflict of interest.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>John Hill, CFA, has been working for Advisors, Inc., for eight years. Hill is about to start his own money management business and has given his two weeks&#x27; notice of his resignation from Advisors. A few days before his resignation takes effect, Rod Bright, a former client of Advisors, calls Hill at his home about his new firm. Bright says that he is very happy that Hill is leaving Advisors because now he and Hill can resume a professional relationship. Bright says that he would never become a client of Advisors again. Hill promises to call Bright back after he has left Advisors but takes no further action. Hill does not tell Advisors about the call. Hill has most likely:<\/p><\/div>", "subj": "ethics"}, {"n": 31, "q": "Fernando Abrea, CFA was an analyst for Pacific Investments. In October he left Pacific and joined Global Securities as manager of a local office. Abrea's change of employment came about in the following manner: In April, Abrea contacted Global about a possible position he saw advertised in a financial publication and had exploratory meetings with Global. In July, Abrea submitted a strategic plan to Global and signed an agreement to join Global. He then contracted for office space on behalf of Global. On October 15, Abrea's resignation from Pacific became effective. He did not take any client lists from Pacific. On October 16, Abrea mailed a letter that explained his new undertaking with Global to prospective clients, including his former clients at Pacific. With respect to Standard IV(A) Loyalty, Abrea:", "opts": ["violated the Standard by contacting his former clients at Pacific.", "violated the Standard by contracting for office space on behalf of Global.", "did not violate the Standard."], "ans": "C", "expl": "According to Standard IV(A) Loyalty, preparations to leave employment are not prohibited. Even though Abrea engaged in significant preparatory activities prior to beginning his new venture, none of these actions suggest Abrea did not continue to act in Pacific's interests while he was employed by Pacific. Abrea may contact his former clients on behalf of Global after his employment by Pacific has officially ended, as long as he did not misappropriate their contact information from Pacific.", "explhtml": "<p>According to Standard IV(A) Loyalty, preparations to leave employment are not prohibited. Even though Abrea engaged in significant preparatory activities prior to beginning his new venture, none of these actions suggest Abrea did not continue to act in Pacific&#x27;s interests while he was employed by Pacific. Abrea may contact his former clients on behalf of Global after his employment by Pacific has officially ended, as long as he did not misappropriate their contact information from Pacific.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Fernando Abrea, CFA was an analyst for Pacific Investments. In October he left Pacific and joined Global Securities as manager of a local office. Abrea&#x27;s change of employment came about in the following manner:<\/p><p>In April, Abrea contacted Global about a possible position he saw advertised in a financial publication and had exploratory meetings with Global. In July, Abrea submitted a strategic plan to Global and signed an agreement to join Global. He then contracted for office space on behalf of Global. On October 15, Abrea&#x27;s resignation from Pacific became effective. He did not take any client lists from Pacific. On October 16, Abrea mailed a letter that explained his new undertaking with Global to prospective clients, including his former clients at Pacific.<\/p><p>With respect to Standard IV(A) Loyalty, Abrea:<\/p><\/div>", "subj": "ethics"}, {"n": 32, "q": "Regarding the Paris trip, Lindquist:", "opts": ["can accept the gift if he determines, in consultation with his employer, that accepting the gift would not compromise his objectivity.", "cannot accept the gift under any circumstances.", "cannot accept the gift without disclosing it to his employer."], "ans": "B", "expl": "According to Standard I(B) concerning independence and objectivity, Lindquist cannot accept gifts that reasonably could be expected to compromise his independence and objectivity. Acceptance of such a gift would call into question his independence and objectivity; his first obligation is to his clients, not to Boston and Co.", "explhtml": "<p>According to Standard I(B) concerning independence and objectivity, Lindquist cannot accept gifts that reasonably could be expected to compromise his independence and objectivity. Acceptance of such a gift would call into question his independence and objectivity; his first obligation is to his clients, not to Boston and Co.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–37<\/div> <div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"kq-note\">Câu thuộc item set (câu 32–37). File đáp án Kaplan không kèm đoạn vignette/exhibit chung của case — một số số liệu chỉ xuất hiện trong phần giải thích.<\/div><div class=\"qtext\"><p>Regarding the Paris trip, Lindquist:<\/p><\/div>", "subj": "ethics"}, {"n": 33, "q": "With regard to the Chandler portfolio, Lindquist violated:", "opts": ["Standard III(A): Loyalty, Prudence, and Care, but not Standard I(D): Misconduct.", "neither Standard III(C): Suitability, nor Standard III(A): Loyalty, Prudence, and Care.", "Standard III(C): Suitability, but not Standard III(A): Loyalty, Prudence, and Care."], "ans": "B", "expl": "Lindquist's actions conform to Standard III(C): Suitability, Standard V(A): Diligence and Reasonable Basis, and Standard III(A): Loyalty, Prudence, and Care. Lindquist must take into account the risk level of the portfolio in its entirety, not individual securities within the portfolio. Although purchasing index put options is, by itself, inherently risky, in the context of a diversified portfolio it may well conform to a conservative client's risk tolerance by hedging some of the risk of owning equities. Lindquist may rightly determine that such a strategy is consistent with Chandler's investment policy statement. If properly constructed originally and properly explained to the client, no change in the investment policy statement is needed.", "explhtml": "<p>Lindquist&#x27;s actions conform to Standard III(C): Suitability, Standard V(A): Diligence and Reasonable Basis, and Standard III(A): Loyalty, Prudence, and Care. Lindquist must take into account the risk level of the portfolio in its entirety, not individual securities within the portfolio. Although purchasing index put options is, by itself, inherently risky, in the context of a diversified portfolio it may well conform to a conservative client&#x27;s risk tolerance by hedging some of the risk of owning equities. Lindquist may rightly determine that such a strategy is consistent with Chandler&#x27;s investment policy statement. If properly constructed originally and properly explained to the client, no change in the investment policy statement is needed.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–37<\/div> <div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>With regard to the Chandler portfolio, Lindquist violated:<\/p><\/div>", "subj": "ethics"}, {"n": 34, "q": "With regard to Lindquist's seat on the board of Western Inns, he violated:", "opts": ["Standard VI(A): Disclosure of Conflicts, but not Standard IV(B): Additional Compensation Arrangements.", "no standards.", "Standard VI(A): Disclosure of Conflicts, and Standard IV(B): Additional Compensation Arrangements."], "ans": "C", "expl": "Under Standard IV(B), Lindquist is required to disclose in writing to his employer any benefits (monetary or non-monetary) he receives for services that are in addition to compensation or benefits provided by his employer. An informal discussion with his supervisor does not conform to the requirement that the notice be in writing. Under Standard VI(A), he is also required to disclose the arrangement to his clients because a directorship is a conflict of interest that could reasonably be expected to impair his objectivity. He must do so even if he currently holds no shares of Western in his clients' portfolios because it may impair his objectivity in recommending the stock for inclusion in clients' portfolios in the future. Lindquist violated Standard I(B) because clients could reasonably assume his objectivity is in question.", "explhtml": "<p>Under Standard IV(B), Lindquist is required to disclose in writing to his employer any benefits (monetary or non-monetary) he receives for services that are in addition to compensation or benefits provided by his employer. An informal discussion with his supervisor does not conform to the requirement that the notice be in writing. Under Standard VI(A), he is also required to disclose the arrangement to his clients because a directorship is a conflict of interest that could reasonably be expected to impair his objectivity. He must do so even if he currently holds no shares of Western in his clients&#x27; portfolios because it may impair his objectivity in recommending the stock for inclusion in clients&#x27; portfolios in the future. Lindquist violated Standard I(B) because clients could reasonably assume his objectivity is in question.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–37<\/div> <div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>With regard to Lindquist&#x27;s seat on the board of Western Inns, he violated:<\/p><\/div>", "subj": "ethics"}, {"n": 35, "q": "Which of the following standards is most likely violated in Lindquist's use of his experimental version of the Midwestern model?", "opts": ["Standard IV(C): Responsibilities of Supervisors.", "Standard I(C): Misrepresentation (plagiarism).", "Standard V(A): Diligence and Reasonable Basis."], "ans": "C", "expl": "Lindquist's experimental model is not part of the formal research process and has not been adequately researched or tested. So, Lindquist does not have a reasonable basis for his recommendations. Lindquist's supervisor is required to make reasonable efforts to detect and prevent violations of applicable laws and the Code and Standards, but cannot be held responsible for all of Lindquist's actions when there is deliberate deceit involved. Plagiarism is not relevant here, because Lindquist has permission to use the model, and is not misrepresenting the work of others as his own work.", "explhtml": "<p>Lindquist&#x27;s experimental model is not part of the formal research process and has not been adequately researched or tested. So, Lindquist does not have a reasonable basis for his recommendations. Lindquist&#x27;s supervisor is required to make reasonable efforts to detect and prevent violations of applicable laws and the Code and Standards, but cannot be held responsible for all of Lindquist&#x27;s actions when there is deliberate deceit involved. Plagiarism is not relevant here, because Lindquist has permission to use the model, and is not misrepresenting the work of others as his own work.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–37<\/div> <div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>Which of the following standards is most likely violated in Lindquist&#x27;s use of his experimental version of the Midwestern model?<\/p><\/div>", "subj": "ethics"}, {"n": 36, "q": "Lindquist's actions in advertising his investment performance:", "opts": ["conform to standards concerning performance presentation as long as Lindquist does not claim compliance with CFA Institute Global Investment Performance Standards.", "conform to all standards.", "violate Standard III(D): Performance Presentation."], "ans": "C", "expl": "Lindquist failed to conform to Standard III(D) by releasing misleading information concerning his historical performance at Midwestern. KMGR may use a different management style than Midwestern, rendering historical performance of little value to Midwestern clients. Claiming compliance with CFA Institute GIPS would only compound the problem. Misrepresenting performance results as occurring at one firm when they actually occurred at a previous employer is a violation of the presentation standards.", "explhtml": "<p>Lindquist failed to conform to Standard III(D) by releasing misleading information concerning his historical performance at Midwestern. KMGR may use a different management style than Midwestern, rendering historical performance of little value to Midwestern clients. Claiming compliance with CFA Institute GIPS would only compound the problem. Misrepresenting performance results as occurring at one firm when they actually occurred at a previous employer is a violation of the presentation standards.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–37<\/div> <div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>Lindquist&#x27;s actions in advertising his investment performance:<\/p><\/div>", "subj": "ethics"}, {"n": 37, "q": "Regarding the NCAA tickets, what action must Lindquist take to avoid a violation of Standard I(B): Independence and Objectivity?", "opts": ["Informing his employer is sufficient.", "Obtain written consent from all parties involved.", "Disclose his receipt of the tickets to all other clients with the same investment objective as the Olson account."], "ans": "A", "expl": "Lindquist may accept this gift from a client for past performance as long as he informs his employer.", "explhtml": "<p>Lindquist may accept this gift from a client for past performance as long as he informs his employer.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–37<\/div> <div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>Regarding the NCAA tickets, what action must Lindquist take to avoid a violation of Standard I(B): Independence and Objectivity?<\/p><\/div>", "subj": "ethics"}, {"n": 38, "q": "Marc Feldman, CFA, is manager of corporate investor relations for a high-tech startup, zippy.com, in Boise, Idaho. Feldman is well-known in the high tech community in Boise, and Dragon.com has asked if he will help them organize their investor relations function on a consulting basis. They offer him an all-expenses-paid two-week holiday for two on Australia's Gold Coast in payment. Regarding this offer as a CFA Institute member Feldman is:", "opts": ["not allowed to accept such an offer since it effectively places him in competition with his employer.", "allowed to accept the offer only with written approval from zippy and from Dragon.", "allowed to accept the offer only with written approval from zippy."], "ans": "B", "expl": "Under Standard IV(A) Loyalty to Employer, and Standard IV(B) Additional Compensation Arrangements, Feldman is allowed to accept the offer, but only with written permission from both zippy and Dragon.", "explhtml": "<p>Under Standard IV(A) Loyalty to Employer, and Standard IV(B) Additional Compensation Arrangements, Feldman is allowed to accept the offer, but only with written permission from both zippy and Dragon.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41.a<\/div><div class=\"qtext\"><p>Marc Feldman, CFA, is manager of corporate investor relations for a high-tech startup, zippy.com, in Boise, Idaho. Feldman is well-known in the high tech community in Boise, and Dragon.com has asked if he will help them organize their investor relations function on a consulting basis. They offer him an all-expenses-paid two-week holiday for two on Australia&#x27;s Gold Coast in payment. Regarding this offer as a CFA Institute member Feldman is:<\/p><\/div>", "subj": "ethics"}, {"n": 39, "q": "Which of the following statements is most accurate about the Standard concerning the responsibilities of supervisors?", "opts": ["If a supervisor does not make a reasonable effort to detect violations, she is in violation of the Standard even if no violations by her subordinates have occurred.", "If a subordinate violates a securities law, her supervisor is in violation of the Standard.", "If a supervisor makes a reasonable effort to detect violations, but fails to detect a violation that occurs, she has violated the Standard."], "ans": "A", "expl": "Standard IV(C) Responsibilities of Supervisors requires members to make a reasonable effort to detect and prevent violations by their subordinates of applicable laws, regulations, and rules. Violations by subordinates do not necessarily mean the supervisor has violated this Standard if the supervisor has made reasonable efforts to detect and prevent violations", "explhtml": "<p>Standard IV(C) Responsibilities of Supervisors requires members to make a reasonable effort to detect and prevent violations by their subordinates of applicable laws, regulations, and rules. Violations by subordinates do not necessarily mean the supervisor has violated this Standard if the supervisor has made reasonable efforts to detect and prevent violations<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(C)<\/div><div class=\"qtext\"><p>Which of the following statements is most accurate about the Standard concerning the responsibilities of supervisors?<\/p><\/div>", "subj": "ethics"}, {"n": 40, "q": "Bill Fence, CFA, supervises a group of research analysts, none of whom have earned the CFA designation (nor are they CFA candidates). On several occasions he has attempted to get his firm to adopt a compliance system to ensure that applicable laws and regulations are followed. However, the firm's principals have never adopted his recommendations. Fence should most appropriately:", "opts": ["take no further action, because by encouraging his firm to adopt a compliance system he has fulfilled his obligations under the Code and Standards.", "refuse supervisory responsibility.", "report the inadequacy by submitting a complaint in writing to the CFA Institute Professional Conduct Program."], "ans": "B", "expl": "According to Standard IV(C), Responsibilities of Supervisors, if the member cannot discharge supervisory responsibilities because of a poor or nonexistent compliance system, the member should decline in writing to accept supervisory responsibility until the firm adopts an adequate system.", "explhtml": "<p>According to Standard IV(C), Responsibilities of Supervisors, if the member cannot discharge supervisory responsibilities because of a poor or nonexistent compliance system, the member should decline in writing to accept supervisory responsibility until the firm adopts an adequate system.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(C)<\/div><div class=\"qtext\"><p>Bill Fence, CFA, supervises a group of research analysts, none of whom have earned the CFA designation (nor are they CFA candidates). On several occasions he has attempted to get his firm to adopt a compliance system to ensure that applicable laws and regulations are followed. However, the firm&#x27;s principals have never adopted his recommendations. Fence should most appropriately:<\/p><\/div>", "subj": "ethics"}, {"n": 41, "q": "Sharon West is a CFA charterholder and trust officer for REO Trust Company. Soon after beginning work for REO, West finds that REO has been conducting all its securities transactions through her brother who is a registered representative. West's brother charges REO commissions that are equal to the lowest available from another broker. West's brother tells her that if she continues doing business with him, he will give her a substantial discount on all personal transactions she conducts through him. West:", "opts": ["must reject the arrangement.", "does not need to inform her employer of the arrangement because the commissions her brother charges the firm are the lowest available.", "must inform her employer of the arrangement because it provides her with additional compensation."], "ans": "C", "expl": "Members are required to disclose to their employer in writing all monetary compensation or other benefit they receive from clients or third parties in addition to the employer's compensation, and obtain the employer's permission for such arrangements.", "explhtml": "<p>Members are required to disclose to their employer in writing all monetary compensation or other benefit they receive from clients or third parties in addition to the employer&#x27;s compensation, and obtain the employer&#x27;s permission for such arrangements.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>Sharon West is a CFA charterholder and trust officer for REO Trust Company. Soon after beginning work for REO, West finds that REO has been conducting all its securities transactions through her brother who is a registered representative. West&#x27;s brother charges REO commissions that are equal to the lowest available from another broker. West&#x27;s brother tells her that if she continues doing business with him, he will give her a substantial discount on all personal transactions she conducts through him. West:<\/p><\/div>", "subj": "ethics"}, {"n": 42, "q": "Brian Bellow, CFA, is a portfolio manager for Progressive Trust Company. Several friends have asked Bellow to review their investment portfolios. On his own time, Bellow examines their portfolios and makes several recommendations. He accepts no compensation from his friends for his investment advice. According to CFA Institute Standards of Professional Conduct, did Bellow violate his duty to Progressive Trust?", "opts": ["Yes, because Bellow did not attempt to solicit his friends to become clients of his employer.", "No, because Bellow received no compensation for his services.", "No, because Bellow provided no ongoing investment advice."], "ans": "B", "expl": "Standard IV(A) Loyalty requires members and candidates to disclose to their employers any independent practice for compensation. In this case, Bellow did not receive any compensation for his advice and therefore did not engage in independent practice.", "explhtml": "<p>Standard IV(A) Loyalty requires members and candidates to disclose to their employers any independent practice for compensation. In this case, Bellow did not receive any compensation for his advice and therefore did not engage in independent practice.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Brian Bellow, CFA, is a portfolio manager for Progressive Trust Company. Several friends have asked Bellow to review their investment portfolios. On his own time, Bellow examines their portfolios and makes several recommendations. He accepts no compensation from his friends for his investment advice. According to CFA Institute Standards of Professional Conduct, did Bellow violate his duty to Progressive Trust?<\/p><\/div>", "subj": "ethics"}, {"n": 43, "q": "John Hill, CFA, has been working for Advisors, Inc., for eight years. Hill is about to start his own money management business and has given his two-week notice of his resignation from Advisors. A few days before his resignation takes effect, on his lunch hour, he takes out a loan from a bank on behalf of his new business and uses the money to buy some office equipment for his new business. Since he engaged in these transactions while still an employee of Advisors, Hill violated Standard IV(A), Loyalty to Employer, by:", "opts": ["preparing to undertake independent practice before giving notice to his current employer of his intent to resign.", "neither taking out the loan nor buying the equipment.", "breaching his duty of loyalty to his current employer by making preparations to go into a competitive business."], "ans": "B", "expl": "The Standards of Practice under IV(A) states that a departing employee is \"generally free to make arrangements or preparations to go into a competitive business before terminating the relationship with the employee's employer provided that such preparations do not breach the employee's duty of loyalty.\" Neither of these actions are in conflict with the interests of Advisors, and Hill performed them on his own time.", "explhtml": "<p>The Standards of Practice under IV(A) states that a departing employee is &quot;generally free to make arrangements or preparations to go into a competitive business before terminating the relationship with the employee&#x27;s employer provided that such preparations do not breach the employee&#x27;s duty of loyalty.&quot; Neither of these actions are in conflict with the interests of Advisors, and Hill performed them on his own time.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>John Hill, CFA, has been working for Advisors, Inc., for eight years. Hill is about to start his own money management business and has given his two-week notice of his resignation from Advisors. A few days before his resignation takes effect, on his lunch hour, he takes out a loan from a bank on behalf of his new business and uses the money to buy some office equipment for his new business. Since he engaged in these transactions while still an employee of Advisors, Hill violated Standard IV(A), Loyalty to Employer, by:<\/p><\/div>", "subj": "ethics"}, {"n": 44, "q": "Dave Kline, CFA, is a personal investment advisor with 200 individual, family, and corporate accounts. After a dispute with a coworker on margin policy, he formally resigns his position by giving suitable notice. However, he does not follow his firm's established \"Transition and Exit Policies\" regarding his accounts. The firm's stated policies require him to notify each client of his planned departure and personally introduce them to their new account representative, Greg Potter. Kline sees Potter as a rival and states \"...let Potter do his own work and find his own clients.\" Kline is most likely:", "opts": ["in violation of Standard IV(A) \"Loyalty\" for failing to follow the employer’s policies and procedures related to notifying clients of his departure.", "in violation of Standard I(D) \"Misconduct\" for leaving clients subject to an account representative he does not find suitable.", "not in violation of the Code and Standards."], "ans": "A", "expl": "Kline is in violation of Standard IV(A) \"Loyalty\" for failing to follow the employer's policies and procedures related to notifying clients of his departure.", "explhtml": "<p>Kline is in violation of Standard IV(A) &quot;Loyalty&quot; for failing to follow the employer&#x27;s policies and procedures related to notifying clients of his departure.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Dave Kline, CFA, is a personal investment advisor with 200 individual, family, and corporate accounts. After a dispute with a coworker on margin policy, he formally resigns his position by giving suitable notice. However, he does not follow his firm&#x27;s established &quot;Transition and Exit Policies&quot; regarding his accounts. The firm&#x27;s stated policies require him to notify each client of his planned departure and personally introduce them to their new account representative, Greg Potter. Kline sees Potter as a rival and states &quot;...let Potter do his own work and find his own clients.&quot; Kline is most likely:<\/p><\/div>", "subj": "ethics"}, {"n": 45, "q": "Francisco Perez, CFA, is an equity research analyst for a long-term investment fund. The fund is seeking new clients, so Perez contacts old clients he knew through his former employer. Which of the following is most accurate?", "opts": ["Perez can only solicit clients after notifying his former employer.", "Perez is not prevented from soliciting clients as long as he is working from memory and publically available information rather than a list generated while he was still with the former employer.", "Perez cannot solicit clients from a former employer."], "ans": "B", "expl": "According to Standard IV(A), Perez is not prevented from soliciting clients as long as he is working from memory and publically available information rather than a list generated while he was still with the former employer.", "explhtml": "<p>According to Standard IV(A), Perez is not prevented from soliciting clients as long as he is working from memory and publically available information rather than a list generated while he was still with the former employer.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(A)<\/div><div class=\"qtext\"><p>Francisco Perez, CFA, is an equity research analyst for a long-term investment fund. The fund is seeking new clients, so Perez contacts old clients he knew through his former employer. Which of the following is most accurate?<\/p><\/div>", "subj": "ethics"}, {"n": 46, "q": "Jill Marsh, CFA, works for Advisors where she manages various portfolios. Marsh's godfather is an accountant and has done Marsh's tax returns every year as a birthday gift. Marsh's godfather has recently become a client of Advisors and asked specifically for Marsh to manage his account. In order to comply Standard IV(B), Disclosure of Additional Compensation Arrangements, she needs to:", "opts": ["do neither of the actions listed here.", "have her godfather cease doing her taxes.", "liquidate from her personal portfolio any stocks her godfather owns and verbally tell her supervisor about the tax services."], "ans": "A", "expl": "Standard IV(B) requires that members disclose to their employer in writing all benefits that they receive in addition to their regular compensation for services they perform on behalf of their employer. It is not unreasonable for an individual's godfather to give them a birthday gift. Moreover, since the tax services were a regular birthday present before her godfather became a client, this implies that they are unrelated to any investment management services.", "explhtml": "<p>Standard IV(B) requires that members disclose to their employer in writing all benefits that they receive in addition to their regular compensation for services they perform on behalf of their employer. It is not unreasonable for an individual&#x27;s godfather to give them a birthday gift. Moreover, since the tax services were a regular birthday present before her godfather became a client, this implies that they are unrelated to any investment management services.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 41.7, LOS 41: IV(B)<\/div><div class=\"qtext\"><p>Jill Marsh, CFA, works for Advisors where she manages various portfolios. Marsh&#x27;s godfather is an accountant and has done Marsh&#x27;s tax returns every year as a birthday gift. Marsh&#x27;s godfather has recently become a client of Advisors and asked specifically for Marsh to manage his account. In order to comply Standard IV(B), Disclosure of Additional Compensation Arrangements, she needs to:<\/p><\/div>", "subj": "ethics"}];
+const CFG = {"title": "Reading 41.7 — Guidance for Standards IV(A), IV(B), and IV(C)", "subtitle": "CFA Level II · 46 câu · Kaplan Schweser QBank 2025 (36 câu đơn · 10 câu item set)", "minutes": 0, "passMark": 65, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    let prev = {}; try{ prev = JSON.parse(localStorage.getItem(PROG_KEY)||"null")||{}; }catch(e){}
+    const slug = PROG_KEY.replace(/^cfa:prog:/,"");
+    const _d=new Date(); const day=_d.getFullYear()+"-"+String(_d.getMonth()+1).padStart(2,"0")+"-"+String(_d.getDate()).padStart(2,"0");
+    let tbase = prev.tbase;
+    if(!tbase || tbase.d !== day) tbase = {d:day, base:(prev.done||0)};
+    const answeredToday = Math.max(0, done - tbase.base);
+    try{
+      const daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}");
+      (daily[day] = daily[day]||{})[slug] = {answered:answeredToday, done, total, graded, correct, pct, title:(CFG.title||slug), ts:Date.now()};
+      localStorage.setItem("cfa:daily", JSON.stringify(daily));
+    }catch(e){}
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, tbase, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); var __slug = PROG_KEY.replace(/^cfa:prog:/,""); var __daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}"), __ch=false; for(var __d in __daily){ if(__daily[__d] && __daily[__d][__slug]){ delete __daily[__d][__slug]; __ch=true; } if(__daily[__d] && Object.keys(__daily[__d]).length===0) delete __daily[__d]; } if(__ch) localStorage.setItem("cfa:daily", JSON.stringify(__daily)); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      e.appendChild(q.explhtml?buildExplHtml(q):buildExplanation(q.expl,q.ans,q.opts));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+
+// ---- readable explanations ---------------------------------------------- //
+function explanationData(raw){
+  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|thảo luận|lọc|giải pháp|bạn muốn thảo luận.*|lý do cho đáp án đúng|câu hỏi\s+\d+\s+trên\s+\d+|\(?required\)?|\(?bắt buộc\)?|[?①θi1])$/i;
+  let lines=String(raw||"").replace(/\r/g,"").split("\n")
+    .map(line=>line.replace(/\s+/g," ").trim())
+    .filter(line=>line&&!noise.test(line));
+  let reading="",los="",losIndex=-1;
+  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss|tính|mô tả|giải thích|so sánh|phân tích|đánh giá|diễn giải|nhận diện|xác định|định nghĩa|thảo luận)\b/i;
+  for(let i=Math.max(1,lines.length-10);i<lines.length;i++){
+    const candidate=lines[i].replace(/^[·•?]\s*/,"").replace(/^i(?=(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss))/i,"").trim();
+    const previous=lines[i-1]||"";
+    if(action.test(candidate)&&previous.length<120&&!/[.!?]$/.test(previous)&&!/^[A-J][.)]\s/i.test(previous)){
+      reading=previous; los=lines.slice(i).join(" "); lines=lines.slice(0,i-1); losIndex=i; break;
+    }
+  }
+  return {text:lines.join(" ").replace(/\s+/g," ").trim(),reading,los};
+}
+function explanationSections(text,correctLetter){
+  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\b)/gi,"\n$1. ");
+  const chunks=broken.split(/\n(?=[A-J]\.\s+)/).map(s=>s.trim()).filter(Boolean);
+  const sections=chunks.map(chunk=>{
+    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\.?\s*)?(?:because\s+)?/i);
+    if(!match) return {letter:"",text:chunk};
+    return {letter:match[1].toUpperCase(),text:chunk.slice(match[0].length).trim()};
+  });
+  const hasCorrect=sections.some(section=>section.letter===correctLetter);
+  if(!hasCorrect&&sections.length>1&&!sections[0].letter) sections[0].letter=correctLetter;
+  const unique=[];
+  sections.forEach(section=>{
+    if(!section.letter){
+      if(section.text&&!unique.some(item=>!item.letter)) unique.push(section);
+      return;
+    }
+    const duplicateIndex=unique.findIndex(item=>item.letter===section.letter);
+    if(duplicateIndex<0) unique.push(section);
+    else if((section.text||"").length>(unique[duplicateIndex].text||"").length) unique[duplicateIndex]=section;
+  });
+  return unique;
+}
+function buildExplanation(raw,correctLetter,options){
+  const data=explanationData(raw);
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+correctLetter;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content";
+  explanationSections(data.text,correctLetter).forEach(section=>{
+    if(section.letter){
+      const choice=document.createElement("article");
+      const isCorrect=section.letter===correctLetter;
+      choice.className="expl-choice "+(isCorrect?"is-correct":"is-other");
+      const top=document.createElement("div"); top.className="expl-choice-top";
+      const letter=document.createElement("span"); letter.className="expl-letter"; letter.textContent=section.letter;
+      const state=document.createElement("span"); state.className="expl-state"; state.textContent=isCorrect?"Đáp án đúng":"Không đúng";
+      top.appendChild(letter); top.appendChild(state); choice.appendChild(top);
+      const optionIndex=LETTERS.indexOf(section.letter);
+      if(options&&optionIndex>=0&&options[optionIndex]){
+        const option=document.createElement("p"); option.className="expl-option-copy"; option.textContent=options[optionIndex]; choice.appendChild(option);
+      }
+      if(section.text){ const reason=document.createElement("p"); reason.className="expl-reason"; reason.textContent=section.text; choice.appendChild(reason); }
+      content.appendChild(choice);
+    }else if(section.text){
+      const note=document.createElement("div"); note.className="expl-note";
+      const paragraph=document.createElement("p"); paragraph.textContent=section.text; note.appendChild(paragraph); content.appendChild(note);
+    }
+  });
+  if(data.reading||data.los){
+    const meta=document.createElement("div"); meta.className="expl-meta";
+    if(data.reading){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="Reading:"; const value=document.createElement("span"); value.textContent=data.reading; row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    if(data.los){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="LOS:"; const value=document.createElement("span"); value.textContent=data.los.replace(/^[·•?]\s*/,""); row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    content.appendChild(meta);
+  }
+  shell.appendChild(content); return shell;
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function setSubmitButtonMode(showResults){
+  const btn=$("submitBtn"); if(!btn) return;
+  const label=showResults?"Xem kết quả":"Nộp bài";
+  const textNode=Array.from(btn.childNodes).find(n=>n.nodeType===3);
+  if(textNode) textNode.nodeValue=label;
+  btn.title=showResults?"Xem lại điểm tổng và điểm theo môn":"";
+}
+function requestSubmit(){
+  if(graded){
+    if(typeof window.showGradedResult==="function") window.showGradedResult();
+    else $("resultOverlay").classList.add("show");
+    return;
+  }
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    showQuestionSubject(card,q);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+  renderSubjectBreakdown();
+  setSubmitButtonMode(true);
+}
+
+
+// ---- CFA subject score breakdown ---------------------------------------- //
+const CFA_SUBJECTS = [["ethics", "Ethical & Professional Standards"], ["quant", "Quantitative Methods"], ["economics", "Economics"], ["fsa", "Financial Statement Analysis"], ["corporate", "Corporate Issuers"], ["equity", "Equity Valuation"], ["fixed", "Fixed Income"], ["derivatives", "Derivatives"], ["alternatives", "Alternative Investments"], ["portfolio", "Portfolio Management"]];
+function getCfaSubjectRaw(question){
+  const text=((question.q||"")+"\n"+(question.expl||""))
+    .toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const prompt=(question.q||"").toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  if(session===1 && Number(question.n)<=27) return "ethics";
+  if(session===1 && /f-statistic|test statistic|hypothesis|regression|semideviation|probability|box and whisker|interquartile|quintile|percentile/.test(prompt)) return "quant";
+  if(session===1 && /structural deficit|budget deficit|exchange rate|forward points|currency|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity/.test(prompt)) return "economics";
+  if(session===1 && /cost of debt|cost of capital|capital structure|capital budgeting|\bnpv\b|internal rate of return|\birr\b|board of directors|proxy voting|stakeholders?/.test(prompt)) return "corporate";
+  if(session===1 && /code of ethics|professional conduct|professional integrity|guidance\s*for\s*standards|standards?\s+[ivxl]+\b|gips|global investment performance|ethics application|ethical decision|ethics and trust|explain ethics|level i candidate|exam content|market manipulation|situational influence|fair dealing/.test(text)) return "ethics";
+  if(session===2 && /derivative|forward commitment|forward contract|forward price|futures? contract|swap\b|option\b|put-call|put call|binomial model|contingent claim|arbitrage, replication|delta hedg|option replication|moneyness/.test(text)) return "derivatives";
+  if(session===2 && /alternative investment|private capital|private equity|private debt|hedge fund|real estate|infrastructure investment|natural resources|commodit(?:y|ies)|digital assets?|collectibles|venture capital|buyout|mezzanine financing|co-investing/.test(text)) return "alternatives";
+  if(session===2 && /fixed-income|fixed income|bond\b|bonds\b|yield curve|yield spread|yield-to-maturity|yield to maturity|duration|convexity|mortgage-backed|asset-backed|securiti[sz]ed debt|credit analysis|credit risk|term structure of interest rates|money market instrument|repo market/.test(text)) return "fixed";
+  if(session===1 && /financial statement|financial reporting|income statement|incomestatements|balance sheet|cash flow|inventor(?:y|ies)|long-term assets|long-termassets|long lived assets|income tax|deferred tax|revenue recognition|performance obligations|reporting quality|financial analysis techniques|financial analysistechniques|financial statement modeling|long-term liabilities and equity|long term liabilities and equity|common-size|common size|profitability ratios|liquidity ratios|solvency ratios|activity ratios|dupont|ebitda|diluted eps|gaap|ifrs/.test(text)) return "fsa";
+  if(session===2 && /portfolio management|portfolio risk and return|portfolio planning|portfolio construction|asset allocation|investment policy statement|\bips\b|behavioral bias|behavioral explanation|risk management|capital asset pricing model|\bcapm\b|security market line|capital market line|capital allocation line|efficient frontier|systematic risk|unsystematic risk|sharpe ratio|treynor ratio|information ratio|types of investors|mutual fund|correlation between the assets|correlation pattern|correlation coefficient between two assets|portfolio standard deviation|portfolio risk falls|diversification benefit/.test(text)) return "portfolio";
+  if(session===2 && /equity securit|equity valuation|equityvaluation|market organization and structure|security market index|securitymarket index|market efficiency|industry and competitive analysis|industry andcompetitiveanalysis|company analysis|companyanalysis|porter's five forces|dividend discount|gordon growth|sustainable growth rate|free cash flow to equity|price multiple|preferred stock|preference share|equity market|equity index|stock market|share valuation|enterprise value multiple|statutory voting|size effect anomaly|intrinsic value/.test(text)) return "equity";
+  if(session===1 && /economics|business cycle|monetary policy|fiscal policy|geopolitic|international trade|internationaltrade|exchange rate|currency exchange|capital flows and the fx market|aggregate output|aggregate demand|aggregate supply|inflation|unemployment|firm and market structures|market structure within which a firm|perfect competition|monopolistic competition|oligopoly|central bank|gross domestic product|\bgdp\b|herfindahl-hirschman|concentration ratio/.test(text)) return "economics";
+  if(session===1 && /corporate issuer|corporate governance|capital structure|capital allocation|capital budgeting|combination of projects|cost of capital|working capital|business model|organizational forms|investors and other stakeholders|weighted-average cost of capital|weighted average cost of capital|\bwacc\b|modigliani-miller|dividend policy|share repurchase|stakeholder groups|principal-agent/.test(text)) return "corporate";
+  if(session===1 && /quantitative methods|rates? and returns?|ratesand ?return|statistical measure|probability|random variable|sampling|estimation|hypothesis test|parametric|non-parametric|nonparametric|linear regression|correlation|covariance|time value of money|discounted cash flow|big data|machine learning|data science|central tendency|dispersion|skewness|kurtosis|confidence interval|standard deviation|coefficient of variation|major return measures|continuously compounded|monthly compounding|present value/.test(text)) return "quant";
+  if(session===1){
+    if(/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|cash paid|revenue|expense recognition|inventor(?:y|ies)|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|auditor|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible asset|long-lived asset|long lived asset|asset revaluation|revaluation surplus|impairment|amortization|depreciation|pension plan|financial ratio|liquidity ratio|solvency ratio|receivables turnover|payables turnover|cash conversion cycle|fixed charge coverage|creditworthiness|normalized earnings|management['’]?s commentary/.test(prompt)) return "fsa";
+    if(/business cycle|credit cycle|fiscal policy|monetary policy|structural deficit|budget deficit|central bank|lender of last resort|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic competition|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|usd\/?[a-z]{3}|eur\/?[a-z]{3}|appreciation of the|capital restriction|world bank|international monetary fund/.test(prompt)) return "economics";
+    if(/corporate|company lifecycle|company['’]?s lifecycle|start-up|startup|early-stage|business model|franchise model|board of directors|proxy voting|stakeholders?|shareholders?|creditors?|corporate governance|capital budgeting|capital investment|going concern project|real option|combination of projects|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|target weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|source of liquidity|pull on liquidity|drag on.*liquidity|compensation packages|competitive strategy|porter['’]?s five forces|economies of scale|information asymmetry|agency relationship/.test(prompt)) return "corporate";
+    return "quant";
+  }
+  if(/derivative|forward commitment|forward contract|forward rate agreement|futures? contract|swap\b|option\b|call buyer|call seller|put buyer|put seller|strike price|option premium|put-call|put call|binomial model|contingent claim|moneyness|value at expiration|profit.*expiration|arbitrage|replication/.test(prompt)) return "derivatives";
+  if(/alternative investment|private capital|private equity|private debt|hedge fund|real estate|\breit\b|\breits\b|infrastructure|natural resources|commodit(?:y|ies)|digital assets?|cryptocurrenc|bitcoin|collectibles|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption regime|pooled investment product|timberland|farmland/.test(prompt)) return "alternatives";
+  if(/fixed-income|fixed income|bond\b|bonds\b|debt rating|corporate debt|credit rating|credit spread|creditworthiness|yield curve|yield spread|spot rate|forward rate|yield-to-maturity|yield to maturity|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|\bcds\b|repo market|central bank funds|covenant|accrued interest|priority of claims|default risk|extension risk/.test(prompt)) return "fixed";
+  if(/portfolio|asset allocation|investment policy statement|\bips\b|behavioral finance|behavioral bias|cognitive error|risk aversion|utility function|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation between|covariance between|portfolio standard deviation|sharpe ratio|treynor ratio|jensen['’]?s alpha|information ratio|two-fund separation|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral investor/.test(prompt)) return "portfolio";
+  return "equity";
+}
+
+const CFA_SESSION_SUBJECT_RANGES = {
+  1:{ethics:[27,27],quant:[11,17],economics:[11,17],fsa:[20,25],corporate:[10,16]},
+  2:{equity:[20,25],fixed:[20,25],derivatives:[9,14],alternatives:[11,16],portfolio:[14,22]}
+};
+const CFA_SUBJECT_HINTS = {
+  quant:/probabilit|return measure|holding period|money-weighted|time-weighted|mean|median|mode|quintile|percentile|variance|standard deviation|semideviation|skew|kurtosis|hypothesis|test statistic|confidence interval|regression|correlation|covariance|sampling|estimation|bayes|box and whisker|interquartile|coefficient of variation|compound|present value|future value|interest rate|data science|machine learning|fintech/g,
+  economics:/business cycle|credit cycle|fiscal|monetary|central bank|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|capital restriction|world bank|international monetary fund/g,
+  fsa:/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|revenue|expense|inventory|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible|long-lived|revaluation|impairment|amortization|depreciation|pension|financial ratio|receivables turnover|payables turnover|cash conversion|fixed charge coverage|normalized earnings|management['’]?s commentary/g,
+  corporate:/corporate|company lifecycle|start-up|startup|early-stage|business model|franchise|board of directors|proxy voting|stakeholder|shareholder|creditor|governance|capital budgeting|capital investment|project|real option|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|liquidity|compensation|competitive strategy|porter|economies of scale|information asymmetry|agency relationship/g,
+  equity:/equity|common share|preferred share|stock|market index|index weighting|market efficiency|efficient market|security market|buy order|sell order|limit order|dealer|margin requirement|leverage ratio|industry classification|company analysis|enterprise value|price-to|free cash flow to equity|\bfcfe\b|dividend discount|earnings multiplier|book value per share|intrinsic value|voting|ex-dividend/g,
+  fixed:/fixed-income|fixed income|bond|debt|credit rating|credit spread|yield|spot rate|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|repo|covenant|accrued interest|priority of claims|default|extension risk|interest coverage/g,
+  derivatives:/derivative|forward|future|swap|option|call buyer|call seller|put buyer|put seller|strike price|premium|put-call|binomial|contingent claim|moneyness|expiration|arbitrage|replication/g,
+  alternatives:/alternative|private capital|private equity|private debt|hedge fund|real estate|\breit|infrastructure|natural resource|commodit|digital asset|cryptocurrenc|bitcoin|collectible|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption|timberland|farmland/g,
+  portfolio:/portfolio|asset allocation|investment policy|\bips\b|behavioral|cognitive error|risk aversion|utility|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation|covariance|sharpe|treynor|jensen|information ratio|two-fund|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral/g
+};
+let CFA_SUBJECT_ASSIGNMENTS=null;
+function getCfaSubjectHintScore(question,subject){
+  const prompt=((question.q||"")+" "+(question.opts||[]).join(" ")).toLowerCase().replace(/[‐‑–—]/g,"-");
+  const matches=prompt.match(CFA_SUBJECT_HINTS[subject]);
+  return matches?matches.length:0;
+}
+function buildCfaSubjectAssignments(){
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const ranges=CFA_SESSION_SUBJECT_RANGES[session];
+  const subjects=Object.keys(ranges);
+  const raw=DATA.map(getCfaSubjectRaw);
+  const assigned=raw.slice();
+  const counts={}; subjects.forEach(subject=>counts[subject]=0);
+  if(session===1){
+    DATA.forEach((question,index)=>{
+      if(Number(question.n)<=ranges.ethics[1]) assigned[index]="ethics";
+      else if(assigned[index]==="ethics") assigned[index]=null;
+    });
+  }
+  DATA.forEach((question,index)=>{
+    if(assigned[index]) return;
+    const eligible=subjects.filter(subject=>subject!=="ethics");
+    assigned[index]=eligible.sort((a,b)=>getCfaSubjectHintScore(question,b)-getCfaSubjectHintScore(question,a))[0];
+  });
+  assigned.forEach(subject=>counts[subject]++);
+  subjects.forEach(source=>{
+    const maximum=ranges[source][1];
+    if(counts[source]<=maximum) return;
+    const candidates=DATA.map((question,index)=>({index,score:getCfaSubjectHintScore(question,source)}))
+      .filter(item=>assigned[item.index]===source && !(session===1 && source==="ethics" && Number(DATA[item.index].n)<=27))
+      .sort((a,b)=>a.score-b.score||b.index-a.index);
+    for(const candidate of candidates){
+      if(counts[source]<=maximum) break;
+      const belowMinimum=subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][0]);
+      const destinations=(belowMinimum.length?belowMinimum:subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][1]))
+        .sort((a,b)=>getCfaSubjectHintScore(DATA[candidate.index],b)-getCfaSubjectHintScore(DATA[candidate.index],a)
+          ||(ranges[b][1]-counts[b])-(ranges[a][1]-counts[a]));
+      const destination=destinations[0]; if(!destination) break;
+      assigned[candidate.index]=destination; counts[source]--; counts[destination]++;
+    }
+  });
+  return assigned;
+}
+function getCfaSubject(question){
+  if(question&&question.subj) return question.subj;
+  if(!CFA_SUBJECT_ASSIGNMENTS) CFA_SUBJECT_ASSIGNMENTS=buildCfaSubjectAssignments();
+  const index=DATA.indexOf(question);
+  return index>=0?CFA_SUBJECT_ASSIGNMENTS[index]:getCfaSubjectRaw(question);
+}
+
+function showQuestionSubject(card, question){
+  const head=card.querySelector(".card-head"); if(!head) return;
+  let label=head.querySelector(".question-subject");
+  if(!label){
+    label=document.createElement("span"); label.className="question-subject";
+    const pin=head.querySelector(".pin"); head.insertBefore(label,pin||null);
+  }
+  const key=getCfaSubject(question);
+  const subject=CFA_SUBJECTS.find(item=>item[0]===key);
+  label.dataset.subject=key;
+  label.textContent=subject?subject[1]:"Chưa phân loại";
+  label.title="Môn CFA: "+label.textContent;
+}
+
+function renderSubjectBreakdown(){
+  const panel=$("subjectBreakdown"); if(!panel) return;
+  const scores={}; CFA_SUBJECTS.forEach(s=>scores[s[0]]={correct:0,total:0});
+  DATA.forEach((q,i)=>{
+    const key=getCfaSubject(q); if(!scores[key]) return;
+    scores[key].total++; if(answers[i]===q.ans) scores[key].correct++;
+  });
+  panel.innerHTML="";
+  const heading=document.createElement("h4"); heading.textContent="Điểm theo môn CFA · Tổng "+DATA.length+" câu"; panel.appendChild(heading);
+  const grid=document.createElement("div"); grid.className="subject-grid";
+  CFA_SUBJECTS.forEach(subject=>{
+    const score=scores[subject[0]]; if(!score.total) return;
+    const pct=Math.round(score.correct/score.total*100);
+    const row=document.createElement("div"); row.className="subject-row";
+    const top=document.createElement("div"); top.className="subject-top";
+    const name=document.createElement("span"); name.className="subject-name"; name.textContent=subject[1];
+    const value=document.createElement("span"); value.className="subject-score"; value.textContent=score.correct+"/"+score.total+" ("+pct+"%)";
+    const bar=document.createElement("div"); bar.className="subject-bar"; bar.setAttribute("role","progressbar"); bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax","100"); bar.setAttribute("aria-valuenow",String(pct));
+    const fill=document.createElement("div"); fill.className="subject-fill"; fill.style.width=pct+"%";
+    top.appendChild(name); top.appendChild(value); bar.appendChild(fill); row.appendChild(top); row.appendChild(bar); grid.appendChild(row);
+  });
+  panel.appendChild(grid);
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  setSubmitButtonMode(false);
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+<script>
+/* ===== Feedback sinh động: chạy sau khi chấm bài ===== */
+(function(){
+  if(typeof grade!=='function') return;
+  var _grade=grade;
+  grade=function(a){ _grade(a); try{ afterGrade(false); }catch(e){} };
+  window.showGradedResult=function(){ try{ afterGrade(true); }catch(e){} };
+
+  function afterGrade(restored){
+    if(!CFG.hasAnswers) return;
+    var pass=document.getElementById('badge').classList.contains('pass');
+    showResult(pass, document.getElementById('badge').textContent, !restored);
+  }
+  function addMark(el,sym){
+    if(el.querySelector('.fx-mark')) return;
+    var s=document.createElement('span'); s.className='fx-mark'; s.textContent=sym;
+    el.appendChild(s);
+  }
+  function showResult(pass, badgeText, celebrate){
+    var ov=document.getElementById('resultOverlay');
+    var icon=document.getElementById('rIcon');
+    var title=document.getElementById('rTitle');
+    var emoji=document.getElementById('rEmoji');
+    var score=document.getElementById('rScore');
+    var m=badgeText.split('·'); score.textContent=m.length>1?m[1].trim():'';
+    if(pass){
+      title.textContent='Chúc mừng! Bạn đã ĐẠT'; title.className='pass';
+      icon.setAttribute('src','https://cdn.lordicon.com/lupuorrc.json');
+      emoji.textContent='🎉';
+      if(celebrate){ fetchEmoji('face-positive', emoji); confetti(); }
+    }else{
+      title.textContent='Chưa đạt — cố lên nhé!'; title.className='fail';
+      icon.setAttribute('src','https://cdn.lordicon.com/jdgfsfzr.json');
+      emoji.textContent='💪';
+    }
+    ov.classList.add('show');
+  }
+  function fetchEmoji(group, el){
+    var ctrl=('AbortController'in window)?new AbortController():null;
+    if(ctrl) setTimeout(function(){try{ctrl.abort();}catch(e){}},3500);
+    fetch('https://emojihub.yurace.pro/api/random/group/'+group, ctrl?{signal:ctrl.signal}:{})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.htmlCode&&d.htmlCode.length){
+        el.innerHTML=d.htmlCode.join('');
+        el.style.animation='none'; void el.offsetWidth; el.style.animation='';
+      }})
+      .catch(function(){});
+  }
+  if(graded) window.showGradedResult();
+
+  function confetti(){
+    var cols=['#538297','#86a7b5','#22c55e','#f59e0b','#f43f5e','#38bdf8'];
+    for(var i=0;i<70;i++){(function(){
+      var d=document.createElement('i'); d.className='fx-confetti';
+      d.style.left=Math.random()*100+'vw';
+      d.style.background=cols[i%cols.length];
+      d.style.animationDuration=(2.2+Math.random()*1.6)+'s';
+      d.style.animationDelay=(Math.random()*0.5)+'s';
+      d.style.transform='rotate('+(Math.random()*360)+'deg)';
+      document.body.appendChild(d);
+      setTimeout(function(){d.remove();},4500);
+    })();}
+  }
+})();
+</script>
+<!--qnote-feature-start-->
+<style id="qnote-css">
+  main#quiz{max-width:1180px}
+  .qrow{display:flex;gap:16px;align-items:flex-start;margin:0 0 16px}
+  .qrow > .card{flex:1 1 auto;min-width:0;margin:0}
+  .qnote{flex:0 0 300px;align-self:stretch;display:flex;flex-direction:column;
+    border-radius:12px;border:1px solid var(--line);
+    background:color-mix(in srgb, var(--pin) 9%, var(--panel2));padding:10px}
+  .qnote-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;
+    font-size:12.5px;font-weight:600;color:var(--muted)}
+  .qnote-head .dot{color:var(--pin)}
+  .qnote-saved{margin-left:auto;font-size:11.5px;color:var(--ok);opacity:0;
+    transition:opacity .25s}
+  .qnote-saved.show{opacity:1}
+  .qnote textarea{flex:1 1 auto;width:100%;resize:vertical;min-height:96px;display:block;
+    font:inherit;font-size:14px;line-height:1.5;color:var(--txt);
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;outline:none}
+  .qnote textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 1.5px var(--accent) inset}
+  .qnote textarea::placeholder{color:var(--muted);opacity:.7}
+  @media (max-width:860px){
+    .qrow{flex-direction:column;gap:10px}
+    .qnote{flex-basis:auto;width:100%;align-self:auto}
+    .qnote textarea{min-height:52px}
+  }
+</style>
+<script>
+/* ===== Ghi chú cá nhân bên phải mỗi câu (lưu trong máy - localStorage) ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function load(){ try{ return JSON.parse(localStorage.getItem(NKEY)||"{}")||{}; }catch(e){ return {}; } }
+  function save(map){ try{ localStorage.setItem(NKEY, JSON.stringify(map)); }catch(e){} }
+  function keyFor(card){ var id=card.id||""; var m=id.match(/^q-(\d+)$/); return m?m[1]:null; }
+  function attach(){
+    var notes = load();
+    var cards = document.querySelectorAll("#quiz .card");
+    for(var c=0;c<cards.length;c++){
+      var card = cards[c];
+      var parent = card.parentNode;
+      if(parent && parent.classList && parent.classList.contains("qrow")) continue; // already wrapped
+      var k = keyFor(card);
+      if(k===null || !parent) continue;
+      var wrap = document.createElement("div");
+      wrap.className = "qnote";
+      var head = document.createElement("div");
+      head.className = "qnote-head";
+      head.innerHTML = '<span class="dot">📝</span><span>Ghi chú</span><span class="qnote-saved">Đã lưu ✓</span>';
+      var ta = document.createElement("textarea");
+      ta.setAttribute("placeholder","Ghi chú cho câu này…");
+      ta.value = notes[k] || "";
+      (function(ta,k,savedEl){
+        var t=null;
+        ta.addEventListener("input", function(){
+          var m=load();
+          if(ta.value && ta.value.trim()) m[k]=ta.value; else delete m[k];
+          save(m);
+          savedEl.classList.add("show");
+          clearTimeout(t); t=setTimeout(function(){ savedEl.classList.remove("show"); }, 1200);
+        });
+      })(ta, k, head.querySelector(".qnote-saved"));
+      wrap.appendChild(head); wrap.appendChild(ta);
+      var row = document.createElement("div");
+      row.className = "qrow";
+      parent.insertBefore(row, card);   // put row where the card was
+      row.appendChild(card);            // move question card into the row (left)
+      row.appendChild(wrap);            // note beside it (right)
+    }
+  }
+  function boot(){
+    attach();
+    var quiz = document.getElementById("quiz");
+    if(quiz && "MutationObserver" in window){
+      var pend=false;
+      new MutationObserver(function(){
+        if(pend) return; pend=true;
+        setTimeout(function(){ pend=false; attach(); }, 30);
+      }).observe(quiz,{childList:true});
+    }
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnote-feature-end-->
+<!--qnav-note-start-->
+<style id="qnav-note-css">
+  #navGrid .cell.noted::before{content:"\1F4DD";position:absolute;top:-4px;left:-3px;font-size:10px;line-height:1}
+</style>
+<script>
+/* ===== Đánh dấu câu có Ghi chú trong "Danh sách câu" + bộ lọc "Ghi chú" ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function noteSet(){
+    var s={};
+    try{ var m=JSON.parse(localStorage.getItem(NKEY)||"{}")||{};
+      for(var k in m){ if(m.hasOwnProperty(k) && m[k] && (""+m[k]).trim()) s[k]=1; } }catch(e){}
+    return s;
+  }
+  function addChip(){
+    var chips=document.getElementById("chips");
+    if(!chips || chips.querySelector('[data-f="note"]')) return;
+    var b=document.createElement("button");
+    b.className="chip"; b.setAttribute("data-f","note");
+    b.innerHTML='Ghi chú <span></span>';
+    b.onclick=function(){ if(typeof setFilter==="function") setFilter("note", b); };
+    chips.appendChild(b);
+  }
+  var wrapped=false;
+  function wrapRefresh(){
+    if(wrapped || typeof window.refreshNav!=="function") return;
+    wrapped=true;
+    var orig=window.refreshNav;
+    window.refreshNav=function(){
+      orig.apply(this, arguments);
+      var ns=noteSet(), cnt=0;
+      var active=document.querySelector('#chips .chip.active');
+      var f=active?active.getAttribute("data-f"):"all";
+      var cells=document.querySelectorAll("#navGrid .cell");
+      for(var j=0;j<cells.length;j++){
+        var c=cells[j], m=(c.id||"").match(/^cell-(\d+)$/); if(!m) continue;
+        var has=!!ns[m[1]];
+        c.classList.toggle("noted", has);
+        if(has) cnt++;
+        if(f==="note") c.classList.toggle("hide", !has);
+      }
+      var sp=document.querySelector('#chips [data-f="note"] span');
+      if(sp) sp.textContent="("+cnt+")";
+    };
+  }
+  function wrapToggle(){
+    if(typeof window.toggleNav!=="function" || window.toggleNav.__qnav) return;
+    var orig=window.toggleNav;
+    window.toggleNav=function(){
+      var r=orig.apply(this, arguments);
+      var p=document.getElementById("navPanel");
+      if(p && p.classList.contains("open") && typeof window.refreshNav==="function") window.refreshNav();
+      return r;
+    };
+    window.toggleNav.__qnav=true;
+  }
+  function boot(){
+    addChip(); wrapRefresh(); wrapToggle();
+    if(typeof window.refreshNav==="function") window.refreshNav();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnav-note-end-->
+
+<!--qnotes-panel-start-->
+<style id="qnotes-panel-css">
+  #qnotesFab{position:fixed;right:18px;bottom:18px;z-index:35;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #qnotesFab:hover{filter:brightness(1.06)}
+  #qnotesFab svg{width:17px;height:17px;flex:none}
+  #qnotesPanel{position:fixed;top:8vh;left:16px;width:min(470px,94vw);height:min(80vh,680px);z-index:70;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #qnotesPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #qnotesPanel .qnp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #qnotesPanel .qnp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #qnotesPanel .qnp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #qnotesPanel .qnp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #qnotesPanel .qnp-open:hover{text-decoration:underline}
+  #qnotesPanel .qnp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #qnotesPanel .qnp-x:hover{color:var(--txt)}
+  #qnotesPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #qnotesPanel.dragging #qnotesFrame{pointer-events:none}
+  #qnotesFrame{flex:1;width:100%;border:0;background:var(--bg)}
+  #qnotesOverlay{position:fixed;inset:0;background:transparent;z-index:65;display:none;pointer-events:none}
+  #qnotesOverlay.show{display:block}
+  @media(max-width:600px){#qnotesFab span{display:none}#qnotesFab{padding:12px}}
+</style>
+<button id="qnotesFab" type="button" onclick="qnotesOpen()" title="Ghi chú của tôi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 10h6M8 14h8M8 18h5"/></svg><span>Ghi chú</span></button>
+<div id="qnotesOverlay" onclick="qnotesClose()"></div>
+<div id="qnotesPanel" aria-hidden="true">
+  <div class="qnp-head" id="qnotesHead"><span class="qnp-grip" aria-hidden="true">⠿</span><b>Ghi chú của tôi</b><a class="qnp-open" href="index.html?view=notes" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="qnp-x" onclick="qnotesClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="qnotesFrame" title="Ghi chú của tôi" loading="lazy"></iframe>
+</div>
+<script id="qnotes-panel-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("qnotesPanel");}
+  window.qnotesOpen=function(){
+    var fr=document.getElementById("qnotesFrame");
+    if(!loaded){ fr.src="index.html?embed=1&view=notes"; loaded=true; }
+    P().classList.add("open"); document.getElementById("qnotesOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.qnotesClose=function(){
+    P().classList.remove("open"); document.getElementById("qnotesOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.qnotesClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("qnotesHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".qnp-x")||e.target.closest(".qnp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--qnotes-panel-end-->
+<!--baii-calc-start-->
+<style id="baii-calc-css">
+  #baiiFab{position:fixed;right:18px;bottom:70px;z-index:36;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent2,#0ea5e9);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #baiiFab:hover{filter:brightness(1.06)}
+  #baiiFab svg{width:17px;height:17px;flex:none}
+  #baiiPanel{position:fixed;top:8vh;right:16px;width:min(410px,94vw);height:min(80vh,680px);z-index:72;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #baiiPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #baiiPanel .bp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #baiiPanel .bp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #baiiPanel .bp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #baiiPanel .bp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #baiiPanel .bp-open:hover{text-decoration:underline}
+  #baiiPanel .bp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #baiiPanel .bp-x:hover{color:var(--txt)}
+  #baiiPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #baiiPanel.dragging #baiiFrame{pointer-events:none}
+  #baiiFrame{flex:1;width:100%;border:0;background:#0f1a1d}
+  #baiiOverlay{position:fixed;inset:0;background:transparent;z-index:67;display:none;pointer-events:none}
+  #baiiOverlay.show{display:block}
+  @media(max-width:600px){#baiiFab span{display:none}#baiiFab{padding:12px;bottom:74px}}
+</style>
+<button id="baiiFab" type="button" onclick="baiiOpen()" title="Máy tính BA II Plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="19"/><line x1="8" y1="19" x2="12" y2="19"/></svg><span>Máy tính</span></button>
+<div id="baiiOverlay" onclick="baiiClose()"></div>
+<div id="baiiPanel" aria-hidden="true">
+  <div class="bp-head" id="baiiHead"><span class="bp-grip" aria-hidden="true">⠿</span><b>Máy tính BA II Plus</b><a class="bp-open" href="baii-plus.html" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="bp-x" onclick="baiiClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="baiiFrame" title="BA II Plus" loading="lazy"></iframe>
+</div>
+<script id="baii-calc-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("baiiPanel");}
+  window.baiiOpen=function(){
+    var fr=document.getElementById("baiiFrame");
+    if(!loaded){ fr.src="baii-plus.html"; loaded=true; }
+    P().classList.add("open"); document.getElementById("baiiOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.baiiClose=function(){
+    P().classList.remove("open"); document.getElementById("baiiOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.baiiClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("baiiHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".bp-x")||e.target.closest(".bp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--baii-calc-end-->
+
+<!--restart-confirm-start-->
+<div id="restartOverlay" class="overlay">
+  <div class="modal">
+    <h3>Làm lại từ đầu?</h3>
+    <p>Toàn bộ đáp án đã chọn và tiến độ của đề này sẽ bị xoá và không thể khôi phục. Bạn chắc chắn muốn làm lại?</p>
+    <div class="modal-actions">
+      <button type="button" onclick="rcCancel()">Huỷ</button>
+      <button type="button" class="btn-primary" onclick="rcConfirm()">Làm lại</button>
+    </div>
+  </div>
+</div>
+<script id="restart-confirm-js">
+(function(){
+  if(typeof restart!=="function") return;
+  var _restart=restart;
+  function ov(){ return document.getElementById("restartOverlay"); }
+  function hasWork(){
+    try{
+      if(typeof graded!=="undefined" && graded) return true;
+      if(typeof answers==="object" && answers && Object.keys(answers).length>0) return true;
+      if(typeof pinned==="object" && pinned && Object.keys(pinned).length>0) return true;
+    }catch(e){}
+    return false;
+  }
+  window.rcCancel=function(){ var o=ov(); if(o) o.classList.remove("show"); };
+  window.rcConfirm=function(){ window.rcCancel(); _restart(); };
+  window.restart=function(){
+    var o=ov();
+    if(o && hasWork()){ o.classList.add("show"); return; }
+    _restart();
+  };
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){ var o=ov(); if(o && o.classList.contains("show")) window.rcCancel(); }
+  });
+  var o=ov(); if(o) o.addEventListener("click",function(e){ if(e.target===o) window.rcCancel(); });
+})();
+</script>
+<!--restart-confirm-end-->
+</body>
+</html>

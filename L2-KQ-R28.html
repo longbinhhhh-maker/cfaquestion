@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading 28 — Pricing and Valuation of Forward Commitments · Kaplan QBank</title>
+<script>
+  /* đặt theme trước khi vẽ để không bị nháy màu */
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"dark"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#14532d; --bad:#ef4444; --badbg:#7f1d1d; --pin:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+  header{position:sticky;top:0;z-index:30;background:var(--panel);
+    border-bottom:1px solid var(--line);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .htext{flex:1 1 240px;min-width:200px}
+  .htext h1{margin:0;font-size:18px}
+  .htext p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .timer{font-variant-numeric:tabular-nums;font-weight:700;font-size:20px;
+    padding:4px 10px;border-radius:8px;background:var(--panel2);min-width:78px;text-align:center}
+  .timer.warn{color:#fff;background:var(--bad)}
+  .timer.hidden{display:none}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);padding:8px 12px;border-radius:8px}
+  button:hover{border-color:var(--accent2)}
+  .btn-primary{background:var(--accent);border-color:var(--accent);font-weight:600}
+  .btn-primary:hover{background:var(--accent2)}
+  .progress-wrap{height:5px;background:var(--panel2)}
+  .progress{height:100%;width:0;background:var(--accent);transition:width .2s}
+  .resume-note{display:none;max-width:820px;margin:8px auto -8px;padding:6px 16px;
+    font-size:12.5px;color:#bbf7d0}
+  .resume-note.show{display:block}
+  .badge{display:none;font-weight:700;padding:6px 12px;border-radius:999px}
+  .badge.show{display:inline-block}
+  .badge.pass{background:var(--okbg);color:#bbf7d0;border:1px solid var(--ok)}
+  .badge.fail{background:var(--badbg);color:#fecaca;border:1px solid var(--bad)}
+  main{max-width:820px;margin:0 auto;padding:18px 16px 120px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin:0 0 16px}
+  .card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .qnum{font-weight:700;color:var(--accent2)}
+  .pin{margin-left:auto;font-size:15px;padding:4px 8px;line-height:1;opacity:.45;
+    background:transparent;border-color:transparent}
+  .pin.on{opacity:1}
+  .pin.on::after{content:"";}
+  .stem{white-space:pre-wrap;margin-bottom:12px;font-size:15.5px}
+  .stem p{white-space:normal;margin:0 0 10px}
+  table.qt{border-collapse:collapse;margin:10px 0;font-size:14.5px;white-space:normal}
+  table.qt th,table.qt td{border:1px solid var(--line);padding:6px 11px;text-align:left;vertical-align:top}
+  table.qt thead th{background:var(--panel2);font-weight:600}
+  img.qfig{display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;
+    border-radius:9px;background:var(--panel2)}
+  .opt .lead{font-weight:700;margin-right:8px;color:var(--accent2)}
+  .opt.sel{border-color:var(--accent2);background:#312e81}
+  .opt.correct{background:var(--okbg);border-color:var(--ok)}
+  .opt.wrong{background:var(--badbg);border-color:var(--bad)}
+  .opt.correct .lead,.opt.wrong .lead{color:#fff}
+  .expl{display:none;margin-top:12px;padding:12px;border-radius:9px;
+    background:#0b1220;border:1px dashed var(--line);white-space:pre-wrap;font-size:14px;color:#cbd5e1}
+  .expl.show{display:block}
+  .expl b{color:var(--accent2)}
+  /* navigator */
+  .nav-toggle.has{}
+  #navPanel{position:fixed;top:0;right:0;height:100%;width:330px;max-width:88vw;
+    background:var(--panel);border-left:1px solid var(--line);z-index:40;
+    transform:translateX(100%);transition:transform .22s;display:flex;flex-direction:column}
+  #navPanel.open{transform:translateX(0)}
+  .nav-head{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .nav-head b{flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .chip{font-size:12.5px;padding:5px 9px;border-radius:999px}
+  .chip.active{background:var(--accent);border-color:var(--accent)}
+  .grid{padding:12px 14px;overflow:auto;display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:7px}
+  .cell{position:relative;aspect-ratio:1;border-radius:8px;background:var(--panel2);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+  .cell.answered{border-color:var(--accent2);background:#312e81}
+  .cell.pinned::after{content:"\1F4CC";position:absolute;top:-4px;right:-2px;font-size:10px}
+  .cell.correct{background:var(--okbg);border-color:var(--ok)}
+  .cell.wrong{background:var(--badbg);border-color:var(--bad)}
+  .cell.hide{display:none}
+  /* overlays */
+  .overlay{position:fixed;inset:0;background:rgba(2,6,23,.78);z-index:50;
+    display:none;align-items:center;justify-content:center;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;max-width:420px;width:100%}
+  .modal h3{margin:0 0 8px}
+  .modal p{color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .pause-box{text-align:center}
+  .pause-box .big{font-size:40px;margin-bottom:6px}
+  @media (max-width:520px){.htext h1{font-size:16px}}
+  /* ===== theme sáng ===== */
+  #themeBtn::after{content:"🌙"}
+  html[data-theme="light"] #themeBtn::after{content:"☀️"}
+  html[data-theme="light"]{
+    --bg:#eef2f7; --panel:#ffffff; --panel2:#e9eef5; --line:#d4dce6;
+    --txt:#0f172a; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#dc2626; --badbg:#fee2e2; --pin:#d97706;
+  }
+  html[data-theme="light"] .opt.sel{background:#e0e7ff}
+  html[data-theme="light"] .opt.correct{background:#dcfce7}
+  html[data-theme="light"] .opt.wrong{background:#fee2e2}
+  html[data-theme="light"] .opt.correct .lead,html[data-theme="light"] .opt.wrong .lead{color:#0f172a}
+  html[data-theme="light"] .expl{background:#f8fafc;color:#334155}
+  html[data-theme="light"] .badge.pass{background:#dcfce7;color:#166534}
+  html[data-theme="light"] .badge.fail{background:#fee2e2;color:#991b1b}
+  html[data-theme="light"] .cell.answered{background:#e0e7ff}
+  html[data-theme="light"] .cell.correct{background:#dcfce7}
+  html[data-theme="light"] .cell.wrong{background:#fee2e2}
+</style>
+<!--ui-polish-start-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style id="ui-polish">
+  :root{
+    --bg:#0b1020; --panel:#151d31; --panel2:#1d2740; --line:#2b3a57;
+    --txt:#e6edf6; --muted:#94a3b8; --accent:#538297; --accent2:#86a7b5;
+    --ok:#22c55e; --okbg:#0f3d2a; --bad:#f43f5e; --badbg:#4c1322; --pin:#f59e0b;
+    --radius:14px; --shadow:0 8px 28px rgba(2,6,23,.35);
+  }
+  html[data-theme="light"]{
+    --bg:#f3f6fb; --panel:#ffffff; --panel2:#eef2f9; --line:#dde6f2;
+    --txt:#0f1b2d; --muted:#5a6b80; --accent:#538297; --accent2:#35637a;
+    --ok:#16a34a; --okbg:#dcfce7; --bad:#e11d48; --badbg:#ffe4e6; --pin:#d97706;
+    --shadow:0 8px 24px rgba(15,27,45,.08);
+  }
+  body{
+    background:
+      radial-gradient(1100px 520px at 100% -8%, rgba(83,130,151,.20), transparent 60%),
+      radial-gradient(900px 520px at -8% 2%, rgba(134,167,181,.14), transparent 55%),
+      var(--bg);
+    background-attachment:fixed;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  *{transition:background-color .18s ease,border-color .18s ease,color .18s ease,
+    box-shadow .18s ease,transform .12s ease}
+  header{
+    background:color-mix(in srgb, var(--panel) 80%, transparent);
+    backdrop-filter:saturate(170%) blur(14px);
+    -webkit-backdrop-filter:saturate(170%) blur(14px);
+    border-bottom:1px solid var(--line);padding:14px 18px;
+  }
+  .htext h1{font-size:19px;font-weight:800;letter-spacing:-.015em}
+  .htext p{font-size:13px}
+  .timer{border:1px solid var(--line);box-shadow:var(--shadow);border-radius:10px}
+  .timer.warn{animation:cfaPulse 1.1s ease-in-out infinite}
+  @keyframes cfaPulse{0%,100%{box-shadow:0 0 0 0 rgba(244,63,94,.55)}
+    50%{box-shadow:0 0 0 7px rgba(244,63,94,0)}}
+  button{border-radius:10px;font-weight:600}
+  button:hover{transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  .back-btn{font-weight:600}
+  .back-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff;box-shadow:0 6px 18px rgba(83,130,151,.42)}
+  .btn-primary:hover{filter:brightness(1.08);box-shadow:0 8px 22px rgba(83,130,151,.5)}
+  .progress-wrap{height:6px}
+  .progress{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  main{max-width:880px;padding-top:22px}
+  .card{border-radius:var(--radius);box-shadow:var(--shadow);
+    border:1px solid var(--line)}
+  .card:hover{border-color:color-mix(in srgb,var(--accent) 38%,var(--line))}
+  .qnum{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:800;letter-spacing:.01em}
+  .stem{font-size:16px;line-height:1.65}
+  .opt{border:1px solid var(--line);border-radius:12px;font-size:15px}
+  .opt:hover{border-color:var(--accent2);transform:translateX(2px);
+    background:color-mix(in srgb,var(--accent) 12%,var(--panel2))}
+  .opt.sel{border-color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 20%,var(--panel2));
+    box-shadow:0 0 0 1.5px var(--accent) inset}
+  .opt.correct{box-shadow:0 0 0 1.5px var(--ok) inset}
+  .opt.wrong{box-shadow:0 0 0 1.5px var(--bad) inset}
+  .expl{border-radius:12px}
+  .qfig{max-width:100%;height:auto;border-radius:12px;border:1px solid var(--line);
+    box-shadow:var(--shadow);margin:8px 0;background:#fff}
+  .badge{box-shadow:var(--shadow)}
+  #navPanel{box-shadow:-16px 0 48px rgba(2,6,23,.4)}
+  .cell{border:1px solid var(--line);border-radius:9px}
+  .cell:hover{border-color:var(--accent2);transform:scale(1.07)}
+  .chip{border:1px solid var(--line)}
+  .chip.active{background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none;color:#fff}
+  .overlay{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .modal{border-radius:18px;box-shadow:0 24px 64px rgba(2,6,23,.5)}
+  .resume-note{font-weight:600}
+  @media (max-width:520px){.card{padding:14px}.htext h1{font-size:17px}}
+</style>
+<!--ui-polish-end-->
+<!-- ===== Lordicon + feedback sinh động ===== -->
+<script src="https://cdn.lordicon.com/lordicon.js" defer></script>
+<style id="fx-css">
+  .btn-primary lord-icon{width:20px;height:20px;vertical-align:-4px;margin-right:6px}
+  .opt .fx-mark{display:inline-block;margin-left:8px;font-size:16px;
+    transform:scale(0);animation:fxPop .42s cubic-bezier(.18,1.5,.5,1) forwards}
+  @keyframes fxPop{0%{transform:scale(0) rotate(-25deg)}
+    70%{transform:scale(1.35) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  #resultOverlay .modal{max-width:380px;text-align:center}
+  #resultOverlay lord-icon{width:120px;height:120px;margin:0 auto 6px}
+  #resultOverlay .r-emoji{font-size:46px;line-height:1;margin-bottom:4px;
+    display:block;animation:fxPop .5s cubic-bezier(.18,1.5,.5,1) both}
+  #resultOverlay h3{font-size:22px;margin:4px 0 6px}
+  #resultOverlay .r-score{font-size:15px;color:var(--muted);margin:0}
+  #resultOverlay h3.pass{color:var(--ok)}
+  #resultOverlay h3.fail{color:var(--bad)}
+  .fx-confetti{position:fixed;top:-12px;width:9px;height:14px;z-index:60;
+    pointer-events:none;border-radius:2px;animation:fxFall linear forwards}
+  @keyframes fxFall{to{transform:translateY(105vh) rotate(640deg);opacity:.9}}
+</style>
+<style id="lord2-css">
+  header button lord-icon.hi{width:18px;height:18px;vertical-align:-4px;margin-right:5px}
+  .pause-box .big lord-icon{width:56px;height:56px}
+</style>
+
+<!--subject-breakdown-start-->
+<style id="subject-breakdown-css">
+  #resultOverlay .modal{max-width:720px;max-height:90vh;overflow-y:auto;text-align:center}
+  .subject-breakdown{margin-top:18px;text-align:left}
+  .subject-breakdown h4{margin:0 0 10px;font-size:15px;text-align:center}
+  .subject-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .subject-row{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+  .subject-top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:12px}
+  .subject-name{font-weight:650;min-width:0}
+  .subject-score{white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+  .subject-bar{height:6px;margin-top:7px;border-radius:999px;overflow:hidden;background:var(--line)}
+  .subject-fill{height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  @media(max-width:600px){.subject-grid{grid-template-columns:1fr}}
+
+  /* Subject label shown on each question after grading */
+  .question-subject{max-width:min(58vw,360px);overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:700;
+    letter-spacing:.01em;color:var(--accent2);background:color-mix(in srgb,var(--accent) 18%,transparent);
+    border:1px solid color-mix(in srgb,var(--accent2) 42%,var(--line))}
+  @media(max-width:520px){.question-subject{max-width:52vw;font-size:10px;padding:3px 7px}}
+</style>
+<!--subject-breakdown-end-->
+
+<!--explanation-redesign-start-->
+<style id="explanation-redesign-css">
+  .expl{padding:0!important;white-space:normal!important;overflow:hidden;
+    background:color-mix(in srgb,var(--panel2) 82%,var(--panel))!important;
+    border:1px solid var(--line)!important;border-radius:14px!important}
+  .expl-shell{display:flex;flex-direction:column}
+  .expl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:12px 14px;background:color-mix(in srgb,var(--accent) 10%,var(--panel));
+    border-bottom:1px solid var(--line)}
+  .expl-title{font-size:13px;font-weight:800;color:var(--txt)}
+  .expl-answer{flex:0 0 auto;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800;
+    color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent);
+    border:1px solid color-mix(in srgb,var(--ok) 42%,var(--line))}
+  .expl-content{display:grid;gap:10px;padding:12px}
+  .expl-choice{padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
+  .expl-choice.is-correct{border-color:color-mix(in srgb,var(--ok) 56%,var(--line));
+    background:color-mix(in srgb,var(--okbg) 58%,var(--panel))}
+  .expl-choice-top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .expl-letter{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border-radius:7px;font-size:12px;font-weight:900;color:var(--muted);background:var(--panel2)}
+  .expl-choice.is-correct .expl-letter{color:#fff;background:var(--ok)}
+  .expl-state{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.045em;color:var(--muted)}
+  .expl-choice.is-correct .expl-state{color:var(--ok)}
+  .expl-option-copy{margin:0 0 8px;font-size:13px;font-weight:650;line-height:1.5;color:var(--txt)}
+  .expl-reason{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-note{padding:11px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line)}
+  .expl-note p{margin:0;font-size:13.5px;line-height:1.72;color:color-mix(in srgb,var(--txt) 88%,var(--muted))}
+  .expl-meta{display:grid;gap:5px;padding:10px 12px;border-radius:10px;
+    border:1px dashed color-mix(in srgb,var(--accent2) 50%,var(--line));
+    background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+  .expl-meta-row{display:flex;gap:7px;align-items:flex-start;font-size:12px;line-height:1.5;color:var(--muted)}
+  .expl-meta-row b{flex:0 0 auto;color:var(--accent2)}
+  @media(max-width:520px){
+    .expl-head{align-items:flex-start;padding:10px 11px}.expl-content{padding:9px;gap:8px}
+    .expl-choice{padding:10px}.expl-option-copy,.expl-reason,.expl-note p{font-size:12.5px}
+  }
+</style>
+<!--explanation-redesign-end-->
+<!--l2-vignette-start-->
+<style id="l2-css">
+  .stem .vig,.stem .qtext{white-space:normal}
+  .vig{border:1px solid var(--line);border-radius:12px;background:var(--panel2);margin:0 0 14px;overflow:hidden}
+  .vig>summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:13px;color:var(--muted);
+    list-style:none;display:flex;gap:8px;align-items:center;user-select:none}
+  .vig>summary::-webkit-details-marker{display:none}
+  .vig>summary::before{content:"▸";font-size:12px;transition:transform .15s}
+  .vig[open]>summary::before{transform:rotate(90deg)}
+  .vig>summary .vig-tag{background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);
+    padding:2px 8px;border-radius:999px;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+  .vig>summary .vig-hint{margin-left:auto;font-weight:500;font-size:12px}
+  .vig[open]>summary .vig-hint{display:none}
+  .vig[open]>summary{border-bottom:1px solid var(--line)}
+  .vig-body{padding:12px 16px;max-height:62vh;overflow:auto;font-size:15px;line-height:1.65}
+  .vig-body p,.qtext p,.expl-html p{margin:0 0 10px}
+  .qtext{font-size:16px;line-height:1.65}
+  .tbl{overflow-x:auto;margin:6px 0 12px}
+  .tbl table{border-collapse:collapse;font-size:14px;line-height:1.45}
+  .tbl td,.tbl th{border:1px solid var(--line);padding:5px 10px;text-align:left;vertical-align:top}
+  .tbl tr:first-child td,.tbl th{font-weight:600;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+  .pimg{display:block;margin:8px 0 12px;border-radius:8px;background:#fff;height:auto}
+  .expl-html{padding:14px 16px;line-height:1.65;font-size:14.5px}
+  .pp-topic{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.03em;color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 12%,transparent);padding:3px 10px;border-radius:999px;margin:0 0 10px}
+  .eimg{display:block;width:100%;max-width:900px;height:auto;border-radius:8px;background:#fff;margin:4px 0}
+  .qorig{margin:10px 0 0;font-size:12.5px;color:var(--muted)} .qorig summary{cursor:pointer}
+  .qorig img{display:block;max-width:100%;height:auto;margin-top:8px;border-radius:8px;background:#fff}
+  .kq-note{font-size:12.5px;line-height:1.5;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin:0 0 12px;background:var(--panel2)}
+  .pp-topic.set{color:#a855f7;background:color-mix(in srgb,#a855f7 12%,transparent)}
+</style>
+<script id="l2-js">
+function buildExplHtml(q){
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+q.ans;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content expl-html"; content.innerHTML=q.explhtml;
+  shell.appendChild(content); return shell;
+}
+</script>
+<!--l2-vignette-end-->
+</head>
+<body>
+<header>
+  <button class="back-btn" onclick="location.href='index.html#resume'" title="Quay lại danh sách">← Quay lại</button>
+  <div class="htext">
+    <h1 id="title"></h1>
+    <p id="subtitle"></p>
+  </div>
+  <span id="badge" class="badge"></span>
+  <span id="timer" class="timer hidden">--:--</span>
+  <button id="themeBtn" onclick="toggleTheme()" title="Sáng / Tối"></button>
+  <button id="navBtn" class="nav-toggle" onclick="toggleNav()"><lord-icon class="hi" src="https://cdn.lordicon.com/lyrrgrsl.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Câu hỏi</button>
+  <button id="pauseBtn" onclick="togglePause()" style="display:none">⏸ Tạm dừng</button>
+  <button onclick="restart()"><lord-icon class="hi" src="https://cdn.lordicon.com/xjovhxra.json" trigger="loop-on-hover" colors="primary:#538297,secondary:#86a7b5"></lord-icon>Làm lại</button>
+  <button id="submitBtn" class="btn-primary" onclick="requestSubmit()"><lord-icon src="https://cdn.lordicon.com/oqdmuxru.json" trigger="loop-on-hover" colors="primary:#ffffff,secondary:#ffffff"></lord-icon>Nộp bài</button>
+</header>
+<div class="progress-wrap"><div id="progress" class="progress"></div></div>
+<div id="resumeNote" class="resume-note"></div>
+
+<main id="quiz"></main>
+
+<aside id="navPanel">
+  <div class="nav-head"><b>Danh sách câu</b>
+    <button onclick="toggleNav()">✕</button></div>
+  <div class="chips" id="chips">
+    <button class="chip active" data-f="all"  onclick="setFilter('all',this)">Tất cả <span></span></button>
+    <button class="chip"        data-f="done" onclick="setFilter('done',this)">Đã làm <span></span></button>
+    <button class="chip"        data-f="todo" onclick="setFilter('todo',this)">Chưa làm <span></span></button>
+    <button class="chip"        data-f="pin"  onclick="setFilter('pin',this)">Đã ghim <span></span></button>
+  </div>
+  <div class="grid" id="navGrid"></div>
+</aside>
+
+<div id="confirmOverlay" class="overlay">
+  <div class="modal">
+    <h3>Nộp bài?</h3>
+    <p id="confirmMsg"></p>
+    <div class="modal-actions">
+      <button onclick="closeConfirm()">Tiếp tục làm</button>
+      <button class="btn-primary" onclick="confirmSubmit()">Nộp bài</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseOverlay" class="overlay">
+  <div class="modal pause-box">
+    <div class="big"><lord-icon src="https://cdn.lordicon.com/kbtmbyzy.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon></div>
+    <h3>Đã tạm dừng</h3>
+    <p>Đồng hồ đang dừng. Bấm tiếp tục để làm bài.</p>
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="togglePause()">▶ Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<div id="resultOverlay" class="overlay">
+  <div class="modal">
+    <span id="rEmoji" class="r-emoji">🎉</span>
+    <lord-icon id="rIcon" src="https://cdn.lordicon.com/lupuorrc.json" trigger="loop" colors="primary:#538297,secondary:#86a7b5"></lord-icon>
+    <h3 id="rTitle"></h3>
+    <p id="rScore" class="r-score"></p>
+
+    <!--subject-breakdown-panel-start-->
+    <div id="subjectBreakdown" class="subject-breakdown" aria-live="polite"></div>
+    <!--subject-breakdown-panel-end-->
+    <div class="modal-actions" style="justify-content:center">
+      <button class="btn-primary" onclick="document.getElementById('resultOverlay').classList.remove('show')">Xem lại bài</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = [{"n": 1, "q": "Calculate the value to the long party of a 2x4 forward rate agreement (FRA) initiated 30 days ago at 7.50% with a notional of $5,000,000 and given the following current MRRs: 30-day rate is 5%. 60-day rate is 5.5%. 90-day rate is 7%.", "opts": ["23,095", "3,917", "3,849"], "ans": "C", "expl": "30-days after the inception of the FRA: New forward rate = {[1 + (0.07 x 90/360)] / [1 + (0.05 x 30/360) - 1] x (360/60) = 7.97% Long is in the money as the new forward rate > 7.50%. Value(Long) = [(0.0797 – 0.075) x (60/360) x 5,000,000] / [1 + (0.07 x 90/360)] = 3,849", "explhtml": "<p>30-days after the inception of the FRA:<\/p><p>New forward rate = {[1 + (0.07 x 90/360)] / [1 + (0.05 x 30/360) - 1] x (360/60) = 7.97%<\/p><p>Long is in the money as the new forward rate &gt; 7.50%.<\/p><p>Value(Long) = [(0.0797 – 0.075) x (60/360) x 5,000,000] / [1 + (0.07 x 90/360)] = 3,849<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.5, LOS 28.c<\/div><div class=\"qtext\"><p>Calculate the value to the long party of a 2x4 forward rate agreement (FRA) initiated 30 days ago at 7.50% with a notional of $5,000,000 and given the following current MRRs:<\/p><p>30-day rate is 5%. 60-day rate is 5.5%. 90-day rate is 7%.<\/p><\/div>", "subj": "derivatives"}, {"n": 2, "q": "An index is currently 876, the risk-free rate (Rf) is 7%, and the dividend yield on the index portfolio is 1.8%. Assuming that these are continuously compounded yields, the price of an 18-month index future is closest to:", "opts": ["947.1.", "945.2.", "943.0."], "ans": "A", "expl": "FP = 876 e(0.07-0.018)1.5 = 947.1.", "explhtml": "<p>FP = 876 e(0.07-0.018)1.5 = 947.1.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.2, LOS 28.a<\/div><div class=\"qtext\"><p>An index is currently 876, the risk-free rate (R<sub>f<\/sub>) is 7%, and the dividend yield on the index portfolio is 1.8%. Assuming that these are continuously compounded yields, the price of an 18-month index future is closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 3, "q": "The fixed-rate on a semiannual 2-year interest rate swap is closest to the:", "opts": ["current 180-day T-bill rate.", "coupon rate on a 2-year par bond with the same credit risk as the reference rate.", "coupon rate on a 2-year par bond with the same credit risk as the fixed-rate payer."], "ans": "B", "expl": "The fixed-rate on a swap is calculated using the yield curve for the floating rate reference. Therefore, the fixed rate reflects the credit spread of that rate over the riskless rate of return.", "explhtml": "<p>The fixed-rate on a swap is calculated using the yield curve for the floating rate reference. Therefore, the fixed rate reflects the credit spread of that rate over the riskless rate of return.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>The fixed-rate on a semiannual 2-year interest rate swap is closest to the:<\/p><\/div>", "subj": "derivatives"}, {"n": 4, "q": "Has the bank correctly calculated the fixed rates on the currency swap?", "opts": ["Both fixed rates are incorrectly calculated.", "One of the two fixed rates is incorrectly calculated.", "Both fixed rates are correctly calculated."], "ans": "A", "expl": "Fixed rate for the USD: 1−0.9901 = 0.00498 = 0.498% 0.9965+0.9901 360 0.498% ×  = 0.997% In annual terms, the fixed rate for the USD =  180 Fixed rate for the euro: 1−0.9804 = 0.00993 = 0.993% 0.9926+0.9804 360 0.993% ×  = 1.987% In annual terms, the fixed rate for the euro =  180 The fixed rates quoted by the bank are both incorrectly calculated.", "explhtml": "<p>Fixed rate for the USD:<\/p><p>1−0.9901<\/p><p>= 0.00498 = 0.498%<\/p><p>0.9965+0.9901<\/p><p>360 0.498% × &nbsp; = 0.997%<\/p><p>In annual terms, the fixed rate for the USD = <\/p><p>180<\/p><p>Fixed rate for the euro:<\/p><p>1−0.9804<\/p><p>= 0.00993 = 0.993%<\/p><p>0.9926+0.9804<\/p><p>360 0.993% × &nbsp; = 1.987%<\/p><p>In annual terms, the fixed rate for the euro = <\/p><p>180<\/p><p>The fixed rates quoted by the bank are both incorrectly calculated.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 4–7<\/div> <div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"kq-note\">Câu thuộc item set (câu 4–7). File đáp án Kaplan không kèm đoạn vignette/exhibit chung của case — một số số liệu chỉ xuất hiện trong phần giải thích.<\/div><div class=\"qtext\"><p>Has the bank correctly calculated the fixed rates on the currency swap?<\/p><\/div>", "subj": "derivatives"}, {"n": 5, "q": "If OTS decides on a fixed for fixed currency swap, what is the market value of the swap to OTS three months after swap initiation?", "opts": ["The value of the euro payments is €97.68m and converting the euro value to USD using €1: USD1.55, the swap has a positive to OTS.", "The value of the euro payments is €100.27m and converting the euro value to USD using €1: USD1.48, the swap has a positive to OTS.", "The value of the euro payments is €101.8m and converting the euro value to USD using €1: USD1.43, the swap has a positive to OTS."], "ans": "B", "expl": "To mitigate currency risk, OTS would be the party paying the fixed rate on USD and receiving the fixed rate on euro. The notional principal is €100m to USD143 million. Note this is using the $/€ of 1.43 at swap initiation. We show the computation of the value of USD payments also even though it is not required for the question. The value of the USD fixed payments is equivalent to the value of a USD143m fixed rate bond that pays a coupon in 90 days' time and a coupon plus face value in 270 days' time. The coupon rate would be 0.85% as provided in the vignette. The coupons on the bond = 0.0085 × (180 / 360) × $143m = $607,750. Maturity $ MRR Discount Factor CF DCF 90  0.85%  0.9979  $607,750  606,474 270  1.20%  0.9911  $143,607,750  142,329,641 $142,936,115 PV $ Fixed The value of the Euro fixed payments is equivalent to the value of a €100m fixed rate bond that pays a coupon in 90 days' time and a coupon plus face value in 270 days' time. The coupon rate would be 1.75% as computed in the solution to question 1. The coupons on the bond = 0.0175 × (180 / 360) × €100m = €875,000 Maturity $ MRR Discount Factor CF DCF 90  1.30%  0.9968  €875,000  872,200 270  2.30%  0.9830  €100,875,000  99,160,125 €100,032,325 PV € Fixed OTS is based in the U.S. but has borrowed in €'s. OTS would therefore take the position of receiving €'s and paying $'s in the currency swap. Convert the € fixed coupon bond into $'s at the date of the valuation using the exchange rate $/€ = 1.48 €100,032,325 × 1.48 = $148,047,841 The value to the party paying $'s and receiving €'s = $148,047,841 – $142,936,115 = $5,111,726 Note that no actual computations were required to answer this question if you spotted that answer B was the only solution to use the correct exchange rate.", "explhtml": "<p>To mitigate currency risk, OTS would be the party paying the fixed rate on USD and receiving the fixed rate on euro. The notional principal is €100m to USD143 million. Note this is using the $/€ of 1.43 at swap initiation.<\/p><p>We show the computation of the value of USD payments also even though it is not required for the question. The value of the USD fixed payments is equivalent to the value of a USD143m fixed rate bond that pays a coupon in 90 days&#x27; time and a coupon plus face value in 270 days&#x27; time. The coupon rate would be 0.85% as provided in the vignette.<\/p><p>The coupons on the bond = 0.0085 × (180 / 360) × $143m = $607,750.<\/p><div class=\"tbl\"><table><tr><td>Maturity<\/td><td>$ MRR<\/td><td>Discount Factor<\/td><td>CF<\/td><td>DCF<\/td><\/tr><\/table><\/div><p>90 &nbsp; 0.85% &nbsp; 0.9979 &nbsp; $607,750 &nbsp; 606,474 270 &nbsp; 1.20% &nbsp; 0.9911 &nbsp; $143,607,750 &nbsp; 142,329,641<\/p><p>$142,936,115<\/p><p>PV $ Fixed<\/p><p>The value of the Euro fixed payments is equivalent to the value of a €100m fixed rate bond that pays a coupon in 90 days&#x27; time and a coupon plus face value in 270 days&#x27; time. The coupon rate would be 1.75% as computed in the solution to question 1.<\/p><p>The coupons on the bond = 0.0175 × (180 / 360) × €100m = €875,000<\/p><div class=\"tbl\"><table><tr><td>Maturity<\/td><td>$ MRR<\/td><td>Discount Factor<\/td><td>CF<\/td><td>DCF<\/td><\/tr><\/table><\/div><p>90 &nbsp; 1.30% &nbsp; 0.9968 &nbsp; €875,000 &nbsp; 872,200 270 &nbsp; 2.30% &nbsp; 0.9830 &nbsp; €100,875,000 &nbsp; 99,160,125<\/p><p>€100,032,325<\/p><p>PV € Fixed<\/p><p>OTS is based in the U.S. but has borrowed in €&#x27;s. OTS would therefore take the position of receiving €&#x27;s and paying $&#x27;s in the currency swap.<\/p><p>Convert the € fixed coupon bond into $&#x27;s at the date of the valuation using the exchange rate $/€ = 1.48<\/p><p>€100,032,325 × 1.48 = $148,047,841<\/p><p>The value to the party paying $&#x27;s and receiving €&#x27;s = $148,047,841 – $142,936,115 = $5,111,726 Note that no actual computations were required to answer this question if you spotted that answer B was the only solution to use the correct exchange rate.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 4–7<\/div> <div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>If OTS decides on a fixed for fixed currency swap, what is the market value of the swap to OTS three months after swap initiation?<\/p><\/div>", "subj": "derivatives"}, {"n": 6, "q": "Using the information in Exhibit 2, what is the market value of the equity swap to OTS three months after swap initiation?", "opts": ["+USD80.35 million.", "+USD85.33 million.", "+USD88.76 million."], "ans": "A", "expl": "OTS is paying the equity return and the value is: (1000 / 1190) × USD500m = USD420.17 million The value of fixed payments is equivalent to the value of a one-year fixed coupon bond with 0.5% semi-annual coupon. The value of bond is the present value of the two coupon payments and the par value: [(0.005 × 0.9979) + (1.005 × 0.9911)] × 500m = USD 500.52 million. Value to OTS: USD500.52m – USD420.17m = USD80.35 million", "explhtml": "<p>OTS is paying the equity return and the value is:<\/p><p>(1000 / 1190) × USD500m = USD420.17 million<\/p><p>The value of fixed payments is equivalent to the value of a one-year fixed coupon bond with 0.5% semi-annual coupon. The value of bond is the present value of the two coupon payments and the par value:<\/p><p>[(0.005 × 0.9979) + (1.005 × 0.9911)] × 500m = USD 500.52 million.<\/p><p>Value to OTS: USD500.52m – USD420.17m = USD80.35 million<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 4–7<\/div> <div class=\"pp-topic\">Module 28.8, LOS 28.g<\/div><div class=\"qtext\"><p>Using the information in Exhibit 2, what is the market value of the equity swap to OTS three months after swap initiation?<\/p><\/div>", "subj": "derivatives"}, {"n": 7, "q": "How many of Smith's comments are correct?", "opts": ["Neither comment is correct.", "One comment is correct.", "Both comments are correct."], "ans": "B", "expl": "When the index declines, the fixed rate payer would pay the negative return in addition to the fixed rate and, hence, will suffer a loss greater than the fixed rate. There is no way of knowing the first payment on an equity swap because we do not know the value of the equity index on the payment date. The floating rate for the first settlement also known at time 0 (known as advance set, paid in arrears).", "explhtml": "<p>When the index declines, the fixed rate payer would pay the negative return in addition to the fixed rate and, hence, will suffer a loss greater than the fixed rate. There is no way of knowing the first payment on an equity swap because we do not know the value of the equity index on the payment date. The floating rate for the first settlement also known at time 0 (known as advance set, paid in arrears).<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 4–7<\/div> <div class=\"pp-topic\">Module 28.8, LOS 28.g<\/div><div class=\"qtext\"><p>How many of Smith&#x27;s comments are correct?<\/p><\/div>", "subj": "derivatives"}, {"n": 8, "q": "How will the price of the one-year stock index future perform over the next 12 months?", "opts": ["The futures price will converge to the future spot index price, with the basis reducing to zero.", "The value will move approximately in line with the spot index price, with a fairly constant basis.", "The futures price will move approximately in line with the spot index price, though its actual level at the end of the year will depend more on supply and demand than on the spot price."], "ans": "A", "expl": "The futures price will converge to the spot price over the lifetime of the contract, with the basis (difference between future and spot) reducing over this period to zero as an expiring futures contract is the same as a spot transaction. At expiration the futures and spot price will converge to prevent an arbitrage opportunity. Answer B is wrong, as it implies the future price will move in a straight line.", "explhtml": "<p>The futures price will converge to the spot price over the lifetime of the contract, with the basis (difference between future and spot) reducing over this period to zero as an expiring futures contract is the same as a spot transaction. At expiration the futures and spot price will converge to prevent an arbitrage opportunity. Answer B is wrong, as it implies the future price will move in a straight line.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 8–11<\/div> <div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"kq-note\">Câu thuộc item set (câu 8–11). File đáp án Kaplan không kèm đoạn vignette/exhibit chung của case — một số số liệu chỉ xuất hiện trong phần giải thích.<\/div><div class=\"qtext\"><p>How will the price of the one-year stock index future perform over the next 12 months?<\/p><\/div>", "subj": "derivatives"}, {"n": 9, "q": "Comment 1 is best described as:", "opts": ["correct.", "incorrect as the value of the futures contract should be negative after marking to market.", "incorrect as the value of the futures contract should be zero after marking to market."], "ans": "C", "expl": "The value of a futures contract will reset to zero after marking-to-market.", "explhtml": "<p>The value of a futures contract will reset to zero after marking-to-market.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 8–11<\/div> <div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"qtext\"><p>Comment 1 is best described as:<\/p><\/div>", "subj": "derivatives"}, {"n": 10, "q": "Comment 2 is best described as:", "opts": ["correct.", "incorrect as the full price should be the clean price less the current accrued interest.", "incorrect as the accrued interest at expiration should be deducted from the future value of full bond price in arriving at the quoted futures price."], "ans": "C", "expl": "The quoted (clean) price of the futures contract is the future value of the full price of the cheapest to deliver bond less accrued interest (since last coupon) and the future value any coupon payment received during the life of the contract and then adjusted for the appropriate conversion factor. QFP = {(full price) × (1 + Rf)T – AIT – FVC)(1 / CF)", "explhtml": "<p>The quoted (clean) price of the futures contract is the future value of the full price of the cheapest to deliver bond less accrued interest (since last coupon) and the future value any coupon payment received during the life of the contract and then adjusted for the appropriate conversion factor.<\/p><p>QFP = {(full price) × (1 + R<sub>f<\/sub>)<sup>T<\/sup> – AI<sub>T<\/sub> – FVC)(1 / CF)<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 8–11<\/div> <div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"qtext\"><p>Comment 2 is best described as:<\/p><\/div>", "subj": "derivatives"}, {"n": 11, "q": "Using Exhibit 1, the quoted price of the Treasury bond futures contract should be closest to:", "opts": ["$941.", "$975.", "$1,100."], "ans": "A", "expl": "An investor of the Treasury bond will receive one semi-annual coupon in 0.5 years from now (or 0.2 years before maturity). At expiration of the futures contract, the CTD bond will have 0.2 years of accrued interest. FV of coupon (FVC) = $25 × 1.03(0.7 – 0.5) = $25.15 AIT = 0.2 / 0.5 × $25 = $10 QFP = {(full price) × (1 + Rf)T – AIT – FVC)(1 / CF) = [$1030(1.03)0.7 – 10 – 25.15](1 / 1.08) = $941.10", "explhtml": "<p>An investor of the Treasury bond will receive one semi-annual coupon in 0.5 years from now (or 0.2 years before maturity). At expiration of the futures contract, the CTD bond will have 0.2 years of accrued interest.<\/p><p>FV of coupon (FVC) = $25 × 1.03<sup>(0.7 – 0.5)<\/sup> = $25.15<\/p><p>AI<sub>T<\/sub> = 0.2 / 0.5 × $25 = $10<\/p><p>QFP = {(full price) × (1 + R<sub>f<\/sub>)<sup>T<\/sup> – AI<sub>T<\/sub> – FVC)(1 / CF)<\/p><p>= [$1030(1.03)<sup>0.7<\/sup> – 10 – 25.15](1 / 1.08)<\/p><p>= $941.10<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 8–11<\/div> <div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"qtext\"><p>Using Exhibit 1, the quoted price of the Treasury bond futures contract should be closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 12, "q": "The value of a futures contract between the times when the account is marked-to-market is:", "opts": ["never less than the value of a forward contract entered into on the same date.", "the same as the contract price.", "equal to the difference between the price of a newly issued contract and the settle price at the most recent mark-to-market period."], "ans": "C", "expl": "Between the mark-to-market account adjustments, the contract value is calculated just like that of a forward contract; it is the difference between the price at the last mark-to-market and the current futures price, (i.e. the futures price on a newly issued contract). The mark-to-market of a futures contract is the payment or receipt of funds necessary to adjust for the gains or losses on the position. This adjusts the contract price to the 'no-arbitrage' price currently prevailing in the market.", "explhtml": "<p>Between the mark-to-market account adjustments, the contract value is calculated just like that of a forward contract; it is the difference between the price at the last mark-to-market and the current futures price, (i.e. the futures price on a newly issued contract). The mark-to-market of a futures contract is the payment or receipt of funds necessary to adjust for the gains or losses on the position. This adjusts the contract price to the &#x27;no-arbitrage&#x27; price currently prevailing in the market.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>The value of a futures contract between the times when the account is marked-to-market is:<\/p><\/div>", "subj": "derivatives"}, {"n": 13, "q": "An index is currently 965 and the continuously compounded dividend yield on the index is 2.3%. What is the no-arbitrage price on a one-year index forward contract if the continuously compounded risk-free rate is 5%.", "opts": ["991.1.", "991.4.", "987.2."], "ans": "B", "expl": "The futures price FP = S₀e⁻δT (eRT) = S₀e(R-δ)T = 965e(.05-.023) = 991.4", "explhtml": "<p>The futures price FP = S<sub>0<\/sub>e<sup>-<\/sup><sup>δ<\/sup><sup>T<\/sup> (e<sup>RT<\/sup>)<\/p><p>= S<sub>0<\/sub>e<sup>(R-<\/sup><sup>δ<\/sup><sup>)T<\/sup><\/p><p>= 965e(.05-.023)<\/p><p>= 991.4<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.2, LOS 28.a<\/div><div class=\"qtext\"><p>An index is currently 965 and the continuously compounded dividend yield on the index is 2.3%. What is the no-arbitrage price on a one-year index forward contract if the continuously compounded risk-free rate is 5%.<\/p><\/div>", "subj": "derivatives"}, {"n": 14, "q": "The contract price of a forward contract is:", "opts": ["the price that makes the contract a zero-value investment at initiation.", "always the present value of the expected future spot price.", "determined at the settlement date."], "ans": "A", "expl": "The contract price can be an interest rate, discount, yield to maturity, or exchange rate. The forward price is the future value of the spot price adjusted for any periodic payments expected from the asset. An example of when the forward price may be less than the spot price is in the case of an equity index contract where the dividend yield is greater than the risk-free rate.", "explhtml": "<p>The contract price can be an interest rate, discount, yield to maturity, or exchange rate. The forward price is the future value of the spot price adjusted for any periodic payments expected from the asset. An example of when the forward price may be less than the spot price is in the case of an equity index contract where the dividend yield is greater than the risk-free rate.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>The contract price of a forward contract is:<\/p><\/div>", "subj": "derivatives"}, {"n": 15, "q": "What is the difference between spot and futures prices? Spot prices are always:", "opts": ["equal to the futures price at futures expiration.", "lower than futures prices.", "delivered to meet the futures obligation at expiration."], "ans": "A", "expl": "The difference between the spot and the futures price must be zero at expiration to avoid arbitrage.", "explhtml": "<p>The difference between the spot and the futures price must be zero at expiration to avoid arbitrage.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>What is the difference between spot and futures prices? Spot prices are always:<\/p><\/div>", "subj": "derivatives"}, {"n": 16, "q": "Which of the following is equivalent to a pay-fixed swap with a tenor of two years with semi-annual swap payments and a fixed rate of 6% (exchanged for MRR)? The notional principal is $100,000,000.", "opts": ["A strip of two forward rate agreements, which obligates the party to pay a fixed rate of 6% and receive six-month MRR on a notional principal of $100,000,000.", "A forward rate agreement, which obligates the party to pay a fixed rate of 6% and receive six-month MRR on a notional principal of $100,000,000.", "A strip of three forward rate agreements, which obligates the party to pay a fixed rate of 6% and receive six-month MRR on a notional principal of $100,000,000."], "ans": "C", "expl": "In an interest rate swap, the first payment is known with certainty and will be made at month 6. The determination dates for the floating rate will be at months 6, 12, and 18 and the corresponding payment dates will be at months 12, 18, and 24. These correspond to the three forward rate agreements.", "explhtml": "<p>In an interest rate swap, the first payment is known with certainty and will be made at month 6. The determination dates for the floating rate will be at months 6, 12, and 18 and the corresponding payment dates will be at months 12, 18, and 24. These correspond to the three forward rate agreements.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>Which of the following is equivalent to a pay-fixed swap with a tenor of two years with semi-annual swap payments and a fixed rate of 6% (exchanged for MRR)? The notional principal is $100,000,000.<\/p><\/div>", "subj": "derivatives"}, {"n": 17, "q": "An equity portfolio manager who has a positive long-term outlook for equities, but expects equity prices to decline over the next three months, would most appropriately enter into:", "opts": ["a short straddle with an equity index as the underlying.", "an equity swap as the equity return receiver.", "an equity swap as the equity return payer."], "ans": "C", "expl": "By entering an equity swap as the equity return payer, the manager can protect the portfolio value from a short-term decline in equity prices while keeping ownership of the equities for the longer term. A short straddle costs the investor when the price of the underlying moves up or down.", "explhtml": "<p>By entering an equity swap as the equity return payer, the manager can protect the portfolio value from a short-term decline in equity prices while keeping ownership of the equities for the longer term. A short straddle costs the investor when the price of the underlying moves up or down.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.8, LOS 28.g<\/div><div class=\"qtext\"><p>An equity portfolio manager who has a positive long-term outlook for equities, but expects equity prices to decline over the next three months, would most appropriately enter into:<\/p><\/div>", "subj": "derivatives"}, {"n": 18, "q": "Over the life of a swap, the price of the swap:", "opts": ["fluctuates with changes in the yield curve.", "does not change.", "is approximately equal to the market value of the swap."], "ans": "B", "expl": "The price of a swap, quoted as the fixed rate in the swap, is determined at contract initiation and remains fixed for the life of the swap.", "explhtml": "<p>The price of a swap, quoted as the fixed rate in the swap, is determined at contract initiation and remains fixed for the life of the swap.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>Over the life of a swap, the price of the swap:<\/p><\/div>", "subj": "derivatives"}, {"n": 19, "q": "Consider a 1-year semiannual equity swap based on an index at 985 and a fixed rate of 4.4%. 90 days after the initiation of the swap, the index is at 982 and MRR is 4.6% for 90 days and 4.8% for 270 days. The value of the swap to the equity payer, based on a $2 million notional value is closest to:", "opts": ["$22,314", "−$22,564", "$22,564"], "ans": "C", "expl": "0.044  0.044 | 982  1 | 2  2 | =  −  −  − 985 1+(0.046×  )  1+(0.048×  )  1+(0.048×  ) | 90  270  270 | 360  360  360 | 982  0.022  0.022  1 | =  −  −  − | 985  1.0115  1.036  1.036 = 0.996954 −0.021750 −0.021236 −0.965251 = −0.0112821 × 2, 000, 000 = −$22, 564 −$22,564 is the value to the fixed-rate payer, thus $22,564 is the value to the equity return payer.", "explhtml": "<div class=\"tbl\"><table><tr><td>0.044<\/td><td>0.044<\/td><\/tr><tr><td>982<\/td><td>1<\/td><\/tr><tr><td>2<\/td><td>2<\/td><\/tr><tr><td>=<\/td><td>−<\/td><td>−<\/td><td>−<\/td><\/tr><\/table><\/div><p>985<\/p><div class=\"tbl\"><table><tr><td>1+(0.046×<\/td><td>)<\/td><td>1+(0.048×<\/td><td>)<\/td><td>1+(0.048×<\/td><td>)<\/td><\/tr><tr><td>90<\/td><td>270<\/td><td>270<\/td><\/tr><tr><td>360<\/td><td>360<\/td><td>360<\/td><\/tr><tr><td>982<\/td><td>0.022<\/td><td>0.022<\/td><td>1<\/td><\/tr><tr><td>=<\/td><td>−<\/td><td>−<\/td><td>−<\/td><\/tr><tr><td>985<\/td><td>1.0115<\/td><td>1.036<\/td><td>1.036<\/td><\/tr><\/table><\/div><p>= 0.996954 −0.021750 −0.021236 −0.965251<\/p><p>= −0.0112821 × 2, 000, 000 = −$22, 564<\/p><p>−$22,564 is the value to the fixed-rate payer, thus $22,564 is the value to the equity return payer.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.8, LOS 28.g<\/div><div class=\"qtext\"><p>Consider a 1-year semiannual equity swap based on an index at 985 and a fixed rate of 4.4%. 90 days after the initiation of the swap, the index is at 982 and MRR is 4.6% for 90 days and 4.8% for 270 days. The value of the swap to the equity payer, based on a $2 million notional value is closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 20, "q": "The floating-rate payer in a simple interest-rate swap has a position that is equivalent to:", "opts": ["a series of long forward rate agreements (FRAs).", "issuing a floating-rate bond and a series of long FRAs.", "a series of short FRAs."], "ans": "C", "expl": "The floating-rate payer has a liability/gain when rates increase/decrease above the fixed contract rate; the short position in an FRA has a liability/gain when rates increase/decrease above the contract rate.", "explhtml": "<p>The floating-rate payer has a liability/gain when rates increase/decrease above the fixed contract rate; the short position in an FRA has a liability/gain when rates increase/decrease above the contract rate.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>The floating-rate payer in a simple interest-rate swap has a position that is equivalent to:<\/p><\/div>", "subj": "derivatives"}, {"n": 21, "q": "A company has chosen to use a 6 x 9 FRA expiring in 6 months to mitigate the risk of paying a floating coupon on the bond issue. The current term structure for MRR is as follows: Term Interest Rate 180 days 5.65% 270 days 5.95% What is the price of this forward rate agreement (FRA)?", "opts": ["6.37%", "3.19%", "$6.37"], "ans": "A", "expl": "The price of an FRA is the fixed rate. To determine the FRA's fixed rate, the following formula should be used: ⎛  ⎞ | 1+rYP  360 | (  ) | ⎝  ⎠ | FRA price =  −1 Y−X 1+rXP ⎡  ⎤ | 1+.0595(  ) 270 ⎢⎢⎢  ⎥⎥⎥ 360 360 (  ) = 0.0637 | =  −1 90 ⎣  ⎦ | 1+.0565(  ) −−−−−− 180 −−−−−− 360 The FRA's fixed rate would be quoted as 6.37%. The price of an FRA is given as a rate percentage, never as a dollar amount.", "explhtml": "<p>The price of an FRA is the fixed rate. To determine the FRA&#x27;s fixed rate, the following formula should be used:<\/p><div class=\"tbl\"><table><tr><td>⎛<\/td><td>⎞<\/td><\/tr><tr><td>1+rYP<\/td><td>360<\/td><\/tr><tr><td>(<\/td><td>)<\/td><\/tr><tr><td>⎝<\/td><td>⎠<\/td><\/tr><tr><td>FRA price =<\/td><td>−1<\/td><\/tr><\/table><\/div><p>Y−X<\/p><p>1+rXP<\/p><div class=\"tbl\"><table><tr><td>⎡<\/td><td>⎤<\/td><\/tr><tr><td>1+.0595(<\/td><td>)<\/td><\/tr><\/table><\/div><p>270 ⎢⎢⎢ &nbsp; ⎥⎥⎥<\/p><p>360<\/p><p>360<\/p><div class=\"tbl\"><table><tr><td>(<\/td><td>) = 0.0637<\/td><\/tr><tr><td>=<\/td><td>−1<\/td><\/tr><\/table><\/div><p>90<\/p><div class=\"tbl\"><table><tr><td>⎣<\/td><td>⎦<\/td><\/tr><tr><td>1+.0565(<\/td><td>)<\/td><\/tr><\/table><\/div><p>−−−−−−<\/p><p>180<\/p><p>−−−−−−<\/p><p>360<\/p><p>The FRA&#x27;s fixed rate would be quoted as 6.37%.<\/p><p>The price of an FRA is given as a rate percentage, never as a dollar amount.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>A company has chosen to use a 6 x 9 FRA expiring in 6 months to mitigate the risk of paying a floating coupon on the bond issue. The current term structure for MRR is as follows:<\/p><div class=\"tbl\"><table><tr><td>Term<\/td><td>Interest Rate<\/td><\/tr><tr><td>180 days<\/td><td>5.65%<\/td><\/tr><tr><td>270 days<\/td><td>5.95%<\/td><\/tr><\/table><\/div><p>What is the price of this forward rate agreement (FRA)?<\/p><\/div>", "subj": "derivatives"}, {"n": 22, "q": "The price of a forward contract:", "opts": ["depends on forward interest rates.", "is determined at contract initiation.", "changes over the term of the contract."], "ans": "B", "expl": "The price of a forward contract is established at the initiation of the contract and is expressed in different terms, depending on the underlying assets. It is the price that makes the contract value zero, and depends on current interest rates through the cost-of-carry calculation.", "explhtml": "<p>The price of a forward contract is established at the initiation of the contract and is expressed in different terms, depending on the underlying assets. It is the price that makes the contract value zero, and depends on current interest rates through the cost-of-carry calculation.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>The price of a forward contract:<\/p><\/div>", "subj": "derivatives"}, {"n": 23, "q": "In an equity return swap for MRR, if the return on the underlying equity portfolio is negative for a payment period, the equity return payer will:", "opts": ["make a net payment greater than the loss of value on the equity portfolio.", "receive a net payment greater than the loss of value on the equity portfolio.", "receive a net payment less than the loss of value on the equity portfolio."], "ans": "B", "expl": "The equity return payer will receive the periodic interest payment and \"pay\" the negative return on the portfolio, resulting in a net payment to the equity return payer that is greater than the loss on the equity portfolio.", "explhtml": "<p>The equity return payer will receive the periodic interest payment and &quot;pay&quot; the negative return on the portfolio, resulting in a net payment to the equity return payer that is greater than the loss on the equity portfolio.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.8, LOS 28.g<\/div><div class=\"qtext\"><p>In an equity return swap for MRR, if the return on the underlying equity portfolio is negative for a payment period, the equity return payer will:<\/p><\/div>", "subj": "derivatives"}, {"n": 24, "q": "Which of the following best describes the price of a forward contract? The forward price is:", "opts": ["always expressed in dollars.", "always equal to the market price at contract termination.", "the price that makes the values of the long and short positions zero at contract initiation."], "ans": "C", "expl": "The forward price is the contract price of the underlying asset under the terms of the forward contract, and is the price that makes the values of the long and short positions zero at contract initiation. It is not the amount it costs to purchase the forward contract. The forward price is expressed in terms of the underlying asset, and may be a dollar value, exchange rate, or interest rate. The value of a forward contract comes from the difference between the forward contract price and the market price for the underlying asset. These values are likely to be different at contract termination, which will result in a profit for either the long or the short position.", "explhtml": "<p>The forward price is the contract price of the underlying asset under the terms of the forward contract, and is the price that makes the values of the long and short positions zero at contract initiation. It is not the amount it costs to purchase the forward contract. The forward price is expressed in terms of the underlying asset, and may be a dollar value, exchange rate, or interest rate. The value of a forward contract comes from the difference between the forward contract price and the market price for the underlying asset. These values are likely to be different at contract termination, which will result in a profit for either the long or the short position.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>Which of the following best describes the price of a forward contract? The forward price is:<\/p><\/div>", "subj": "derivatives"}, {"n": 25, "q": "Which of the following comments relating to Brodeur's use of a forward rate agreement is least accurate?", "opts": ["A short FRA can be used to lock into a fixed rate of borrowing commencing in two months’ time and expiring in five months’ time.", "The use of a FRA to hedge interest rate risk would lock Brodeur into paying a fixed rate plus 40 basis points for her borrowing.", "The use of a FRA to hedge interest rate risk on her future loan will mean that she no longer benefits if interest rates fall."], "ans": "A", "expl": "A long FRA will create the obligation to pay fixed and receive floating from months 2 to month 5. The floating payments will offset her bank loan leaving her with a pay fixed obligation, where the fixed rate is determined today. The floating receipt on the FRA and the floating payment on the loan she will need to take out will offset leaving a net payment of 40 basis points. Overall, she will now pay the fixed rate on the swap plus the 40 basis points on the loan. The use of a long FRA will lock Elodie into paying fixed interest rate on the FRA (the FRAs forward price) plus the basis points on her loan above MRR. Elodie will no longer benefit from interest rate declines but will be protected from interest rises.", "explhtml": "<p>A long FRA will create the obligation to pay fixed and receive floating from months 2 to month 5. The floating payments will offset her bank loan leaving her with a pay fixed obligation, where the fixed rate is determined today.<\/p><p>The floating receipt on the FRA and the floating payment on the loan she will need to take out will offset leaving a net payment of 40 basis points. Overall, she will now pay the fixed rate on the swap plus the 40 basis points on the loan.<\/p><p>The use of a long FRA will lock Elodie into paying fixed interest rate on the FRA (the FRAs forward price) plus the basis points on her loan above MRR. Elodie will no longer benefit from interest rate declines but will be protected from interest rises.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 25–28<\/div> <div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"kq-note\">Câu thuộc item set (câu 25–28). File đáp án Kaplan không kèm đoạn vignette/exhibit chung của case — một số số liệu chỉ xuất hiện trong phần giải thích.<\/div><div class=\"qtext\"><p>Which of the following comments relating to Brodeur&#x27;s use of a forward rate agreement is least accurate?<\/p><\/div>", "subj": "derivatives"}, {"n": 26, "q": "Using the data in Exhibit 1, which of the following is closest to the forward price of the FRA?", "opts": ["2.4%.", "2.8%.", "3.0%."], "ans": "C", "expl": "Step 1: Identify the correct MRR rates. We will require the MRR rate until FRA expiry (day 60) and also the MRR rate at the end of the borrowing/lending period (day 150). The 90-day MRR rate is a distractor. Elodie will borrow for 90 days but not from current date (T0). Elodie requires a 90-day loan commencing in 60 days' time. Step 2: Unannualize the quoted rates. 60 MRR60 day = 2% ×   = 0.3333% 360 150 MRR150 day = 2.6% ×   = 1.0833% 360 Step 3: Compute the annualized forward price (fixed rate) starting in 60 days and lasting for 90 days. Forward rate = ((1 + long rate) / (1 + short rate) – 1)(360 / 90) = 2.99%", "explhtml": "<p>Step 1: Identify the correct MRR rates.<\/p><p>We will require the MRR rate until FRA expiry (day 60) and also the MRR rate at the end of the borrowing/lending period (day 150).<\/p><p>The 90-day MRR rate is a distractor. Elodie will borrow for 90 days but not from current date (T0). Elodie requires a 90-day loan commencing in 60 days&#x27; time.<\/p><p>Step 2: Unannualize the quoted rates.<\/p><p>60 MRR60 day = 2% ×  &nbsp; = 0.3333%<\/p><p>360<\/p><p>150 MRR150 day = 2.6% ×  &nbsp; = 1.0833%<\/p><p>360<\/p><p>Step 3: Compute the annualized forward price (fixed rate) starting in 60 days and lasting for 90 days.<\/p><p>Forward rate = ((1 + long rate) / (1 + short rate) – 1)(360 / 90) = 2.99%<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 25–28<\/div> <div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>Using the data in Exhibit 1, which of the following is closest to the forward price of the FRA?<\/p><\/div>", "subj": "derivatives"}, {"n": 27, "q": "For this question only, assume that the forward price of the FRA was 2.9%. Which of the following is the closest to the value accrued on the FRA from Brodeur's perspective one month after initiation of the contract?", "opts": ["+€2,300.", "+€2,200.", "–€2,265."], "ans": "A", "expl": "The value of a FRA before expiry can be calculated by comparing the fixed rate on the original FRA to the fixed rate on a new FRA covering the same borrowing and lending period. Step 1: Identify the correct MRR rates. After 1 month has passed there is now 1 month until the original FRAs expiry and 4 months to the end of the borrowing and lending period. So we will require 30 day and 120 day MRR (i.e., (1 × 4) FRA price) Step 2: Unannualize rates. 30 MRR30 day = 1.8% ×   = 0.15% 360 120 MRR120 day = 2.8% ×   = 0.9333% 360 Step 3: Compute the fixed rate (forward price) on a new FRA with the same expiry as the original FRA. Forward rate = ((1 + long rate) / (1 + short rate) – 1)(360 / 90) = 3.1286% Step 4: Compute the gain/(loss) on FRA at the end of the borrowing/lending period. Gain to long = (new fixed rate – original fixed rate)(days / 360)(notional) = (0.0313 – 0.029)(90 / 360)(4m) = 2,300 Step 5: Discount the gain/(loss) from the end of borrowing and lending to the valuation date (120 days). €2,300 = €2, 278 1.009333", "explhtml": "<p>The value of a FRA before expiry can be calculated by comparing the fixed rate on the original FRA to the fixed rate on a new FRA covering the same borrowing and lending period.<\/p><p>Step 1: Identify the correct MRR rates.<\/p><p>After 1 month has passed there is now 1 month until the original FRAs expiry and 4 months to the end of the borrowing and lending period. So we will require 30 day and 120 day MRR (i.e., (1 × 4) FRA price)<\/p><p>Step 2: Unannualize rates.<\/p><p>30 MRR30 day = 1.8% ×  &nbsp; = 0.15%<\/p><p>360 120 MRR120 day = 2.8% ×  &nbsp; = 0.9333%<\/p><p>360<\/p><p>Step 3: Compute the fixed rate (forward price) on a new FRA with the same expiry as the original FRA.<\/p><p>Forward rate = ((1 + long rate) / (1 + short rate) – 1)(360 / 90) = 3.1286%<\/p><p>Step 4: Compute the gain/(loss) on FRA at the end of the borrowing/lending period.<\/p><p>Gain to long = (new fixed rate – original fixed rate)(days / 360)(notional)<\/p><p>= (0.0313 – 0.029)(90 / 360)(4m) = 2,300<\/p><p>Step 5: Discount the gain/(loss) from the end of borrowing and lending to the valuation date (120 days).<\/p><p>€2,300<\/p><p>= €2, 278<\/p><p>1.009333<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 25–28<\/div> <div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>For this question only, assume that the forward price of the FRA was 2.9%. Which of the following is the closest to the value accrued on the FRA from Brodeur&#x27;s perspective one month after initiation of the contract?<\/p><\/div>", "subj": "derivatives"}, {"n": 28, "q": "Assuming the forward price of the FRA was 2.9%, which of the following is closest to the value of the FRA at expiration?", "opts": ["€4,958.", "€5,000.", "€19,831."], "ans": "A", "expl": "Step 1: Compute gain/(loss) at end of borrowing and lending period. 90 (floating rate −fixed rate) (  ) (notional principal) 360 90 (0.034 −0.029) (  ) (€4m) = €5, 000 360 Step 2: Discount the gain/(loss) back to FRA expiry (90 days). 90 MRR90 day = 3.4% ×   = 0.85 % 360 €5,000 = €4, 958 1.0085", "explhtml": "<p>Step 1: Compute gain/(loss) at end of borrowing and lending period.<\/p><p>90 (floating rate −fixed rate) ( &nbsp; ) (notional principal)<\/p><p>360<\/p><p>90 (0.034 −0.029) ( &nbsp; ) (€4m) = €5, 000<\/p><p>360<\/p><p>Step 2: Discount the gain/(loss) back to FRA expiry (90 days).<\/p><p>90 MRR90 day = 3.4% ×  &nbsp; = 0.85 %<\/p><p>360<\/p><p>€5,000<\/p><p>= €4, 958<\/p><p>1.0085<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 25–28<\/div> <div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>Assuming the forward price of the FRA was 2.9%, which of the following is closest to the value of the FRA at expiration?<\/p><\/div>", "subj": "derivatives"}, {"n": 29, "q": "To initiate an arbitrage trade if the futures contract is underpriced, the trader should:", "opts": ["borrow at the risk-free rate, short the asset, and sell the futures.", "short the asset, invest at the risk-free rate, and buy the futures.", "borrow at the risk-free rate, buy the asset, and sell the futures."], "ans": "B", "expl": "If the futures price is too low relative to the no-arbitrage price, buy futures, short the asset, and invest the proceeds at the risk-free rate until contract expiration. Take delivery of the asset at the futures price, pay for it with the loan proceeds and keep the profit. For Treasury bill (T-bills), shorting the asset is equivalent to borrowing at the T-bill rate.", "explhtml": "<p>If the futures price is too low relative to the no-arbitrage price, buy futures, short the asset, and invest the proceeds at the risk-free rate until contract expiration. Take delivery of the asset at the futures price, pay for it with the loan proceeds and keep the profit. For Treasury bill (T-bills), shorting the asset is equivalent to borrowing at the T-bill rate.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>To initiate an arbitrage trade if the futures contract is underpriced, the trader should:<\/p><\/div>", "subj": "derivatives"}, {"n": 30, "q": "A U.S. firm (U.S.) and a foreign firm (F) engage in a 3-year, annual pay currency swap; The USD fixed rate at initiation was 5% while FC fixed rate was 4%. At the beginning of the swap, $2 million was paid by the U.S. firm and the exchange rate was 2 FC units per $1. At the end of the swap period the exchange rate was 1.75 FC units per $1. At the end of year 1, firm:", "opts": ["F pays firm U.S. $200,000.", "U.S. pays firm F 160,000 FC units.", "U.S. pays firm F $200,000."], "ans": "B", "expl": "Firm U.S. pays fixed 4% on FC = 0.04 × $2,000,000 × 2 FC units per $1 = 160,000 FC units.", "explhtml": "<p>Firm U.S. pays fixed 4% on FC = 0.04 × $2,000,000 × 2 FC units per $1 = 160,000 FC units.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>A U.S. firm (U.S.) and a foreign firm (F) engage in a 3-year, annual pay currency swap; The USD fixed rate at initiation was 5% while FC fixed rate was 4%. At the beginning of the swap, $2 million was paid by the U.S. firm and the exchange rate was 2 FC units per $1. At the end of the swap period the exchange rate was 1.75 FC units per $1.<\/p><p>At the end of year 1, firm:<\/p><\/div>", "subj": "derivatives"}, {"n": 31, "q": "For a 1-year quarterly-pay swap, an equivalent position with short puts and long calls would involve:", "opts": ["put-call combinations expiring on each of the four settlement dates.", "three put-call combinations on the last three settlement dates of the swap.", "three put-call combinations expiring on the first three settlement dates of the swap."], "ans": "C", "expl": "Interest rate options pay one period after exercise. Options expiring on settlements at t = 1,2,3, will mimic the uncertain swap payments at t = 2,3,4.", "explhtml": "<p>Interest rate options pay one period after exercise. Options expiring on settlements at t = 1,2,3, will mimic the uncertain swap payments at t = 2,3,4.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>For a 1-year quarterly-pay swap, an equivalent position with short puts and long calls would involve:<\/p><\/div>", "subj": "derivatives"}, {"n": 32, "q": "Champion and Silvers each gave a reason for why the futures price of the S&P 500 index might be less than the spot price. With respect to their statements, it is most accurate to conclude that:", "opts": ["neither statement is valid.", "Champion's statement is invalid while Silver's statement is valid.", "both statements are valid."], "ans": "C", "expl": "The equation for the price of a futures contract on an equity index is FP = S₀ × e(R − σ) × T, where σ is the dividend yield and R is the risk-free rate. If R < σ, then FP < S₀ and Champion is correct. Silvers could be correct in that backwardation is defined as FP < S₀, with the relationship being caused by the risk aversion of hedgers of long asset positions. Their risk aversion makes them willing to take short contracts at lower prices than otherwise might be the case.", "explhtml": "<p>The equation for the price of a futures contract on an equity index is FP = S<sub>0<\/sub> × e<sup>(R − <\/sup><sup>σ<\/sup><sup>) × T<\/sup>, where σ is the dividend yield and R is the risk-free rate. If R &lt; σ, then FP &lt; S<sub>0<\/sub> and Champion is correct. Silvers could be correct in that backwardation is defined as FP &lt; S<sub>0<\/sub>, with the relationship being caused by the risk aversion of hedgers of long asset positions. Their risk aversion makes them willing to take short contracts at lower prices than otherwise might be the case.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–35<\/div> <div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"kq-note\">Câu thuộc item set (câu 32–35). File đáp án Kaplan không kèm đoạn vignette/exhibit chung của case — một số số liệu chỉ xuất hiện trong phần giải thích.<\/div><div class=\"qtext\"><p>Champion and Silvers each gave a reason for why the futures price of the S&amp;P 500 index might be less than the spot price. With respect to their statements, it is most accurate to conclude that:<\/p><\/div>", "subj": "derivatives"}, {"n": 33, "q": "For a futures contract on an asset with no storage costs, convenience yield, or other expected cash flows over the term of the contract, there should be a:", "opts": ["positive correlation between the futures price and both interest rates and the spot price.", "positive correlation between the futures price and interest rates and a negative correlation between the futures price and the spot price.", "negative correlation between the futures price and interest rates and a positive correlation between the futures price and the spot price."], "ans": "A", "expl": "The equation for the no-arbitrage price of a futures contract with no storage costs, convenience yield, or other expected cash flows over the term of the contract is FP = S₀ × (1 + R)T, so the futures price is positively correlated with both the interest rate and the spot price.", "explhtml": "<p>The equation for the no-arbitrage price of a futures contract with no storage costs, convenience yield, or other expected cash flows over the term of the contract is FP = S<sub>0<\/sub> × (1 + R)<sup>T<\/sup>, so the futures price is positively correlated with both the interest rate and the spot price.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–35<\/div> <div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"qtext\"><p>For a futures contract on an asset with no storage costs, convenience yield, or other expected cash flows over the term of the contract, there should be a:<\/p><\/div>", "subj": "derivatives"}, {"n": 34, "q": "Oil futures prices might be higher than the spot price because:", "opts": ["there are more costs than benefits to holding the asset.", "of reverse contango.", "there are more benefits than costs to holding the asset."], "ans": "A", "expl": "In calculating the futures price, we would subtract the benefits of holding the asset, e.g., the present value of dividends and coupons, and add the costs of holding the asset. Oil does not pay a dividend, and there would be costs for holding oil. Contango describes the situation where the futures price exceeds the spot price, and there is not such thing as reverse contango.", "explhtml": "<p>In calculating the futures price, we would subtract the benefits of holding the asset, e.g., the present value of dividends and coupons, and add the costs of holding the asset. Oil does not pay a dividend, and there would be costs for holding oil. Contango describes the situation where the futures price exceeds the spot price, and there is not such thing as reverse contango.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–35<\/div> <div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"qtext\"><p>Oil futures prices might be higher than the spot price because:<\/p><\/div>", "subj": "derivatives"}, {"n": 35, "q": "The no-arbitrage futures price of the Euro-bond contract is closest to:", "opts": ["€110.61.", "€102.85.", "€94.83."], "ans": "C", "expl": "There will be 2 seminauunual coupon payments during the life of the futures contract: one in 6 months (t=0.5, T-t = 0.7) and one in one year (t=1, T-t = 0.2). Full price = €104.10 (since the bund just paid coupon, AI₀ = 0) Step 1: compute the FV of 2 coupons: FVC = (1.25 × (1.01)0.7) + (1.25 × (1.01)0.2) = 2.51 Step 2: Compute Quoted Future price: QFP = [bund price × (1 + Rf)T − AIT - FVC] /CF = (104.10 × (1.01)1.2 − 0.42 – 2.51)/1.08 = €94.83", "explhtml": "<p>There will be 2 seminauunual coupon payments during the life of the futures contract: one in 6 months (t=0.5, T-t = 0.7) and one in one year (t=1, T-t = 0.2). Full price = €104.10 (since the bund just paid coupon, AI<sub>0<\/sub> = 0)<\/p><p>Step 1: compute the FV of 2 coupons: FVC = (1.25 × (1.01)<sup>0.7<\/sup>) + (1.25 × (1.01)<sup>0.2<\/sup>) = 2.51<\/p><p>Step 2: Compute Quoted Future price: QFP = [bund price × (1 + R<sub>f<\/sub>)<sup>T<\/sup> − AI<sub>T<\/sub> - FVC] /CF<\/p><p>= (104.10 × (1.01)<sup>1.2<\/sup> − 0.42 – 2.51)/1.08 = €94.83<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 32–35<\/div> <div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"qtext\"><p>The no-arbitrage futures price of the Euro-bond contract is closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 36, "q": "Which of Williams' statements regarding FRAs is most likely correct?", "opts": ["Only Statement 2 is correct.", "Only Statement 1 is correct.", "Neither statement is correct."], "ans": "C", "expl": "An FRA involves no initial cash flow as it is a commitment. The FRA will pay off at the date of expiry (the start of the notional borrowing period).", "explhtml": "<p>An FRA involves no initial cash flow as it is a commitment. The FRA will pay off at the date of expiry (the start of the notional borrowing period).<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 36–39<\/div> <div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"kq-note\">Câu thuộc item set (câu 36–39). File đáp án Kaplan không kèm đoạn vignette/exhibit chung của case — một số số liệu chỉ xuất hiện trong phần giải thích.<\/div><div class=\"qtext\"><p>Which of Williams&#x27; statements regarding FRAs is most likely correct?<\/p><\/div>", "subj": "derivatives"}, {"n": 37, "q": "Using the price and predicted MRR rates in Exhibit 1, which of the following is closest to the predicted value of the FRA at the year end?", "opts": ["–-$85,000", "–$62,000", "–$100,000"], "ans": "B", "expl": "The year end is 30 days away. At that point the required FRA would be a 1X4 (90 days borrowing in 30 days' time). To value the FRA, first price this FRA to compare to the current FRA price. 30 day MRR at year end 3.9% × 30/360 = 0.325% 120 day MRR at year end 4.5% × 120/360 = 1.5% FRA price = 1.015/1.00325 – 1 = 0.01171 Quoted annually = 0.01171 × 360/90 = 0.046848 = 4.685% Value = (3.8% – 4.685%) × $28.5 million × 90/360 = –$63,056 Discounted to year end = –$63,056/1.015 = –$62,124", "explhtml": "<p>The year end is 30 days away. At that point the required FRA would be a 1X4 (90 days borrowing in 30 days&#x27; time).<\/p><p>To value the FRA, first price this FRA to compare to the current FRA price.<\/p><p>30 day MRR at year end 3.9% × 30/360 = 0.325%<\/p><p>120 day MRR at year end 4.5% × 120/360 = 1.5%<\/p><p>FRA price = 1.015/1.00325 – 1 = 0.01171<\/p><p>Quoted annually = 0.01171 × 360/90 = 0.046848 = 4.685%<\/p><p>Value = (3.8% – 4.685%) × $28.5 million × 90/360 = –$63,056<\/p><p>Discounted to year end = –$63,056/1.015 = –$62,124<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 36–39<\/div> <div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>Using the price and predicted MRR rates in Exhibit 1, which of the following is closest to the predicted value of the FRA at the year end?<\/p><\/div>", "subj": "derivatives"}, {"n": 38, "q": "Using the details shown in Exhibit 2, under the terms of the currency swap at the first settlement date Sam Smith would most likely:", "opts": ["pay EUR 150,000.", "pay USD 130,000.", "pay EUR 126,050."], "ans": "C", "expl": "Sam Smith is using the currency swap to obtain EUR funding. It will therefore receive EUR (and pay USD) at the outset of the swap and pay EUR interest (and receive USD) at each settlement date. The USD notional principal is 40,000,000. At a spot rate of 1.19 that equates to EUR 33,613,445 The interest payment is therefore 33,613,445 × 1.5% × 90/360 = 126,050", "explhtml": "<p>Sam Smith is using the currency swap to obtain EUR funding. It will therefore receive EUR (and pay USD) at the outset of the swap and pay EUR interest (and receive USD) at each settlement date.<\/p><p>The USD notional principal is 40,000,000. At a spot rate of 1.19 that equates to EUR 33,613,445<\/p><p>The interest payment is therefore 33,613,445 × 1.5% × 90/360 = 126,050<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 36–39<\/div> <div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>Using the details shown in Exhibit 2, under the terms of the currency swap at the first settlement date Sam Smith would most likely:<\/p><\/div>", "subj": "derivatives"}, {"n": 39, "q": "Which of the following statements regarding cash flows at the final settlement date for the currency swap outlined in Exhibit 2is most likely correct?", "opts": ["Without knowing the spot rates on the final settlement date, it is impossible to state the cash flows that occur.", "Sam Smith will pay USD 40,000,000 and receive the final USD interest payment.", "Sam Smith Inc. will receive USD 40,000,000 plus the USD interest payment."], "ans": "C", "expl": "Smith initially borrowed EUR and swapped USD. Throughout the swap, at each settlement date Smith will pay EUR interest and receive USD. At the final settlement date, Smith will receive the final USD interest payment and receive the USD principal back.", "explhtml": "<p>Smith initially borrowed EUR and swapped USD. Throughout the swap, at each settlement date Smith will pay EUR interest and receive USD.<\/p><p>At the final settlement date, Smith will receive the final USD interest payment and receive the USD principal back.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 36–39<\/div> <div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>Which of the following statements regarding cash flows at the final settlement date for the currency swap outlined in Exhibit 2is most likely correct?<\/p><\/div>", "subj": "derivatives"}, {"n": 40, "q": "Calculate the price of a 200-day forward contract on an 8%, semi-annual, U.S. Treasury bond with a spot price of $1,310. Next coupon payment will be made in 150 days. The annual risk-free rate is 5%.", "opts": ["$1,270.79.", "$1,333.50.", "$1,305.22."], "ans": "C", "expl": "Coupon = (1,000 × 0.08) / 2 = $40.00 Present value of coupon payment = $40.00 / 1.05150/365 = $39.21 Forward price on the fixed income security = ($1,310 - $39.21) × (1.05)200/365 = $1,305.22", "explhtml": "<p>Coupon = (1,000 × 0.08) / 2 = $40.00<\/p><p>Present value of coupon payment = $40.00 / 1.05<sup>150/365<\/sup> = $39.21<\/p><p>Forward price on the fixed income security = ($1,310 - $39.21) × (1.05)<sup>200/365<\/sup> = $1,305.22<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"qtext\"><p>Calculate the price of a 200-day forward contract on an 8%, semi-annual, U.S. Treasury bond with a spot price of $1,310. Next coupon payment will be made in 150 days. The annual risk-free rate is 5%.<\/p><\/div>", "subj": "derivatives"}, {"n": 41, "q": "In which type of swap contract is notional principal most likely to be exchanged at initiation?", "opts": ["Interest rate swap.", "Currency swap.", "Equity swap."], "ans": "B", "expl": "Notional principal is typically exchanged at initiation of a currency swap, but not in an interest rate swap or equity swap.", "explhtml": "<p>Notional principal is typically exchanged at initiation of a currency swap, but not in an interest rate swap or equity swap.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>In which type of swap contract is notional principal most likely to be exchanged at initiation?<\/p><\/div>", "subj": "derivatives"}, {"n": 42, "q": "The price of an interest rate swap is the:", "opts": ["cost to purchase a swap.", "fixed rate of interest.", "market value of the swap."], "ans": "B", "expl": "The price of an interest rate swap is quoted as the rate on the fixed-rate payments. The floating rate is a known reference rate but does not need to be quoted.", "explhtml": "<p>The price of an interest rate swap is quoted as the rate on the fixed-rate payments. The floating rate is a known reference rate but does not need to be quoted.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>The price of an interest rate swap is the:<\/p><\/div>", "subj": "derivatives"}, {"n": 43, "q": "What is the value of a 6.00% 1x4 (30 days x 120 days) forward rate agreement (FRA) with a principal amount of $2,000,000, 10 days after initiation if the MRR curve at that time reflects the following: 110-day MRR = 6.15% and 20-day MRR = 6.05%?", "opts": ["$767.40.", "$700.00.", "$745.76."], "ans": "C", "expl": "The current 90-day forward rate at the settlement date, 20 days from now is: ([1+ (0.0615 x 110/360)]/[1+ (0.0605 x 20/360)] – 1) x 360/90 = 0.061517 The interest difference on a $2 million, 90-day loan made 20 days from now at the above rate compared to the FRA rate of 6.0% is: [(0.061517 x 90/360) – (0.060 x 90/360)] x 2,000,000 = $758.50 Discount this amount at the current 110-day rate: 758.50/[1+ (0.0615 x 110/360)] = $745.76", "explhtml": "<p>The current 90-day forward rate at the settlement date, 20 days from now is:<\/p><p>([1+ (0.0615 x 110/360)]/[1+ (0.0605 x 20/360)] – 1) x 360/90 = 0.061517<\/p><p>The interest difference on a $2 million, 90-day loan made 20 days from now at the above rate compared to the FRA rate of 6.0% is:<\/p><p>[(0.061517 x 90/360) – (0.060 x 90/360)] x 2,000,000 = $758.50<\/p><p>Discount this amount at the current 110-day rate:<\/p><p>758.50/[1+ (0.0615 x 110/360)] = $745.76<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.5, LOS 28.c<\/div><div class=\"qtext\"><p>What is the value of a 6.00% 1x4 (30 days x 120 days) forward rate agreement (FRA) with a principal amount of $2,000,000, 10 days after initiation if the MRR curve at that time reflects the following:<\/p><p>110-day MRR = 6.15% and<\/p><p>20-day MRR = 6.05%?<\/p><\/div>", "subj": "derivatives"}, {"n": 44, "q": "The fixed-rate payer in an interest-rate swap has a position equivalent to a series of:", "opts": ["short interest-rate puts and long interest-rate calls.", "long interest-rate puts and calls.", "long interest-puts and short interest-rate calls."], "ans": "A", "expl": "The fixed-rate payer has profits when short rates rise and losses when short rates fall, equivalent to writing puts and buying calls.", "explhtml": "<p>The fixed-rate payer has profits when short rates rise and losses when short rates fall, equivalent to writing puts and buying calls.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>The fixed-rate payer in an interest-rate swap has a position equivalent to a series of:<\/p><\/div>", "subj": "derivatives"}, {"n": 45, "q": "At expiration, the value of a forward contract is:", "opts": ["always greater than or equal to zero.", "the difference between the contract price and the market value of the underlying asset.", "equal to the market price of the underlying asset."], "ans": "B", "expl": "In a forward contract, the long is obligated to buy, and the short is obligated to sell, the underlying asset at the contract price. The difference between the contract price and the market price of the asset is what gives the contract value. The contract has a positive value at expiration to the long/short only if the contract price is below/above the market price.", "explhtml": "<p>In a forward contract, the long is obligated to buy, and the short is obligated to sell, the underlying asset at the contract price. The difference between the contract price and the market price of the asset is what gives the contract value. The contract has a positive value at expiration to the long/short only if the contract price is below/above the market price.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>At expiration, the value of a forward contract is:<\/p><\/div>", "subj": "derivatives"}, {"n": 46, "q": "The price and value of a plain vanilla interest-rate swap are:", "opts": ["never equal.", "only equal at the inception of a swap contract.", "equal in equilibrium."], "ans": "A", "expl": "The price of a swap is the fixed rate specified in the swap and is the same for the payer and the receiver. The value is the dollar value of the contract to the fixed-rate payer and is the opposite of the value to the floating-rate payer.", "explhtml": "<p>The price of a swap is the fixed rate specified in the swap and is the same for the payer and the receiver. The value is the dollar value of the contract to the fixed-rate payer and is the opposite of the value to the floating-rate payer.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>The price and value of a plain vanilla interest-rate swap are:<\/p><\/div>", "subj": "derivatives"}, {"n": 47, "q": "At contract initiation, the value of a forward contract:", "opts": ["is typically zero regardless of the price of the underlying asset.", "depends on the market price of the underlying asset.", "is set to 100 by convention."], "ans": "A", "expl": "Due to the no-arbitrage principle, the price of a forward contract is calculated to make the value of the contract zero at contract initiation. Neither the long nor the short typically makes any payment to enter into the forward agreement. A special case is an off-market forward where, for whatever reason, the contract price is not set equal to the no-arbitrage price, and the long or short position makes a payment to the opposite counterparty to offset the difference.", "explhtml": "<p>Due to the no-arbitrage principle, the price of a forward contract is calculated to make the value of the contract zero at contract initiation. Neither the long nor the short typically makes any payment to enter into the forward agreement. A special case is an off-market forward where, for whatever reason, the contract price is not set equal to the no-arbitrage price, and the long or short position makes a payment to the opposite counterparty to offset the difference.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>At contract initiation, the value of a forward contract:<\/p><\/div>", "subj": "derivatives"}, {"n": 48, "q": "During the life of a forward contract, the value of the contract is best described as:", "opts": ["the present value of the expected future price of the underlying asset.", "the difference between the future value of the spot price and the expected future price of the underlying asset.", "the difference between the spot price and the present value of the forward price of the underlying asset."], "ans": "C", "expl": "The value of a forward contract on an asset with no cash flows during its term is equal to spot − (forward price) / (1 + Rf)t), the difference between the spot price and the present value of the forward price of the underlying asset.", "explhtml": "<p>The value of a forward contract on an asset with no cash flows during its term is equal to spot − (forward price) / (1 + R<sub>f<\/sub>)<sup>t<\/sup>), the difference between the spot price and the present value of the forward price of the underlying asset.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>During the life of a forward contract, the value of the contract is best described as:<\/p><\/div>", "subj": "derivatives"}, {"n": 49, "q": "If the one year spot rate is 5%, the two-year spot rate is 5.5%, and the three year spot rate is 6%, the fixed rate on a 3-year annual pay swap is closest to:", "opts": ["1.99%.", "5.65%.", "4.50%."], "ans": "B", "expl": "1 1− 1 + 0.06(3) The fixed rate on the swap is:  1  1  1 |  +    +  | 1.05  1 + 0.055(2)  1 + 0.06(3) 1−0.8475 0.9524 + 0.9009 + 0.8475 = 0.1525 / 2.7008 = 0.0565", "explhtml": "<p>1<\/p><p>1−<\/p><p>1 + 0.06(3)<\/p><p>The fixed rate on the swap is: <\/p><div class=\"tbl\"><table><tr><td>1<\/td><td>1<\/td><td>1<\/td><\/tr><tr><td> + <\/td><td> + <\/td><\/tr><tr><td>1.05<\/td><td>1 + 0.055(2)<\/td><td>1 + 0.06(3)<\/td><\/tr><\/table><\/div><p>1−0.8475<\/p><p>0.9524 + 0.9009 + 0.8475<\/p><p>= 0.1525 / 2.7008 = 0.0565<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>If the one year spot rate is 5%, the two-year spot rate is 5.5%, and the three year spot rate is 6%, the fixed rate on a 3-year annual pay swap is closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 50, "q": "Which statement most accurately describes a 2 x 3 forward rate agreement?", "opts": ["Two-month underlying interest rate on a contract settled in three months.", "Underlying loan of two month maturity under a contract that expires in three months.", "Contract expires in two months on an underlying loan settled in three months."], "ans": "C", "expl": "A 2 x 3 forward rate agreement is a contract that expires in two months and the underlying loan is settled in three months. The underlying rate is a 30-day (1-month) rate on a 30-day (1-month) loan in 60 days (2 months).", "explhtml": "<p>A 2 x 3 forward rate agreement is a contract that expires in two months and the underlying loan is settled in three months. The underlying rate is a 30-day (1-month) rate on a 30-day (1-month) loan in 60 days (2 months).<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 50–53<\/div> <div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"kq-note\">Câu thuộc item set (câu 50–53). File đáp án Kaplan không kèm đoạn vignette/exhibit chung của case — một số số liệu chỉ xuất hiện trong phần giải thích.<\/div><div class=\"qtext\"><p>Which statement most accurately describes a 2 x 3 forward rate agreement?<\/p><\/div>", "subj": "derivatives"}, {"n": 51, "q": "Which forward rate agreement would most effectively hedge Vetements Verdun's exposure to LIBOR?", "opts": ["2 x 3.", "3 x 2.", "2 x 5."], "ans": "C", "expl": "Vetements Verdun needs to be hedged against 90-day LIBOR rates that will prevail 60 days from now. Such a hedge would require a two-month contract on three-month rates, to be settled in five months: a 2 x 5.", "explhtml": "<p>Vetements Verdun needs to be hedged against 90-day LIBOR rates that will prevail 60 days from now. Such a hedge would require a two-month contract on three-month rates, to be settled in five months: a 2 x 5.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 50–53<\/div> <div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>Which forward rate agreement would most effectively hedge Vetements Verdun&#x27;s exposure to LIBOR?<\/p><\/div>", "subj": "derivatives"}, {"n": 52, "q": "Which value is closest to the price of the most effective hedge for Vetements Verdun?", "opts": ["3.3%.", "3.6%.", "3.0%."], "ans": "B", "expl": "The actual, unannualized rate on the 60-day loan is: R60 = 0.028 × 60/360 = 0.00467 The actual, unannualized rate on the 150-day loan is: R150 = 0.033 × 150/360 = 0.01375 So the rate on a 90-day loan to be made 60 days from now is: FR (60,90) = ((1 + R150)/(1 + R60)) − 1 FR (60,90) = (1.01375/1.00467) − 1 FR (60,90) = 1.00904 − 1 FR (60,90) = 0.904% We annualize this rate using the formula: 0.904% × (360/90) = 3.62%", "explhtml": "<p>The actual, unannualized rate on the 60-day loan is:<\/p><p>R60 = 0.028 × 60/360 = 0.00467<\/p><p>The actual, unannualized rate on the 150-day loan is:<\/p><p>R150 = 0.033 × 150/360 = 0.01375<\/p><p>So the rate on a 90-day loan to be made 60 days from now is:<\/p><p>FR (60,90) = ((1 + R150)/(1 + R60)) − 1<\/p><p>FR (60,90) = (1.01375/1.00467) − 1<\/p><p>FR (60,90) = 1.00904 − 1<\/p><p>FR (60,90) = 0.904%<\/p><p>We annualize this rate using the formula:<\/p><p>0.904% × (360/90) = 3.62%<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 50–53<\/div> <div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>Which value is closest to the price of the most effective hedge for Vetements Verdun?<\/p><\/div>", "subj": "derivatives"}, {"n": 53, "q": "What must the 90-day LIBOR rate have been at the expiration of the contract?", "opts": ["4.0%.", "3.6%.", "3.4%."], "ans": "A", "expl": "Since Vetements Verdun is long the FRA, the market rate of interest at settlement must be higher than the price of the contract and the 23,750 has a positive value. The interest savings at the end of the loan term will be: Interest savings = ( (market rate × (90/360)) − (0.0362 × (90/360)) ) × 25,000,000 23,750 = ((market rate × 90/360) − 0.00905) × 25,000,000 0.000950 = market rate × 90/360 − 0.00905 0.0100 = market rate × 0.25 0.0400 = market rate The market rate must have been 4.0%.", "explhtml": "<p>Since Vetements Verdun is long the FRA, the market rate of interest at settlement must be higher than the price of the contract and the 23,750 has a positive value. The interest savings at the end of the loan term will be:<\/p><p>Interest savings = ( (market rate × (90/360)) − (0.0362 × (90/360)) ) × 25,000,000<\/p><p>23,750 = ((market rate × 90/360) − 0.00905) × 25,000,000<\/p><p>0.000950 = market rate × 90/360 − 0.00905<\/p><p>0.0100 = market rate × 0.25<\/p><p>0.0400 = market rate<\/p><p>The market rate must have been 4.0%.<\/p>", "qhtml": "<div class=\"pp-topic set\">Item set · câu 50–53<\/div> <div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>What must the 90-day LIBOR rate have been at the expiration of the contract?<\/p><\/div>", "subj": "derivatives"}, {"n": 54, "q": "Consider a one-year currency swap with semiannual payments. The payments are in U.S. dollars and euros. The current exchange rate of the euro is $1.30 and interest rates are  180 days 360 days USD MRR 5.6% 6.0% EUR MRR 4.8% 5.4% What is the fixed rate in euros?", "opts": ["5.245%.", "5.318%.", "2.659%."], "ans": "B", "expl": "The present values of 1 euro received in 180 days and 1 euro received in 360 days are: 1/(1 + 0.048 × (180/360)) = 0.9766 and 1/1.054 = 0.9488 The fixed rate in euros is (1 - 0.9488) / (0.9766 + 0.9488) = 0.026592 × (360/180) = 5.318%. The notional principal is 100,000/1.30 = 76,923 euros.", "explhtml": "<p>The present values of 1 euro received in 180 days and 1 euro received in 360 days are:<\/p><p>1/(1 + 0.048 × (180/360)) = 0.9766 and 1/1.054 = 0.9488<\/p><p>The fixed rate in euros is (1 - 0.9488) / (0.9766 + 0.9488) = 0.026592 × (360/180) = 5.318%. The notional principal is 100,000/1.30 = 76,923 euros.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>Consider a one-year currency swap with semiannual payments. The payments are in U.S. dollars and euros. The current exchange rate of the euro is $1.30 and interest rates are<\/p><div class=\"tbl\"><table><tr><td><\/td><td>180 days<\/td><td>360 days<\/td><\/tr><tr><td>USD MRR<\/td><td>5.6%<\/td><td>6.0%<\/td><\/tr><tr><td>EUR MRR<\/td><td>4.8%<\/td><td>5.4%<\/td><\/tr><\/table><\/div><p>What is the fixed rate in euros?<\/p><\/div>", "subj": "derivatives"}, {"n": 55, "q": "Consider a fixed-for-fixed 1-year $100,000 semiannual currency swap with rates of 5.0% in USD and 4.8% in CHF, originated when the exchange rate is $0.34. After the first settlement, the exchange rate is $0.35 and the term structure is:  90 days 180 days MRR 5.2% 5.6% Swiss 4.8% 5.4% What is the value of the swap to the USD payer?", "opts": ["$2,937.", "-$2,719.", "$2,814."], "ans": "A", "expl": "CHF periodic coupon (per 1 CHF) = 0.048/2 = 0.024 DF for 180 day CHF = 1 / (1 + 0.054 × (180/360)) = 1/1.027 = 0.9737 PV of CHF cash flows (per 1 CHF) = 0.9737 × 1.024 = 0.9971 At the current exchange rate the value is 0.9971 × 0.35 = USD 0.3490 The notional amount is 100,000/0.34 = 294,118 CHF so the dollar value of the CHF payments is 0.3490 × 294,118 = $102,647. USD periodic coupon (per 1 USD) = 0.05/2 = 0.025 DF for 180 day USD = 1 / (1 + 0.056 × (180/360)) = 1/1.028 = 0.9728 PV of USD cash flows (per 1 USD) = 0.9728 × 1.025 = 0.9971 Value (for notional = $100,000) = 0.9971 × 100,000 = $99,710. The value of the swap to the dollar payer is 102,647 - $99,710 = $2,937.", "explhtml": "<p>CHF periodic coupon (per 1 CHF) = 0.048/2 = 0.024<\/p><p>DF for 180 day CHF = 1 / (1 + 0.054 × (180/360)) = 1/1.027 = 0.9737<\/p><p>PV of CHF cash flows (per 1 CHF) = 0.9737 × 1.024 = 0.9971<\/p><p>At the current exchange rate the value is 0.9971 × 0.35 = USD 0.3490<\/p><p>The notional amount is 100,000/0.34 = 294,118 CHF so the dollar value of the CHF payments is 0.3490 × 294,118 = $102,647.<\/p><p>USD periodic coupon (per 1 USD) = 0.05/2 = 0.025<\/p><p>DF for 180 day USD = 1 / (1 + 0.056 × (180/360)) = 1/1.028 = 0.9728<\/p><p>PV of USD cash flows (per 1 USD) = 0.9728 × 1.025 = 0.9971<\/p><p>Value (for notional = $100,000) = 0.9971 × 100,000 = $99,710.<\/p><p>The value of the swap to the dollar payer is 102,647 - $99,710 = $2,937.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>Consider a fixed-for-fixed 1-year $100,000 semiannual currency swap with rates of 5.0% in USD and 4.8% in CHF, originated when the exchange rate is $0.34. After the first settlement, the exchange rate is $0.35 and the term structure is:<\/p><div class=\"tbl\"><table><tr><td><\/td><td>90 days<\/td><td>180 days<\/td><\/tr><tr><td>MRR<\/td><td>5.2%<\/td><td>5.6%<\/td><\/tr><tr><td>Swiss<\/td><td>4.8%<\/td><td>5.4%<\/td><\/tr><\/table><\/div><p>What is the value of the swap to the USD payer?<\/p><\/div>", "subj": "derivatives"}, {"n": 56, "q": "A plain vanilla interest-rate swap to the fixed-rate payer is equivalent to issuing a fixed-rate bond and:", "opts": ["selling a series of interest rate puts.", "selling a series of interest rate calls.", "buying a floating-rate bond."], "ans": "C", "expl": "Paying fixed and receiving floating in a swap is equivalent to issuing a fixed-rate bond and investing the proceeds in a floating rate bond.", "explhtml": "<p>Paying fixed and receiving floating in a swap is equivalent to issuing a fixed-rate bond and investing the proceeds in a floating rate bond.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>A plain vanilla interest-rate swap to the fixed-rate payer is equivalent to issuing a fixed-rate bond and:<\/p><\/div>", "subj": "derivatives"}, {"n": 57, "q": "Consider a fixed-rate semiannual-pay equity swap where the equity payments are the total return on a $1 million portfolio and the following information: 180-day MRR is 5.2% 360-day MRR is 5.5% Dividend yield on the portfolio = 1.2% What is the fixed rate on the swap?", "opts": ["5.4234%.", "5.4197%.", "5.1387%."], "ans": "A", "expl": "(1−  ) 1 1.055  = 0.027117 × 2 = 5.4234% (  ) | 1  1  +  180  360 | 1 + 0.052(  )  1 + 0.055(  ) | 360  360", "explhtml": "<p>(1− &nbsp; )<\/p><p>1 1.055<\/p><p> = 0.027117 × 2 = 5.4234%<\/p><div class=\"tbl\"><table><tr><td>(<\/td><td>)<\/td><\/tr><tr><td>1<\/td><td>1<\/td><\/tr><\/table><\/div><p> + <\/p><div class=\"tbl\"><table><tr><td>180<\/td><td>360<\/td><\/tr><tr><td>1 + 0.052(<\/td><td>)<\/td><td>1 + 0.055(<\/td><td>)<\/td><\/tr><tr><td>360<\/td><td>360<\/td><\/tr><\/table><\/div>", "qhtml": "<div class=\"pp-topic\">Module 28.8, LOS 28.g<\/div><div class=\"qtext\"><p>Consider a fixed-rate semiannual-pay equity swap where the equity payments are the total return on a $1 million portfolio and the following information:<\/p><p>180-day MRR is 5.2% 360-day MRR is 5.5% Dividend yield on the portfolio = 1.2%<\/p><p>What is the fixed rate on the swap?<\/p><\/div>", "subj": "derivatives"}, {"n": 58, "q": "At the inception of a market-rate plain vanilla swap, the value of the swap to the fixed-rate payer is:", "opts": ["positive.", "zero.", "either positive or negative."], "ans": "B", "expl": "A market-rate swap is priced so that the value to either side is zero at the inception of the swap.", "explhtml": "<p>A market-rate swap is priced so that the value to either side is zero at the inception of the swap.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>At the inception of a market-rate plain vanilla swap, the value of the swap to the fixed-rate payer is:<\/p><\/div>", "subj": "derivatives"}, {"n": 59, "q": "The current USD/CAD exchange rate is 0.7. In a $1 million currency swap, the party that is entering the swap to hedge existing exposure to C$-denominated fixed-rate liability will:", "opts": ["receive floating in C$.", "pay C$1,428,571 at the beginning of the swap.", "pay floating in C$."], "ans": "B", "expl": "The party that is entering the swap to hedge existing exposure to C$-denominated fixed-rate liability will want to receive-fixed C$. They will pay 1,000,000/0.7 = C$1,428,571 (principal) at swap inception (in exchange for USD 1 million) and get the same amount (C$1,428,571) back at termination (in exchange for paying back the USD 1 million).", "explhtml": "<p>The party that is entering the swap to hedge existing exposure to C$-denominated fixed-rate liability will want to receive-fixed C$. They will pay 1,000,000/0.7 = C$1,428,571 (principal) at swap inception (in exchange for USD 1 million) and get the same amount (C$1,428,571) back at termination (in exchange for paying back the USD 1 million).<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>The current USD/CAD exchange rate is 0.7. In a $1 million currency swap, the party that is entering the swap to hedge existing exposure to C$-denominated fixed-rate liability will:<\/p><\/div>", "subj": "derivatives"}, {"n": 60, "q": "A $10 million 2-year semi-annual-pay MRR-based interest-rate swap was initiated 180 days ago when swap fixed rate was 3.8%. The fixed rate on the swap is now 3.4% and the term structure is as follows: Days MRR Discount Factor 180 3.00% 0.98522 360 3.20% 0.96899 540 3.40% 0.95148 720 4.00% 0.92593 Value of the swap to the payer is closest to:", "opts": ["-$29,229.", "-$58,114.", "-$45,633."], "ans": "B", "expl": "Sum of the discount factors for the three settlement dates remaining (180,360 and 540 days away) = 0.98522 + 0.96899 + 0.95148 = 2.9057 Value to payer = 2.9057 x [(0.034 – 0.038)/2] x $ 10 million = -$58,114", "explhtml": "<p>Sum of the discount factors for the three settlement dates remaining (180,360 and 540 days away) = 0.98522 + 0.96899 + 0.95148 = 2.9057<\/p><p>Value to payer = 2.9057 x [(0.034 – 0.038)/2] x $ 10 million = -$58,114<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>A $10 million 2-year semi-annual-pay MRR-based interest-rate swap was initiated 180 days ago when swap fixed rate was 3.8%. The fixed rate on the swap is now 3.4% and the term structure is as follows:<\/p><div class=\"tbl\"><table><tr><td>Days<\/td><td>MRR<\/td><td>Discount Factor<\/td><\/tr><tr><td>180<\/td><td>3.00%<\/td><td>0.98522<\/td><\/tr><tr><td>360<\/td><td>3.20%<\/td><td>0.96899<\/td><\/tr><tr><td>540<\/td><td>3.40%<\/td><td>0.95148<\/td><\/tr><tr><td>720<\/td><td>4.00%<\/td><td>0.92593<\/td><\/tr><\/table><\/div><p>Value of the swap to the payer is closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 61, "q": "Which of the following is equivalent to a plain vanilla receive-fixed interest rate swap?", "opts": ["A short position in a bond coupled with the issuance of a floating rate note.", "A long position in a bond coupled with the issuance of a floating rate note.", "A short position in a bond coupled with a long position in a floating rate note."], "ans": "B", "expl": "A long position in a fixed rate bond receives fixed coupons. The short floating rate note requires floating-rate payments. Together, these are the same cash flow as a receive-fixed swap.", "explhtml": "<p>A long position in a fixed rate bond receives fixed coupons. The short floating rate note requires floating-rate payments. Together, these are the same cash flow as a receive-fixed swap.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>Which of the following is equivalent to a plain vanilla receive-fixed interest rate swap?<\/p><\/div>", "subj": "derivatives"}, {"n": 62, "q": "90 days ago the exchange rate was USD 0.83 per CDN and the term structure was:  180 days 360 days USD MRR 5.2% 5.6% CDN MRR 4.8% 5.4%. A 1 year, semi-annual settlement, fixed for fixed swap was initiated with 5.30% fixed for CDN and 5.52% fixed for USD on a principal of USD 1 million. Current exchange rate is USD 0.84 per CDN and the yield curve is:  90 days 270 days USD MRR 5.2% 5.6% Disc Factor 0.98717 0.95969 CDN MRR 4.8% 5.4% Disc factor 0.98814 0.96108 What is the value of the swap to the USD interest payer?", "opts": ["-$3,472.", "$10,126.", "$11,500."], "ans": "C", "expl": "CDN principal = 1,000,000/0.83 = CDN 1,204,819. CDN payments = (0.053/2) x 1,204,819 = CDN 31,928. USD payment = 1,000,000 x (0.0552/2) = USD 27,600 Value of CDN payments = 31,928 x 0.98814 + (1,204,819 + 31,928) x 0.96108 = CDN 1220162 Value in USD = 1220162 x 0.84 = USD 1,024,936. Value of USD payments = 27,600 x 0.98717 + 1,027,600 x 0.95969 = USD 1,013,423 Value to USD interest payer = $1,024,936 – $1,013,423 = $11,513", "explhtml": "<p>CDN principal = 1,000,000/0.83 = CDN 1,204,819. CDN payments = (0.053/2) x 1,204,819 = CDN 31,928.<\/p><p>USD payment = 1,000,000 x (0.0552/2) = USD 27,600<\/p><p>Value of CDN payments = 31,928 x 0.98814 + (1,204,819 + 31,928) x 0.96108 = CDN 1220162<\/p><p>Value in USD = 1220162 x 0.84 = USD 1,024,936.<\/p><p>Value of USD payments = 27,600 x 0.98717 + 1,027,600 x 0.95969 = USD 1,013,423<\/p><p>Value to USD interest payer = $1,024,936 – $1,013,423 = $11,513<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>90 days ago the exchange rate was USD 0.83 per CDN and the term structure was:<\/p><div class=\"tbl\"><table><tr><td><\/td><td>180 days<\/td><td>360 days<\/td><\/tr><tr><td>USD MRR<\/td><td>5.2%<\/td><td>5.6%<\/td><\/tr><tr><td>CDN MRR<\/td><td>4.8%<\/td><td>5.4%.<\/td><\/tr><\/table><\/div><p>A 1 year, semi-annual settlement, fixed for fixed swap was initiated with 5.30% fixed for CDN and 5.52% fixed for USD on a principal of USD 1 million.<\/p><p>Current exchange rate is USD 0.84 per CDN and the yield curve is:<\/p><div class=\"tbl\"><table><tr><td><\/td><td>90 days<\/td><td>270 days<\/td><\/tr><tr><td>USD MRR<\/td><td>5.2%<\/td><td>5.6%<\/td><\/tr><tr><td>Disc Factor<\/td><td>0.98717<\/td><td>0.95969<\/td><\/tr><tr><td>CDN MRR<\/td><td>4.8%<\/td><td>5.4%<\/td><\/tr><tr><td>Disc factor<\/td><td>0.98814<\/td><td>0.96108<\/td><\/tr><\/table><\/div><p>What is the value of the swap to the USD interest payer?<\/p><\/div>", "subj": "derivatives"}, {"n": 63, "q": "The fixed-rate receiver in a plain vanilla interest rate swap has a position equivalent to a series of:", "opts": ["long interest-rate puts.", "long interest-rate puts and short interest-rate calls.", "short interest-puts and long interest-rate calls."], "ans": "B", "expl": "The fixed-rate receiver has profits when short rates fall and losses when short rates rise, equivalent to buying puts and writing calls.", "explhtml": "<p>The fixed-rate receiver has profits when short rates fall and losses when short rates rise, equivalent to buying puts and writing calls.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 29.6, LOS 29.j<\/div><div class=\"qtext\"><p>The fixed-rate receiver in a plain vanilla interest rate swap has a position equivalent to a series of:<\/p><\/div>", "subj": "derivatives"}, {"n": 64, "q": "The price of a 3 × 5 forward rate agreement (FRA) is the:", "opts": ["3-month implied forward rate 5 months from today.", "2-month implied forward rate 3 months from today.", "2-month implied forward rate 5 months from today."], "ans": "B", "expl": "The notation for FRAs is unique. There are two numbers associated with an FRA: the number of months until the contract expires and the number of months until the underlying loan is settled. The difference between these two is the maturity of the underlying loan. For example, a 3 × 5 FRA is a contract that expires in three months (90 days), and the underlying loan is settled in five months (150 days). The price of the 3 × 5 FRA is calculated by annualizing the implied forward rate. The implied forward rate is calculated from the 3-month rate and the 5-month rate.", "explhtml": "<p>The notation for FRAs is unique. There are two numbers associated with an FRA: the number of months until the contract expires and the number of months until the underlying loan is settled. The difference between these two is the maturity of the underlying loan. For example, a 3 × 5 FRA is a contract that expires in three months (90 days), and the underlying loan is settled in five months (150 days). The price of the 3 × 5 FRA is calculated by annualizing the implied forward rate. The implied forward rate is calculated from the 3-month rate and the 5-month rate.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>The price of a 3 × 5 forward rate agreement (FRA) is the:<\/p><\/div>", "subj": "derivatives"}, {"n": 65, "q": "The value of the S&P 500 Index is 1,260. The continuously compounded risk-free rate is 5.4% and the continuous dividend yield is 3.5%. Calculate the no-arbitrage price of a 160-day forward contract on the index.", "opts": ["$1,270.54.", "$1,310.13.", "$562.91."], "ans": "A", "expl": "FP = 1,260 × e(0.054 − 0.035) × (160 / 365) = 1,270.54", "explhtml": "<p>FP = 1,260 × e(0.054 − 0.035) × (160 / 365) = 1,270.54<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.2, LOS 28.a<\/div><div class=\"qtext\"><p>The value of the S&amp;P 500 Index is 1,260. The continuously compounded risk-free rate is 5.4% and the continuous dividend yield is 3.5%. Calculate the no-arbitrage price of a 160-day forward contract on the index.<\/p><\/div>", "subj": "derivatives"}, {"n": 66, "q": "The no-arbitrage price of a futures contract with a spot rate of 990, a time to maturity of 2 years, and a risk-free-rate of 5% is closest to:", "opts": ["1040", "1091", "792"], "ans": "B", "expl": "The no-arbitrage price of a futures contract is based on the spot rate, the time to maturity, and the risk-free-rate. FP T\n= S × (1 + R )\n0 f  2\n= 990(1.05)  = 1091", "explhtml": "<p>The no-arbitrage price of a futures contract is based on the spot rate, the time to maturity, and the risk-free-rate.<\/p><div class=\"tbl\"><table><tr><td>FP<\/td><td>T<br>= S × (1 + R )<br>0 f<\/td><\/tr><tr><td><\/td><td>2<br>= 990(1.05)<\/td><\/tr><tr><td><\/td><td>= 1091<\/td><\/tr><\/table><\/div>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>The no-arbitrage price of a futures contract with a spot rate of 990, a time to maturity of 2 years, and a risk-free-rate of 5% is closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 67, "q": "Calculate the price (expressed as an annualized rate) of a 1x4 forward rate agreement (FRA) if the current 30-day rate is 5% and the 120-day rate is 7%.", "opts": ["7.47%.", "7.63%.", "6.86%."], "ans": "B", "expl": "A 1x4 FRA is a 90-day loan, 30 days from today. The actual rate on the 30-day loan is: R30 = 0.05 x 30/360 = 0.004167 The actual rate on the 120-day loan is: R120 = 0.07 x 120/360 = 0.02333 FR (30,90) = [(1+ R120)/(1+ R30)] – 1 = (1.023333/1.004167) – 1 = 0.0190871 The annualized 90-day rate = 0.0190871 x 360/90 = .07634 = 7.63%", "explhtml": "<p>A 1x4 FRA is a 90-day loan, 30 days from today.<\/p><p>The actual rate on the 30-day loan is: R30 = 0.05 x 30/360 = 0.004167<\/p><p>The actual rate on the 120-day loan is: R120 = 0.07 x 120/360 = 0.02333<\/p><p>FR (30,90) = [(1+ R120)/(1+ R30)] – 1 = (1.023333/1.004167) – 1 = 0.0190871<\/p><p>The annualized 90-day rate = 0.0190871 x 360/90 = .07634 = 7.63%<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>Calculate the price (expressed as an annualized rate) of a 1x4 forward rate agreement (FRA) if the current 30-day rate is 5% and the 120-day rate is 7%.<\/p><\/div>", "subj": "derivatives"}, {"n": 68, "q": "The theoretical price of a forward contract:", "opts": ["is always greater than the current price of the underlying asset.", "is the no-arbitrage price.", "equals the long’s expectation of the future price of the underlying asset."], "ans": "B", "expl": "The theoretical price of a forward contract is the future price of the underlying asset imposed by the no-arbitrage conditions. It can be less than the current price of the asset if the cost-of-carry is negative. Accrued interest is paid by the long at delivery under a bond forward, but is not included in the price quote, which is usually in terms of yield to maturity at the settlement date.", "explhtml": "<p>The theoretical price of a forward contract is the future price of the underlying asset imposed by the no-arbitrage conditions. It can be less than the current price of the asset if the cost-of-carry is negative. Accrued interest is paid by the long at delivery under a bond forward, but is not included in the price quote, which is usually in terms of yield to maturity at the settlement date.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>The theoretical price of a forward contract:<\/p><\/div>", "subj": "derivatives"}, {"n": 69, "q": "A stock is currently priced at $110 and will pay a $2 dividend in 85 days and is expected to pay a $2.20 dividend in 176 days. The no arbitrage price of a six-month (182-day) forward contract when the effective annual interest rate is 8% is closest to:", "opts": ["$110.20.", "$110.06.", "$110.00."], "ans": "B", "expl": "In the formulation below, the present value of the dividends is subtracted from the spot price, and then the future value of this amount at the expiration date is calculated. (110 – 2/1.0885/365 – 2.20/1.08176/365) 1.08182/365 = $110.06 Alternatively, the future value of the dividends could be subtracted from the future value of the stock price based on the risk-free rate over the contract term.", "explhtml": "<p>In the formulation below, the present value of the dividends is subtracted from the spot price, and then the future value of this amount at the expiration date is calculated.<\/p><p>(110 – 2/1.08<sup>85/365<\/sup> – 2.20/1.08<sup>176/365<\/sup>) 1.08<sup>182/365<\/sup> = $110.06<\/p><p>Alternatively, the future value of the dividends could be subtracted from the future value of the stock price based on the risk-free rate over the contract term.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.2, LOS 28.a<\/div><div class=\"qtext\"><p>A stock is currently priced at $110 and will pay a $2 dividend in 85 days and is expected to pay a $2.20 dividend in 176 days. The no arbitrage price of a six-month (182-day) forward contract when the effective annual interest rate is 8% is closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 70, "q": "Calculate the no-arbitrage forward price for a 90-day forward on a stock that is currently priced at $50.00 and is expected to pay a dividend of $0.50 in 30 days and a $0.60 in 75 days. The annual risk free rate is 5% and the yield curve is flat.", "opts": ["$50.31.", "$49.49.", "$48.51."], "ans": "B", "expl": "The present value of expected dividends is: $0.50 / (1.0530 / 365) + $0.60 / (1.0575 / 365) = $1.092 Future price = ($50.00 − 1.092) × 1.0590 / 365 = $49.49", "explhtml": "<p>The present value of expected dividends is: $0.50 / (1.05<sup>30 / 365<\/sup>) + $0.60 / (1.05<sup>75 / 365<\/sup>) = $1.092<\/p><p>Future price = ($50.00 − 1.092) × 1.05<sup>90 / 365<\/sup> = $49.49<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.2, LOS 28.a<\/div><div class=\"qtext\"><p>Calculate the no-arbitrage forward price for a 90-day forward on a stock that is currently priced at $50.00 and is expected to pay a dividend of $0.50 in 30 days and a $0.60 in 75 days. The annual risk free rate is 5% and the yield curve is flat.<\/p><\/div>", "subj": "derivatives"}, {"n": 71, "q": "30 days ago, J. Klein took a short position in a $10 million (3X6) forward rate agreement (FRA) based on MRR and priced at 5%. The current MRR curve is: 30-day = 4.8% 60-day = 5.0% 90-day = 5.1% 120-day = 5.2% 150-day = 5.4% The current value of the FRA, to the short, is closest to:", "opts": ["−$15,495.", "−$15,280.", "−$15,154."], "ans": "C", "expl": "FRAs are entered in to hedge against interest rate risk. A person would buy a FRA anticipating an increase in interest rates. If interest rates increase more than the rate agreed upon in the FRA (5% in this case) then the long position is owed a payment from the short position. Step 1: Find the forward 90-day MRR 60-days from now. [(1 + 0.054(150 / 360)) / (1 + 0.05(60 / 360)) − 1](360 / 90) = 0.056198. Since projected interest rates at the end of the FRA have increased to approximately 5.6%, which is above the contracted rate of 5%, the short position currently owes the long position. Step 2: Find the interest differential between a loan at the projected forward rate and a loan at the forward contract rate. (0.056198 − 0.05) × (90 / 360) = 0.0015495 × 10,000,000 = $15,495 Step 3: Find the present value of this amount 'payable' 90 days after contract expiration (or 60 + 90 = 150 days from now) and note once again that the short (who must 'deliver' the loan at the forward contract rate) loses because the forward 90-day MRR of 5.6198% is greater than the contract rate of 5%. [15,495 / (1 + 0.054(150 / 360))] = $15,154.03 This is the negative value to the short.", "explhtml": "<p>FRAs are entered in to hedge against interest rate risk. A person would buy a FRA anticipating an increase in interest rates. If interest rates increase more than the rate agreed upon in the FRA (5% in this case) then the long position is owed a payment from the short position.<\/p><p>Step 1: Find the forward 90-day MRR 60-days from now.<\/p><p>[(1 + 0.054(150 / 360)) / (1 + 0.05(60 / 360)) − 1](360 / 90) = 0.056198. Since projected interest rates at the end of the FRA have increased to approximately 5.6%, which is above the contracted rate of 5%, the short position currently owes the long position.<\/p><p>Step 2: Find the interest differential between a loan at the projected forward rate and a loan at the forward contract rate.<\/p><p>(0.056198 − 0.05) × (90 / 360) = 0.0015495 × 10,000,000 = $15,495<\/p><p>Step 3: Find the present value of this amount &#x27;payable&#x27; 90 days after contract expiration (or 60 + 90 = 150 days from now) and note once again that the short (who must &#x27;deliver&#x27; the loan at the forward contract rate) loses because the forward 90-day MRR of 5.6198% is greater than the contract rate of 5%.<\/p><p>[15,495 / (1 + 0.054(150 / 360))] = $15,154.03<\/p><p>This is the negative value to the short.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.4, LOS 28.c<\/div><div class=\"qtext\"><p>30 days ago, J. Klein took a short position in a $10 million (3X6) forward rate agreement (FRA) based on MRR and priced at 5%. The current MRR curve is:<\/p><p>30-day = 4.8% 60-day = 5.0% 90-day = 5.1% 120-day = 5.2% 150-day = 5.4%<\/p><p>The current value of the FRA, to the short, is closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 72, "q": "The price of a forward contract:", "opts": ["is equal to the value of the contract in equilibrium.", "must be equal to the market price at contract termination.", "is the settlement price for the underlying asset."], "ans": "C", "expl": "The price of a forward contract is the price of the underlying asset that the long will pay to the short at settlement (for a deliverable contract). The value of a forward contract comes from the difference between the forward contract price and the market price for the underlying asset. This difference between price and value is a key concept to understand. A forward contract has only one price, which applies to both the long and to the short.", "explhtml": "<p>The price of a forward contract is the price of the underlying asset that the long will pay to the short at settlement (for a deliverable contract). The value of a forward contract comes from the difference between the forward contract price and the market price for the underlying asset. This difference between price and value is a key concept to understand. A forward contract has only one price, which applies to both the long and to the short.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.1, LOS 28.b<\/div><div class=\"qtext\"><p>The price of a forward contract:<\/p><\/div>", "subj": "derivatives"}, {"n": 73, "q": "Which of the following is equivalent to a pay-floating USD receive-fixed EUR currency swap position?", "opts": ["A short position in a EUR bond coupled with the issuance of a USD-denominated floating rate note.", "A short position in a EUR bond coupled with a long position in a USD-denominated floating rate note.", "A long position in a EUR bond coupled with the issuance of a USD-denominated floating rate note."], "ans": "C", "expl": "A long position in a fixed rate EUR bond will receive fixed coupons denominated in EUR. The short floating rate note requires USD denominated floating-rate payments. Combined, these are the same cash flow as a pay-floating USD receive-fixed EUR currency swap.", "explhtml": "<p>A long position in a fixed rate EUR bond will receive fixed coupons denominated in EUR. The short floating rate note requires USD denominated floating-rate payments. Combined, these are the same cash flow as a pay-floating USD receive-fixed EUR currency swap.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.7, LOS 28.f<\/div><div class=\"qtext\"><p>Which of the following is equivalent to a pay-floating USD receive-fixed EUR currency swap position?<\/p><\/div>", "subj": "derivatives"}, {"n": 74, "q": "Consider a fixed-rate semiannual-pay equity swap where the equity payments are the total return on a $1 million portfolio and the following information: 180-day MRR is 4.2% 360-day MRR is 4.5% Div. yield on the portfolio = 1.2% What is the fixed rate on the swap?", "opts": ["4.3232%.", "4.5143%.", "4.4477%."], "ans": "C", "expl": "( 1 −  ) 1 1.045 = 0.022239 × 2 = 4.4477 % (  ) | 1  1 + 180  360 | 1 + 0.042 (  )  1 + 0.045 (  ) | 360  360", "explhtml": "<p>( 1 − &nbsp; )<\/p><p>1 1.045<\/p><p>= 0.022239 × 2 = 4.4477 %<\/p><div class=\"tbl\"><table><tr><td>(<\/td><td>)<\/td><\/tr><tr><td>1<\/td><td>1<\/td><\/tr><\/table><\/div><p>+<\/p><div class=\"tbl\"><table><tr><td>180<\/td><td>360<\/td><\/tr><tr><td>1 + 0.042 (<\/td><td>)<\/td><td>1 + 0.045 (<\/td><td>)<\/td><\/tr><tr><td>360<\/td><td>360<\/td><\/tr><\/table><\/div>", "qhtml": "<div class=\"pp-topic\">Module 28.8, LOS 28.g<\/div><div class=\"qtext\"><p>Consider a fixed-rate semiannual-pay equity swap where the equity payments are the total return on a $1 million portfolio and the following information:<\/p><p>180-day MRR is 4.2% 360-day MRR is 4.5% Div. yield on the portfolio = 1.2%<\/p><p>What is the fixed rate on the swap?<\/p><\/div>", "subj": "derivatives"}, {"n": 75, "q": "Writing a series of interest-rate puts and buying a series of interest-rate calls, all at the same exercise rate, is equivalent to:", "opts": ["being the floating-rate payer in an interest rate swap.", "a short position in a series of forward rate agreements.", "being the fixed-rate payer in an interest rate swap."], "ans": "C", "expl": "A short position in interest rate puts will have a negative payoff when rates are below the exercise rate; the calls will have positive payoffs when rates exceed the exercise rate. This mirrors the payoffs of the fixed-rate payer who will receive positive net payments when settlement rates are above the fixed rate.", "explhtml": "<p>A short position in interest rate puts will have a negative payoff when rates are below the exercise rate; the calls will have positive payoffs when rates exceed the exercise rate. This mirrors the payoffs of the fixed-rate payer who will receive positive net payments when settlement rates are above the fixed rate.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>Writing a series of interest-rate puts and buying a series of interest-rate calls, all at the same exercise rate, is equivalent to:<\/p><\/div>", "subj": "derivatives"}, {"n": 76, "q": "Consider a 9-month forward contract on a 10-year 7% Treasury note just issued at par. The effective annual risk-free rate is 5% over the near term and the first coupon is to be paid in 182 days. The price of the forward is closest to:", "opts": ["1,037.27.", "1,001.84.", "965.84."], "ans": "B", "expl": "The forward price is calculated as the bond price minus the present value of the coupon, times one plus the risk-free rate for the term of the forward. (1,000 – 35/1.05182/365) 1.059/12 = $1,001.84", "explhtml": "<p>The forward price is calculated as the bond price minus the present value of the coupon, times one plus the risk-free rate for the term of the forward.<\/p><p>(1,000 – 35/1.05<sup>182/365<\/sup>) 1.05<sup>9/12<\/sup> = $1,001.84<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.3, LOS 28.d<\/div><div class=\"qtext\"><p>Consider a 9-month forward contract on a 10-year 7% Treasury note just issued at par. The effective annual risk-free rate is 5% over the near term and the first coupon is to be paid in 182 days. The price of the forward is closest to:<\/p><\/div>", "subj": "derivatives"}, {"n": 77, "q": "Consider a 1-year, $5 million semiannual-pay fixed-rate equity swap initiated when the equity index is 750 and swap fixed rate is 3.7%. Equity index was at 760 at first settlement. It is now 270 days since inception of the swap and the index is at 767, 90-day MRR is 3.4% (DF = 0.99157) and 270-day MRR is 3.7% (DF = 0.9730). What is the value of the swap to the fixed-rate payer?", "opts": ["−$3,520.", "−$2,726.", "$3,478."], "ans": "A", "expl": "For $100 notional, the value of the equity side is (767/760) x $100 = $100.921 Value of the semiannual –pay, fixed rate bond with 3.7% annual coupon =[100 + 3.7/2] x 0.99157 = $100.9914 Value of pay-fixed side = value of equity – value of fixed rate bond = $100.921 - $100.9914 = -$0.0704 (per $100 notional). For $5 million notional, value = 50,000 x -0.0704 = -$3,520", "explhtml": "<p>For $100 notional, the value of the equity side is (767/760) x $100 = $100.921<\/p><p>Value of the semiannual –pay, fixed rate bond with 3.7% annual coupon =[100 + 3.7/2] x 0.99157 = $100.9914<\/p><p>Value of pay-fixed side = value of equity – value of fixed rate bond = $100.921 - $100.9914 = -$0.0704 (per $100 notional).<\/p><p>For $5 million notional, value = 50,000 x -0.0704 = -$3,520<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.8, LOS 28.g<\/div><div class=\"qtext\"><p>Consider a 1-year, $5 million semiannual-pay fixed-rate equity swap initiated when the equity index is 750 and swap fixed rate is 3.7%. Equity index was at 760 at first settlement. It is now 270 days since inception of the swap and the index is at 767, 90-day MRR is 3.4% (DF = 0.99157) and 270-day MRR is 3.7% (DF = 0.9730). What is the value of the swap to the fixed-rate payer?<\/p><\/div>", "subj": "derivatives"}, {"n": 78, "q": "A swap is equivalent to a series of:", "opts": ["interest rate calls.", "off-market FRAs.", "FRAs priced at market rates."], "ans": "B", "expl": "Since the fixed rate on the swap is the same at every settlement date, a series of FRAs at those fixed rates will have values that differ from zero to the extent the fixed rate and the zero-value rate differ. This makes them off-market FRAs.", "explhtml": "<p>Since the fixed rate on the swap is the same at every settlement date, a series of FRAs at those fixed rates will have values that differ from zero to the extent the fixed rate and the zero-value rate differ. This makes them off-market FRAs.<\/p>", "qhtml": "<div class=\"pp-topic\">Module 28.6, LOS 28.e<\/div><div class=\"qtext\"><p>A swap is equivalent to a series of:<\/p><\/div>", "subj": "derivatives"}];
+const CFG = {"title": "Reading 28 — Pricing and Valuation of Forward Commitments", "subtitle": "CFA Level II · 78 câu · Kaplan Schweser QBank 2025 (54 câu đơn · 24 câu item set)", "minutes": 0, "passMark": 65, "hasAnswers": true, "hasExpl": true};
+
+const LETTERS = "ABCDEFGHIJ".split("");
+let answers = {};      // i -> letter
+let pinned  = {};      // i -> true
+let graded  = false;
+let filter  = "all";
+let started = false;
+let paused  = false;
+let timerId = null;
+let endTime = null;                  // ms timestamp when time runs out
+let remaining = (CFG.minutes||0)*60; // seconds left
+
+const $ = id => document.getElementById(id);
+
+// ---- progress persistence (resume + score for the hub) ------------------- //
+const PROG_KEY = "cfa:prog:" + ((location.pathname.split("/").pop() || CFG.title || "quiz").replace(/\.html$/i,"").toLowerCase());
+(function loadProg(){
+  try{
+    const s = JSON.parse(localStorage.getItem(PROG_KEY)||"null");
+    if(s && typeof s==="object"){
+      answers = s.answers||{}; pinned = s.pinned||{}; graded = !!s.graded;
+      if(typeof s.remaining === "number" && s.remaining > 0) remaining = s.remaining;
+      started = !graded && !!s.started;
+    }
+  }catch(e){}
+})();
+function saveProg(){
+  try{
+    const total = DATA.length, done = Object.keys(answers).length;
+    let correct = null, pct = null;
+    if(graded && CFG.hasAnswers){
+      correct = 0; DATA.forEach((q,i)=>{ if(answers[i]===q.ans) correct++; });
+      pct = Math.round(correct/total*100);
+    }
+    let prev = {}; try{ prev = JSON.parse(localStorage.getItem(PROG_KEY)||"null")||{}; }catch(e){}
+    const slug = PROG_KEY.replace(/^cfa:prog:/,"");
+    const _d=new Date(); const day=_d.getFullYear()+"-"+String(_d.getMonth()+1).padStart(2,"0")+"-"+String(_d.getDate()).padStart(2,"0");
+    let tbase = prev.tbase;
+    if(!tbase || tbase.d !== day) tbase = {d:day, base:(prev.done||0)};
+    const answeredToday = Math.max(0, done - tbase.base);
+    try{
+      const daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}");
+      (daily[day] = daily[day]||{})[slug] = {answered:answeredToday, done, total, graded, correct, pct, title:(CFG.title||slug), ts:Date.now()};
+      localStorage.setItem("cfa:daily", JSON.stringify(daily));
+    }catch(e){}
+    localStorage.setItem(PROG_KEY, JSON.stringify(
+      {answers, pinned, graded, done, total, correct, pct, remaining, started, tbase, ts:Date.now()}));
+  }catch(e){}
+}
+function clearProg(){ try{ localStorage.removeItem(PROG_KEY); var __slug = PROG_KEY.replace(/^cfa:prog:/,""); var __daily = JSON.parse(localStorage.getItem("cfa:daily")||"{}"), __ch=false; for(var __d in __daily){ if(__daily[__d] && __daily[__d][__slug]){ delete __daily[__d][__slug]; __ch=true; } if(__daily[__d] && Object.keys(__daily[__d]).length===0) delete __daily[__d]; } if(__ch) localStorage.setItem("cfa:daily", JSON.stringify(__daily)); }catch(e){} }
+// paint the option selections / pins that were restored from storage
+function applySaved(){
+  Object.keys(answers).forEach(i=>{
+    const b = $("opt-"+i+"-"+answers[i]);
+    if(b && !graded) b.classList.add("sel");
+  });
+  Object.keys(pinned).forEach(i=>{
+    const card = $("q-"+i);
+    if(card){ const p=card.querySelector(".pin"); if(p) p.classList.add("on"); }
+  });
+  if(graded) paintResults();
+  const done = Object.keys(answers).length;
+  if(done>0 && !graded){
+    const t = $("resumeNote");
+    if(t){ t.textContent = "Đã khôi phục tiến trình • "+done+"/"+DATA.length+" câu"; t.classList.add("show"); }
+  }
+}
+
+// ---- render -------------------------------------------------------------- //
+function render(){
+  $("title").textContent = CFG.title || "Quiz";
+  $("subtitle").textContent = CFG.subtitle || "";
+  const quiz = $("quiz");
+  quiz.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const card = document.createElement("div");
+    card.className = "card"; card.id = "q-"+i;
+    const head = document.createElement("div");
+    head.className = "card-head";
+    const num = document.createElement("span");
+    num.className = "qnum"; num.textContent = "Câu " + q.n;
+    const pin = document.createElement("button");
+    pin.className = "pin"; pin.title = "Ghim câu này"; pin.textContent = "📌";
+    pin.onclick = ()=>togglePin(i);
+    head.appendChild(num); head.appendChild(pin);
+    card.appendChild(head);
+
+    const stem = document.createElement("div");
+    stem.className = "stem"; if(q.qhtml){stem.innerHTML = q.qhtml;} else {stem.textContent = q.q;}
+    card.appendChild(stem);
+
+    const opts = document.createElement("div");
+    opts.className = "opts";
+    q.opts.forEach((t,oi)=>{
+      const L = LETTERS[oi];
+      const b = document.createElement("button");
+      b.className = "opt"; b.dataset.letter = L; b.id = "opt-"+i+"-"+L;
+      b.onclick = ()=>pick(i,L);
+      const lead = document.createElement("span");
+      lead.className = "lead"; lead.textContent = L + ".";
+      b.appendChild(lead);
+      b.appendChild(document.createTextNode(t));
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+
+    if(q.expl){
+      const e = document.createElement("div");
+      e.className = "expl"; e.id = "expl-"+i;
+      e.appendChild(q.explhtml?buildExplHtml(q):buildExplanation(q.expl,q.ans,q.opts));
+      card.appendChild(e);
+    }
+    quiz.appendChild(card);
+  });
+  buildNav();
+  refreshNav();
+  updateProgress();
+
+  // timer setup
+  if(CFG.minutes>0){
+    $("pauseBtn").style.display = "";
+    $("timer").classList.remove("hidden");
+    showTime();
+    if(started && !graded){            // resume an in-progress timed quiz
+      if(remaining>0){ endTime = Date.now() + remaining*1000; timerId = setInterval(tick, 250); }
+      else { grade(true); }
+    }
+  }
+  applySaved();
+}
+
+
+// ---- readable explanations ---------------------------------------------- //
+function explanationData(raw){
+  const noise=/^(?:discuss(?:ion)?|discu|filter|eilter|solution|what do you want to discuss.*|question\s+\d+\s+of\s+\d+|response rationale for the correct answer|rationale for the correct answer|thảo luận|lọc|giải pháp|bạn muốn thảo luận.*|lý do cho đáp án đúng|câu hỏi\s+\d+\s+trên\s+\d+|\(?required\)?|\(?bắt buộc\)?|[?①θi1])$/i;
+  let lines=String(raw||"").replace(/\r/g,"").split("\n")
+    .map(line=>line.replace(/\s+/g," ").trim())
+    .filter(line=>line&&!noise.test(line));
+  let reading="",los="",losIndex=-1;
+  const action=/^(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss|tính|mô tả|giải thích|so sánh|phân tích|đánh giá|diễn giải|nhận diện|xác định|định nghĩa|thảo luận)\b/i;
+  for(let i=Math.max(1,lines.length-10);i<lines.length;i++){
+    const candidate=lines[i].replace(/^[·•?]\s*/,"").replace(/^i(?=(?:calculate|describe|explain|compare|analy[sz]e|evaluate|interpret|identify|define|determine|discuss))/i,"").trim();
+    const previous=lines[i-1]||"";
+    if(action.test(candidate)&&previous.length<120&&!/[.!?]$/.test(previous)&&!/^[A-J][.)]\s/i.test(previous)){
+      reading=previous; los=lines.slice(i).join(" "); lines=lines.slice(0,i-1); losIndex=i; break;
+    }
+  }
+  return {text:lines.join(" ").replace(/\s+/g," ").trim(),reading,los};
+}
+function explanationSections(text,correctLetter){
+  const broken=String(text||"").replace(/\s+([A-J])\s*[.)]\s+(?=(?:Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\b)/gi,"\n$1. ");
+  const chunks=broken.split(/\n(?=[A-J]\.\s+)/).map(s=>s.trim()).filter(Boolean);
+  const sections=chunks.map(chunk=>{
+    const match=chunk.match(/^([A-J])\.\s*(?:(Correct|Incorrect|Đúng|Chính xác|Sai|Không (?:đúng|chính xác))\.?\s*)?(?:because\s+)?/i);
+    if(!match) return {letter:"",text:chunk};
+    return {letter:match[1].toUpperCase(),text:chunk.slice(match[0].length).trim()};
+  });
+  const hasCorrect=sections.some(section=>section.letter===correctLetter);
+  if(!hasCorrect&&sections.length>1&&!sections[0].letter) sections[0].letter=correctLetter;
+  const unique=[];
+  sections.forEach(section=>{
+    if(!section.letter){
+      if(section.text&&!unique.some(item=>!item.letter)) unique.push(section);
+      return;
+    }
+    const duplicateIndex=unique.findIndex(item=>item.letter===section.letter);
+    if(duplicateIndex<0) unique.push(section);
+    else if((section.text||"").length>(unique[duplicateIndex].text||"").length) unique[duplicateIndex]=section;
+  });
+  return unique;
+}
+function buildExplanation(raw,correctLetter,options){
+  const data=explanationData(raw);
+  const shell=document.createElement("div"); shell.className="expl-shell";
+  const head=document.createElement("div"); head.className="expl-head";
+  const title=document.createElement("span"); title.className="expl-title"; title.textContent="Giải thích đáp án";
+  const answer=document.createElement("span"); answer.className="expl-answer"; answer.textContent="Đáp án đúng: "+correctLetter;
+  head.appendChild(title); head.appendChild(answer); shell.appendChild(head);
+  const content=document.createElement("div"); content.className="expl-content";
+  explanationSections(data.text,correctLetter).forEach(section=>{
+    if(section.letter){
+      const choice=document.createElement("article");
+      const isCorrect=section.letter===correctLetter;
+      choice.className="expl-choice "+(isCorrect?"is-correct":"is-other");
+      const top=document.createElement("div"); top.className="expl-choice-top";
+      const letter=document.createElement("span"); letter.className="expl-letter"; letter.textContent=section.letter;
+      const state=document.createElement("span"); state.className="expl-state"; state.textContent=isCorrect?"Đáp án đúng":"Không đúng";
+      top.appendChild(letter); top.appendChild(state); choice.appendChild(top);
+      const optionIndex=LETTERS.indexOf(section.letter);
+      if(options&&optionIndex>=0&&options[optionIndex]){
+        const option=document.createElement("p"); option.className="expl-option-copy"; option.textContent=options[optionIndex]; choice.appendChild(option);
+      }
+      if(section.text){ const reason=document.createElement("p"); reason.className="expl-reason"; reason.textContent=section.text; choice.appendChild(reason); }
+      content.appendChild(choice);
+    }else if(section.text){
+      const note=document.createElement("div"); note.className="expl-note";
+      const paragraph=document.createElement("p"); paragraph.textContent=section.text; note.appendChild(paragraph); content.appendChild(note);
+    }
+  });
+  if(data.reading||data.los){
+    const meta=document.createElement("div"); meta.className="expl-meta";
+    if(data.reading){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="Reading:"; const value=document.createElement("span"); value.textContent=data.reading; row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    if(data.los){ const row=document.createElement("div"); row.className="expl-meta-row"; const key=document.createElement("b"); key.textContent="LOS:"; const value=document.createElement("span"); value.textContent=data.los.replace(/^[·•?]\s*/,""); row.appendChild(key); row.appendChild(value); meta.appendChild(row); }
+    content.appendChild(meta);
+  }
+  shell.appendChild(content); return shell;
+}
+
+// ---- answering ----------------------------------------------------------- //
+function pick(i, L){
+  if(graded) return;
+  const card = $("q-"+i);
+  if(answers[i] === L){              // bấm lại đáp án đang chọn -> huỷ chọn
+    delete answers[i];
+    $("opt-"+i+"-"+L).classList.remove("sel");
+  }else{
+    answers[i] = L;
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    $("opt-"+i+"-"+L).classList.add("sel");
+  }
+  if(!started) startTimer();
+  updateProgress();
+  refreshNav();
+  saveProg();
+}
+
+function togglePin(i){
+  if(pinned[i]) delete pinned[i]; else pinned[i]=true;
+  const btn = $("q-"+i).querySelector(".pin");
+  btn.classList.toggle("on", !!pinned[i]);
+  refreshNav();
+  saveProg();
+}
+
+function updateProgress(){
+  const done = Object.keys(answers).length;
+  $("progress").style.width = (done/DATA.length*100) + "%";
+}
+
+// ---- timer --------------------------------------------------------------- //
+function startTimer(){
+  if(started || CFG.minutes<=0) return;
+  started = true;
+  endTime = Date.now() + remaining*1000;
+  timerId = setInterval(tick, 250);
+}
+function tick(){
+  if(paused) return;
+  const prev = remaining;
+  remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+  showTime();
+  if(remaining !== prev) saveProg();   // persist countdown so reload resumes here
+  if(remaining<=0){
+    clearInterval(timerId);
+    grade(true);   // auto-submit, skip confirmation
+  }
+}
+function showTime(){
+  const m = Math.floor(remaining/60), s = remaining%60;
+  const t = $("timer");
+  t.textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  t.classList.toggle("warn", remaining<=60 && remaining>0);
+}
+function togglePause(){
+  if(!started || graded) return;
+  paused = !paused;
+  if(paused){
+    remaining = Math.max(0, Math.round((endTime - Date.now())/1000));
+    $("pauseOverlay").classList.add("show");
+    $("pauseBtn").textContent = "▶ Tiếp tục";
+  }else{
+    endTime = Date.now() + remaining*1000;   // restore exact remaining
+    $("pauseOverlay").classList.remove("show");
+    $("pauseBtn").textContent = "⏸ Tạm dừng";
+  }
+  saveProg();
+}
+
+// ---- navigator ----------------------------------------------------------- //
+function toggleNav(){ $("navPanel").classList.toggle("open"); }
+function buildNav(){
+  const g = $("navGrid"); g.innerHTML = "";
+  DATA.forEach((q,i)=>{
+    const c = document.createElement("div");
+    c.className = "cell"; c.id = "cell-"+i; c.textContent = q.n;
+    c.onclick = ()=>{ $("q-"+i).scrollIntoView({behavior:"smooth",block:"center"});
+                      toggleNav(); };
+    g.appendChild(c);
+  });
+}
+function setFilter(f, el){
+  filter = f;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+  refreshNav();
+}
+function refreshNav(){
+  let done=0, pin=0;
+  DATA.forEach((q,i)=>{
+    const c = $("cell-"+i);
+    if(!c) return;
+    const isDone = answers[i]!==undefined;
+    const isPin  = !!pinned[i];
+    if(isDone) done++;
+    if(isPin) pin++;
+    c.className = "cell";
+    if(graded){
+      if(answers[i]===q.ans) c.classList.add("correct");
+      else c.classList.add("wrong");
+    }else if(isDone){ c.classList.add("answered"); }
+    if(isPin) c.classList.add("pinned");
+    // filter
+    let show = true;
+    if(filter==="done") show = isDone;
+    else if(filter==="todo") show = !isDone;
+    else if(filter==="pin")  show = isPin;
+    c.classList.toggle("hide", !show);
+  });
+  // chip counts
+  const spans = document.querySelectorAll(".chip span");
+  spans[0].textContent = "("+DATA.length+")";
+  spans[1].textContent = "("+done+")";
+  spans[2].textContent = "("+(DATA.length-done)+")";
+  spans[3].textContent = "("+pin+")";
+}
+
+// ---- submit / grade ------------------------------------------------------ //
+function setSubmitButtonMode(showResults){
+  const btn=$("submitBtn"); if(!btn) return;
+  const label=showResults?"Xem kết quả":"Nộp bài";
+  const textNode=Array.from(btn.childNodes).find(n=>n.nodeType===3);
+  if(textNode) textNode.nodeValue=label;
+  btn.title=showResults?"Xem lại điểm tổng và điểm theo môn":"";
+}
+function requestSubmit(){
+  if(graded){
+    if(typeof window.showGradedResult==="function") window.showGradedResult();
+    else $("resultOverlay").classList.add("show");
+    return;
+  }
+  const unanswered = DATA.length - Object.keys(answers).length;
+  $("confirmMsg").textContent = unanswered>0
+    ? "Bạn còn " + unanswered + " câu chưa làm (sẽ bị tính sai). Nộp bài luôn?"
+    : "Bạn đã làm hết các câu. Nộp bài?";
+  $("confirmOverlay").classList.add("show");
+}
+function closeConfirm(){ $("confirmOverlay").classList.remove("show"); }
+function confirmSubmit(){ closeConfirm(); grade(false); }
+
+function grade(auto){
+  if(graded) return;
+  graded = true;
+  if(timerId) clearInterval(timerId);
+  $("pauseOverlay").classList.remove("show");
+  closeConfirm();
+  const rn = $("resumeNote"); if(rn) rn.classList.remove("show");
+  paintResults();
+  saveProg();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function paintResults(){
+  if(!CFG.hasAnswers){
+    // no answer key — reveal explanations only, no scoring
+    DATA.forEach((q,i)=>{ const e=$("expl-"+i); if(e) e.classList.add("show"); });
+    $("badge").textContent = "Đã nộp (không có đáp án để chấm)";
+    $("badge").className = "badge show fail";
+    refreshNav();
+    return;
+  }
+
+  let correct = 0;
+  DATA.forEach((q,i)=>{
+    const card = $("q-"+i);
+    showQuestionSubject(card,q);
+    const ai = q.ans ? LETTERS.indexOf(q.ans) : -1;
+    // mark correct option
+    if(q.ans){
+      const cb = $("opt-"+i+"-"+q.ans);
+      if(cb) cb.classList.add("correct");
+    }
+    const pickL = answers[i];
+    if(pickL!==undefined){
+      if(pickL===q.ans){ correct++; }
+      else{ const wb=$("opt-"+i+"-"+pickL); if(wb) wb.classList.add("wrong"); }
+    }
+    card.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+    const e = $("expl-"+i); if(e) e.classList.add("show");
+  });
+
+  const pct = Math.round(correct/DATA.length*100);
+  const pass = pct >= CFG.passMark;
+  const b = $("badge");
+  b.textContent = (pass?"ĐẠT":"KHÔNG ĐẠT") + " · " + correct + "/" + DATA.length + " (" + pct + "%)";
+  b.className = "badge show " + (pass?"pass":"fail");
+  refreshNav();
+  renderSubjectBreakdown();
+  setSubmitButtonMode(true);
+}
+
+
+// ---- CFA subject score breakdown ---------------------------------------- //
+const CFA_SUBJECTS = [["ethics", "Ethical & Professional Standards"], ["quant", "Quantitative Methods"], ["economics", "Economics"], ["fsa", "Financial Statement Analysis"], ["corporate", "Corporate Issuers"], ["equity", "Equity Valuation"], ["fixed", "Fixed Income"], ["derivatives", "Derivatives"], ["alternatives", "Alternative Investments"], ["portfolio", "Portfolio Management"]];
+function getCfaSubjectRaw(question){
+  const text=((question.q||"")+"\n"+(question.expl||""))
+    .toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const prompt=(question.q||"").toLowerCase().replace(/[‐‑–—]/g,"-").replace(/lncome/g,"income");
+  if(session===1 && Number(question.n)<=27) return "ethics";
+  if(session===1 && /f-statistic|test statistic|hypothesis|regression|semideviation|probability|box and whisker|interquartile|quintile|percentile/.test(prompt)) return "quant";
+  if(session===1 && /structural deficit|budget deficit|exchange rate|forward points|currency|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity/.test(prompt)) return "economics";
+  if(session===1 && /cost of debt|cost of capital|capital structure|capital budgeting|\bnpv\b|internal rate of return|\birr\b|board of directors|proxy voting|stakeholders?/.test(prompt)) return "corporate";
+  if(session===1 && /code of ethics|professional conduct|professional integrity|guidance\s*for\s*standards|standards?\s+[ivxl]+\b|gips|global investment performance|ethics application|ethical decision|ethics and trust|explain ethics|level i candidate|exam content|market manipulation|situational influence|fair dealing/.test(text)) return "ethics";
+  if(session===2 && /derivative|forward commitment|forward contract|forward price|futures? contract|swap\b|option\b|put-call|put call|binomial model|contingent claim|arbitrage, replication|delta hedg|option replication|moneyness/.test(text)) return "derivatives";
+  if(session===2 && /alternative investment|private capital|private equity|private debt|hedge fund|real estate|infrastructure investment|natural resources|commodit(?:y|ies)|digital assets?|collectibles|venture capital|buyout|mezzanine financing|co-investing/.test(text)) return "alternatives";
+  if(session===2 && /fixed-income|fixed income|bond\b|bonds\b|yield curve|yield spread|yield-to-maturity|yield to maturity|duration|convexity|mortgage-backed|asset-backed|securiti[sz]ed debt|credit analysis|credit risk|term structure of interest rates|money market instrument|repo market/.test(text)) return "fixed";
+  if(session===1 && /financial statement|financial reporting|income statement|incomestatements|balance sheet|cash flow|inventor(?:y|ies)|long-term assets|long-termassets|long lived assets|income tax|deferred tax|revenue recognition|performance obligations|reporting quality|financial analysis techniques|financial analysistechniques|financial statement modeling|long-term liabilities and equity|long term liabilities and equity|common-size|common size|profitability ratios|liquidity ratios|solvency ratios|activity ratios|dupont|ebitda|diluted eps|gaap|ifrs/.test(text)) return "fsa";
+  if(session===2 && /portfolio management|portfolio risk and return|portfolio planning|portfolio construction|asset allocation|investment policy statement|\bips\b|behavioral bias|behavioral explanation|risk management|capital asset pricing model|\bcapm\b|security market line|capital market line|capital allocation line|efficient frontier|systematic risk|unsystematic risk|sharpe ratio|treynor ratio|information ratio|types of investors|mutual fund|correlation between the assets|correlation pattern|correlation coefficient between two assets|portfolio standard deviation|portfolio risk falls|diversification benefit/.test(text)) return "portfolio";
+  if(session===2 && /equity securit|equity valuation|equityvaluation|market organization and structure|security market index|securitymarket index|market efficiency|industry and competitive analysis|industry andcompetitiveanalysis|company analysis|companyanalysis|porter's five forces|dividend discount|gordon growth|sustainable growth rate|free cash flow to equity|price multiple|preferred stock|preference share|equity market|equity index|stock market|share valuation|enterprise value multiple|statutory voting|size effect anomaly|intrinsic value/.test(text)) return "equity";
+  if(session===1 && /economics|business cycle|monetary policy|fiscal policy|geopolitic|international trade|internationaltrade|exchange rate|currency exchange|capital flows and the fx market|aggregate output|aggregate demand|aggregate supply|inflation|unemployment|firm and market structures|market structure within which a firm|perfect competition|monopolistic competition|oligopoly|central bank|gross domestic product|\bgdp\b|herfindahl-hirschman|concentration ratio/.test(text)) return "economics";
+  if(session===1 && /corporate issuer|corporate governance|capital structure|capital allocation|capital budgeting|combination of projects|cost of capital|working capital|business model|organizational forms|investors and other stakeholders|weighted-average cost of capital|weighted average cost of capital|\bwacc\b|modigliani-miller|dividend policy|share repurchase|stakeholder groups|principal-agent/.test(text)) return "corporate";
+  if(session===1 && /quantitative methods|rates? and returns?|ratesand ?return|statistical measure|probability|random variable|sampling|estimation|hypothesis test|parametric|non-parametric|nonparametric|linear regression|correlation|covariance|time value of money|discounted cash flow|big data|machine learning|data science|central tendency|dispersion|skewness|kurtosis|confidence interval|standard deviation|coefficient of variation|major return measures|continuously compounded|monthly compounding|present value/.test(text)) return "quant";
+  if(session===1){
+    if(/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|cash paid|revenue|expense recognition|inventor(?:y|ies)|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|auditor|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible asset|long-lived asset|long lived asset|asset revaluation|revaluation surplus|impairment|amortization|depreciation|pension plan|financial ratio|liquidity ratio|solvency ratio|receivables turnover|payables turnover|cash conversion cycle|fixed charge coverage|creditworthiness|normalized earnings|management['’]?s commentary/.test(prompt)) return "fsa";
+    if(/business cycle|credit cycle|fiscal policy|monetary policy|structural deficit|budget deficit|central bank|lender of last resort|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic competition|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|usd\/?[a-z]{3}|eur\/?[a-z]{3}|appreciation of the|capital restriction|world bank|international monetary fund/.test(prompt)) return "economics";
+    if(/corporate|company lifecycle|company['’]?s lifecycle|start-up|startup|early-stage|business model|franchise model|board of directors|proxy voting|stakeholders?|shareholders?|creditors?|corporate governance|capital budgeting|capital investment|going concern project|real option|combination of projects|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|target weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|source of liquidity|pull on liquidity|drag on.*liquidity|compensation packages|competitive strategy|porter['’]?s five forces|economies of scale|information asymmetry|agency relationship/.test(prompt)) return "corporate";
+    return "quant";
+  }
+  if(/derivative|forward commitment|forward contract|forward rate agreement|futures? contract|swap\b|option\b|call buyer|call seller|put buyer|put seller|strike price|option premium|put-call|put call|binomial model|contingent claim|moneyness|value at expiration|profit.*expiration|arbitrage|replication/.test(prompt)) return "derivatives";
+  if(/alternative investment|private capital|private equity|private debt|hedge fund|real estate|\breit\b|\breits\b|infrastructure|natural resources|commodit(?:y|ies)|digital assets?|cryptocurrenc|bitcoin|collectibles|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption regime|pooled investment product|timberland|farmland/.test(prompt)) return "alternatives";
+  if(/fixed-income|fixed income|bond\b|bonds\b|debt rating|corporate debt|credit rating|credit spread|creditworthiness|yield curve|yield spread|spot rate|forward rate|yield-to-maturity|yield to maturity|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|\bcds\b|repo market|central bank funds|covenant|accrued interest|priority of claims|default risk|extension risk/.test(prompt)) return "fixed";
+  if(/portfolio|asset allocation|investment policy statement|\bips\b|behavioral finance|behavioral bias|cognitive error|risk aversion|utility function|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation between|covariance between|portfolio standard deviation|sharpe ratio|treynor ratio|jensen['’]?s alpha|information ratio|two-fund separation|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral investor/.test(prompt)) return "portfolio";
+  return "equity";
+}
+
+const CFA_SESSION_SUBJECT_RANGES = {
+  1:{ethics:[27,27],quant:[11,17],economics:[11,17],fsa:[20,25],corporate:[10,16]},
+  2:{equity:[20,25],fixed:[20,25],derivatives:[9,14],alternatives:[11,16],portfolio:[14,22]}
+};
+const CFA_SUBJECT_HINTS = {
+  quant:/probabilit|return measure|holding period|money-weighted|time-weighted|mean|median|mode|quintile|percentile|variance|standard deviation|semideviation|skew|kurtosis|hypothesis|test statistic|confidence interval|regression|correlation|covariance|sampling|estimation|bayes|box and whisker|interquartile|coefficient of variation|compound|present value|future value|interest rate|data science|machine learning|fintech/g,
+  economics:/business cycle|credit cycle|fiscal|monetary|central bank|gross domestic product|\bgdp\b|inflation|unemployment|aggregate demand|aggregate supply|market structure|perfect(?:ly)? competitive|monopolistic|oligopoly|elasticity|supply curve|demand curve|globalization|geopolitic|international trade|trade surplus|export subsidy|economic integration|common market|exchange rate|currency|forward points|capital restriction|world bank|international monetary fund/g,
+  fsa:/financial statement|financial reporting|accounting|income statement|balance sheet|cash flow|revenue|expense|inventory|cost of sales|gross profit|gross margin|shareholders?['’]? equity|earnings per share|\beps\b|audit|gaap|ifrs|taxable income|deferred tax|temporary difference|intangible|long-lived|revaluation|impairment|amortization|depreciation|pension|financial ratio|receivables turnover|payables turnover|cash conversion|fixed charge coverage|normalized earnings|management['’]?s commentary/g,
+  corporate:/corporate|company lifecycle|start-up|startup|early-stage|business model|franchise|board of directors|proxy voting|stakeholder|shareholder|creditor|governance|capital budgeting|capital investment|project|real option|\bnpv\b|internal rate of return|\birr\b|cost of debt|cost of capital|capital structure|weight of debt|modigliani|dividend policy|double taxation|principal-agent|working capital|liquidity|compensation|competitive strategy|porter|economies of scale|information asymmetry|agency relationship/g,
+  equity:/equity|common share|preferred share|stock|market index|index weighting|market efficiency|efficient market|security market|buy order|sell order|limit order|dealer|margin requirement|leverage ratio|industry classification|company analysis|enterprise value|price-to|free cash flow to equity|\bfcfe\b|dividend discount|earnings multiplier|book value per share|intrinsic value|voting|ex-dividend/g,
+  fixed:/fixed-income|fixed income|bond|debt|credit rating|credit spread|yield|spot rate|duration|convexity|mortgage|asset-backed|securiti[sz]ation|commercial paper|certificate of deposit|repo|covenant|accrued interest|priority of claims|default|extension risk|interest coverage/g,
+  derivatives:/derivative|forward|future|swap|option|call buyer|call seller|put buyer|put seller|strike price|premium|put-call|binomial|contingent claim|moneyness|expiration|arbitrage|replication/g,
+  alternatives:/alternative|private capital|private equity|private debt|hedge fund|real estate|\breit|infrastructure|natural resource|commodit|digital asset|cryptocurrenc|bitcoin|collectible|venture capital|buyout|mezzanine|general partner|limited partner|waterfall|clawback|management fee|incentive fee|redemption|timberland|farmland/g,
+  portfolio:/portfolio|asset allocation|investment policy|\bips\b|behavioral|cognitive error|risk aversion|utility|risk objective|capital asset pricing|\bcapm\b|security market line|capital market line|efficient frontier|systematic risk|unsystematic risk|diversification|correlation|covariance|sharpe|treynor|jensen|information ratio|two-fund|risk budgeting|lifecycle fund|mutual fund|endowment|foundation|defined contribution|defined benefit|pension|insurance company|risk-neutral/g
+};
+let CFA_SUBJECT_ASSIGNMENTS=null;
+function getCfaSubjectHintScore(question,subject){
+  const prompt=((question.q||"")+" "+(question.opts||[]).join(" ")).toLowerCase().replace(/[‐‑–—]/g,"-");
+  const matches=prompt.match(CFA_SUBJECT_HINTS[subject]);
+  return matches?matches.length:0;
+}
+function buildCfaSubjectAssignments(){
+  const session=/-SS1\.html$/i.test(location.pathname)?1:2;
+  const ranges=CFA_SESSION_SUBJECT_RANGES[session];
+  const subjects=Object.keys(ranges);
+  const raw=DATA.map(getCfaSubjectRaw);
+  const assigned=raw.slice();
+  const counts={}; subjects.forEach(subject=>counts[subject]=0);
+  if(session===1){
+    DATA.forEach((question,index)=>{
+      if(Number(question.n)<=ranges.ethics[1]) assigned[index]="ethics";
+      else if(assigned[index]==="ethics") assigned[index]=null;
+    });
+  }
+  DATA.forEach((question,index)=>{
+    if(assigned[index]) return;
+    const eligible=subjects.filter(subject=>subject!=="ethics");
+    assigned[index]=eligible.sort((a,b)=>getCfaSubjectHintScore(question,b)-getCfaSubjectHintScore(question,a))[0];
+  });
+  assigned.forEach(subject=>counts[subject]++);
+  subjects.forEach(source=>{
+    const maximum=ranges[source][1];
+    if(counts[source]<=maximum) return;
+    const candidates=DATA.map((question,index)=>({index,score:getCfaSubjectHintScore(question,source)}))
+      .filter(item=>assigned[item.index]===source && !(session===1 && source==="ethics" && Number(DATA[item.index].n)<=27))
+      .sort((a,b)=>a.score-b.score||b.index-a.index);
+    for(const candidate of candidates){
+      if(counts[source]<=maximum) break;
+      const belowMinimum=subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][0]);
+      const destinations=(belowMinimum.length?belowMinimum:subjects.filter(subject=>subject!==source && counts[subject]<ranges[subject][1]))
+        .sort((a,b)=>getCfaSubjectHintScore(DATA[candidate.index],b)-getCfaSubjectHintScore(DATA[candidate.index],a)
+          ||(ranges[b][1]-counts[b])-(ranges[a][1]-counts[a]));
+      const destination=destinations[0]; if(!destination) break;
+      assigned[candidate.index]=destination; counts[source]--; counts[destination]++;
+    }
+  });
+  return assigned;
+}
+function getCfaSubject(question){
+  if(question&&question.subj) return question.subj;
+  if(!CFA_SUBJECT_ASSIGNMENTS) CFA_SUBJECT_ASSIGNMENTS=buildCfaSubjectAssignments();
+  const index=DATA.indexOf(question);
+  return index>=0?CFA_SUBJECT_ASSIGNMENTS[index]:getCfaSubjectRaw(question);
+}
+
+function showQuestionSubject(card, question){
+  const head=card.querySelector(".card-head"); if(!head) return;
+  let label=head.querySelector(".question-subject");
+  if(!label){
+    label=document.createElement("span"); label.className="question-subject";
+    const pin=head.querySelector(".pin"); head.insertBefore(label,pin||null);
+  }
+  const key=getCfaSubject(question);
+  const subject=CFA_SUBJECTS.find(item=>item[0]===key);
+  label.dataset.subject=key;
+  label.textContent=subject?subject[1]:"Chưa phân loại";
+  label.title="Môn CFA: "+label.textContent;
+}
+
+function renderSubjectBreakdown(){
+  const panel=$("subjectBreakdown"); if(!panel) return;
+  const scores={}; CFA_SUBJECTS.forEach(s=>scores[s[0]]={correct:0,total:0});
+  DATA.forEach((q,i)=>{
+    const key=getCfaSubject(q); if(!scores[key]) return;
+    scores[key].total++; if(answers[i]===q.ans) scores[key].correct++;
+  });
+  panel.innerHTML="";
+  const heading=document.createElement("h4"); heading.textContent="Điểm theo môn CFA · Tổng "+DATA.length+" câu"; panel.appendChild(heading);
+  const grid=document.createElement("div"); grid.className="subject-grid";
+  CFA_SUBJECTS.forEach(subject=>{
+    const score=scores[subject[0]]; if(!score.total) return;
+    const pct=Math.round(score.correct/score.total*100);
+    const row=document.createElement("div"); row.className="subject-row";
+    const top=document.createElement("div"); top.className="subject-top";
+    const name=document.createElement("span"); name.className="subject-name"; name.textContent=subject[1];
+    const value=document.createElement("span"); value.className="subject-score"; value.textContent=score.correct+"/"+score.total+" ("+pct+"%)";
+    const bar=document.createElement("div"); bar.className="subject-bar"; bar.setAttribute("role","progressbar"); bar.setAttribute("aria-valuemin","0"); bar.setAttribute("aria-valuemax","100"); bar.setAttribute("aria-valuenow",String(pct));
+    const fill=document.createElement("div"); fill.className="subject-fill"; fill.style.width=pct+"%";
+    top.appendChild(name); top.appendChild(value); bar.appendChild(fill); row.appendChild(top); row.appendChild(bar); grid.appendChild(row);
+  });
+  panel.appendChild(grid);
+}
+
+// ---- restart ------------------------------------------------------------- //
+function restart(){
+  answers = {}; pinned = {}; graded = false; started = false; paused = false;
+  if(timerId) clearInterval(timerId);
+  remaining = (CFG.minutes||0)*60;
+  clearProg();
+  setSubmitButtonMode(false);
+  $("badge").className = "badge";
+  $("pauseBtn").textContent = "⏸ Tạm dừng";
+  $("pauseOverlay").classList.remove("show");
+  $("timer").classList.remove("warn");
+  $("resumeNote").classList.remove("show");
+  render();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+</script>
+<script>
+/* ===== Feedback sinh động: chạy sau khi chấm bài ===== */
+(function(){
+  if(typeof grade!=='function') return;
+  var _grade=grade;
+  grade=function(a){ _grade(a); try{ afterGrade(false); }catch(e){} };
+  window.showGradedResult=function(){ try{ afterGrade(true); }catch(e){} };
+
+  function afterGrade(restored){
+    if(!CFG.hasAnswers) return;
+    var pass=document.getElementById('badge').classList.contains('pass');
+    showResult(pass, document.getElementById('badge').textContent, !restored);
+  }
+  function addMark(el,sym){
+    if(el.querySelector('.fx-mark')) return;
+    var s=document.createElement('span'); s.className='fx-mark'; s.textContent=sym;
+    el.appendChild(s);
+  }
+  function showResult(pass, badgeText, celebrate){
+    var ov=document.getElementById('resultOverlay');
+    var icon=document.getElementById('rIcon');
+    var title=document.getElementById('rTitle');
+    var emoji=document.getElementById('rEmoji');
+    var score=document.getElementById('rScore');
+    var m=badgeText.split('·'); score.textContent=m.length>1?m[1].trim():'';
+    if(pass){
+      title.textContent='Chúc mừng! Bạn đã ĐẠT'; title.className='pass';
+      icon.setAttribute('src','https://cdn.lordicon.com/lupuorrc.json');
+      emoji.textContent='🎉';
+      if(celebrate){ fetchEmoji('face-positive', emoji); confetti(); }
+    }else{
+      title.textContent='Chưa đạt — cố lên nhé!'; title.className='fail';
+      icon.setAttribute('src','https://cdn.lordicon.com/jdgfsfzr.json');
+      emoji.textContent='💪';
+    }
+    ov.classList.add('show');
+  }
+  function fetchEmoji(group, el){
+    var ctrl=('AbortController'in window)?new AbortController():null;
+    if(ctrl) setTimeout(function(){try{ctrl.abort();}catch(e){}},3500);
+    fetch('https://emojihub.yurace.pro/api/random/group/'+group, ctrl?{signal:ctrl.signal}:{})
+      .then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.htmlCode&&d.htmlCode.length){
+        el.innerHTML=d.htmlCode.join('');
+        el.style.animation='none'; void el.offsetWidth; el.style.animation='';
+      }})
+      .catch(function(){});
+  }
+  if(graded) window.showGradedResult();
+
+  function confetti(){
+    var cols=['#538297','#86a7b5','#22c55e','#f59e0b','#f43f5e','#38bdf8'];
+    for(var i=0;i<70;i++){(function(){
+      var d=document.createElement('i'); d.className='fx-confetti';
+      d.style.left=Math.random()*100+'vw';
+      d.style.background=cols[i%cols.length];
+      d.style.animationDuration=(2.2+Math.random()*1.6)+'s';
+      d.style.animationDelay=(Math.random()*0.5)+'s';
+      d.style.transform='rotate('+(Math.random()*360)+'deg)';
+      document.body.appendChild(d);
+      setTimeout(function(){d.remove();},4500);
+    })();}
+  }
+})();
+</script>
+<!--qnote-feature-start-->
+<style id="qnote-css">
+  main#quiz{max-width:1180px}
+  .qrow{display:flex;gap:16px;align-items:flex-start;margin:0 0 16px}
+  .qrow > .card{flex:1 1 auto;min-width:0;margin:0}
+  .qnote{flex:0 0 300px;align-self:stretch;display:flex;flex-direction:column;
+    border-radius:12px;border:1px solid var(--line);
+    background:color-mix(in srgb, var(--pin) 9%, var(--panel2));padding:10px}
+  .qnote-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;
+    font-size:12.5px;font-weight:600;color:var(--muted)}
+  .qnote-head .dot{color:var(--pin)}
+  .qnote-saved{margin-left:auto;font-size:11.5px;color:var(--ok);opacity:0;
+    transition:opacity .25s}
+  .qnote-saved.show{opacity:1}
+  .qnote textarea{flex:1 1 auto;width:100%;resize:vertical;min-height:96px;display:block;
+    font:inherit;font-size:14px;line-height:1.5;color:var(--txt);
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;outline:none}
+  .qnote textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 1.5px var(--accent) inset}
+  .qnote textarea::placeholder{color:var(--muted);opacity:.7}
+  @media (max-width:860px){
+    .qrow{flex-direction:column;gap:10px}
+    .qnote{flex-basis:auto;width:100%;align-self:auto}
+    .qnote textarea{min-height:52px}
+  }
+</style>
+<script>
+/* ===== Ghi chú cá nhân bên phải mỗi câu (lưu trong máy - localStorage) ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function load(){ try{ return JSON.parse(localStorage.getItem(NKEY)||"{}")||{}; }catch(e){ return {}; } }
+  function save(map){ try{ localStorage.setItem(NKEY, JSON.stringify(map)); }catch(e){} }
+  function keyFor(card){ var id=card.id||""; var m=id.match(/^q-(\d+)$/); return m?m[1]:null; }
+  function attach(){
+    var notes = load();
+    var cards = document.querySelectorAll("#quiz .card");
+    for(var c=0;c<cards.length;c++){
+      var card = cards[c];
+      var parent = card.parentNode;
+      if(parent && parent.classList && parent.classList.contains("qrow")) continue; // already wrapped
+      var k = keyFor(card);
+      if(k===null || !parent) continue;
+      var wrap = document.createElement("div");
+      wrap.className = "qnote";
+      var head = document.createElement("div");
+      head.className = "qnote-head";
+      head.innerHTML = '<span class="dot">📝</span><span>Ghi chú</span><span class="qnote-saved">Đã lưu ✓</span>';
+      var ta = document.createElement("textarea");
+      ta.setAttribute("placeholder","Ghi chú cho câu này…");
+      ta.value = notes[k] || "";
+      (function(ta,k,savedEl){
+        var t=null;
+        ta.addEventListener("input", function(){
+          var m=load();
+          if(ta.value && ta.value.trim()) m[k]=ta.value; else delete m[k];
+          save(m);
+          savedEl.classList.add("show");
+          clearTimeout(t); t=setTimeout(function(){ savedEl.classList.remove("show"); }, 1200);
+        });
+      })(ta, k, head.querySelector(".qnote-saved"));
+      wrap.appendChild(head); wrap.appendChild(ta);
+      var row = document.createElement("div");
+      row.className = "qrow";
+      parent.insertBefore(row, card);   // put row where the card was
+      row.appendChild(card);            // move question card into the row (left)
+      row.appendChild(wrap);            // note beside it (right)
+    }
+  }
+  function boot(){
+    attach();
+    var quiz = document.getElementById("quiz");
+    if(quiz && "MutationObserver" in window){
+      var pend=false;
+      new MutationObserver(function(){
+        if(pend) return; pend=true;
+        setTimeout(function(){ pend=false; attach(); }, 30);
+      }).observe(quiz,{childList:true});
+    }
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnote-feature-end-->
+<!--qnav-note-start-->
+<style id="qnav-note-css">
+  #navGrid .cell.noted::before{content:"\1F4DD";position:absolute;top:-4px;left:-3px;font-size:10px;line-height:1}
+</style>
+<script>
+/* ===== Đánh dấu câu có Ghi chú trong "Danh sách câu" + bộ lọc "Ghi chú" ===== */
+(function(){
+  var slug = (location.pathname.split("/").pop()||"quiz").replace(/\.html$/i,"").toLowerCase();
+  var NKEY = "cfa:note:" + slug;
+  function noteSet(){
+    var s={};
+    try{ var m=JSON.parse(localStorage.getItem(NKEY)||"{}")||{};
+      for(var k in m){ if(m.hasOwnProperty(k) && m[k] && (""+m[k]).trim()) s[k]=1; } }catch(e){}
+    return s;
+  }
+  function addChip(){
+    var chips=document.getElementById("chips");
+    if(!chips || chips.querySelector('[data-f="note"]')) return;
+    var b=document.createElement("button");
+    b.className="chip"; b.setAttribute("data-f","note");
+    b.innerHTML='Ghi chú <span></span>';
+    b.onclick=function(){ if(typeof setFilter==="function") setFilter("note", b); };
+    chips.appendChild(b);
+  }
+  var wrapped=false;
+  function wrapRefresh(){
+    if(wrapped || typeof window.refreshNav!=="function") return;
+    wrapped=true;
+    var orig=window.refreshNav;
+    window.refreshNav=function(){
+      orig.apply(this, arguments);
+      var ns=noteSet(), cnt=0;
+      var active=document.querySelector('#chips .chip.active');
+      var f=active?active.getAttribute("data-f"):"all";
+      var cells=document.querySelectorAll("#navGrid .cell");
+      for(var j=0;j<cells.length;j++){
+        var c=cells[j], m=(c.id||"").match(/^cell-(\d+)$/); if(!m) continue;
+        var has=!!ns[m[1]];
+        c.classList.toggle("noted", has);
+        if(has) cnt++;
+        if(f==="note") c.classList.toggle("hide", !has);
+      }
+      var sp=document.querySelector('#chips [data-f="note"] span');
+      if(sp) sp.textContent="("+cnt+")";
+    };
+  }
+  function wrapToggle(){
+    if(typeof window.toggleNav!=="function" || window.toggleNav.__qnav) return;
+    var orig=window.toggleNav;
+    window.toggleNav=function(){
+      var r=orig.apply(this, arguments);
+      var p=document.getElementById("navPanel");
+      if(p && p.classList.contains("open") && typeof window.refreshNav==="function") window.refreshNav();
+      return r;
+    };
+    window.toggleNav.__qnav=true;
+  }
+  function boot(){
+    addChip(); wrapRefresh(); wrapToggle();
+    if(typeof window.refreshNav==="function") window.refreshNav();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+})();
+</script>
+<!--qnav-note-end-->
+
+<!--qnotes-panel-start-->
+<style id="qnotes-panel-css">
+  #qnotesFab{position:fixed;right:18px;bottom:18px;z-index:35;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #qnotesFab:hover{filter:brightness(1.06)}
+  #qnotesFab svg{width:17px;height:17px;flex:none}
+  #qnotesPanel{position:fixed;top:8vh;left:16px;width:min(470px,94vw);height:min(80vh,680px);z-index:70;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #qnotesPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #qnotesPanel .qnp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #qnotesPanel .qnp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #qnotesPanel .qnp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #qnotesPanel .qnp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #qnotesPanel .qnp-open:hover{text-decoration:underline}
+  #qnotesPanel .qnp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #qnotesPanel .qnp-x:hover{color:var(--txt)}
+  #qnotesPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #qnotesPanel.dragging #qnotesFrame{pointer-events:none}
+  #qnotesFrame{flex:1;width:100%;border:0;background:var(--bg)}
+  #qnotesOverlay{position:fixed;inset:0;background:transparent;z-index:65;display:none;pointer-events:none}
+  #qnotesOverlay.show{display:block}
+  @media(max-width:600px){#qnotesFab span{display:none}#qnotesFab{padding:12px}}
+</style>
+<button id="qnotesFab" type="button" onclick="qnotesOpen()" title="Ghi chú của tôi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h9l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M8 10h6M8 14h8M8 18h5"/></svg><span>Ghi chú</span></button>
+<div id="qnotesOverlay" onclick="qnotesClose()"></div>
+<div id="qnotesPanel" aria-hidden="true">
+  <div class="qnp-head" id="qnotesHead"><span class="qnp-grip" aria-hidden="true">⠿</span><b>Ghi chú của tôi</b><a class="qnp-open" href="index.html?view=notes" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="qnp-x" onclick="qnotesClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="qnotesFrame" title="Ghi chú của tôi" loading="lazy"></iframe>
+</div>
+<script id="qnotes-panel-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("qnotesPanel");}
+  window.qnotesOpen=function(){
+    var fr=document.getElementById("qnotesFrame");
+    if(!loaded){ fr.src="index.html?embed=1&view=notes"; loaded=true; }
+    P().classList.add("open"); document.getElementById("qnotesOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.qnotesClose=function(){
+    P().classList.remove("open"); document.getElementById("qnotesOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.qnotesClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("qnotesHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".qnp-x")||e.target.closest(".qnp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--qnotes-panel-end-->
+<!--baii-calc-start-->
+<style id="baii-calc-css">
+  #baiiFab{position:fixed;right:18px;bottom:70px;z-index:36;display:inline-flex;align-items:center;gap:8px;
+    background:var(--accent2,#0ea5e9);color:#fff;border:none;border-radius:999px;padding:11px 17px;font:600 14px inherit;
+    cursor:pointer;box-shadow:0 8px 24px rgba(2,6,23,.35)}
+  #baiiFab:hover{filter:brightness(1.06)}
+  #baiiFab svg{width:17px;height:17px;flex:none}
+  #baiiPanel{position:fixed;top:8vh;right:16px;width:min(410px,94vw);height:min(80vh,680px);z-index:72;
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;
+    overflow:hidden;opacity:0;pointer-events:none;transform:translateY(10px);
+    transition:opacity .18s,transform .18s;box-shadow:0 18px 54px rgba(2,6,23,.5)}
+  #baiiPanel.open{opacity:1;pointer-events:auto;transform:none}
+  #baiiPanel .bp-head{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line);
+    flex:none;cursor:move;touch-action:none;user-select:none}
+  #baiiPanel .bp-grip{color:var(--muted);font-size:15px;line-height:1;letter-spacing:-2px;flex:none}
+  #baiiPanel .bp-head b{flex:1;font-size:14px;color:var(--txt)}
+  #baiiPanel .bp-open{font-size:12.5px;font-weight:600;color:var(--accent2);text-decoration:none;white-space:nowrap}
+  #baiiPanel .bp-open:hover{text-decoration:underline}
+  #baiiPanel .bp-x{border:none;background:transparent;color:var(--muted);font-size:19px;line-height:1;cursor:pointer;padding:2px 8px;border-radius:8px}
+  #baiiPanel .bp-x:hover{color:var(--txt)}
+  #baiiPanel.dragging{transition:none;box-shadow:0 26px 70px rgba(2,6,23,.62)}
+  #baiiPanel.dragging #baiiFrame{pointer-events:none}
+  #baiiFrame{flex:1;width:100%;border:0;background:#0f1a1d}
+  #baiiOverlay{position:fixed;inset:0;background:transparent;z-index:67;display:none;pointer-events:none}
+  #baiiOverlay.show{display:block}
+  @media(max-width:600px){#baiiFab span{display:none}#baiiFab{padding:12px;bottom:74px}}
+</style>
+<button id="baiiFab" type="button" onclick="baiiOpen()" title="Máy tính BA II Plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="19"/><line x1="8" y1="19" x2="12" y2="19"/></svg><span>Máy tính</span></button>
+<div id="baiiOverlay" onclick="baiiClose()"></div>
+<div id="baiiPanel" aria-hidden="true">
+  <div class="bp-head" id="baiiHead"><span class="bp-grip" aria-hidden="true">⠿</span><b>Máy tính BA II Plus</b><a class="bp-open" href="baii-plus.html" target="_blank" rel="noopener">Mở trang ↗</a><button type="button" class="bp-x" onclick="baiiClose()" title="Đóng (Esc)">✕</button></div>
+  <iframe id="baiiFrame" title="BA II Plus" loading="lazy"></iframe>
+</div>
+<script id="baii-calc-js">
+(function(){
+  var loaded=false;
+  function P(){return document.getElementById("baiiPanel");}
+  window.baiiOpen=function(){
+    var fr=document.getElementById("baiiFrame");
+    if(!loaded){ fr.src="baii-plus.html"; loaded=true; }
+    P().classList.add("open"); document.getElementById("baiiOverlay").classList.add("show"); P().setAttribute("aria-hidden","false");
+  };
+  window.baiiClose=function(){
+    P().classList.remove("open"); document.getElementById("baiiOverlay").classList.remove("show"); P().setAttribute("aria-hidden","true");
+  };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && P() && P().classList.contains("open")) window.baiiClose(); });
+  // ---- drag the window by its header ----
+  var head=document.getElementById("baiiHead"), panel=P();
+  var drag=false,sx=0,sy=0,ox=0,oy=0;
+  head.addEventListener("pointerdown",function(e){
+    if(e.target.closest(".bp-x")||e.target.closest(".bp-open")) return;
+    var r=panel.getBoundingClientRect();
+    panel.style.left=r.left+"px"; panel.style.top=r.top+"px"; panel.style.right="auto"; panel.style.bottom="auto";
+    drag=true; sx=e.clientX; sy=e.clientY; ox=r.left; oy=r.top;
+    panel.classList.add("dragging");
+    try{head.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  head.addEventListener("pointermove",function(e){
+    if(!drag) return;
+    var nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    var w=panel.offsetWidth, h=panel.offsetHeight;
+    nx=Math.max(4,Math.min(nx,window.innerWidth-w-4));
+    ny=Math.max(4,Math.min(ny,window.innerHeight-h-4));
+    panel.style.left=nx+"px"; panel.style.top=ny+"px";
+  });
+  function endDrag(e){ if(!drag)return; drag=false; panel.classList.remove("dragging"); try{head.releasePointerCapture(e.pointerId);}catch(_){} }
+  head.addEventListener("pointerup",endDrag);
+  head.addEventListener("pointercancel",endDrag);
+})();
+</script>
+<!--baii-calc-end-->
+
+<!--restart-confirm-start-->
+<div id="restartOverlay" class="overlay">
+  <div class="modal">
+    <h3>Làm lại từ đầu?</h3>
+    <p>Toàn bộ đáp án đã chọn và tiến độ của đề này sẽ bị xoá và không thể khôi phục. Bạn chắc chắn muốn làm lại?</p>
+    <div class="modal-actions">
+      <button type="button" onclick="rcCancel()">Huỷ</button>
+      <button type="button" class="btn-primary" onclick="rcConfirm()">Làm lại</button>
+    </div>
+  </div>
+</div>
+<script id="restart-confirm-js">
+(function(){
+  if(typeof restart!=="function") return;
+  var _restart=restart;
+  function ov(){ return document.getElementById("restartOverlay"); }
+  function hasWork(){
+    try{
+      if(typeof graded!=="undefined" && graded) return true;
+      if(typeof answers==="object" && answers && Object.keys(answers).length>0) return true;
+      if(typeof pinned==="object" && pinned && Object.keys(pinned).length>0) return true;
+    }catch(e){}
+    return false;
+  }
+  window.rcCancel=function(){ var o=ov(); if(o) o.classList.remove("show"); };
+  window.rcConfirm=function(){ window.rcCancel(); _restart(); };
+  window.restart=function(){
+    var o=ov();
+    if(o && hasWork()){ o.classList.add("show"); return; }
+    _restart();
+  };
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){ var o=ov(); if(o && o.classList.contains("show")) window.rcCancel(); }
+  });
+  var o=ov(); if(o) o.addEventListener("click",function(e){ if(e.target===o) window.rcCancel(); });
+})();
+</script>
+<!--restart-confirm-end-->
+</body>
+</html>
