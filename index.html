@@ -1601,8 +1601,8 @@ const HUB_L2 = [
  },
  {
   "id": "mock",
-  "name": "Mock Exams",
-  "short": "Đề thi thử",
+  "name": "Schweser Mock 2025",
+  "short": "Schweser 2025",
   "ico": "MK",
   "desc": "6 đề thi thử Schweser 2025 Level II. Mỗi đề 2 phiên, mỗi phiên 11 item set · 44 câu · 2 giờ 12 phút.",
   "modules": [
@@ -1693,9 +1693,148 @@ const HUB_L2 = [
   ]
  },
  {
+  "id": "mk-efs",
+  "name": "Schweser Extra Full Syllabus",
+  "short": "Extra Full Syllabus",
+  "ico": "EF",
+  "desc": "4 đề (V1/V2 × Exam 1/2) theo format cũ: mỗi phiên AM/PM 10 item set · 60 câu · 3 giờ.",
+  "modules": [
+   {
+    "n": 1,
+    "title": "Extra Full Syllabus V1 · Exam 1 — Morning (AM)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-EFS-V1-E1-AM.html"
+   },
+   {
+    "n": 2,
+    "title": "Extra Full Syllabus V1 · Exam 1 — Afternoon (PM)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-EFS-V1-E1-PM.html"
+   },
+   {
+    "n": 3,
+    "title": "Extra Full Syllabus V1 · Exam 2 — Morning (AM)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-EFS-V1-E2-AM.html"
+   },
+   {
+    "n": 4,
+    "title": "Extra Full Syllabus V1 · Exam 2 — Afternoon (PM)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-EFS-V1-E2-PM.html"
+   },
+   {
+    "n": 5,
+    "title": "Extra Full Syllabus V2 · Exam 1 — Morning (AM)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-EFS-V2-E1-AM.html"
+   },
+   {
+    "n": 6,
+    "title": "Extra Full Syllabus V2 · Exam 1 — Afternoon (PM)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-EFS-V2-E1-PM.html"
+   },
+   {
+    "n": 7,
+    "title": "Extra Full Syllabus V2 · Exam 2 — Morning (AM)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-EFS-V2-E2-AM.html"
+   },
+   {
+    "n": 8,
+    "title": "Extra Full Syllabus V2 · Exam 2 — Afternoon (PM)",
+    "q": 60,
+    "status": "ready",
+    "file": "L2-EFS-V2-E2-PM.html"
+   }
+  ]
+ },
+ {
+  "id": "mk-kevin",
+  "name": "Kevin Sir Mock 2024",
+  "short": "Kevin Sir",
+  "ico": "KS",
+  "desc": "Đề thi thử CFA with Kevin Sir 2024: 2 phiên, mỗi phiên 11 item set · 44 câu · 2 giờ 12 phút.",
+  "modules": [
+   {
+    "n": 1,
+    "title": "Kevin Sir Mock 2024 — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Kevin-SS1.html"
+   },
+   {
+    "n": 2,
+    "title": "Kevin Sir Mock 2024 — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Kevin-SS2.html"
+   }
+  ]
+ },
+ {
+  "id": "mk-prem",
+  "name": "CFA Premium Mock",
+  "short": "CFA Premium",
+  "ico": "PR",
+  "desc": "3 đề CFA Premium (EdZeb), mỗi đề 2 phiên · 44 câu · 2 giờ 12 phút. Lời giải chi tiết cuối mỗi câu.",
+  "modules": [
+   {
+    "n": 1,
+    "title": "CFA Premium Mock 1 — Session 1 (đề gốc thiếu câu 37–39)",
+    "q": 41,
+    "status": "ready",
+    "file": "L2-Prem1-SS1.html"
+   },
+   {
+    "n": 2,
+    "title": "CFA Premium Mock 1 — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Prem1-SS2.html"
+   },
+   {
+    "n": 3,
+    "title": "CFA Premium Mock 2 — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Prem2-SS1.html"
+   },
+   {
+    "n": 4,
+    "title": "CFA Premium Mock 2 — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Prem2-SS2.html"
+   },
+   {
+    "n": 5,
+    "title": "CFA Premium Mock 3 — Session 1",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Prem3-SS1.html"
+   },
+   {
+    "n": 6,
+    "title": "CFA Premium Mock 3 — Session 2",
+    "q": 44,
+    "status": "ready",
+    "file": "L2-Prem3-SS2.html"
+   }
+  ]
+ },
+ {
   "id": "uword",
-  "name": "UWorld Mock Exams",
-  "short": "Đề UWorld",
+  "name": "UWorld Mock",
+  "short": "UWorld",
   "ico": "UW",
   "desc": "2 đề thi thử UWorld Level II. Mỗi đề 2 phiên, mỗi phiên 11 item set · 44 câu · 2 giờ 12 phút.",
   "modules": [
@@ -1739,7 +1878,8 @@ let query = "";
 const SUBJ_COLOR = {
   quant:"#3b82f6", econ:"#06b6d4", ci:"#8b5cf6", fsa:"#10b981",
   equity:"#22c55e", fi:"#f59e0b", deriv:"#ec4899", alt:"#f97316",
-  pm:"#14b8a6", ethics:"#eab308", mock:"#ef4444", uword:"#a855f7"
+  pm:"#14b8a6", ethics:"#eab308", mock:"#ef4444", uword:"#a855f7",
+  "mk-efs":"#f97316", "mk-kevin":"#0ea5e9", "mk-prem":"#10b981"
 };
 function subjColor(s){ return SUBJ_COLOR[s.id] || "var(--accent)"; }
 
@@ -1797,12 +1937,22 @@ function subjectsOf(src){
 /* Level II: tách nguồn theo giáo trình — Kaplan Schweser / UWorld / EdZeb (mock đi theo nhà cung cấp) */
 if(window.CFA_LEVEL===2){
   SOURCES.splice(0, SOURCES.length,
-    {id:"kaplan", name:"Kaplan Schweser", desc:"QBank 2025 theo từng reading (51 reading, item set có vignette) + 6 đề Mock Schweser 2025", ico:"KS", color:"#6366f1"},
-    {id:"uworld", name:"UWorld", desc:"Item sets (vignette) theo môn + 2 đề Mock UWorld", ico:"UW", color:"#a855f7"},
+    {id:"kaplan", name:"Kaplan Schweser", desc:"QBank 2025 theo từng reading (51 reading, item set có vignette)", ico:"KS", color:"#6366f1"},
+    {id:"uworld", name:"UWorld", desc:"Item sets (vignette) theo môn", ico:"UW", color:"#a855f7"},
     {id:"edzeb",  name:"EdZeb Practice Pack", desc:"Câu đơn có lời giải chi tiết — 10 môn Level II", ico:"EZ", color:"#10b981"},
-    {id:"analystprep", name:"AnalystPrep", desc:"Item sets có vignette + lời giải chi tiết (2026) — 10 môn Level II", ico:"AP", color:"#f59e0b"});
+    {id:"analystprep", name:"AnalystPrep", desc:"Item sets có vignette + lời giải chi tiết (2026) — 10 môn Level II", ico:"AP", color:"#f59e0b"},
+    {id:"mock", name:"Mock Exams", desc:"Đề thi thử full-length, chia theo bộ: Schweser 2025 · Extra Full Syllabus · Kevin Sir · CFA Premium · UWorld", ico:"MK", color:"#ef4444"});
+  isMockSubj = function(s){ return s.id==="mock" || s.id==="uword" || /^mk-/.test(s.id); };
+  Object.assign(SUBJ_INTRO, {
+    mock: "6 đề thi thử Schweser 2025 Level II. Mỗi đề 2 phiên, mỗi phiên 11 item set · 44 câu · 2 giờ 12 phút.",
+    uword: "2 đề thi thử UWorld Level II. Mỗi đề 2 phiên, mỗi phiên 11 item set · 44 câu · 2 giờ 12 phút.",
+    "mk-efs": "Schweser Extra Full Syllabus: 4 đề (V1, V2 × Exam 1, 2) theo format cũ — mỗi phiên AM/PM có 10 item set · 60 câu trong 3 giờ.",
+    "mk-kevin": "Đề thi thử CFA with Kevin Sir 2024: 2 phiên, mỗi phiên 11 item set · 44 câu · 2 giờ 12 phút.",
+    "mk-prem": "3 đề CFA Premium (EdZeb), mỗi đề 2 phiên · 44 câu · 2 giờ 12 phút. Đề Mock 1 – Session 1 trong file gốc thiếu câu 37–39."
+  });
   modSrc = function(s,m){
     var f = m.file||"";
+    if(isMockSubj(s)) return "mock";
     if(/^L2-UW/i.test(f)) return "uworld";
     if(/^L2-PP-/i.test(f)) return "edzeb";
     if(/^L2-AP-/i.test(f)) return "analystprep";
