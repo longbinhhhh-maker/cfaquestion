@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tài liệu CFA Level II</title>
+<script>
+  (function(){ try{ document.documentElement.setAttribute("data-theme", localStorage.getItem("cfa:theme")||"light"); }catch(e){} })();
+  function toggleTheme(){
+    var nx = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+    try{ localStorage.setItem("cfa:theme", nx); }catch(e){}
+    document.documentElement.setAttribute("data-theme", nx);
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root, html[data-theme="light"]{
+    --accent:#534AB7; --accent2:#6f66d6;
+    --bg:#eef1f6; --panel:#ffffff; --panel2:#f2f3f7; --line:#e7e9ef;
+    --txt:#1f2430; --muted:#6b7280; --bad:#e24b4a; --badbg:#fcebeb; --ok:#1d9e75;
+    --shadow:0 1px 2px rgba(24,28,40,.06); --page-shadow:0 2px 10px rgba(24,28,40,.12);
+    --reader-bg:#e3e6ec;
+  }
+  html[data-theme="dark"]{
+    --accent:#7f77dd; --accent2:#6a61e0;
+    --bg:#0e1220; --panel:#151b2c; --panel2:#1d2540; --line:#2a3352;
+    --txt:#e6edf6; --muted:#9aa4b6; --bad:#f16a6a; --badbg:#3a1620; --ok:#34d19b;
+    --shadow:0 8px 28px rgba(0,0,0,.32); --page-shadow:0 4px 18px rgba(0,0,0,.45);
+    --reader-bg:#0a0e19;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--txt);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .hide{display:none!important}
+  button{font:inherit}
+  a{color:inherit}
+
+  /* ---------- top bar ---------- */
+  .tl-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .tl-back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;border:1px solid var(--line);
+    background:var(--panel2);color:var(--txt);text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap}
+  .tl-back:hover{border-color:var(--accent);color:var(--accent)}
+  .tl-title{min-width:0;flex:1 1 220px}
+  .tl-title b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tl-title span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tl-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tl-btn{min-width:34px;height:34px;padding:0 10px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);
+    color:var(--txt);cursor:pointer;font-size:13px;font-weight:600}
+  .tl-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .tl-pg{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  .tl-pg input{width:60px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--txt);
+    text-align:center;font:inherit;font-size:13px}
+  .tl-pg input:focus{outline:none;border-color:var(--accent)}
+  .tl-zoom{min-width:46px;text-align:center;font-size:12.5px;color:var(--muted)}
+
+  /* ---------- library ---------- */
+  .lib{max-width:1100px;margin:0 auto;padding:26px 16px 60px}
+  .lib-head h1{margin:0 0 4px;font-size:22px}
+  .lib-head p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+  .lib-note{margin:14px 0 22px;padding:11px 14px;border-radius:11px;background:var(--panel);border:1px solid var(--line);
+    font-size:13px;color:var(--muted);line-height:1.55}
+  .lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .bk{position:relative;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;overflow:hidden;box-shadow:var(--shadow);text-decoration:none;color:var(--txt);
+    transition:transform .12s ease,border-color .12s ease}
+  .bk:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 45%,var(--line))}
+  .bk-strip{height:5px;background:var(--c)}
+  .bk-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .bk-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .bk-tag{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--c) 80%,var(--txt))}
+  .bk-pages{font-size:12px;color:var(--muted)}
+  .bk h3{margin:0;font-size:16px;line-height:1.35}
+  .bk-subj{display:flex;flex-wrap:wrap;gap:6px}
+  .bk-subj span{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;
+    background:color-mix(in srgb,var(--c) 12%,var(--panel2));color:color-mix(in srgb,var(--c) 75%,var(--txt))}
+  .bk-mon{font-size:12.5px;color:var(--muted)}
+  .bk-foot{margin-top:auto;padding-top:8px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+  .bk-cta{padding:7px 14px;border-radius:9px;background:var(--accent);color:#fff;font-weight:600;font-size:13px}
+
+  /* ---------- lock gate ---------- */
+  .gate{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:24px 16px}
+  .gate-card{width:min(420px,100%);background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px 24px;
+    box-shadow:var(--shadow)}
+  .gate-card h2{margin:0 0 6px;font-size:19px}
+  .gate-card p{margin:0 0 18px;color:var(--muted);font-size:13.5px;line-height:1.55}
+  .gate-card input[type=password],.gate-card input[type=text]{width:100%;height:44px;padding:0 14px;border-radius:11px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--txt);font:inherit;font-size:15px;letter-spacing:.03em}
+  .gate-card input:focus{outline:none;border-color:var(--accent)}
+  .gate-row{display:flex;align-items:center;gap:8px;margin:12px 0 16px;font-size:13px;color:var(--muted)}
+  .gate-go{width:100%;height:44px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-weight:700;font-size:14.5px;cursor:pointer}
+  .gate-go:disabled{opacity:.6;cursor:default}
+  .gate-err{margin-top:12px;padding:9px 12px;border-radius:9px;background:var(--badbg);color:var(--bad);font-size:13px}
+
+  /* ---------- reader ---------- */
+  .reader{background:var(--reader-bg);min-height:calc(100vh - 56px);padding:18px 16px 80px}
+  .pages{--pw:860px;display:flex;flex-direction:column;align-items:center;gap:14px}
+  .pg{position:relative;width:min(100%,var(--pw));background:#fff;box-shadow:var(--page-shadow);border-radius:3px;overflow:hidden}
+  .pg img{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
+  .pg .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa1ad;font-size:13px}
+  .pg .no{position:absolute;right:8px;bottom:6px;font-size:11px;color:#9aa1ad;background:rgba(255,255,255,.8);padding:1px 6px;border-radius:5px}
+  html[data-theme="dark"] .pg{filter:none}
+  .msg{max-width:560px;margin:60px auto;text-align:center;color:var(--muted);font-size:14px;line-height:1.6;padding:0 16px}
+
+  @media(max-width:640px){
+    .tl-title{flex-basis:100%;order:3}
+    .tl-zoom{display:none}
+    #themeBtn2{display:none}
+    .tl-bar{gap:8px;padding:8px 12px}
+    .reader{padding:10px 8px 60px}
+    .pages{gap:8px}
+  }
+</style>
+</head>
+<body>
+<div class="tl-bar">
+  <a class="tl-back" id="backLink" href="index.html?level=2#tailieu">← Tài liệu</a>
+  <div class="tl-title"><b id="barTitle">Tài liệu CFA Level II</b><span id="barSub">SchweserNotes 2025 · Formula Sheet</span></div>
+  <div class="tl-tools" id="readerTools" style="display:none">
+    <div class="tl-pg">Trang <input id="pgInput" inputmode="numeric" aria-label="Đi tới trang"> / <span id="pgTotal">0</span></div>
+    <button class="tl-btn" onclick="zoomBy(-1)" title="Thu nhỏ (−)">−</button>
+    <span class="tl-zoom" id="zoomLbl">100%</span>
+    <button class="tl-btn" onclick="zoomBy(1)" title="Phóng to (+)">+</button>
+    <button class="tl-btn" onclick="setZoom(-1)" title="Vừa chiều ngang">Vừa khung</button>
+  </div>
+  <button class="tl-btn" id="lockBtn" onclick="lockNow()" title="Quên mật khẩu đã nhớ trên máy này" style="display:none">Khoá lại</button>
+  <button class="tl-btn" id="themeBtn2" onclick="toggleTheme()" title="Sáng / Tối">Sáng/Tối</button>
+</div>
+
+<section id="gate" class="gate hide">
+  <form class="gate-card" onsubmit="event.preventDefault();doUnlock()">
+    <h2>Tài liệu được khoá</h2>
+    <p>Sách SchweserNotes và Formula Sheet <b>CFA Level II (2025)</b> chỉ dành cho bạn đọc riêng. Nhập mật khẩu để mở.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Mật khẩu" autofocus>
+    <label class="gate-row"><input id="remember" type="checkbox" checked> Ghi nhớ trên thiết bị này</label>
+    <button class="gate-go" id="goBtn" type="submit">Mở khoá</button>
+    <div class="gate-err hide" id="gateErr"></div>
+  </form>
+</section>
+
+<section id="library" class="lib hide">
+  <div class="lib-head">
+    <h1>Tài liệu CFA Level II</h1>
+    <p>Bộ sách <b>Kaplan SchweserNotes 2025</b> (Book 1–5) và <b>Formula Sheet 2025</b>, dùng cho kỳ thi <b>CFA Level II</b>. Mỗi cuốn ghi rõ các môn mà nó bao phủ.</p>
+  </div>
+  <div class="lib-note">Nội dung được mã hoá; chỉ mở được bằng mật khẩu của bạn. Trang sẽ nhớ trang bạn đang đọc dở của từng cuốn.</div>
+  <div class="lib-grid" id="libGrid"></div>
+</section>
+
+<section id="reader" class="reader hide">
+  <div class="pages" id="pages"></div>
+</section>
+
+<div id="msg" class="msg">Đang tải…</div>
+
+<script>
+(function(){
+"use strict";
+var KEY_STORE="cfa:tl:dek", POS="cfa:tl:pos:", ZOOM="cfa:tl:zoom";
+var M=null, DEK=null, BOOK=null, zoom=-1;
+var enc=new TextEncoder();
+function $(id){return document.getElementById(id);}
+function b64(s){var b=atob(s),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return u;}
+function ub64(buf){var u=new Uint8Array(buf),s="";for(var i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s);}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){return null;}}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function show(id){["gate","library","reader","msg"].forEach(function(x){$(x).classList.toggle("hide",x!==id);});}
+function bookLabel(b){return b.kind==="book"?"Book "+b.no+" · SchweserNotes":"Formula Sheet";}
+
+async function importDek(raw){
+  return crypto.subtle.importKey("raw",raw,{name:"AES-GCM"},false,["decrypt"]);
+}
+async function unwrap(pw){
+  var base=await crypto.subtle.importKey("raw",enc.encode(pw),"PBKDF2",false,["deriveKey"]);
+  var kek=await crypto.subtle.deriveKey({name:"PBKDF2",salt:b64(M.kdf.salt),iterations:M.kdf.iter,hash:"SHA-256"},
+    base,{name:"AES-GCM",length:256},false,["decrypt"]);
+  return crypto.subtle.decrypt({name:"AES-GCM",iv:b64(M.wrap.iv),additionalData:enc.encode(M.wrap.aad)},kek,b64(M.wrap.ct));
+}
+
+window.doUnlock=async function(){
+  var pw=$("pw").value.trim().toLowerCase(), err=$("gateErr"), btn=$("goBtn");
+  if(!pw){$("pw").focus();return;}
+  err.classList.add("hide"); btn.disabled=true; btn.textContent="Đang mở khoá…";
+  try{
+    var raw=await unwrap(pw);
+    DEK=await importDek(raw);
+    if($("remember").checked) ls(KEY_STORE,ub64(raw));
+    $("pw").value="";
+    route();
+  }catch(e){
+    err.textContent="Sai mật khẩu. Kiểm tra lại (chữ thường, có dấu gạch ngang).";
+    err.classList.remove("hide");
+  }finally{btn.disabled=false;btn.textContent="Mở khoá";}
+};
+window.lockNow=function(){ls(KEY_STORE,null);DEK=null;location.href=location.pathname;};
+
+function renderLibrary(){
+  $("barTitle").textContent="Tài liệu CFA Level II";
+  $("barSub").textContent="SchweserNotes 2025 · Formula Sheet";
+  $("libGrid").innerHTML=M.books.map(function(b){
+    var pos=parseInt(ls(POS+b.id)||"0",10);
+    var foot=pos>1?"Đang đọc trang "+pos+" / "+b.pages:b.pages+" trang";
+    return '<a class="bk" style="--c:'+b.color+'" href="?b='+b.id+'">'+
+      '<div class="bk-strip"></div><div class="bk-body">'+
+      '<div class="bk-top"><span class="bk-tag">'+esc(bookLabel(b))+'</span><span class="bk-pages">CFA Level II · 2025</span></div>'+
+      '<h3>'+esc(b.title)+'</h3>'+
+      '<div class="bk-mon">Môn:</div>'+
+      '<div class="bk-subj">'+b.subjects.map(function(s){return "<span>"+esc(s)+"</span>";}).join("")+'</div>'+
+      '<div class="bk-foot"><span>'+foot+'</span><span class="bk-cta">'+(pos>1?"Đọc tiếp":"Đọc")+'</span></div>'+
+      '</div></a>';
+  }).join("");
+  show("library");
+}
+
+/* ---------- reader ---------- */
+var loaded={}, io=null, ioFar=null, curPage=1, saveT=null;
+function zoomWidth(){
+  var cw=Math.max(200,$("reader").clientWidth-32);
+  return zoom<0?Math.min(cw,900):Math.round(900*zoom/100);
+}
+function applyZoom(){
+  $("pages").style.setProperty("--pw",zoomWidth()+"px");
+  $("zoomLbl").textContent=zoom<0?"Vừa":zoom+"%";
+}
+window.setZoom=function(z){
+  var keep=curPage; zoom=z; ls(ZOOM,String(z)); applyZoom(); goTo(keep,true);
+};
+window.zoomBy=function(d){
+  var cur=zoom<0?Math.round(zoomWidth()/9):zoom;
+  var steps=[50,60,70,80,90,100,110,125,140,160,180,200,240];
+  var nz=d>0?(steps.find(function(s){return s>cur;})||steps[steps.length-1])
+            :(steps.slice().reverse().find(function(s){return s<cur;})||steps[0]);
+  setZoom(nz);
+};
+
+async function loadPage(el){
+  var i=+el.dataset.i; if(loaded[i]) return; loaded[i]="loading";
+  try{
+    var r=await fetch("tailieu/"+BOOK.id+"/"+String(i).padStart(4,"0")+".bin");
+    if(!r.ok) throw new Error(r.status);
+    var buf=await r.arrayBuffer();
+    var pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(buf,0,12)},DEK,new Uint8Array(buf,12));
+    if(loaded[i]!=="loading") return;
+    var url=URL.createObjectURL(new Blob([pt],{type:"image/webp"}));
+    var img=new Image(); img.alt="Trang "+i; img.decoding="async"; img.src=url; img.draggable=false;
+    el.querySelector(".ph").classList.add("hide"); el.appendChild(img);
+    loaded[i]=url;
+  }catch(e){
+    loaded[i]=null; el.querySelector(".ph").textContent="Không tải được trang "+i+" — cuộn lại để thử lại";
+  }
+}
+function unloadPage(el){
+  var i=+el.dataset.i, u=loaded[i]; if(!u) return;
+  if(u!=="loading"){var img=el.querySelector("img"); if(img) img.remove(); URL.revokeObjectURL(u);}
+  loaded[i]=null; el.querySelector(".ph").classList.remove("hide");
+}
+function goTo(n,instant){
+  n=Math.max(1,Math.min(BOOK.pages,n|0));
+  var el=$("pg-"+n); if(!el) return;
+  var y=el.getBoundingClientRect().top+window.scrollY-document.querySelector(".tl-bar").offsetHeight-10;
+  window.scrollTo({top:y,behavior:instant?"auto":"smooth"});
+  setCur(n);
+}
+function setCur(n){
+  if(n===curPage&&$("pgInput").value==String(n)) return;
+  curPage=n; if(document.activeElement!==$("pgInput")) $("pgInput").value=n;
+  clearTimeout(saveT); saveT=setTimeout(function(){ls(POS+BOOK.id,String(n));},400);
+}
+function trackScroll(){
+  var probe=document.querySelector(".tl-bar").offsetHeight+window.innerHeight*0.3;
+  var lo=1,hi=BOOK.pages;
+  while(lo<hi){var mid=(lo+hi+1)>>1; if($("pg-"+mid).getBoundingClientRect().top<=probe) lo=mid; else hi=mid-1;}
+  setCur(lo);
+}
+function openBook(b){
+  BOOK=b;
+  document.title=b.kind==="book"?bookLabel(b)+" — "+b.title:b.title;
+  $("barTitle").textContent=b.kind==="book"?bookLabel(b)+" — "+b.title:b.title;
+  $("barSub").textContent="CFA Level II · 2025 · Môn: "+b.subjects.join(", ");
+  $("backLink").href="tailieu.html"; $("backLink").textContent="← Tủ sách";
+  $("readerTools").style.display=""; $("pgTotal").textContent=b.pages;
+  zoom=parseInt(ls(ZOOM)||"-1",10); if(!(zoom>0)) zoom=-1;
+  var html=""; for(var i=1;i<=b.pages;i++){var d=b.dims[i-1];
+    html+='<div class="pg" id="pg-'+i+'" data-i="'+i+'" style="aspect-ratio:'+d[0]+'/'+d[1]+'"><div class="ph">Trang '+i+'</div><span class="no">'+i+'</span></div>';}
+  $("pages").innerHTML=html;
+  show("reader"); applyZoom();
+  io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)loadPage(e.target);});},{rootMargin:"1600px 0px"});
+  ioFar=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)unloadPage(e.target);});},{rootMargin:"9000px 0px"});
+  document.querySelectorAll(".pg").forEach(function(el){io.observe(el);ioFar.observe(el);});
+  var start=parseInt(ls(POS+b.id)||"1",10)||1;
+  requestAnimationFrame(function(){goTo(start,true);});
+  var tick=false; window.addEventListener("scroll",function(){if(tick)return;tick=true;requestAnimationFrame(function(){tick=false;trackScroll();});},{passive:true});
+  window.addEventListener("resize",function(){if(zoom<0){var k=curPage;applyZoom();goTo(k,true);}});
+  $("pgInput").addEventListener("change",function(){goTo(parseInt(this.value,10)||1);this.blur();});
+  $("pgInput").addEventListener("keydown",function(e){if(e.key==="Enter"){goTo(parseInt(this.value,10)||1);this.blur();}});
+  document.addEventListener("keydown",function(e){
+    if(e.target.tagName==="INPUT") return;
+    if(e.key==="ArrowRight"){goTo(curPage+1);e.preventDefault();}
+    else if(e.key==="ArrowLeft"){goTo(curPage-1);e.preventDefault();}
+    else if(e.key==="+"||e.key==="="){zoomBy(1);}
+    else if(e.key==="-"){zoomBy(-1);}
+  });
+}
+
+function route(){
+  $("lockBtn").style.display="";
+  var id=new URLSearchParams(location.search).get("b");
+  var b=M.books.find(function(x){return x.id===id;});
+  if(b) openBook(b); else renderLibrary();
+}
+
+async function boot(){
+  if(!window.crypto||!crypto.subtle){$("msg").textContent="Trình duyệt không hỗ trợ giải mã (cần HTTPS và trình duyệt mới).";return;}
+  try{ var r=await fetch("tailieu/manifest.json",{cache:"no-cache"}); M=await r.json(); }
+  catch(e){ $("msg").textContent="Không tải được danh mục tài liệu. Kiểm tra kết nối mạng rồi tải lại trang."; return; }
+  var saved=ls(KEY_STORE);
+  if(saved){
+    try{
+      var raw=b64(saved); DEK=await importDek(raw);
+      // verify the remembered key still matches this manifest (password may have been rotated)
+      var t=await fetch("tailieu/"+M.books[M.books.length-1].id+"/0001.bin"); var buf=await t.arrayBuffer();
+      await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(buf,0,12)},DEK,new Uint8Array(buf,12));
+      return route();
+    }catch(e){ ls(KEY_STORE,null); DEK=null; }
+  }
+  show("gate"); $("pw").focus();
+}
+boot();
+})();
+</script>
+</body>
+</html>

@@ -318,6 +318,7 @@
   html[data-level="1"] .lvl-switch button[data-l="1"], html[data-level="2"] .lvl-switch button[data-l="2"]{
     background:var(--panel);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.12)}
   html[data-level="2"] #navFormula{display:none}
+  html[data-level="1"] #navDocs{display:none}
   @media(max-width:820px){ .lvl-switch{margin:0 6px 0 0;flex:none} .lvl-switch button{padding:6px 9px} }
 </style>
 </head>
@@ -347,6 +348,7 @@ function setLevel(l){ try{localStorage.setItem("cfa:level", String(l)); localSto
     <a class="fx-nav-item" id="navSrc1" onclick="showSource('schweser');fxActive(this)">Schweser Notes</a>
     <a class="fx-nav-item" onclick="showSource('mock');fxActive(this)">Đề thi thử</a>
     <a class="fx-nav-item" id="navFormula" onclick="showFormula();fxActive(this)">Công thức</a>
+    <a class="fx-nav-item" id="navDocs" onclick="showDocs();fxActive(this)">Tài liệu</a>
     <a class="fx-nav-item" onclick="showNotes();fxActive(this)">Ghi chú</a>
   </nav>
   <div class="fx-navlabel">Tiện ích</div>
@@ -706,6 +708,39 @@ function setLevel(l){ try{localStorage.setItem("cfa:level", String(l)); localSto
     </div>
     <input id="notesSearch" type="search" autocomplete="off" placeholder="Tìm trong ghi chú: theo nội dung bạn viết, tên môn, module…" oninput="renderNotes()">
     <div id="notesBody"></div>
+  </section>
+  <style id="docs-css">
+    #docsView .subj-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    #docsView .dc-open{padding:9px 18px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:14px;text-decoration:none;white-space:nowrap}
+    #docsView .dc-open:hover{filter:brightness(1.06)}
+    .dc-note{margin:0 0 18px;padding:11px 14px;border-radius:11px;background:var(--panel);border:1px solid var(--line);font-size:13px;color:var(--muted);line-height:1.55}
+    .dc-note b{color:var(--txt)}
+    .dc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+    .dc-card{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+      box-shadow:var(--shadow);text-decoration:none;color:var(--txt);transition:transform .12s ease,border-color .12s ease}
+    .dc-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 45%,var(--line))}
+    .dc-strip{height:5px;background:var(--c)}
+    .dc-body{padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .dc-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .dc-tag{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--c) 80%,var(--txt))}
+    .dc-lvl{font-size:12px;color:var(--muted)}
+    .dc-card h3{margin:0;font-size:16px;line-height:1.35}
+    .dc-mon{font-size:12.5px;color:var(--muted)}
+    .dc-subj{display:flex;flex-wrap:wrap;gap:6px}
+    .dc-subj span{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;background:color-mix(in srgb,var(--c) 12%,var(--panel2));color:color-mix(in srgb,var(--c) 75%,var(--txt))}
+    .dc-foot{margin-top:auto;padding-top:8px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+    .dc-cta{padding:7px 14px;border-radius:9px;background:var(--accent);color:#fff;font-weight:600;font-size:13px}
+    .dc-empty{color:var(--muted);text-align:center;padding:44px 0}
+    @media(max-width:640px){.dc-grid{grid-template-columns:1fr}}
+  </style>
+  <section id="docsView" class="hide">
+    <div class="crumb"><button onclick="showSources()">Trang chủ</button><span>›</span><span>Tài liệu</span></div>
+    <div class="subj-head">
+      <div><h2>Tài liệu CFA Level II</h2><p>Kaplan SchweserNotes 2025 (Book 1–5) + Formula Sheet 2025 · dùng cho kỳ thi <b>CFA Level II</b></p></div>
+      <a class="dc-open" href="tailieu.html">Mở tủ sách</a>
+    </div>
+    <div class="dc-note">Mỗi cuốn ghi rõ <b>các môn</b> nó bao phủ. Tài liệu được <b>khoá bằng mật khẩu</b>: lần đầu mở sẽ hỏi mật khẩu, có thể chọn ghi nhớ trên thiết bị.</div>
+    <div class="dc-grid" id="docsGrid"><div class="dc-empty">Đang tải danh mục…</div></div>
   </section>
   <div id="ntModal" class="nt-modal hide" onclick="if(event.target===this)ntCloseModal()">
     <div class="nt-modal-box">
@@ -2913,5 +2948,45 @@ ntModalWire();
 </script>
 <!-- build: remove wiley/uworld -->
 <!-- build: notes-group-by-module redeploy -->
+<script id="docs-js">
+/* ===== Tài liệu (CFA Level II): danh mục sách đã mã hoá, đọc ở tailieu.html ===== */
+(function(){
+  var VIEWS=["sourcesView","subjectsView","modulesView","progressView","formulaView","notesView"];
+  var docsManifest=null;
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function renderDocs(){
+    var g=document.getElementById("docsGrid"); if(!g||!docsManifest) return;
+    g.innerHTML=docsManifest.books.map(function(b){
+      var pos=0; try{pos=parseInt(localStorage.getItem("cfa:tl:pos:"+b.id)||"0",10);}catch(e){}
+      var tag=b.kind==="book"?"Book "+b.no+" · SchweserNotes":"Formula Sheet";
+      return '<a class="dc-card" style="--c:'+b.color+'" href="tailieu.html?b='+b.id+'">'+
+        '<div class="dc-strip"></div><div class="dc-body">'+
+        '<div class="dc-top"><span class="dc-tag">'+esc(tag)+'</span><span class="dc-lvl">CFA Level II · 2025</span></div>'+
+        '<h3>'+esc(b.title)+'</h3><div class="dc-mon">Môn:</div>'+
+        '<div class="dc-subj">'+b.subjects.map(function(x){return "<span>"+esc(x)+"</span>";}).join("")+'</div>'+
+        '<div class="dc-foot"><span>'+(pos>1?"Đang đọc trang "+pos+" / "+b.pages:b.pages+" trang")+'</span>'+
+        '<span class="dc-cta">'+(pos>1?"Đọc tiếp":"Đọc")+'</span></div></div></a>';
+    }).join("");
+  }
+  window.showDocs=function(){
+    try{ currentSource=null; currentSubj=null; }catch(e){}
+    VIEWS.forEach(function(id){var el=document.getElementById(id); if(el) el.classList.add("hide");});
+    document.getElementById("docsView").classList.remove("hide");
+    window.scrollTo({top:0});
+    if(docsManifest){ renderDocs(); return; }
+    fetch("tailieu/manifest.json",{cache:"no-cache"}).then(function(r){return r.json();})
+      .then(function(m){ docsManifest=m; renderDocs(); })
+      .catch(function(){ var g=document.getElementById("docsGrid"); if(g) g.innerHTML='<div class="dc-empty">Không tải được danh mục. <a href="tailieu.html">Mở tủ sách</a></div>'; });
+  };
+  ["showSources","showSource","showSubjects","showModules","showProgress","showFormula","showNotes"].forEach(function(fn){
+    var orig=window[fn]; if(typeof orig!=="function") return;
+    window[fn]=function(){ var d=document.getElementById("docsView"); if(d) d.classList.add("hide"); return orig.apply(this,arguments); };
+  });
+  if(location.hash==="#tailieu" && window.CFA_LEVEL===2){
+    history.replaceState(null,"",location.pathname);
+    showDocs(); fxActive(document.getElementById("navDocs"));
+  }
+})();
+</script>
 </body>
 </html>
